@@ -92,7 +92,7 @@ namespace ams::sprofile::srv {
     }
 
     Result ServiceForBgAgent::Reset() {
-        return m_profile_manager->ResetSaveData();
+        R_RETURN(m_profile_manager->ResetSaveData());
     }
 
 }

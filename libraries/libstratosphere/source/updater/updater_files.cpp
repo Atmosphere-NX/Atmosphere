@@ -27,7 +27,7 @@ namespace ams::updater {
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         std::memset(dst, 0, dst_size);
-        return fs::ReadFile(out_size, file, 0, dst, dst_size, fs::ReadOption());
+        R_RETURN(fs::ReadFile(out_size, file, 0, dst, dst_size, fs::ReadOption()));
     }
 
     Result GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size) {

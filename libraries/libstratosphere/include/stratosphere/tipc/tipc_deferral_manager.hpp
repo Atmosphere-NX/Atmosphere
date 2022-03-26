@@ -74,11 +74,9 @@ namespace ams::tipc {
 
             template<IsResumeKey ResumeKey, typename F>
             ALWAYS_INLINE Result RegisterRetryIfDeferred(ResumeKey key, F f) {
-                const Result result = f();
-                if (tipc::ResultRequestDeferred::Includes(result)) {
-                    this->RegisterRetry(key);
-                }
-                return result;
+                ON_RESULT_INCLUDED(tipc::ResultRequestDeferred) { this->RegisterRetry(key); };
+
+                R_RETURN(f());
             }
 
             template<typename PortManager>

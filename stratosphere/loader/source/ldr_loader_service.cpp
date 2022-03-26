@@ -44,7 +44,7 @@ namespace ams::ldr {
         path[sizeof(path) - 1] = '\x00';
 
         /* Create the process. */
-        return ldr::CreateProcess(out, pin_id, loc, override_status, path, g_argument_store.Get(loc.program_id), flags, resource_limit);
+        R_RETURN(ldr::CreateProcess(out, pin_id, loc, override_status, path, g_argument_store.Get(loc.program_id), flags, resource_limit));
     }
 
     Result LoaderService::GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
@@ -81,29 +81,29 @@ namespace ams::ldr {
 
     Result LoaderService::PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         *out = {};
-        return ldr::PinProgram(out, loc, status);
+        R_RETURN(ldr::PinProgram(out, loc, status));
     }
 
     Result LoaderService::UnpinProgram(PinId id) {
-        return ldr::UnpinProgram(id);
+        R_RETURN(ldr::UnpinProgram(id));
     }
 
     Result LoaderService::SetProgramArgument(ncm::ProgramId program_id, const void *argument, size_t size) {
-        return g_argument_store.Set(program_id, argument, size);
+        R_RETURN(g_argument_store.Set(program_id, argument, size));
     }
 
     Result LoaderService::FlushArguments() {
-        return g_argument_store.Flush();
+        R_RETURN(g_argument_store.Flush());
     }
 
     Result LoaderService::GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
         *out_count = 0;
         std::memset(out, 0, max_out_count * sizeof(*out));
-        return ldr::GetProcessModuleInfo(out_count, out, max_out_count, process_id);
+        R_RETURN(ldr::GetProcessModuleInfo(out_count, out, max_out_count, process_id));
     }
 
     Result LoaderService::RegisterExternalCode(os::NativeHandle *out, ncm::ProgramId program_id) {
-        return fssystem::CreateExternalCode(out, program_id);
+        R_RETURN(fssystem::CreateExternalCode(out, program_id));
     }
 
     void LoaderService::UnregisterExternalCode(ncm::ProgramId program_id) {

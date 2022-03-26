@@ -42,7 +42,7 @@ namespace ams::gpio {
             }
 
             Result IsWakeEventActive(ams::sf::Out<bool> out, gpio::GpioPadName pad_name) {
-                return ::gpioIsWakeEventActive2(out.GetPointer(), static_cast<::GpioPadName>(static_cast<u32>(pad_name)));
+                R_RETURN(::gpioIsWakeEventActive2(out.GetPointer(), static_cast<::GpioPadName>(static_cast<u32>(pad_name))));
             }
 
             Result GetWakeEventActiveFlagSet(ams::sf::Out<gpio::WakeBitFlag> out) {
@@ -66,7 +66,7 @@ namespace ams::gpio {
             Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
 
             Result IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code) {
-                return ::gpioIsWakeEventActive2(out.GetPointer(), device_code.GetInternalValue());
+                R_RETURN(::gpioIsWakeEventActive2(out.GetPointer(), device_code.GetInternalValue()));
             }
 
             Result SetWakeEventActiveFlagSetForDebug2(DeviceCode device_code, bool is_enabled) {

@@ -23,7 +23,7 @@
 namespace ams::fs {
 
     Result CreateFile(const char *path, s64 size) {
-        return CreateFile(path, size, 0);
+        R_RETURN(CreateFile(path, size, 0));
     }
 
     Result CreateFile(const char* path, s64 size, int option) {
@@ -220,11 +220,11 @@ namespace ams::fs {
     }
 
     Result Commit(const char *mount_name) {
-        return CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME);
+        R_RETURN(CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME));
     }
 
     Result CommitSaveData(const char *mount_name) {
-        return CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME);
+        R_RETURN(CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME));
     }
 
 }

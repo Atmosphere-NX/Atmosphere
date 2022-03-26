@@ -51,39 +51,28 @@ namespace ams::fssrv {
                     switch (port_index) {
                         case PortIndex_FileSystemProxy:
                         {
-                            return this->AcceptImpl(server, impl::GetFileSystemProxyServiceObject());
+                            R_RETURN(this->AcceptImpl(server, impl::GetFileSystemProxyServiceObject()));
                         }
-                        break;
                         case PortIndex_ProgramRegistry:
                         {
                             if (os::TryAcquireSemaphore(std::addressof(g_semaphore_for_program_registry))) {
-                                auto sema_guard = SCOPE_GUARD { os::ReleaseSemaphore(std::addressof(g_semaphore_for_program_registry)); };
+                                ON_RESULT_FAILURE { os::ReleaseSemaphore(std::addressof(g_semaphore_for_program_registry)); };
 
-                                R_TRY(this->AcceptImpl(server, impl::GetProgramRegistryServiceObject()));
-
-                                sema_guard.Cancel();
+                                R_RETURN(this->AcceptImpl(server, impl::GetProgramRegistryServiceObject()));
                             } else {
-                                R_TRY(this->AcceptImpl(server, impl::GetInvalidProgramRegistryServiceObject()));
+                                R_RETURN(this->AcceptImpl(server, impl::GetInvalidProgramRegistryServiceObject()));
                             }
-
-                            R_SUCCEED();
                         }
-                        break;
                         case PortIndex_FileSystemProxyForLoader:
                         {
                             if (os::TryAcquireSemaphore(std::addressof(g_semaphore_for_file_system_proxy_for_loader))) {
-                                auto sema_guard = SCOPE_GUARD { os::ReleaseSemaphore(std::addressof(g_semaphore_for_file_system_proxy_for_loader)); };
+                                ON_RESULT_FAILURE { os::ReleaseSemaphore(std::addressof(g_semaphore_for_file_system_proxy_for_loader)); };
 
-                                R_TRY(this->AcceptImpl(server, impl::GetFileSystemProxyForLoaderServiceObject()));
-
-                                sema_guard.Cancel();
+                                R_RETURN(this->AcceptImpl(server, impl::GetFileSystemProxyForLoaderServiceObject()));
                             } else {
-                                R_TRY(this->AcceptImpl(server, impl::GetInvalidFileSystemProxyForLoaderServiceObject()));
+                                R_RETURN(this->AcceptImpl(server, impl::GetInvalidFileSystemProxyForLoaderServiceObject()));
                             }
-
-                            R_SUCCEED();
                         }
-                        break;
                         AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }

@@ -46,35 +46,35 @@ namespace ams::boot {
             }
 
             Result GetChargePercentage(float *out) {
-                return powctl::GetBatteryChargePercentage(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryChargePercentage(out, s_battery_session));
             }
 
             Result GetAverageVCell(int *out) {
-                return powctl::GetBatteryAverageVCell(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryAverageVCell(out, s_battery_session));
             }
 
             Result GetVoltageFuelGaugePercentage(float *out) {
-                return powctl::GetBatteryVoltageFuelGaugePercentage(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryVoltageFuelGaugePercentage(out, s_battery_session));
             }
 
             Result GetAverageCurrent(int *out) {
-                return powctl::GetBatteryAverageCurrent(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryAverageCurrent(out, s_battery_session));
             }
 
             Result GetCurrent(int *out) {
-                return powctl::GetBatteryCurrent(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryCurrent(out, s_battery_session));
             }
 
             Result GetTemperature(float *out) {
-                return powctl::GetBatteryTemperature(out, s_battery_session);
+                R_RETURN(powctl::GetBatteryTemperature(out, s_battery_session));
             }
 
             Result IsI2cShutdownEnabled(bool *out) {
-                return powctl::IsBatteryI2cShutdownEnabled(out, s_battery_session);
+                R_RETURN(powctl::IsBatteryI2cShutdownEnabled(out, s_battery_session));
             }
 
             Result SetI2cShutdownEnabled(bool en) {
-                return powctl::SetBatteryI2cShutdownEnabled(s_battery_session, en);
+                R_RETURN(powctl::SetBatteryI2cShutdownEnabled(s_battery_session, en));
             }
     };
 

@@ -27,11 +27,11 @@ namespace ams::fs::impl {
     }
 
     Result Register(std::unique_ptr<FileSystemAccessor> &&fs) {
-        return g_mount_table.Mount(std::move(fs));
+        R_RETURN(g_mount_table.Mount(std::move(fs)));
     }
 
     Result Find(FileSystemAccessor **out, const char *name) {
-        return g_mount_table.Find(out, name);
+        R_RETURN(g_mount_table.Find(out, name));
     }
 
     void Unregister(const char *name) {

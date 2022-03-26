@@ -175,7 +175,7 @@ namespace ams::fs {
                 Element elem;
                 R_TRY(this->ReadKeyValue(std::addressof(elem), pos));
                 elem.value = value;
-                return this->WriteKeyValue(std::addressof(elem), pos, nullptr, 0);
+                R_RETURN(this->WriteKeyValue(std::addressof(elem), pos, nullptr, 0));
             }
         private:
             BucketIndex HashToBucket(u32 hash_key) const {
@@ -259,14 +259,14 @@ namespace ams::fs {
                 AMS_ASSERT(ind < m_bucket_count);
 
                 const s64 offset = ind * sizeof(Position);
-                return m_bucket_storage.Read(offset, out, sizeof(*out));
+                R_RETURN(m_bucket_storage.Read(offset, out, sizeof(*out)));
             }
 
             Result WriteBucket(Position pos, BucketIndex ind) {
                 AMS_ASSERT(ind < m_bucket_count);
 
                 const s64 offset = ind * sizeof(Position);
-                return m_bucket_storage.Write(offset, std::addressof(pos), sizeof(pos));
+                R_RETURN(m_bucket_storage.Write(offset, std::addressof(pos), sizeof(pos)));
             }
 
             Result ReadKeyValue(Element *out, Position pos) {
@@ -276,7 +276,7 @@ namespace ams::fs {
                 R_TRY(m_kv_storage.GetSize(std::addressof(kv_size)));
                 AMS_ASSERT(pos < kv_size);
 
-                return m_kv_storage.Read(pos, out, sizeof(*out));
+                R_RETURN(m_kv_storage.Read(pos, out, sizeof(*out)));
             }
 
             Result ReadKeyValue(Element *out, void *out_aux, size_t *out_aux_size, Position pos) {

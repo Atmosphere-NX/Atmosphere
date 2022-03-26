@@ -261,19 +261,19 @@ namespace ams::htcfs {
     }
 
     Result ClientImpl::SendToRpcChannel(const void *src, s64 size) {
-        return this->SendToHtclow(src, size, std::addressof(m_rpc_channel));
+        R_RETURN(this->SendToHtclow(src, size, std::addressof(m_rpc_channel)));
     }
 
     Result ClientImpl::ReceiveFromRpcChannel(void *dst, s64 size) {
-        return this->ReceiveFromHtclow(dst, size, std::addressof(m_rpc_channel));
+        R_RETURN(this->ReceiveFromHtclow(dst, size, std::addressof(m_rpc_channel)));
     }
 
     Result ClientImpl::ReceiveFromDataChannel(s64 size) {
-        return m_data_channel.WaitReceive(size);
+        R_RETURN(m_data_channel.WaitReceive(size));
     }
 
     Result ClientImpl::SendToDataChannel() {
-        return m_data_channel.Flush();
+        R_RETURN(m_data_channel.Flush());
     }
 
     Result ClientImpl::SendToHtclow(const void *src, s64 size, htclow::Channel *channel) {
@@ -856,14 +856,14 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check our operation's result. */
         const auto native_result = ConvertNativeResult(response.params[1]);
         if (R_FAILED(native_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return native_result;
+            R_RETURN(native_result);
         }
 
         /* Check the body size. */
@@ -1016,7 +1016,7 @@ namespace ams::htcfs {
 
         /* Receive the entries. */
         *out = response.params[2];
-        return this->ReceiveFromRpcChannel(out_entries, response.body_size);
+        R_RETURN(this->ReceiveFromRpcChannel(out_entries, response.body_size));
     }
 
     Result ClientImpl::ReadDirectoryLarge(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle) {
@@ -1052,14 +1052,14 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check our operation's result. */
         const auto native_result = ConvertNativeResult(response.params[1]);
         if (R_FAILED(native_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return native_result;
+            R_RETURN(native_result);
         }
 
         /* Check that the number of entries read is allowable. */
@@ -1208,14 +1208,14 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check our operation's result. */
         const auto native_result = ConvertNativeResult(response.params[1]);
         if (R_FAILED(native_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return native_result;
+            R_RETURN(native_result);
         }
 
         /* Check the body size. */
@@ -1265,14 +1265,14 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check our operation's result. */
         const auto native_result = ConvertNativeResult(response.params[1]);
         if (R_FAILED(native_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return native_result;
+            R_RETURN(native_result);
         }
 
         /* Check that the size read is allowable. */
@@ -1348,7 +1348,7 @@ namespace ams::htcfs {
 
         /* Verify that the host reports ready to receive our data. */
         if (static_cast<HtcfsResult>(response.params[0]) != HtcfsResult::Ready) {
-            return ConvertHtcfsResult(response.params[0]);
+            R_RETURN(ConvertHtcfsResult(response.params[0]));
         }
 
         /* Verify that our send will be valid. */
@@ -1569,7 +1569,7 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check that the body size is valid. */
@@ -1610,7 +1610,7 @@ namespace ams::htcfs {
         const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
         if (R_FAILED(htcfs_result)) {
             R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
-            return htcfs_result;
+            R_RETURN(htcfs_result);
         }
 
         /* Check that the size is representable. */

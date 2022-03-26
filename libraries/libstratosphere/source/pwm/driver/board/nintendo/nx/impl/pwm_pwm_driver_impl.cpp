@@ -170,7 +170,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         const int duty = static_cast<int>(((scale * 256.0) / 100.0) + 0.5);
 
         /* Set the duty. */
-        return this->SetDuty(device, duty);
+        R_RETURN(this->SetDuty(device, duty));
     }
 
     Result PwmDriverImpl::GetScale(double *out, IPwmDevice *device) {
@@ -229,7 +229,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         });
 
         /* Disable clock to pwm. */
-        return pcv::SetClockEnabled(pcv::Module_Pwm, false);
+        R_RETURN(pcv::SetClockEnabled(pcv::Module_Pwm, false));
     }
 
     void PwmDriverImpl::Resume() {

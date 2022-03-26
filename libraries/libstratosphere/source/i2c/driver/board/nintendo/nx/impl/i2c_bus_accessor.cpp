@@ -192,7 +192,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         }
 
         /* Send the data. */
-        return this->Send(static_cast<const u8 *>(src), src_size, option, device->GetAddress(), device->GetAddressingMode());
+        R_RETURN(this->Send(static_cast<const u8 *>(src), src_size, option, device->GetAddress(), device->GetAddressingMode()));
     }
 
     Result I2cBusAccessor::Receive(void *dst, size_t dst_size, I2cDeviceProperty *device, TransactionOption option) {
@@ -208,7 +208,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         }
 
         /* Send the data. */
-        return this->Receive(static_cast<u8 *>(dst), dst_size, option, device->GetAddress(), device->GetAddressingMode());
+        R_RETURN(this->Receive(static_cast<u8 *>(dst), dst_size, option, device->GetAddress(), device->GetAddressingMode()));
     }
 
     void I2cBusAccessor::SuspendBus() {
@@ -399,7 +399,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(m_interrupt_event));
-                return i2c::ResultTimeout();
+                R_THROW(i2c::ResultTimeout());
             }
 
             /* Check and handle any errors. */
@@ -429,7 +429,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(m_interrupt_event));
-                return i2c::ResultTimeout();
+                R_THROW(i2c::ResultTimeout());
             }
         }
 
@@ -474,7 +474,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(m_interrupt_event));
-                return i2c::ResultTimeout();
+                R_THROW(i2c::ResultTimeout());
             }
 
             /* Check and handle any errors. */

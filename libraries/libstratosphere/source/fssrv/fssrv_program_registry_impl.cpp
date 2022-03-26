@@ -53,7 +53,7 @@ namespace ams::fssrv {
         R_UNLESS(desc.GetSize() >= static_cast<size_t>(desc_size), fs::ResultInvalidSize());
 
         /* Register the program. */
-        return g_impl->RegisterProgramInfo(process_id, program_id, storage_id, data.GetPointer(), data_size, desc.GetPointer(), desc_size);
+        R_RETURN(g_impl->RegisterProgramInfo(process_id, program_id, storage_id, data.GetPointer(), data_size, desc.GetPointer(), desc_size));
     }
 
     Result ProgramRegistryImpl::UnregisterProgram(u64 process_id) {
@@ -64,7 +64,7 @@ namespace ams::fssrv {
         R_UNLESS(fssrv::impl::IsInitialProgram(m_process_id), fs::ResultPermissionDenied());
 
         /* Unregister the program. */
-        return g_impl->UnregisterProgramInfo(process_id);
+        R_RETURN(g_impl->UnregisterProgramInfo(process_id));
     }
 
     Result ProgramRegistryImpl::SetCurrentProcess(const ams::sf::ClientProcessId &client_pid) {

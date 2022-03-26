@@ -47,8 +47,8 @@ namespace ams::os::impl {
         static_assert(MultiWaitImpl::WaitInvalid != -1);
 
         R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(index), arr, num, reply_target, ns)) {
-            R_CATCH(svc::ResultTimedOut)  { *out_index = MultiWaitImpl::WaitTimedOut;  return R_CURRENT_RESULT; }
-            R_CATCH(svc::ResultCancelled) { *out_index = MultiWaitImpl::WaitCancelled; return R_CURRENT_RESULT; }
+            R_CATCH(svc::ResultTimedOut)  { *out_index = MultiWaitImpl::WaitTimedOut;  R_THROW(R_CURRENT_RESULT); }
+            R_CATCH(svc::ResultCancelled) { *out_index = MultiWaitImpl::WaitCancelled; R_THROW(R_CURRENT_RESULT); }
             R_CATCH(svc::ResultSessionClosed)   {
                 if (index == -1) {
                     *out_index = MultiWaitImpl::WaitInvalid;

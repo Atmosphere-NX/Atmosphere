@@ -202,11 +202,11 @@ namespace ams::erpt::srv {
     }
 
     Result ContextRecord::Add(FieldId field_id, const char *str, u32 str_size) {
-        return this->Add(field_id, str, str_size, FieldType_String);
+        R_RETURN(this->Add(field_id, str, str_size, FieldType_String));
     }
 
     Result ContextRecord::Add(FieldId field_id, const u8 *data, u32 size) {
-        return this->Add(field_id, data, size, FieldType_U8Array);
+        R_RETURN(this->Add(field_id, data, size, FieldType_U8Array));
     }
 
 }

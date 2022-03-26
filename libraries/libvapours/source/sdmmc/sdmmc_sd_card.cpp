@@ -59,27 +59,27 @@ namespace ams::sdmmc {
     }
 
     Result GetSdCardProtectedAreaCapacity(u32 *out_num_sectors, Port port) {
-        return GetSdCardDeviceAccessor(port)->GetSdCardProtectedAreaCapacity(out_num_sectors);
+        R_RETURN(GetSdCardDeviceAccessor(port)->GetSdCardProtectedAreaCapacity(out_num_sectors));
     }
 
     Result GetSdCardScr(void *dst, size_t dst_size, Port port) {
-        return GetSdCardDeviceAccessor(port)->GetSdCardScr(dst, dst_size);
+        R_RETURN(GetSdCardDeviceAccessor(port)->GetSdCardScr(dst, dst_size));
     }
 
     Result GetSdCardSwitchFunctionStatus(void *dst, size_t dst_size, Port port, SdCardSwitchFunction switch_function) {
-        return GetSdCardDeviceAccessor(port)->GetSdCardSwitchFunctionStatus(dst, dst_size, switch_function);
+        R_RETURN(GetSdCardDeviceAccessor(port)->GetSdCardSwitchFunctionStatus(dst, dst_size, switch_function));
     }
 
     Result GetSdCardCurrentConsumption(u16 *out_current_consumption, Port port, SpeedMode speed_mode) {
-        return GetSdCardDeviceAccessor(port)->GetSdCardCurrentConsumption(out_current_consumption, speed_mode);
+        R_RETURN(GetSdCardDeviceAccessor(port)->GetSdCardCurrentConsumption(out_current_consumption, speed_mode));
     }
 
     Result GetSdCardSdStatus(void *dst, size_t dst_size, Port port) {
-        return GetSdCardDeviceAccessor(port)->GetSdCardSdStatus(dst, dst_size);
+        R_RETURN(GetSdCardDeviceAccessor(port)->GetSdCardSdStatus(dst, dst_size));
     }
 
     Result CheckSdCardConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width, Port port) {
-        return GetSdCardDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width);
+        R_RETURN(GetSdCardDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width));
     }
 
     bool IsSdCardInserted(Port port) {

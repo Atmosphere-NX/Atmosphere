@@ -45,7 +45,7 @@ namespace ams::htclow::driver {
         SetUsbAvailabilityChangeCallback(OnUsbAvailabilityChange, this);
 
         /* Initialize the interface. */
-        return InitializeUsbInterface();
+        R_RETURN(InitializeUsbInterface());
     }
 
     void UsbDriver::Close() {

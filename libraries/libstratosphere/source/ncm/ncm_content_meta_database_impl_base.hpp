@@ -50,7 +50,7 @@ namespace ams::ncm {
 
             Result GetContentMetaPointer(const void **out_value_ptr, size_t *out_size, const ContentMetaKey &key) const {
                 R_TRY(this->GetContentMetaSize(out_size, key));
-                return m_kvs->GetValuePointer(reinterpret_cast<const ContentMetaHeader **>(out_value_ptr), key);
+                R_RETURN(m_kvs->GetValuePointer(reinterpret_cast<const ContentMetaHeader **>(out_value_ptr), key));
             }
         public:
             /* Actual commands. */

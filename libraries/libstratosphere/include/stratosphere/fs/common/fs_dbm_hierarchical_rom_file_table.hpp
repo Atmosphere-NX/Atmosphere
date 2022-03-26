@@ -81,23 +81,23 @@ namespace ams::fs {
                     using Base      = KeyValueRomStorageTemplate<ImplKeyType, ValueType, MaxKeyLength>;
                 public:
                     Result Add(Position *out, const ClientKeyType &key, const Value &value) {
-                        return Base::AddInternal(out, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar), value);
+                        R_RETURN(Base::AddInternal(out, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar), value));
                     }
 
                     Result Get(Position *out_pos, Value *out_val, const ClientKeyType &key) {
-                        return Base::GetInternal(out_pos, out_val, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar));
+                        R_RETURN(Base::GetInternal(out_pos, out_val, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar)));
                     }
 
                     Result GetByPosition(ImplKey *out_key, Value *out_val, Position pos) {
-                        return Base::GetByPosition(out_key, out_val, pos);
+                        R_RETURN(Base::GetByPosition(out_key, out_val, pos));
                     }
 
                     Result GetByPosition(ImplKey *out_key, Value *out_val, void *out_aux, size_t *out_aux_size, Position pos) {
-                        return Base::GetByPosition(out_key, out_val, out_aux, out_aux_size, pos);
+                        R_RETURN(Base::GetByPosition(out_key, out_val, out_aux, out_aux_size, pos));
                     }
 
                     Result SetByPosition(Position pos, const Value &value) {
-                        return Base::SetByPosition(pos, value);
+                        R_RETURN(Base::SetByPosition(pos, value));
                     }
             };
 

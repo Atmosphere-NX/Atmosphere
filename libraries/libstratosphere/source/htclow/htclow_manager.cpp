@@ -29,7 +29,7 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::OpenDriver(impl::DriverType driver_type) {
-        return m_impl->OpenDriver(driver_type);
+        R_RETURN(m_impl->OpenDriver(driver_type));
     }
 
     void HtclowManager::CloseDriver() {
@@ -37,11 +37,11 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::Open(impl::ChannelInternalType channel) {
-        return m_impl->Open(channel);
+        R_RETURN(m_impl->Open(channel));
     }
 
     Result HtclowManager::Close(impl::ChannelInternalType channel) {
-        return m_impl->Close(channel);
+        R_RETURN(m_impl->Close(channel));
     }
 
     void HtclowManager::Resume() {
@@ -53,11 +53,11 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::ConnectBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
-        return m_impl->ConnectBegin(out_task_id, channel);
+        R_RETURN(m_impl->ConnectBegin(out_task_id, channel));
     }
 
     Result HtclowManager::ConnectEnd(impl::ChannelInternalType channel, u32 task_id) {
-        return m_impl->ConnectEnd(channel, task_id);
+        R_RETURN(m_impl->ConnectEnd(channel, task_id));
     }
 
     void HtclowManager::Disconnect() {
@@ -65,11 +65,11 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::FlushBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
-        return m_impl->FlushBegin(out_task_id, channel);
+        R_RETURN(m_impl->FlushBegin(out_task_id, channel));
     }
 
     Result HtclowManager::FlushEnd(u32 task_id) {
-        return m_impl->FlushEnd(task_id);
+        R_RETURN(m_impl->FlushEnd(task_id));
     }
 
     ChannelState HtclowManager::GetChannelState(impl::ChannelInternalType channel) {
@@ -97,27 +97,27 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
-        return m_impl->ReceiveBegin(out_task_id, channel, size);
+        R_RETURN(m_impl->ReceiveBegin(out_task_id, channel, size));
     }
 
     Result HtclowManager::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id) {
-        return m_impl->ReceiveEnd(out, dst, dst_size, channel, task_id);
+        R_RETURN(m_impl->ReceiveEnd(out, dst, dst_size, channel, task_id));
     }
 
     Result HtclowManager::SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel) {
-        return m_impl->SendBegin(out_task_id, out, src, src_size, channel);
+        R_RETURN(m_impl->SendBegin(out_task_id, out, src, src_size, channel));
     }
 
     Result HtclowManager::SendEnd(u32 task_id) {
-        return m_impl->SendEnd(task_id);
+        R_RETURN(m_impl->SendEnd(task_id));
     }
 
     Result HtclowManager::WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
-        return m_impl->WaitReceiveBegin(out_task_id, channel, size);
+        R_RETURN(m_impl->WaitReceiveBegin(out_task_id, channel, size));
     }
 
     Result HtclowManager::WaitReceiveEnd(u32 task_id) {
-        return m_impl->WaitReceiveEnd(task_id);
+        R_RETURN(m_impl->WaitReceiveEnd(task_id));
     }
 
     void HtclowManager::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {
@@ -141,7 +141,7 @@ namespace ams::htclow {
     }
 
     Result HtclowManager::Shutdown(impl::ChannelInternalType channel) {
-        return m_impl->Shutdown(channel);
+        R_RETURN(m_impl->Shutdown(channel));
     }
 
 }

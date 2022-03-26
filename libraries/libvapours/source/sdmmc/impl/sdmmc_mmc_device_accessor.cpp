@@ -357,15 +357,15 @@ namespace ams::sdmmc::impl {
         IHostController *hc = BaseDeviceAccessor::GetHostController();
         if (hc->IsSupportedTuning() && hc->GetBusPower() == BusPower_1_8V) {
             if (hc->GetBusWidth() == BusWidth_8Bit && IsSupportedHs400(device_type) && max_sm == SpeedMode_MmcHs400) {
-                return this->ChangeToHs400();
+                R_RETURN(this->ChangeToHs400());
             } else if ((hc->GetBusWidth() == BusWidth_8Bit ||  hc->GetBusWidth() == BusWidth_4Bit) && IsSupportedHs200(device_type) && (max_sm == SpeedMode_MmcHs400 || max_sm == SpeedMode_MmcHs200)) {
-                return this->ChangeToHs200();
+                R_RETURN(this->ChangeToHs200());
             }
         }
 
         /* Check if we can switch to high speed. */
         if (IsSupportedHighSpeed(device_type)) {
-            return this->ChangeToHighSpeed(true);
+            R_RETURN(this->ChangeToHighSpeed(true));
         }
 
         /* We can't, so stay at normal speeds. */
@@ -492,7 +492,7 @@ namespace ams::sdmmc::impl {
         /* We failed to start up with all sets of parameters. */
         BaseDeviceAccessor::PushErrorTimeStamp();
 
-        return result;
+        R_RETURN(result);
     }
 
     Result MmcDeviceAccessor::OnReadWrite(u32 sector_index, u32 num_sectors, void *buf, size_t buf_size, bool is_read) {
@@ -505,7 +505,7 @@ namespace ams::sdmmc::impl {
         }
 
         /* Do the read/write. */
-        return BaseDeviceAccessor::ReadWriteMultiple(sector_index, num_sectors, sector_index_alignment, buf, buf_size, is_read);
+        R_RETURN(BaseDeviceAccessor::ReadWriteMultiple(sector_index, num_sectors, sector_index_alignment, buf, buf_size, is_read));
     }
 
     Result MmcDeviceAccessor::ReStartup() {
@@ -516,7 +516,7 @@ namespace ams::sdmmc::impl {
         Result result = this->StartupMmcDevice(m_max_bus_width, m_max_speed_mode, m_work_buffer, m_work_buffer_size);
         if (R_FAILED(result)) {
             BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", m_max_bus_width, m_max_speed_mode, result.GetValue());
-            return result;
+            R_RETURN(result);
         }
 
         R_SUCCEED();
@@ -676,7 +676,7 @@ namespace ams::sdmmc::impl {
 
             /* Otherwise, check if we should reject the error. */
             if (!sdmmc::ResultUnexpectedDeviceState::Includes(result)) {
-                return result;
+                R_RETURN(result);
             }
 
             /* Check if timeout has been exceeded. */

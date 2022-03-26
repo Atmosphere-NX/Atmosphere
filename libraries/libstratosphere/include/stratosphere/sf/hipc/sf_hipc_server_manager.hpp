@@ -190,14 +190,14 @@ namespace ams::sf::hipc {
 
             template<typename Interface>
             Result AcceptImpl(Server *server, SharedPointer<Interface> p) {
-                return ServerSessionManager::AcceptSession(server->m_port_handle, std::move(p));
+                R_RETURN(ServerSessionManager::AcceptSession(server->m_port_handle, std::move(p)));
             }
 
             #if AMS_SF_MITM_SUPPORTED
             template<typename Interface>
             Result AcceptMitmImpl(Server *server, SharedPointer<Interface> p, std::shared_ptr<::Service> forward_service) {
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
-                return ServerSessionManager::AcceptMitmSession(server->m_port_handle, std::move(p), std::move(forward_service));
+                R_RETURN(ServerSessionManager::AcceptMitmSession(server->m_port_handle, std::move(p), std::move(forward_service)));
             }
 
             template<typename Interface>
@@ -269,7 +269,7 @@ namespace ams::sf::hipc {
 
             template<typename Interface>
             Result RegisterObjectForServer(SharedPointer<Interface> static_object, sm::ServiceName service_name, size_t max_sessions) {
-                return this->RegisterServerImpl(0, cmif::ServiceObjectHolder(std::move(static_object)), service_name, max_sessions);
+                R_RETURN(this->RegisterServerImpl(0, cmif::ServiceObjectHolder(std::move(static_object)), service_name, max_sessions));
             }
 
             void RegisterServer(int port_index, os::NativeHandle port_handle) {
@@ -277,7 +277,7 @@ namespace ams::sf::hipc {
             }
 
             Result RegisterServer(int port_index, sm::ServiceName service_name, size_t max_sessions) {
-                return this->RegisterServerImpl(port_index, cmif::ServiceObjectHolder(), service_name, max_sessions);
+                R_RETURN(this->RegisterServerImpl(port_index, cmif::ServiceObjectHolder(), service_name, max_sessions));
             }
 
             /* Processing. */
@@ -503,7 +503,7 @@ namespace ams::sf::hipc {
             template<typename Interface, bool Enable = ManagerOptions::CanManageMitmServers, typename = typename std::enable_if<Enable>::type>
             Result RegisterMitmServer(int port_index, sm::ServiceName service_name) {
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
-                return this->template RegisterMitmServerImpl<Interface>(port_index, cmif::ServiceObjectHolder(), service_name);
+                R_RETURN(this->template RegisterMitmServerImpl<Interface>(port_index, cmif::ServiceObjectHolder(), service_name));
             }
             #endif
     };

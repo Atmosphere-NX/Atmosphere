@@ -94,7 +94,7 @@ namespace ams::fssystem {
             Result Initialize(uintptr_t address, size_t size, size_t block_size, s32 order_max);
 
             Result Initialize(uintptr_t address, size_t size, size_t block_size) {
-                return this->Initialize(address, size, block_size, QueryOrderMax(size, block_size));
+                R_RETURN(this->Initialize(address, size, block_size, QueryOrderMax(size, block_size)));
             }
 
             Result Initialize(uintptr_t address, size_t size, size_t block_size, s32 order_max, void *work, size_t work_size) {
@@ -103,11 +103,11 @@ namespace ams::fssystem {
 
                 const auto aligned_work = util::AlignUp(reinterpret_cast<uintptr_t>(work), alignof(PageList));
                 m_external_free_lists = reinterpret_cast<PageList *>(aligned_work);
-                return this->Initialize(address, size, block_size, order_max);
+                R_RETURN(this->Initialize(address, size, block_size, order_max));
             }
 
             Result Initialize(uintptr_t address, size_t size, size_t block_size, void *work, size_t work_size) {
-                return this->Initialize(address, size, block_size, QueryOrderMax(size, block_size), work, work_size);
+                R_RETURN(this->Initialize(address, size, block_size, QueryOrderMax(size, block_size), work, work_size));
             }
 
             void Finalize();

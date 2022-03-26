@@ -123,11 +123,11 @@ namespace ams::erpt::srv {
         /* NOTE: Nintendo does not check error code here. */
         InitializeForcedShutdownDetection();
 
-        return InitializeService();
+        R_RETURN(InitializeService());
     }
 
     Result SetSerialNumberAndOsVersion(const char *sn, u32 sn_len, const char *os, u32 os_len, const char *os_priv, u32 os_priv_len) {
-        return Reporter::SetSerialNumberAndOsVersion(sn, sn_len, os, os_len, os_priv, os_priv_len);
+        R_RETURN(Reporter::SetSerialNumberAndOsVersion(sn, sn_len, os, os_len, os_priv, os_priv_len));
     }
 
     Result SetProductModel(const char *model, u32 model_len) {

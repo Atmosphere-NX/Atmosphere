@@ -37,27 +37,27 @@ namespace ams::ro {
 
     Result RoService::MapManualLoadModuleMemory(sf::Out<u64> load_address, const sf::ClientProcessId &client_pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
-        return impl::MapManualLoadModuleMemory(load_address.GetPointer(), m_context_id, nro_address, nro_size, bss_address, bss_size);
+        R_RETURN(impl::MapManualLoadModuleMemory(load_address.GetPointer(), m_context_id, nro_address, nro_size, bss_address, bss_size));
     }
 
     Result RoService::UnmapManualLoadModuleMemory(const sf::ClientProcessId &client_pid, u64 nro_address) {
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
-        return impl::UnmapManualLoadModuleMemory(m_context_id, nro_address);
+        R_RETURN(impl::UnmapManualLoadModuleMemory(m_context_id, nro_address));
     }
 
     Result RoService::RegisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size) {
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(m_context_id, os::InvalidNativeHandle, nrr_address, nrr_size, NrrKind_User, true);
+        R_RETURN(impl::RegisterModuleInfo(m_context_id, os::InvalidNativeHandle, nrr_address, nrr_size, NrrKind_User, true));
     }
 
     Result RoService::UnregisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address) {
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
-        return impl::UnregisterModuleInfo(m_context_id, nrr_address);
+        R_RETURN(impl::UnregisterModuleInfo(m_context_id, nrr_address));
     }
 
     Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle &&process_h) {
         /* Register the process. */
-        return impl::RegisterProcess(std::addressof(m_context_id), std::move(process_h), client_pid.GetValue());
+        R_RETURN(impl::RegisterProcess(std::addressof(m_context_id), std::move(process_h), client_pid.GetValue()));
     }
 
     Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h) {
@@ -65,7 +65,7 @@ namespace ams::ro {
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
 
         /* Register the module. */
-        return impl::RegisterModuleInfo(m_context_id, process_h.GetOsHandle(), nrr_address, nrr_size, m_nrr_kind, m_nrr_kind == NrrKind_JitPlugin);
+        R_RETURN(impl::RegisterModuleInfo(m_context_id, process_h.GetOsHandle(), nrr_address, nrr_size, m_nrr_kind, m_nrr_kind == NrrKind_JitPlugin));
     }
 
 }

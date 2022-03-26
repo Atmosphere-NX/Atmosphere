@@ -517,7 +517,7 @@ namespace ams::fssystem {
 
             Result Flush() {
                 AMS_ASSERT(m_cache != nullptr);
-                return m_cache->Flush();
+                R_RETURN(m_cache->Flush());
             }
 
             void Invalidate() {
@@ -573,7 +573,7 @@ namespace ams::fssystem {
 
             Result Fetch(s64 offset) {
                 AMS_ASSERT(m_cache != nullptr);
-                return m_cache->Fetch(offset);
+                R_RETURN(m_cache->Fetch(offset));
             }
 
             Result FetchFromBuffer(s64 offset, const void *buffer, size_t buffer_size) {
@@ -728,7 +728,7 @@ namespace ams::fssystem {
             }
         }
 
-        return m_base_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+        R_RETURN(m_base_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
     }
 
     void BufferedStorage::InvalidateCaches() {

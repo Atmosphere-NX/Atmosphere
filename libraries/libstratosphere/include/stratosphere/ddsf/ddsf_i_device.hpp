@@ -113,12 +113,12 @@ namespace ams::ddsf {
 
             template<typename F>
             Result ForEachSession(F f, bool return_on_fail) {
-                return impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail);
+                R_RETURN(impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail));
             }
 
             template<typename F>
             Result ForEachSession(F f, bool return_on_fail) const {
-                return impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail);
+                R_RETURN(impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail));
             }
 
             template<typename F>

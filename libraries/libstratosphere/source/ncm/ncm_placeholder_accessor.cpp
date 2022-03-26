@@ -52,7 +52,7 @@ namespace ams::ncm {
     Result PlaceHolderAccessor::EnsurePlaceHolderDirectory(PlaceHolderId placeholder_id) {
         PathString path;
         this->MakePath(std::addressof(path), placeholder_id);
-        return fs::EnsureParentDirectory(path);
+        R_RETURN(fs::EnsureParentDirectory(path));
     }
 
     Result PlaceHolderAccessor::GetPlaceHolderIdFromFileName(PlaceHolderId *out, const char *name) {
@@ -84,7 +84,7 @@ namespace ams::ncm {
         this->MakePath(std::addressof(placeholder_path), placeholder_id);
 
         /* Open the placeholder file. */
-        return fs::OpenFile(out_handle, placeholder_path, fs::OpenMode_Write);
+        R_RETURN(fs::OpenFile(out_handle, placeholder_path, fs::OpenMode_Write));
     }
 
     bool PlaceHolderAccessor::LoadFromCache(fs::FileHandle *out_handle, PlaceHolderId placeholder_id) {
@@ -203,7 +203,7 @@ namespace ams::ncm {
         ON_SCOPE_EXIT { this->StoreToCache(placeholder_id, file); };
 
         /* Write data to the placeholder file. */
-        return fs::WriteFile(file, offset, buffer, size, m_delay_flush ? fs::WriteOption::Flush : fs::WriteOption::None);
+        R_RETURN(fs::WriteFile(file, offset, buffer, size, m_delay_flush ? fs::WriteOption::Flush : fs::WriteOption::None));
     }
 
     Result PlaceHolderAccessor::SetPlaceHolderFileSize(PlaceHolderId placeholder_id, s64 size) {
@@ -217,7 +217,7 @@ namespace ams::ncm {
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Set the size of the placeholder file. */
-        return fs::SetFileSize(file, size);
+        R_RETURN(fs::SetFileSize(file, size));
     }
 
     Result PlaceHolderAccessor::TryGetPlaceHolderFileSize(bool *found_in_cache, s64 *out_size, PlaceHolderId placeholder_id) {

@@ -76,7 +76,7 @@ namespace ams {
                     explicit ContentManagerServerManager(sf::SharedPointer<ncm::IContentManager> manager) : m_manager(manager) { /* ... */ }
 
                     ams::Result Initialize() {
-                        return this->RegisterObjectForServer(m_manager, ContentManagerServiceName, ContentManagerManagerSessions);
+                        R_RETURN(this->RegisterObjectForServer(m_manager, ContentManagerServiceName, ContentManagerManagerSessions));
                     }
 
                     ams::Result StartThreads() {
@@ -120,7 +120,7 @@ namespace ams {
                     LocationResolverServerManager(sf::SharedPointer<lr::ILocationResolverManager> manager) : m_manager(manager) { /* ... */ }
 
                     ams::Result Initialize() {
-                        return this->RegisterObjectForServer(m_manager, LocationResolverServiceName, LocationResolverManagerSessions);
+                        R_RETURN(this->RegisterObjectForServer(m_manager, LocationResolverServiceName, LocationResolverManagerSessions));
                     }
 
                     ams::Result StartThreads() {

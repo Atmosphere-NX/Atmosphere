@@ -46,7 +46,7 @@ namespace ams::fs::impl {
     }
 
     Result FileAccessor::ReadWithoutCacheAccessLog(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option) {
-        return m_impl->Read(out, offset, buf, size, option);
+        R_RETURN(m_impl->Read(out, offset, buf, size, option));
     }
 
     Result FileAccessor::Read(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option) {
@@ -62,9 +62,9 @@ namespace ams::fs::impl {
 
         if (use_path_cache && use_data_cache && false) {
             /* TODO */
-            return this->ReadWithCacheAccessLog(out, offset, buf, size, option, use_path_cache, use_data_cache);
+            R_RETURN(this->ReadWithCacheAccessLog(out, offset, buf, size, option, use_path_cache, use_data_cache));
         } else {
-            return AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(this->ReadWithoutCacheAccessLog(out, offset, buf, size, option), handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size));
+            R_RETURN(AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(this->ReadWithoutCacheAccessLog(out, offset, buf, size, option), handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size)));
         }
     }
 
@@ -117,11 +117,11 @@ namespace ams::fs::impl {
         /* Fail after a write fails. */
         R_TRY(m_write_result);
 
-        return m_impl->GetSize(out);
+        R_RETURN(m_impl->GetSize(out));
     }
 
     Result FileAccessor::OperateRange(void *dst, size_t dst_size, OperationId operation, s64 offset, s64 size, const void *src, size_t src_size) {
-        return m_impl->OperateRange(dst, dst_size, operation, offset, size, src, src_size);
+        R_RETURN(m_impl->OperateRange(dst, dst_size, operation, offset, size, src, src_size));
     }
 
 }

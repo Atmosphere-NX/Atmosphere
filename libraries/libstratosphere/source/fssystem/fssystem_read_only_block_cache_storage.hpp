@@ -84,7 +84,7 @@ namespace ams::fssystem {
 
                     R_SUCCEED();
                 } else {
-                    return m_base_storage->Read(offset, buffer, size);
+                    R_RETURN(m_base_storage->Read(offset, buffer, size));
                 }
             }
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -106,11 +106,11 @@ namespace ams::fssystem {
                 }
 
                 /* Operate on the base storage. */
-                return m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                R_RETURN(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
             }
 
             virtual Result GetSize(s64 *out) override {
-                return m_base_storage->GetSize(out);
+                R_RETURN(m_base_storage->GetSize(out));
             }
 
             virtual Result Flush() override {

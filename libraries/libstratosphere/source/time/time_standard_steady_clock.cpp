@@ -20,7 +20,7 @@ namespace ams::time {
     Result GetStandardSteadyClockCurrentTimePoint(SteadyClockTimePoint *out) {
         #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::TimeSteadyClockTimePoint));
-        return ::timeGetStandardSteadyClockTimePoint(reinterpret_cast<::TimeSteadyClockTimePoint *>(out));
+        R_RETURN(::timeGetStandardSteadyClockTimePoint(reinterpret_cast<::TimeSteadyClockTimePoint *>(out)));
         #else
         AMS_UNUSED(out);
         AMS_ABORT("TODO");
@@ -42,7 +42,7 @@ namespace ams::time {
     }
 
     Result StandardSteadyClock::GetCurrentTimePoint(SteadyClockTimePoint *out) {
-        return GetStandardSteadyClockCurrentTimePoint(out);
+        R_RETURN(GetStandardSteadyClockCurrentTimePoint(out));
     }
 
     StandardSteadyClock::time_point StandardSteadyClock::now() {

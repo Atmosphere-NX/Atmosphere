@@ -28,7 +28,7 @@ namespace ams::gpio::driver {
     }
 
     Result RegisterDeviceCode(DeviceCode device_code, Pad *pad) {
-        return impl::RegisterDeviceCode(device_code, pad);
+        R_RETURN(impl::RegisterDeviceCode(device_code, pad));
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {

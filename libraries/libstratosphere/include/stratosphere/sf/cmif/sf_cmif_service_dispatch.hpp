@@ -95,13 +95,13 @@ namespace ams::sf::cmif {
                 template<typename T>
                 Result ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
                     static_assert(std::is_base_of<ServiceDispatchTableBase, T>::value, "ServiceDispatchTableBase::Process<T>");
-                    return static_cast<const T *>(this)->ProcessMessage(ctx, in_raw_data);
+                    R_RETURN(static_cast<const T *>(this)->ProcessMessage(ctx, in_raw_data));
                 }
 
                 template<typename T>
                 Result ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
                     static_assert(std::is_base_of<ServiceDispatchTableBase, T>::value, "ServiceDispatchTableBase::ProcessForMitm<T>");
-                    return static_cast<const T *>(this)->ProcessMessageForMitm(ctx, in_raw_data);
+                    R_RETURN(static_cast<const T *>(this)->ProcessMessageForMitm(ctx, in_raw_data));
                 }
         };
 
@@ -115,11 +115,11 @@ namespace ams::sf::cmif {
                 explicit constexpr ServiceDispatchTableImpl(const std::array<ServiceCommandMeta, N> &e) : m_entries{e} { /* ... */ }
 
                 Result ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-                    return this->ProcessMessageImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug);
+                    R_RETURN(this->ProcessMessageImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug));
                 }
 
                 Result ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-                    return this->ProcessMessageForMitmImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug);
+                    R_RETURN(this->ProcessMessageForMitmImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug));
                 }
 
                 constexpr const std::array<ServiceCommandMeta, N> &GetEntries() const {

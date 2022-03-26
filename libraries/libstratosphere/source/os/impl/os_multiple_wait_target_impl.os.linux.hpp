@@ -35,23 +35,23 @@ namespace ams::os::impl {
             void CancelWait();
 
             Result WaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num) {
-                return this->PollNativeHandlesImpl(out_index, num, arr, array_size, static_cast<s64>(-1));
+                R_RETURN(this->PollNativeHandlesImpl(out_index, num, arr, array_size, static_cast<s64>(-1)));
             }
 
             Result TryWaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num) {
-                return this->PollNativeHandlesImpl(out_index, num, arr, array_size, 0);
+                R_RETURN(this->PollNativeHandlesImpl(out_index, num, arr, array_size, 0));
             }
 
             Result TimedWaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, TimeSpan ts) {
-                return this->PollNativeHandlesImpl(out_index, num, arr, array_size, ts.GetNanoSeconds());
+                R_RETURN(this->PollNativeHandlesImpl(out_index, num, arr, array_size, ts.GetNanoSeconds()));
             }
 
             Result ReplyAndReceive(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, NativeHandle reply_target) {
-                return this->ReplyAndReceiveImpl(out_index, num, arr, array_size, std::numeric_limits<s64>::max(), reply_target);
+                R_RETURN(this->ReplyAndReceiveImpl(out_index, num, arr, array_size, std::numeric_limits<s64>::max(), reply_target));
             }
 
             Result TimedReplyAndReceive(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, NativeHandle reply_target, TimeSpan ts) {
-                return this->ReplyAndReceiveImpl(out_index, num, arr, array_size, ts.GetNanoSeconds(), reply_target);
+                R_RETURN(this->ReplyAndReceiveImpl(out_index, num, arr, array_size, ts.GetNanoSeconds(), reply_target));
             }
 
             void SetCurrentThreadHandleForCancelWait() {

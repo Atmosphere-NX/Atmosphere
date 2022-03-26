@@ -88,7 +88,7 @@ namespace ams::sdmmc::impl {
                     return_result = result;
                 }
             }
-            return return_result;
+            R_RETURN(return_result);
         }
 
         /* Get the response. */

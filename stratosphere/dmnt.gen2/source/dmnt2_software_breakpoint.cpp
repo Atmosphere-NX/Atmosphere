@@ -43,7 +43,7 @@ namespace ams::dmnt {
                 AMS_DMNT2_GDB_LOG_ERROR("SoftwareBreakPoint::Clear %p 0x%lx, insn=0x%x, !!! Null Address !!!\n", this, m_address, m_insn);
             }
         }
-        return result;
+        R_RETURN(result);
     }
 
     Result SoftwareBreakPoint::Set(DebugProcess *debug_process, uintptr_t address, size_t size, bool is_step) {
@@ -76,7 +76,7 @@ namespace ams::dmnt {
             m_in_use = true;
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     SoftwareBreakPointManager::SoftwareBreakPointManager(DebugProcess *debug_process) : BreakPointManager(debug_process) {

@@ -21,7 +21,7 @@ namespace ams::settings::impl {
     Result GetErrorReportSharePermission(s32 *out) {
         #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetSysErrorReportSharePermission));
-        return ::setsysGetErrorReportSharePermission(reinterpret_cast<::SetSysErrorReportSharePermission *>(out));
+        R_RETURN(::setsysGetErrorReportSharePermission(reinterpret_cast<::SetSysErrorReportSharePermission *>(out)));
         #else
         AMS_UNUSED(out);
         AMS_ABORT("TODO");

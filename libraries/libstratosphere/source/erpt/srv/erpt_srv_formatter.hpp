@@ -138,12 +138,12 @@ namespace ams::erpt::srv {
 
             template<typename T>
             static Result AddField(Report *report, FieldId field_id, T value) {
-                return AddIdValuePair<T>(report, field_id, value);
+                R_RETURN(AddIdValuePair<T>(report, field_id, value));
             }
 
             template<typename T>
             static Result AddField(Report *report, FieldId field_id, T *arr, u32 arr_size) {
-                return AddIdValueArray(report, field_id, arr, arr_size);
+                R_RETURN(AddIdValueArray(report, field_id, arr, arr_size));
             }
 
             static Result AddField(Report *report, FieldId field_id, bool value) {

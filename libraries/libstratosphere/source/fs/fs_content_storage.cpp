@@ -54,7 +54,7 @@ namespace ams::fs {
     }
 
     Result MountContentStorage(ContentStorageId id) {
-        return MountContentStorage(GetContentStorageMountName(id), id);
+        R_RETURN(MountContentStorage(GetContentStorageMountName(id), id));
     }
 
     Result MountContentStorage(const char *name, ContentStorageId id) {

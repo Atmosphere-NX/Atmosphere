@@ -27,31 +27,31 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result GetConfig(sf::Out<u64> out, u32 key) {
-                return m_manager.GetConfig(out.GetPointer(), static_cast<spl::ConfigItem>(key));
+                R_RETURN(m_manager.GetConfig(out.GetPointer(), static_cast<spl::ConfigItem>(key)));
             }
 
             Result ModularExponentiate(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod) {
-                return m_manager.ModularExponentiate(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize());
+                R_RETURN(m_manager.ModularExponentiate(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize()));
             }
 
             Result SetConfig(u32 key, u64 value) {
-                return m_manager.SetConfig(static_cast<spl::ConfigItem>(key), value);
+                R_RETURN(m_manager.SetConfig(static_cast<spl::ConfigItem>(key), value));
             }
 
             Result GenerateRandomBytes(const sf::OutPointerBuffer &out) {
-                return m_manager.GenerateRandomBytes(out.GetPointer(), out.GetSize());
+                R_RETURN(m_manager.GenerateRandomBytes(out.GetPointer(), out.GetSize()));
             }
 
             Result IsDevelopment(sf::Out<bool> is_dev) {
-                return m_manager.IsDevelopment(is_dev.GetPointer());
+                R_RETURN(m_manager.IsDevelopment(is_dev.GetPointer()));
             }
 
             Result SetBootReason(BootReasonValue boot_reason) {
-                return m_manager.SetBootReason(boot_reason);
+                R_RETURN(m_manager.SetBootReason(boot_reason));
             }
 
             Result GetBootReason(sf::Out<BootReasonValue> out) {
-                return m_manager.GetBootReason(out.GetPointer());
+                R_RETURN(m_manager.GetBootReason(out.GetPointer()));
             }
     };
     static_assert(spl::impl::IsIGeneralInterface<GeneralService>);

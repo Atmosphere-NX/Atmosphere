@@ -21,15 +21,15 @@
 namespace ams::fs {
 
     Result MountSystemSaveData(const char *name, SystemSaveDataId id) {
-        return MountSystemSaveData(name, id, InvalidUserId);
+        R_RETURN(MountSystemSaveData(name, id, InvalidUserId));
     }
 
     Result MountSystemSaveData(const char *name, SaveDataSpaceId space_id, SystemSaveDataId id) {
-        return MountSystemSaveData(name, space_id, id, InvalidUserId);
+        R_RETURN(MountSystemSaveData(name, space_id, id, InvalidUserId));
     }
 
     Result MountSystemSaveData(const char *name, SystemSaveDataId id, UserId user_id) {
-        return MountSystemSaveData(name, SaveDataSpaceId::System, id, user_id);
+        R_RETURN(MountSystemSaveData(name, SaveDataSpaceId::System, id, user_id));
     }
 
     Result MountSystemSaveData(const char *name, SaveDataSpaceId space_id, SystemSaveDataId id, UserId user_id) {
@@ -50,7 +50,7 @@ namespace ams::fs {
             R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInSystemSaveDataA());
 
             /* Register. */
-            return fsa::Register(name, std::move(fsa));
+            R_RETURN(fsa::Register(name, std::move(fsa)));
         };
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_SYSTEM_SAVE_DATA(name, space_id, id, user_id)));

@@ -25,35 +25,35 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result LoadEsDeviceKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
-                return m_manager.LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
+                R_RETURN(m_manager.LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, option));
             }
 
             Result LoadEsDeviceKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-                return m_manager.LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreEsDeviceKey));
+                R_RETURN(m_manager.LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreEsDeviceKey)));
             }
 
             Result PrepareEsTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
-                return m_manager.PrepareEsTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
+                R_RETURN(m_manager.PrepareEsTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation));
             }
 
             Result PrepareCommonEsTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
-                return m_manager.PrepareCommonEsTitleKey(out_access_key.GetPointer(), key_source, generation);
+                R_RETURN(m_manager.PrepareCommonEsTitleKey(out_access_key.GetPointer(), key_source, generation));
             }
 
             Result DecryptAndStoreDrmDeviceCertKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-                return m_manager.DecryptAndStoreDrmDeviceCertKey(src.GetPointer(), src.GetSize(), access_key, key_source);
+                R_RETURN(m_manager.DecryptAndStoreDrmDeviceCertKey(src.GetPointer(), src.GetSize(), access_key, key_source));
             }
 
             Result ModularExponentiateWithDrmDeviceCertKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
-                return m_manager.ModularExponentiateWithDrmDeviceCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
+                R_RETURN(m_manager.ModularExponentiateWithDrmDeviceCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize()));
             }
 
             Result PrepareEsArchiveKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
-                return m_manager.PrepareEsArchiveKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
+                R_RETURN(m_manager.PrepareEsArchiveKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation));
             }
 
             Result LoadPreparedAesKey(s32 keyslot, AccessKey access_key) {
-                return m_manager.LoadPreparedAesKey(keyslot, this, access_key);
+                R_RETURN(m_manager.LoadPreparedAesKey(keyslot, this, access_key));
             }
     };
     static_assert(spl::impl::IsIEsInterface<EsService>);

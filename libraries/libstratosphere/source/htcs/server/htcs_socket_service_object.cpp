@@ -194,7 +194,7 @@ namespace ams::htcs::server {
     }
 
     Result SocketServiceObject::SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) {
-        return this->SendStart(out_task_id, out_event, sf::InNonSecureAutoSelectBuffer(buffer.GetPointer(), buffer.GetSize()), flags);
+        R_RETURN(this->SendStart(out_task_id, out_event, sf::InNonSecureAutoSelectBuffer(buffer.GetPointer(), buffer.GetSize()), flags));
     }
 
     Result SocketServiceObject::SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle &&mem_handle, s64 aligned_size, s32 flags) {
@@ -257,7 +257,7 @@ namespace ams::htcs::server {
     }
 
     Result SocketServiceObject::ContinueSendOld(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InAutoSelectBuffer &buffer, u32 task_id) {
-        return this->ContinueSend(out_size, out_wait, sf::InNonSecureAutoSelectBuffer(buffer.GetPointer(), buffer.GetSize()), task_id);
+        R_RETURN(this->ContinueSend(out_size, out_wait, sf::InNonSecureAutoSelectBuffer(buffer.GetPointer(), buffer.GetSize()), task_id));
     }
 
     Result SocketServiceObject::EndSend(sf::Out<s32> out_err, sf::Out<s64> out_size, u32 task_id) {

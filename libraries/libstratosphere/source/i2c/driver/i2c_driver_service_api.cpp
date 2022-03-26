@@ -28,7 +28,7 @@ namespace ams::i2c::driver {
     }
 
     Result RegisterDeviceCode(DeviceCode device_code, I2cDeviceProperty *device) {
-        return impl::RegisterDeviceCode(device_code, device);
+        R_RETURN(impl::RegisterDeviceCode(device_code, device));
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {

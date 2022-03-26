@@ -124,15 +124,15 @@ namespace ams::updater {
             } R_END_TRY_CATCH;
 
             /* We've either just verified or just repaired. Either way, we don't need to verify any more. */
-            return SetVerificationNeeded(mode, work_buffer, work_buffer_size, false);
+            R_RETURN(SetVerificationNeeded(mode, work_buffer, work_buffer_size, false));
         }
 
         Result VerifyBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             switch (mode) {
                 case BootModeType::Normal:
-                    return VerifyBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
+                    R_RETURN(VerifyBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type));
                 case BootModeType::Safe:
-                    return VerifyBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
+                    R_RETURN(VerifyBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type));
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -438,7 +438,7 @@ namespace ams::updater {
             u8 file_hash[crypto::Sha256Generator::HashSize];
             crypto::GenerateSha256(file_hash, sizeof(file_hash), bct, BctSize);
 
-            return CompareHash(file_hash, stored_hash, sizeof(file_hash));
+            R_RETURN(CompareHash(file_hash, stored_hash, sizeof(file_hash)));
         }
 
         Result GetPackage2Hash(void *dst_hash, size_t package2_size, void *work_buffer, size_t work_buffer_size, Package2Type which) {
@@ -446,7 +446,7 @@ namespace ams::updater {
             R_TRY(accessor.Initialize());
             ON_SCOPE_EXIT { accessor.Finalize(); };
 
-            return accessor.GetHash(dst_hash, package2_size, work_buffer, work_buffer_size, Package2Partition::Package2);
+            R_RETURN(accessor.GetHash(dst_hash, package2_size, work_buffer, work_buffer_size, Package2Partition::Package2));
         }
 
         Result WritePackage2(void *work_buffer, size_t work_buffer_size, Package2Type which, BootImageUpdateType boot_image_update_type) {
@@ -454,7 +454,7 @@ namespace ams::updater {
             R_TRY(accessor.Initialize());
             ON_SCOPE_EXIT { accessor.Finalize(); };
 
-            return accessor.Write(GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size, Package2Partition::Package2);
+            R_RETURN(accessor.Write(GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size, Package2Partition::Package2));
         }
 
         Result CompareHash(const void *lhs, const void *rhs, size_t size) {
@@ -522,19 +522,19 @@ namespace ams::updater {
     }
 
     Result MarkVerifyingRequired(BootModeType mode, void *work_buffer, size_t work_buffer_size) {
-        return SetVerificationNeeded(mode, work_buffer, work_buffer_size, true);
+        R_RETURN(SetVerificationNeeded(mode, work_buffer, work_buffer_size, true));
     }
 
     Result MarkVerified(BootModeType mode, void *work_buffer, size_t work_buffer_size) {
-        return SetVerificationNeeded(mode, work_buffer, work_buffer_size, false);
+        R_RETURN(SetVerificationNeeded(mode, work_buffer, work_buffer_size, false));
     }
 
     Result UpdateBootImagesFromPackage(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
         switch (mode) {
             case BootModeType::Normal:
-                return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
+                R_RETURN(UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type));
             case BootModeType::Safe:
-                return UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
+                R_RETURN(UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type));
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }

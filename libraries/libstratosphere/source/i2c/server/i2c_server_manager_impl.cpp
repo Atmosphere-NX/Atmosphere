@@ -34,7 +34,7 @@ namespace ams::i2c::server {
     }
 
     Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, i2c::I2cDevice device) {
-        return this->OpenSession2(out, ConvertToDeviceCode(device));
+        R_RETURN(this->OpenSession2(out, ConvertToDeviceCode(device)));
     }
 
     Result ManagerImpl::HasDevice(ams::sf::Out<bool> out, i2c::I2cDevice device) {

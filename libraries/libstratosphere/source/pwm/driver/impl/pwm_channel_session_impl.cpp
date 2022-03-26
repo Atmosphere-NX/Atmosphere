@@ -62,7 +62,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().SetPeriod(std::addressof(device), period);
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().SetPeriod(std::addressof(device), period));
     }
 
     Result ChannelSessionImpl::GetPeriod(TimeSpan *out) {
@@ -70,7 +70,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().GetPeriod(out, std::addressof(device));
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().GetPeriod(out, std::addressof(device)));
     }
 
     Result ChannelSessionImpl::SetDuty(int duty) {
@@ -78,7 +78,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().SetDuty(std::addressof(device), duty);
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().SetDuty(std::addressof(device), duty));
     }
 
     Result ChannelSessionImpl::GetDuty(int *out) {
@@ -86,7 +86,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().GetDuty(out, std::addressof(device));
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().GetDuty(out, std::addressof(device)));
     }
 
     Result ChannelSessionImpl::SetEnabled(bool en) {
@@ -94,7 +94,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().SetEnabled(std::addressof(device), en);
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().SetEnabled(std::addressof(device), en));
     }
 
     Result ChannelSessionImpl::GetEnabled(bool *out) {
@@ -102,7 +102,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().GetEnabled(out, std::addressof(device));
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().GetEnabled(out, std::addressof(device)));
     }
 
     Result ChannelSessionImpl::SetScale(double scale) {
@@ -110,7 +110,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().SetScale(std::addressof(device), scale);
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().SetScale(std::addressof(device), scale));
     }
 
     Result ChannelSessionImpl::GetScale(double *out) {
@@ -118,7 +118,7 @@ namespace ams::pwm::driver::impl {
         IPwmDevice &device = this->GetDevice().SafeCastTo<IPwmDevice>();
 
         /* Invoke the driver handler. */
-        return device.GetDriver().SafeCastTo<IPwmDriver>().GetScale(out, std::addressof(device));
+        R_RETURN(device.GetDriver().SafeCastTo<IPwmDriver>().GetScale(out, std::addressof(device)));
     }
 
 }

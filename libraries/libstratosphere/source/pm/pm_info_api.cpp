@@ -21,28 +21,28 @@ namespace ams::pm::info {
     /* Information API. */
     #if defined(ATMOSPHERE_OS_HORIZON)
     Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id) {
-        return pminfoGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id));
+        R_RETURN(pminfoGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id)));
     }
 
     Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id) {
-        return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id));
+        R_RETURN(pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id)));
     }
 
     Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out) {
         static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
-        return pminfoGetAppletCurrentResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out));
+        R_RETURN(pminfoGetAppletCurrentResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)));
     }
 
     Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out) {
         static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
-        return pminfoGetAppletPeakResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out));
+        R_RETURN(pminfoGetAppletPeakResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)));
     }
 
     Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
         *out_loc = {};
         *out_status = {};
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));
-        return pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
+        R_RETURN(pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id)));
     }
 
     bool HasLaunchedBootProgram(ncm::ProgramId program_id) {
@@ -65,7 +65,7 @@ namespace ams::pm::info {
         os::ProcessId process_id;
         R_TRY(GetProcessId(std::addressof(process_id), program_id));
 
-        return IsHblProcessId(out, process_id);
+        R_RETURN(IsHblProcessId(out, process_id));
     }
     #endif
 

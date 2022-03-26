@@ -89,12 +89,12 @@ namespace ams::fssystem {
     template<impl::IterateDirectoryHandler OnEnterDir, impl::IterateDirectoryHandler OnExitDir, impl::IterateDirectoryHandler OnFile>
     Result IterateDirectoryRecursively(fs::fsa::IFileSystem *fs, const fs::Path &root_path, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
         fs::DirectoryEntry dir_entry = {};
-        return IterateDirectoryRecursively(fs, root_path, std::addressof(dir_entry), on_enter_dir, on_exit_dir, on_file);
+        R_RETURN(IterateDirectoryRecursively(fs, root_path, std::addressof(dir_entry), on_enter_dir, on_exit_dir, on_file));
     }
 
     template<impl::IterateDirectoryHandler OnEnterDir, impl::IterateDirectoryHandler OnExitDir, impl::IterateDirectoryHandler OnFile>
     Result IterateDirectoryRecursively(fs::fsa::IFileSystem *fs, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
-        return IterateDirectoryRecursively(fs, fs::MakeConstantPath("/"), on_enter_dir, on_exit_dir, on_file);
+        R_RETURN(IterateDirectoryRecursively(fs, fs::MakeConstantPath("/"), on_enter_dir, on_exit_dir, on_file));
     }
 
     /* TODO: Cleanup API */
@@ -103,13 +103,13 @@ namespace ams::fssystem {
     Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const fs::Path &dst_path, const fs::Path &src_path, void *work_buf, size_t work_buf_size);
 
     ALWAYS_INLINE Result CopyFile(fs::fsa::IFileSystem *fs, const fs::Path &dst_path, const fs::Path &src_path, void *work_buf, size_t work_buf_size) {
-        return CopyFile(fs, fs, dst_path, src_path, work_buf, work_buf_size);
+        R_RETURN(CopyFile(fs, fs, dst_path, src_path, work_buf, work_buf_size));
     }
 
     Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const fs::Path &dst_path, const fs::Path &src_path, fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size);
 
     ALWAYS_INLINE Result CopyDirectoryRecursively(fs::fsa::IFileSystem *fs, const fs::Path &dst_path, const fs::Path &src_path, fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
-        return CopyDirectoryRecursively(fs, fs, dst_path, src_path, entry, work_buf, work_buf_size);
+        R_RETURN(CopyDirectoryRecursively(fs, fs, dst_path, src_path, entry, work_buf, work_buf_size));
     }
 
     /* Semaphore adapter class. */
@@ -147,7 +147,7 @@ namespace ams::fssystem {
     }
 
     ALWAYS_INLINE Result RetryToAvoidTargetLocked(auto f) {
-        return RetryFinitelyForTargetLocked<2, 25>(f);
+        R_RETURN((RetryFinitelyForTargetLocked<2, 25>(f)));
     }
 
     void AddCounter(void *counter, size_t counter_size, u64 value);

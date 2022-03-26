@@ -619,7 +619,7 @@ namespace ams::fs {
             }
 
             static constexpr ALWAYS_INLINE Result SkipMountName(const char **out, size_t *out_len, const char *path) {
-                return ParseMountName(out, out_len, nullptr, 0, path);
+                R_RETURN(ParseMountName(out, out_len, nullptr, 0, path));
             }
 
             static constexpr Result ParseMountName(const char **out, size_t *out_len, char *out_mount_name, size_t out_mount_name_buffer_size, const char *path) {
@@ -684,7 +684,7 @@ namespace ams::fs {
             }
 
             static constexpr ALWAYS_INLINE Result SkipRelativeDotPath(const char **out, size_t *out_len, const char *path) {
-                return ParseRelativeDotPath(out, out_len, nullptr, 0, path);
+                R_RETURN(ParseRelativeDotPath(out, out_len, nullptr, 0, path));
             }
 
             static constexpr Result ParseRelativeDotPath(const char **out, size_t *out_len, char *out_relative, size_t out_relative_buffer_size, const char *path) {

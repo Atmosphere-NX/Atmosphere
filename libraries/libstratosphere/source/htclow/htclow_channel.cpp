@@ -30,7 +30,7 @@ namespace ams::htclow {
         };
 
         /* Open the channel. */
-        return m_manager->Open(impl::ConvertChannelType(m_channel));
+        R_RETURN(m_manager->Open(impl::ConvertChannelType(m_channel)));
     }
 
     void Channel::Close() {
@@ -56,7 +56,7 @@ namespace ams::htclow {
         this->WaitEvent(m_manager->GetTaskEvent(task_id), false);
 
         /* End the flush. */
-        return m_manager->ConnectEnd(channel, task_id);
+        R_RETURN(m_manager->ConnectEnd(channel, task_id));
     }
 
     Result Channel::Flush() {
@@ -68,7 +68,7 @@ namespace ams::htclow {
         this->WaitEvent(m_manager->GetTaskEvent(task_id), true);
 
         /* End the flush. */
-        return m_manager->FlushEnd(task_id);
+        R_RETURN(m_manager->FlushEnd(task_id));
     }
 
     void Channel::Shutdown() {
@@ -101,7 +101,7 @@ namespace ams::htclow {
                 if (htclow::ResultChannelNotExist::Includes(result)) {
                     *out = received;
                 }
-                return result;
+                R_RETURN(result);
             }
 
             received += static_cast<size_t>(cur_received);
@@ -134,7 +134,7 @@ namespace ams::htclow {
                 if (total_sent != 0) {
                     break;
                 } else {
-                    return begin_result;
+                    R_RETURN(begin_result);
                 }
             }
 
@@ -172,7 +172,7 @@ namespace ams::htclow {
         /* Check pre-conditions. */
         AMS_ASSERT(util::IsIntValueRepresentable<size_t>(size));
 
-        return this->WaitReceiveInternal(size, nullptr);
+        R_RETURN(this->WaitReceiveInternal(size, nullptr));
     }
 
     Result Channel::WaitReceive(s64 size, os::EventType *event) {
@@ -180,7 +180,7 @@ namespace ams::htclow {
         AMS_ASSERT(util::IsIntValueRepresentable<size_t>(size));
         AMS_ASSERT(event != nullptr);
 
-        return this->WaitReceiveInternal(size, event);
+        R_RETURN(this->WaitReceiveInternal(size, event));
     }
 
     void Channel::WaitEvent(os::EventType *event, bool) {
@@ -229,7 +229,7 @@ namespace ams::htclow {
         }
 
         /* End the wait. */
-        return m_manager->WaitReceiveEnd(task_id);
+        R_RETURN(m_manager->WaitReceiveEnd(task_id));
     }
 
 }

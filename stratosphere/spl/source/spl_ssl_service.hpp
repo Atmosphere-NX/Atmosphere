@@ -25,11 +25,11 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result DecryptAndStoreSslClientCertKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-                return m_manager.DecryptAndStoreSslClientCertKey(src.GetPointer(), src.GetSize(), access_key, key_source);
+                R_RETURN(m_manager.DecryptAndStoreSslClientCertKey(src.GetPointer(), src.GetSize(), access_key, key_source));
             }
 
             Result ModularExponentiateWithSslClientCertKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
-                return m_manager.ModularExponentiateWithSslClientCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
+                R_RETURN(m_manager.ModularExponentiateWithSslClientCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize()));
             }
     };
     static_assert(spl::impl::IsISslInterface<SslService>);

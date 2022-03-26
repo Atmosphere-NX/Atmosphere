@@ -95,7 +95,7 @@ namespace ams::fs {
         Result ConvertFatFileSystemCorruptedResult(Result res) {
             AMS_ASSERT(fs::ResultFatFileSystemCorrupted::Includes(res));
 
-            return res;
+            R_RETURN(res);
         }
 
         Result ConvertHostFileSystemCorruptedResult(Result res) {
@@ -149,14 +149,14 @@ namespace ams::fs {
             AMS_ASSERT(offset >= 0);
             AMS_ASSERT(buffer != nullptr || size == 0);
 
-            return ConvertRomFsResult(storage->Read(offset, buffer, size));
+            R_RETURN(ConvertRomFsResult(storage->Read(offset, buffer, size)));
         }
 
         Result ReadFileHeader(IStorage *storage, RomFileSystemInformation *out) {
             AMS_ASSERT(storage != nullptr);
             AMS_ASSERT(out != nullptr);
 
-            return ReadFile(storage, 0, out, sizeof(*out));
+            R_RETURN(ReadFile(storage, 0, out, sizeof(*out)));
         }
 
         constexpr size_t CalculateRequiredWorkingMemorySize(const RomFileSystemInformation &header) {
@@ -185,7 +185,7 @@ namespace ams::fs {
                 }
 
                 Result ConvertResult(Result res) const {
-                    return ConvertRomFsResult(res);
+                    R_RETURN(ConvertRomFsResult(res));
                 }
 
                 s64 GetOffset() const {
@@ -242,7 +242,7 @@ namespace ams::fs {
                                     operate_size = this->GetSize() - offset;
                                 }
 
-                                return this->GetStorage()->OperateRange(dst, dst_size, op_id, m_start + offset, operate_size, src, src_size);
+                                R_RETURN(this->GetStorage()->OperateRange(dst, dst_size, op_id, m_start + offset, operate_size, src, src_size));
                             }
                         default:
                             R_THROW(fs::ResultUnsupportedOperateRangeForRomFsFile());
@@ -267,12 +267,12 @@ namespace ams::fs {
                 virtual ~RomFsDirectory() override { /* ... */ }
             public:
                 virtual Result DoRead(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) override {
-                    return this->ReadInternal(out_count, std::addressof(m_current_find), out_entries, max_entries);
+                    R_RETURN(this->ReadInternal(out_count, std::addressof(m_current_find), out_entries, max_entries));
                 }
 
                 virtual Result DoGetEntryCount(s64 *out) override {
                     FindPosition find = m_first_find;
-                    return this->ReadInternal(out, std::addressof(find), nullptr, 0);
+                    R_RETURN(this->ReadInternal(out, std::addressof(find), nullptr, 0));
                 }
             private:
                 Result ReadInternal(s64 *out_count, FindPosition *find, DirectoryEntry *out_entries, s64 max_entries) {
@@ -416,7 +416,7 @@ namespace ams::fs {
 
     Result RomFsFileSystem::Initialize(std::unique_ptr<IStorage>&& base, void *work, size_t work_size, bool use_cache) {
         m_unique_storage = std::move(base);
-        return this->Initialize(m_unique_storage.get(), work, work_size, use_cache);
+        R_RETURN(this->Initialize(m_unique_storage.get(), work, work_size, use_cache));
     }
 
     Result RomFsFileSystem::GetFileInfo(RomFileTable::FileInfo *out, const char *path) {

@@ -21,7 +21,7 @@ namespace ams::settings::impl {
     Result GetSerialNumber(settings::factory::SerialNumber *out) {
         #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetCalSerialNumber));
-        return ::setcalGetSerialNumber(reinterpret_cast<::SetCalSerialNumber *>(out));
+        R_RETURN(::setcalGetSerialNumber(reinterpret_cast<::SetCalSerialNumber *>(out)));
         #else
         AMS_UNUSED(out);
         AMS_ABORT("TODO");
@@ -31,7 +31,7 @@ namespace ams::settings::impl {
     Result GetSerialNumber(settings::system::SerialNumber *out) {
         #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetSysSerialNumber));
-        return ::setsysGetSerialNumber(reinterpret_cast<::SetSysSerialNumber *>(out));
+        R_RETURN(::setsysGetSerialNumber(reinterpret_cast<::SetSysSerialNumber *>(out)));
         #else
         AMS_UNUSED(out);
         AMS_ABORT("TODO");

@@ -30,7 +30,7 @@ namespace ams::fs {
         R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
 
         /* Use the system implementation. */
-        return fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path);
+        R_RETURN(fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path));
     }
 
     Result EnsureParentDirectory(const char *path) {
@@ -47,7 +47,7 @@ namespace ams::fs {
         R_TRY(sub_fs_path.RemoveChild());
 
         /* Use the system implementation. */
-        return fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path);
+        R_RETURN(fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path));
     }
 
     Result HasFile(bool *out, const char *path) {
@@ -60,7 +60,7 @@ namespace ams::fs {
         fs::Path sub_fs_path;
         R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
 
-        return fssystem::HasFile(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path);
+        R_RETURN(fssystem::HasFile(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path));
     }
 
     Result HasDirectory(bool *out, const char *path) {
@@ -73,7 +73,7 @@ namespace ams::fs {
         fs::Path sub_fs_path;
         R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
 
-        return fssystem::HasDirectory(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path);
+        R_RETURN(fssystem::HasDirectory(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path));
     }
 
 }

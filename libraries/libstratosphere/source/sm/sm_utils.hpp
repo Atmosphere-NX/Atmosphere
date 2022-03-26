@@ -35,7 +35,7 @@ namespace ams::sm::impl {
             R_ABORT_UNLESS(smAtmosphereMitmInitialize());
             ON_SCOPE_EXIT { smAtmosphereMitmExit(); };
 
-            return f();
+            R_RETURN(f());
         }
     }
 
@@ -48,7 +48,7 @@ namespace ams::sm::impl {
         }
         {
             ON_SCOPE_EXIT { smAtmosphereCloseSession(std::addressof(srv)); };
-            return f(std::addressof(srv));
+            R_RETURN(f(std::addressof(srv)));
         }
     }
 

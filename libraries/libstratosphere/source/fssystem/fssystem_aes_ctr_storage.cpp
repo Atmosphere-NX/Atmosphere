@@ -129,7 +129,7 @@ namespace ams::fssystem {
 
     template<typename BasePointer>
     Result AesCtrStorage<BasePointer>::Flush() {
-        return m_base_storage->Flush();
+        R_RETURN(m_base_storage->Flush());
     }
 
     template<typename BasePointer>
@@ -140,7 +140,7 @@ namespace ams::fssystem {
 
     template<typename BasePointer>
     Result AesCtrStorage<BasePointer>::GetSize(s64 *out) {
-        return m_base_storage->GetSize(out);
+        R_RETURN(m_base_storage->GetSize(out));
     }
 
     template<typename BasePointer>

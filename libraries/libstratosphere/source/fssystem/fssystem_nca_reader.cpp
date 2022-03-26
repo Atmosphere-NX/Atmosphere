@@ -392,7 +392,7 @@ namespace ams::fssystem {
         AMS_ASSERT(0 <= index && index < NcaHeader::FsCountMax);
 
         const s64 offset = sizeof(NcaHeader) + sizeof(NcaFsHeader) * index;
-        return m_header_storage->Read(offset, dst, sizeof(NcaFsHeader));
+        R_RETURN(m_header_storage->Read(offset, dst, sizeof(NcaFsHeader)));
     }
 
     bool NcaReader::GetHeaderSign1Valid() const {
@@ -506,7 +506,7 @@ namespace ams::fssystem {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(this->IsInitialized());
 
-        return m_data.GetHashTargetOffset(out);
+        R_RETURN(m_data.GetHashTargetOffset(out));
     }
 
     bool NcaFsHeaderReader::ExistsSparseLayer() const {

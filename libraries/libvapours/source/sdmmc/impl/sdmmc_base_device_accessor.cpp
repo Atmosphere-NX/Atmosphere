@@ -131,7 +131,7 @@ namespace ams::sdmmc::impl {
     Result BaseDeviceAccessor::IssueCommandGoIdleState() const {
         /* Issue the command. */
         Command command(CommandIndex_GoIdleState, 0, ResponseType_R0, false);
-        return m_host_controller->IssueCommand(std::addressof(command));
+        R_RETURN(m_host_controller->IssueCommand(std::addressof(command)));
     }
 
     Result BaseDeviceAccessor::IssueCommandAllSendCid(void *dst, size_t dst_size) const {
@@ -155,7 +155,7 @@ namespace ams::sdmmc::impl {
         const u32 arg = static_cast<u32>(m_base_device->GetRca()) << 16;
 
         /* Issue the command. */
-        return this->IssueCommandAndCheckR1(CommandIndex_SelectCard, arg, true, DeviceState_Unknown);
+        R_RETURN(this->IssueCommandAndCheckR1(CommandIndex_SelectCard, arg, true, DeviceState_Unknown));
     }
 
     Result BaseDeviceAccessor::IssueCommandSendCsd(void *dst, size_t dst_size) const {
@@ -183,12 +183,12 @@ namespace ams::sdmmc::impl {
         const u32 arg = static_cast<u32>(m_base_device->GetRca()) << 16;
 
         /* Issue the command. */
-        return this->IssueCommandAndCheckR1(out_device_status, CommandIndex_SendStatus, arg, false, DeviceState_Tran, status_ignore_mask);
+        R_RETURN(this->IssueCommandAndCheckR1(out_device_status, CommandIndex_SendStatus, arg, false, DeviceState_Tran, status_ignore_mask));
     }
 
     Result BaseDeviceAccessor::IssueCommandSetBlockLenToSectorSize() const {
         /* Issue the command. */
-        return this->IssueCommandAndCheckR1(CommandIndex_SetBlockLen, SectorSize, false, DeviceState_Tran);
+        R_RETURN(this->IssueCommandAndCheckR1(CommandIndex_SetBlockLen, SectorSize, false, DeviceState_Tran));
     }
 
     Result BaseDeviceAccessor::IssueCommandMultipleBlock(u32 *out_num_transferred_blocks, u32 sector_index, u32 num_sectors, void *buf, bool is_read) const {
@@ -237,7 +237,7 @@ namespace ams::sdmmc::impl {
             }
 
             /* Return the result we chose. */
-            return result_to_return;
+            R_RETURN(result_to_return);
         }
 
         /* Get the responses. */
@@ -339,7 +339,7 @@ namespace ams::sdmmc::impl {
                     if (R_FAILED(result)) {
                         /* Log that we failed after a re-startup. */
                         this->PushErrorLog(true, "%s %X %X:%X", is_read ? "R" : "W", cur_sector_index, cur_sectors, result.GetValue());
-                        return result;
+                        R_RETURN(result);
                     }
 
                     /* Log that we succeeded after a retry. */

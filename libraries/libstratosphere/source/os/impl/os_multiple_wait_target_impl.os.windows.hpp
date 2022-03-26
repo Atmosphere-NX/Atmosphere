@@ -44,21 +44,21 @@ namespace ams::os::impl {
             }
 
             Result WaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num) {
-                return this->WaitForMultipleObjectsImpl(out_index, num, arr, array_size, INFINITE);
+                R_RETURN(this->WaitForMultipleObjectsImpl(out_index, num, arr, array_size, INFINITE));
             }
 
             Result TryWaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num) {
-                return this->WaitForMultipleObjectsImpl(out_index, num, arr, array_size, 0);
+                R_RETURN(this->WaitForMultipleObjectsImpl(out_index, num, arr, array_size, 0));
             }
 
             Result TimedWaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, TimeSpan ts);
 
             Result ReplyAndReceive(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, NativeHandle reply_target) {
-                return this->ReplyAndReceiveImpl(out_index, num, arr, array_size, std::numeric_limits<s64>::max(), reply_target);
+                R_RETURN(this->ReplyAndReceiveImpl(out_index, num, arr, array_size, std::numeric_limits<s64>::max(), reply_target));
             }
 
             Result TimedReplyAndReceive(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num, NativeHandle reply_target, TimeSpan ts) {
-                return this->ReplyAndReceiveImpl(out_index, num, arr, array_size, ts.GetNanoSeconds(), reply_target);
+                R_RETURN(this->ReplyAndReceiveImpl(out_index, num, arr, array_size, ts.GetNanoSeconds(), reply_target));
             }
 
             void SetCurrentThreadHandleForCancelWait() {

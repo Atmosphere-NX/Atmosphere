@@ -25,6 +25,7 @@ namespace ams::mitm::fs {
         constinit os::SdkMutex g_cal0_access_mutex;
 
     }
+
     Result CalibrationBinaryStorage::Read(s64 offset, void *_buffer, size_t size) {
         /* Acquire exclusive calibration binary access. */
         std::scoped_lock lk(g_cal0_access_mutex);
@@ -74,7 +75,7 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Handle any remaining data. */
-        return Base::Read(offset, buffer, size);
+        R_RETURN(Base::Read(offset, buffer, size));
     }
 
     Result CalibrationBinaryStorage::Write(s64 offset, const void *_buffer, size_t size) {
@@ -129,7 +130,7 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Handle any remaining data. */
-        return Base::Write(offset, buffer, size);
+        R_RETURN(Base::Write(offset, buffer, size));
     }
 
 }

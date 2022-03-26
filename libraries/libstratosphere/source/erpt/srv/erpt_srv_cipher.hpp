@@ -59,14 +59,14 @@ namespace ams::erpt::srv {
 
                 ON_SCOPE_EXIT { std::memset(hdr, 0, sizeof(hdr) + data_size); s_need_to_store_cipher = true; };
 
-                return Formatter::AddField(report, field_id, reinterpret_cast<u8 *>(hdr), sizeof(hdr) + data_size);
+                R_RETURN(Formatter::AddField(report, field_id, reinterpret_cast<u8 *>(hdr), sizeof(hdr) + data_size));
             }
         public:
             static Result Begin(Report *report, u32 record_count) {
                 s_need_to_store_cipher = false;
                 crypto::GenerateCryptographicallyRandomBytes(s_key, sizeof(s_key));
 
-                return Formatter::Begin(report, record_count + 1);
+                R_RETURN(Formatter::Begin(report, record_count + 1));
             }
 
             static Result End(Report *report) {
@@ -84,40 +84,40 @@ namespace ams::erpt::srv {
                 Formatter::AddField(report, FieldId_CipherKey, cipher, sizeof(cipher));
                 std::memset(s_key, 0, sizeof(s_key));
 
-                return Formatter::End(report);
+                R_RETURN(Formatter::End(report));
             }
 
             static Result AddField(Report *report, FieldId field_id, bool value) {
-                return Formatter::AddField(report, field_id, value);
+                R_RETURN(Formatter::AddField(report, field_id, value));
             }
 
             template<typename T>
             static Result AddField(Report *report, FieldId field_id, T value) {
-                return Formatter::AddField<T>(report, field_id, value);
+                R_RETURN(Formatter::AddField<T>(report, field_id, value));
             }
 
             static Result AddField(Report *report, FieldId field_id, char *str, u32 len) {
                 if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
-                    return EncryptArray<char>(report, field_id, str, len);
+                    R_RETURN(EncryptArray<char>(report, field_id, str, len));
                 } else {
-                    return Formatter::AddField(report, field_id, str, len);
+                    R_RETURN(Formatter::AddField(report, field_id, str, len));
                 }
             }
 
             static Result AddField(Report *report, FieldId field_id, u8 *bin, u32 len) {
                 if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
-                    return EncryptArray<u8>(report, field_id, bin, len);
+                    R_RETURN(EncryptArray<u8>(report, field_id, bin, len));
                 } else {
-                    return Formatter::AddField(report, field_id, bin, len);
+                    R_RETURN(Formatter::AddField(report, field_id, bin, len));
                 }
             }
 
             template<typename T>
             static Result AddField(Report *report, FieldId field_id, T *arr, u32 len) {
                 if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
-                    return EncryptArray<T>(report, field_id, arr, len);
+                    R_RETURN(EncryptArray<T>(report, field_id, arr, len));
                 } else {
-                    return Formatter::AddField<T>(report, field_id, arr, len);
+                    R_RETURN(Formatter::AddField<T>(report, field_id, arr, len));
                 }
             }
     };

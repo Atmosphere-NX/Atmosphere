@@ -26,12 +26,12 @@ namespace ams::usb {
         } in = { size, address };
 
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatchInOut(std::addressof(m_srv), 0, in, *out_urb_id);
+        R_RETURN(serviceDispatchInOut(std::addressof(m_srv), 0, in, *out_urb_id));
     }
 
     Result RemoteDsEndpoint::Cancel() {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), 1);
+        R_RETURN(serviceDispatch(std::addressof(m_srv), 1));
     }
 
     Result RemoteDsEndpoint::GetCompletionEvent(sf::OutCopyHandle out) {
@@ -49,19 +49,19 @@ namespace ams::usb {
 
     Result RemoteDsEndpoint::GetUrbReport(sf::Out<usb::UrbReport> out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatchOut(std::addressof(m_srv), 3, *out);
+        R_RETURN(serviceDispatchOut(std::addressof(m_srv), 3, *out));
     }
 
     Result RemoteDsEndpoint::Stall() {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), 4);
+        R_RETURN(serviceDispatch(std::addressof(m_srv), 4));
     }
 
     Result RemoteDsEndpoint::SetZlt(bool zlt) {
         const u8 in = zlt ? 1 : 0;
 
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatchIn(std::addressof(m_srv), 5, in);
+        R_RETURN(serviceDispatchIn(std::addressof(m_srv), 5, in));
     }
     #endif
 

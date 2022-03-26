@@ -86,7 +86,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Get whether the file exists. */
-        return htcfs::GetClient().FileExists(out.GetPointer(), path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().FileExists(out.GetPointer(), path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::DeleteFile(const tma::Path &path, bool case_sensitive) {
@@ -94,7 +94,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Delete the file. */
-        return htcfs::GetClient().DeleteFile(path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().DeleteFile(path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::RenameFile(const tma::Path &old_path, const tma::Path &new_path, bool case_sensitive) {
@@ -103,7 +103,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(new_path), htcfs::ResultInvalidArgument());
 
         /* Rename the file. */
-        return htcfs::GetClient().RenameFile(old_path.str, new_path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().RenameFile(old_path.str, new_path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::GetIOType(sf::Out<s32> out, const tma::Path &path, bool case_sensitive) {
@@ -112,7 +112,7 @@ namespace ams::htcfs {
 
         /* Get the entry type. */
         static_assert(sizeof(s32) == sizeof(fs::DirectoryEntryType));
-        return htcfs::GetClient().GetEntryType(reinterpret_cast<fs::DirectoryEntryType *>(out.GetPointer()), path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().GetEntryType(reinterpret_cast<fs::DirectoryEntryType *>(out.GetPointer()), path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::OpenDirectory(sf::Out<sf::SharedPointer<tma::IDirectoryAccessor>> out, const tma::Path &path, s32 open_mode, bool case_sensitive) {
@@ -133,7 +133,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Get whether the file exists. */
-        return htcfs::GetClient().DirectoryExists(out.GetPointer(), path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().DirectoryExists(out.GetPointer(), path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::CreateDirectory(const tma::Path &path, bool case_sensitive) {
@@ -141,7 +141,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Create the directory. */
-        return htcfs::GetClient().CreateDirectory(path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().CreateDirectory(path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::DeleteDirectory(const tma::Path &path, bool recursively, bool case_sensitive) {
@@ -149,7 +149,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Delete the directory. */
-        return htcfs::GetClient().DeleteDirectory(path.str, recursively, case_sensitive);
+        R_RETURN(htcfs::GetClient().DeleteDirectory(path.str, recursively, case_sensitive));
     }
 
     Result FileSystemServiceObject::RenameDirectory(const tma::Path &old_path, const tma::Path &new_path, bool case_sensitive) {
@@ -158,7 +158,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(new_path), htcfs::ResultInvalidArgument());
 
         /* Rename the file. */
-        return htcfs::GetClient().RenameDirectory(old_path.str, new_path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().RenameDirectory(old_path.str, new_path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::CreateFile(const tma::Path &path, s64 size, bool case_sensitive) {
@@ -166,7 +166,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Create the file. */
-        return htcfs::GetClient().CreateFile(path.str, size, case_sensitive);
+        R_RETURN(htcfs::GetClient().CreateFile(path.str, size, case_sensitive));
     }
 
     Result FileSystemServiceObject::GetFileTimeStamp(sf::Out<u64> out_create, sf::Out<u64> out_access, sf::Out<u64> out_modify, const tma::Path &path, bool case_sensitive) {
@@ -174,7 +174,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Get the timestamp. */
-        return htcfs::GetClient().GetFileTimeStamp(out_create.GetPointer(), out_access.GetPointer(), out_modify.GetPointer(), path.str, case_sensitive);
+        R_RETURN(htcfs::GetClient().GetFileTimeStamp(out_create.GetPointer(), out_access.GetPointer(), out_modify.GetPointer(), path.str, case_sensitive));
     }
 
     Result FileSystemServiceObject::GetCaseSensitivePath(const tma::Path &path, const sf::OutBuffer &out) {
@@ -182,7 +182,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Get the case sensitive path. */
-        return htcfs::GetClient().GetCaseSensitivePath(reinterpret_cast<char *>(out.GetPointer()), out.GetSize(), path.str);
+        R_RETURN(htcfs::GetClient().GetCaseSensitivePath(reinterpret_cast<char *>(out.GetPointer()), out.GetSize(), path.str));
     }
 
     Result FileSystemServiceObject::GetDiskFreeSpaceExW(sf::Out<s64> out_free, sf::Out<s64> out_total, sf::Out<s64> out_total_free, const tma::Path &path) {
@@ -190,7 +190,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Get the timestamp. */
-        return htcfs::GetClient().GetDiskFreeSpace(out_free.GetPointer(), out_total.GetPointer(), out_total_free.GetPointer(), path.str);
+        R_RETURN(htcfs::GetClient().GetDiskFreeSpace(out_free.GetPointer(), out_total.GetPointer(), out_total_free.GetPointer(), path.str));
     }
 
 }

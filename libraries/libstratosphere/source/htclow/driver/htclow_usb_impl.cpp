@@ -214,7 +214,7 @@ namespace ams::htclow::driver {
                     R_THROW(htclow::ResultUsbDriverUnknownError());
                 }
             } else {
-                return result;
+                R_RETURN(result);
             }
         }
 

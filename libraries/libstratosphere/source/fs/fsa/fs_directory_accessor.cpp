@@ -29,11 +29,11 @@ namespace ams::fs::impl {
     }
 
     Result DirectoryAccessor::Read(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) {
-        return m_impl->Read(out_count, out_entries, max_entries);
+        R_RETURN(m_impl->Read(out_count, out_entries, max_entries));
     }
 
     Result DirectoryAccessor::GetEntryCount(s64 *out) {
-        return m_impl->GetEntryCount(out);
+        R_RETURN(m_impl->GetEntryCount(out));
     }
 
 }

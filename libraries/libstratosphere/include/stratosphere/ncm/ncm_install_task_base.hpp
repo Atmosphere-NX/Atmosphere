@@ -99,7 +99,7 @@ namespace ams::ncm {
                 if (R_FAILED(result)) {
                     this->SetLastResult(result);
                 }
-                return result;
+                R_RETURN(result);
             }
         public:
             InstallTaskBase() : m_data(), m_progress(), m_progress_mutex(), m_cancel_mutex(), m_cancel_requested(), m_throughput_mutex() { /* ... */ }
@@ -113,12 +113,12 @@ namespace ams::ncm {
             Result CalculateRequiredSize(s64 *out_size);
             Result Cleanup();
             Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
-            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset) { return this->ListContentMetaKey(out_keys_written, out_keys, out_keys_count, offset, ListContentMetaKeyFilter::All); }
+            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset) { R_RETURN(this->ListContentMetaKey(out_keys_written, out_keys, out_keys_count, offset, ListContentMetaKeyFilter::All)); }
             Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
             Result Execute();
             Result PrepareAndExecute();
             Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
-            Result Commit() { return this->Commit(nullptr, 0); }
+            Result Commit() { R_RETURN(this->Commit(nullptr, 0)); }
             virtual InstallProgress GetProgress();
             void ResetLastResult();
             Result IncludesExFatDriver(bool *out);

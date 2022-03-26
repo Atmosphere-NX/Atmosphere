@@ -157,17 +157,17 @@ namespace ams::mitm::fs {
             R_UNLESS(try_program_specific, sm::mitm::ResultShouldForwardToSession());
 
             /* If we're not opening a HBL filesystem, just try to open a generic one. */
-            return OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id);
+            R_RETURN(OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id));
         }
 
     }
 
     Result FsMitmService::OpenFileSystemWithPatch(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
-        return OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), nullptr, false, m_client_info.override_status.IsProgramSpecific());
+        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), nullptr, false, m_client_info.override_status.IsProgramSpecific()));
     }
 
     Result FsMitmService::OpenFileSystemWithId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
-        return OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), std::addressof(path), true, m_client_info.override_status.IsProgramSpecific());
+        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), std::addressof(path), true, m_client_info.override_status.IsProgramSpecific()));
     }
 
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out) {

@@ -30,7 +30,7 @@ namespace ams::fssystem {
         const auto entry_storage_offset = node_storage_offset + node_storage_size;
 
         /* Initialize. */
-        return this->Initialize(allocator, fs::SubStorage(std::addressof(table_storage), node_storage_offset, node_storage_size), fs::SubStorage(std::addressof(table_storage), entry_storage_offset, entry_storage_size), header.entry_count);
+        R_RETURN(this->Initialize(allocator, fs::SubStorage(std::addressof(table_storage), node_storage_offset, node_storage_size), fs::SubStorage(std::addressof(table_storage), entry_storage_offset, entry_storage_size), header.entry_count));
     }
 
     void IndirectStorage::Finalize() {

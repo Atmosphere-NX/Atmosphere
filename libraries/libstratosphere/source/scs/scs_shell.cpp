@@ -369,7 +369,7 @@ namespace ams::scs {
         std::scoped_lock lk(g_manager_mutex);
 
         /* Register the socket. */
-        return g_socket_info_manager.Register(socket, id);
+        R_RETURN(g_socket_info_manager.Register(socket, id));
     }
 
     void UnregisterSocket(s32 socket) {

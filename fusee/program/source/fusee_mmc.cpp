@@ -47,29 +47,29 @@ namespace ams::nxboot {
         sdmmc::SetMmcWorkBuffer(MmcPort, g_mmc_work_buffer, sizeof(g_mmc_work_buffer));
 
         /* Activate the mmc. */
-        return sdmmc::Activate(MmcPort);
+        R_RETURN(sdmmc::Activate(MmcPort));
     }
 
     Result CheckMmcConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
-        return sdmmc::CheckMmcConnection(out_sm, out_bw, MmcPort);
+        R_RETURN(sdmmc::CheckMmcConnection(out_sm, out_bw, MmcPort));
     }
 
     Result GetMmcMemoryCapacity(u32 *out_num_sectors, sdmmc::MmcPartition partition) {
         if (partition == sdmmc::MmcPartition_UserData) {
-            return sdmmc::GetDeviceMemoryCapacity(out_num_sectors, MmcPort);
+            R_RETURN(sdmmc::GetDeviceMemoryCapacity(out_num_sectors, MmcPort));
         } else {
-            return sdmmc::GetMmcBootPartitionCapacity(out_num_sectors, MmcPort);
+            R_RETURN(sdmmc::GetMmcBootPartitionCapacity(out_num_sectors, MmcPort));
         }
     }
 
     Result ReadMmc(void *dst, size_t size, sdmmc::MmcPartition partition, size_t sector_index, size_t sector_count) {
         R_TRY(SelectMmcPartition(partition));
-        return sdmmc::Read(dst, size, MmcPort, sector_index, sector_count);
+        R_RETURN(sdmmc::Read(dst, size, MmcPort, sector_index, sector_count));
     }
 
     Result WriteMmc(sdmmc::MmcPartition partition, size_t sector_index, size_t sector_count, const void *src, size_t size) {
         R_TRY(SelectMmcPartition(partition));
-        return sdmmc::Write(MmcPort, sector_index, sector_count, src, size);
+        R_RETURN(sdmmc::Write(MmcPort, sector_index, sector_count, src, size));
     }
 
 }

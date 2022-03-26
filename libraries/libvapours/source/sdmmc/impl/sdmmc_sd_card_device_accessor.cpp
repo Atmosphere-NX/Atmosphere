@@ -709,7 +709,7 @@ namespace ams::sdmmc::impl {
             }
         #endif
 
-        return result;
+        R_RETURN(result);
     }
 
     Result SdCardDeviceAccessor::OnReadWrite(u32 sector_index, u32 num_sectors, void *buf, size_t buf_size, bool is_read) {
@@ -724,7 +724,7 @@ namespace ams::sdmmc::impl {
             }
         #endif
 
-        return result;
+        R_RETURN(result);
     }
 
     Result SdCardDeviceAccessor::ReStartup() {
@@ -737,7 +737,7 @@ namespace ams::sdmmc::impl {
             AMS_SDMMC_CHECK_SD_CARD_REMOVED();
 
             BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", m_max_bus_width, m_max_speed_mode, result.GetValue());
-            return result;
+            R_RETURN(result);
         }
 
         R_SUCCEED();
@@ -825,7 +825,7 @@ namespace ams::sdmmc::impl {
         #endif
 
         /* Activate the base device. */
-        return BaseDeviceAccessor::Activate();
+        R_RETURN(BaseDeviceAccessor::Activate());
     }
 
     Result SdCardDeviceAccessor::GetSpeedMode(SpeedMode *out_speed_mode) const {

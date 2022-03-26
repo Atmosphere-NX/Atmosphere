@@ -103,11 +103,11 @@ namespace ams::fs {
    }
 
    Result MountBis(BisPartitionId id, const char *root_path) {
-       return impl::MountBisImpl(GetBisMountName(id), id, root_path);
+       R_RETURN(impl::MountBisImpl(GetBisMountName(id), id, root_path));
    }
 
    Result MountBis(const char *name, BisPartitionId id) {
-       return impl::MountBisImpl(name, id, nullptr);
+       R_RETURN(impl::MountBisImpl(name, id, nullptr));
    }
 
    void SetBisRootForHost(BisPartitionId id, const char *root_path) {

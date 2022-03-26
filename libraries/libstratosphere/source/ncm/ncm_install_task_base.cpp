@@ -74,7 +74,7 @@ namespace ams::ncm {
         m_data = data;
         m_config = config;
 
-        return data->GetProgress(std::addressof(m_progress));
+        R_RETURN(data->GetProgress(std::addressof(m_progress)));
     }
 
     Result InstallTaskBase::Prepare() {
@@ -173,7 +173,7 @@ namespace ams::ncm {
         }
 
         /* Signal prepare is completed. */
-        return this->OnPrepareComplete();
+        R_RETURN(this->OnPrepareComplete());
     }
 
     Result InstallTaskBase::Cleanup() {
@@ -960,11 +960,11 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::CountInstallContentMetaData(s32 *out_count) {
-        return m_data->Count(out_count);
+        R_RETURN(m_data->Count(out_count));
     }
 
     Result InstallTaskBase::GetInstallContentMetaData(InstallContentMeta *out_content_meta, s32 index) {
-        return m_data->Get(out_content_meta, index);
+        R_RETURN(m_data->Get(out_content_meta, index));
     }
 
     Result InstallTaskBase::DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys) {
@@ -985,7 +985,7 @@ namespace ams::ncm {
         }
 
         /* Delete the data if count < 1. */
-        return m_data->Delete(keys, num_keys);
+        R_RETURN(m_data->Delete(keys, num_keys));
     }
 
     Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version) {
@@ -1344,7 +1344,7 @@ namespace ams::ncm {
 
             /* List rights ids if the reader's key matches ours. */
             if (reader.GetKey() == key) {
-                return this->ListRightsIdsByInstallContentMeta(out_count, out_span, content_meta, offset);
+                R_RETURN(this->ListRightsIdsByInstallContentMeta(out_count, out_span, content_meta, offset));
             }
         }
 

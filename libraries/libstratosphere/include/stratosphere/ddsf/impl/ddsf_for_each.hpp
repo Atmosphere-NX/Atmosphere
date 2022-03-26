@@ -26,13 +26,13 @@ namespace ams::ddsf::impl {
         for (auto && it : list) {
             if (const auto cur_result = f(std::addressof(it)); R_FAILED(cur_result)) {
                 if (return_on_fail) {
-                    return cur_result;
+                    R_RETURN(cur_result);
                 } else if (R_SUCCEEDED(result)) {
                     result = cur_result;
                 }
             }
         }
-        return result;
+        R_RETURN(result);
     }
 
     template<typename List, typename F, typename Lock>

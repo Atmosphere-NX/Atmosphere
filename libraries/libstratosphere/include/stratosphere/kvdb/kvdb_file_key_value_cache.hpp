@@ -227,11 +227,11 @@ namespace ams::kvdb {
             }
 
             static Result DirectoryExists(bool *out, const char *path) {
-                return Exists(out, path, fs::DirectoryEntryType_Directory);
+                R_RETURN(Exists(out, path, fs::DirectoryEntryType_Directory));
             }
 
             static Result FileExists(bool *out, const char *path) {
-                return Exists(out, path, fs::DirectoryEntryType_File);
+                R_RETURN(Exists(out, path, fs::DirectoryEntryType_File));
             }
         public:
             static Result CreateNewCache(const char *dir) {
@@ -298,18 +298,18 @@ namespace ams::kvdb {
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
                 /* Note that we accessed the key. */
                 m_lru_list.Update(key);
-                return m_kvs.Get(out_size, out_value, max_out_size, key);
+                R_RETURN(m_kvs.Get(out_size, out_value, max_out_size, key));
             }
 
             template<typename Value>
             Result Get(Value *out_value, const Key &key) {
                 /* Note that we accessed the key. */
                 m_lru_list.Update(key);
-                return m_kvs.Get(out_value, key);
+                R_RETURN(m_kvs.Get(out_value, key));
             }
 
             Result GetSize(size_t *out_size, const Key &key) {
-                return m_kvs.GetSize(out_size, key);
+                R_RETURN(m_kvs.GetSize(out_size, key));
             }
 
             Result Set(const Key &key, const void *value, size_t value_size) {
@@ -356,7 +356,7 @@ namespace ams::kvdb {
 
             template<typename Value>
             Result Set(const Key &key, const Value &value) {
-                return this->Set(key, &value, sizeof(Value));
+                R_RETURN(this->Set(key, &value, sizeof(Value)));
             }
 
             Result Remove(const Key &key) {

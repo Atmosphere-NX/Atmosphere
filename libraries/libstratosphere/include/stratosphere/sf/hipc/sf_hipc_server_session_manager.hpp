@@ -140,36 +140,36 @@ namespace ams::sf::hipc {
             #endif
 
             Result ReceiveRequest(ServerSession *session, const cmif::PointerAndSize &message) {
-                return this->ReceiveRequestImpl(session, message);
+                R_RETURN(this->ReceiveRequestImpl(session, message));
             }
 
             Result RegisterSession(ServerSession **out, os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
-                    return this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+                    R_RETURN(this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
                 };
-                return this->CreateSessionImpl(out, ctor);
+                R_RETURN(this->CreateSessionImpl(out, ctor));
             }
 
             Result AcceptSession(ServerSession **out, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
-                    return this->AcceptSessionImpl(session_memory, port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+                    R_RETURN(this->AcceptSessionImpl(session_memory, port_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
                 };
-                return this->CreateSessionImpl(out, ctor);
+                R_RETURN(this->CreateSessionImpl(out, ctor));
             }
 
             #if AMS_SF_MITM_SUPPORTED
             Result RegisterMitmSession(ServerSession **out, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
-                    return this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+                    R_RETURN(this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
                 };
-                return this->CreateSessionImpl(out, ctor);
+                R_RETURN(this->CreateSessionImpl(out, ctor));
             }
 
             Result AcceptMitmSession(ServerSession **out, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
-                    return this->AcceptMitmSessionImpl(session_memory, mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+                    R_RETURN(this->AcceptMitmSessionImpl(session_memory, mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
                 };
-                return this->CreateSessionImpl(out, ctor);
+                R_RETURN(this->CreateSessionImpl(out, ctor));
             }
             #endif
         public:
@@ -183,13 +183,13 @@ namespace ams::sf::hipc {
 
             template<typename Interface>
             Result AcceptSession(os::NativeHandle port_handle, SharedPointer<Interface> obj) {
-                return this->AcceptSession(port_handle, cmif::ServiceObjectHolder(std::move(obj)));
+                R_RETURN(this->AcceptSession(port_handle, cmif::ServiceObjectHolder(std::move(obj))));
             }
 
             #if AMS_SF_MITM_SUPPORTED
             template<typename Interface>
             Result AcceptMitmSession(os::NativeHandle mitm_port_handle, SharedPointer<Interface> obj, std::shared_ptr<::Service> &&fsrv) {
-                return this->AcceptMitmSession(mitm_port_handle, cmif::ServiceObjectHolder(std::move(obj)), std::forward<std::shared_ptr<::Service>>(fsrv));
+                R_RETURN(this->AcceptMitmSession(mitm_port_handle, cmif::ServiceObjectHolder(std::move(obj)), std::forward<std::shared_ptr<::Service>>(fsrv)));
             }
             #endif
 

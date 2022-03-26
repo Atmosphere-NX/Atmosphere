@@ -208,8 +208,8 @@ namespace ams::mitm::sysupdater {
             /* Open the appropriate interface. */
             const auto * const creator_intfs = fssystem::GetFileSystemCreatorInterfaces();
             switch (fs_type) {
-                case fssystem::NcaFsHeader::FsType::PartitionFs: return creator_intfs->partition_fs_creator->Create(out, std::move(storage));
-                case fssystem::NcaFsHeader::FsType::RomFs:       return creator_intfs->rom_fs_creator->Create(out, std::move(storage));
+                case fssystem::NcaFsHeader::FsType::PartitionFs: R_RETURN(creator_intfs->partition_fs_creator->Create(out, std::move(storage)));
+                case fssystem::NcaFsHeader::FsType::RomFs:       R_RETURN(creator_intfs->rom_fs_creator->Create(out, std::move(storage)));
                 default:
                     R_THROW(fs::ResultInvalidNcaFileSystemType());
             }
@@ -248,7 +248,7 @@ namespace ams::mitm::sysupdater {
         R_UNLESS(unique_fs != nullptr, fs::ResultAllocationMemoryFailedNew());
 
         /* Register the fs. */
-        return ams::fs::fsa::Register(mount_name, std::move(unique_fs));
+        R_RETURN(ams::fs::fsa::Register(mount_name, std::move(unique_fs)));
     }
 
 }

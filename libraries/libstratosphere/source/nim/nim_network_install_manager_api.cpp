@@ -40,7 +40,7 @@ namespace ams::nim {
     /* Service API. */
     Result DestroySystemUpdateTask(const SystemUpdateTaskId &id) {
         static_assert(sizeof(SystemUpdateTaskId) == sizeof(::NimSystemUpdateTaskId));
-        return nimDestroySystemUpdateTask(reinterpret_cast<const ::NimSystemUpdateTaskId *>(std::addressof(id)));
+        R_RETURN(nimDestroySystemUpdateTask(reinterpret_cast<const ::NimSystemUpdateTaskId *>(std::addressof(id))));
     }
 
     s32 ListSystemUpdateTask(SystemUpdateTaskId *out_list, size_t out_list_size) {

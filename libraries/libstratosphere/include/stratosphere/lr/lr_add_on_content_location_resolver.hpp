@@ -44,31 +44,31 @@ namespace ams::lr {
             /* Actual commands. */
             Result ResolveAddOnContentPath(Path *out, ncm::DataId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveAddOnContentPath(out, id);
+                R_RETURN(m_interface->ResolveAddOnContentPath(out, id));
             }
 
             Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
                 AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
-                    return m_interface->RegisterAddOnContentStorage(id, application_id, storage_id);
+                    R_RETURN(m_interface->RegisterAddOnContentStorage(id, application_id, storage_id));
                 } else {
-                    return m_interface->RegisterAddOnContentStorageDeprecated(id, storage_id);
+                    R_RETURN(m_interface->RegisterAddOnContentStorageDeprecated(id, storage_id));
                 }
             }
 
             Result UnregisterAllAddOnContentPath() {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->UnregisterAllAddOnContentPath();
+                R_RETURN(m_interface->UnregisterAllAddOnContentPath());
             }
 
             Result RefreshApplicationAddOnContent(const ncm::ApplicationId *ids, size_t num_ids) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids));
+                R_RETURN(m_interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids)));
             }
 
             Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->UnregisterApplicationAddOnContent(id);
+                R_RETURN(m_interface->UnregisterApplicationAddOnContent(id));
             }
     };
 

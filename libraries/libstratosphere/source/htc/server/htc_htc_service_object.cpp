@@ -80,11 +80,11 @@ namespace ams::htc::server {
     }
 
     Result HtcServiceObject::GetWorkingDirectoryPath(const sf::OutBuffer &out, s32 max_len) {
-        return htcfs::GetWorkingDirectory(reinterpret_cast<char *>(out.GetPointer()), max_len);
+        R_RETURN(htcfs::GetWorkingDirectory(reinterpret_cast<char *>(out.GetPointer()), max_len));
     }
 
     Result HtcServiceObject::GetWorkingDirectoryPathSize(sf::Out<s32> out_size) {
-        return htcfs::GetWorkingDirectorySize(out_size.GetPointer());
+        R_RETURN(htcfs::GetWorkingDirectorySize(out_size.GetPointer()));
     }
 
     Result HtcServiceObject::RunOnHostStart(sf::Out<u32> out_id, sf::OutCopyHandle out, const sf::InBuffer &args) {
@@ -111,7 +111,7 @@ namespace ams::htc::server {
         }
 
         /* Finish the run on host task. */
-        return m_misc_impl.RunOnHostEnd(out_result.GetPointer(), id);
+        R_RETURN(m_misc_impl.RunOnHostEnd(out_result.GetPointer(), id));
     }
 
     Result HtcServiceObject::GetBridgeIpAddress(const sf::OutBuffer &out) {

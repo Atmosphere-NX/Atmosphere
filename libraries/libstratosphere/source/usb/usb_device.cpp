@@ -176,27 +176,27 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_ds_service != nullptr);
 
-        return m_ds_service->GetState(out);
+        R_RETURN(m_ds_service->GetState(out));
     }
 
     Result DsClient::ClearDeviceData() {
-        return m_ds_service->ClearDeviceData();
+        R_RETURN(m_ds_service->ClearDeviceData());
     }
 
     Result DsClient::AddUsbStringDescriptor(u8 *out_index, UsbStringDescriptor *desc) {
-        return m_ds_service->AddUsbStringDescriptor(out_index, sf::InBuffer(reinterpret_cast<const u8 *>(desc), sizeof(*desc)));
+        R_RETURN(m_ds_service->AddUsbStringDescriptor(out_index, sf::InBuffer(reinterpret_cast<const u8 *>(desc), sizeof(*desc))));
     }
 
     Result DsClient::DeleteUsbStringDescriptor(u8 index) {
-        return m_ds_service->DeleteUsbStringDescriptor(index);
+        R_RETURN(m_ds_service->DeleteUsbStringDescriptor(index));
     }
 
     Result DsClient::SetUsbDeviceDescriptor(UsbDeviceDescriptor *desc, UsbDeviceSpeed speed) {
-        return m_ds_service->SetUsbDeviceDescriptor(sf::InBuffer(reinterpret_cast<const u8 *>(desc), sizeof(*desc)), speed);
+        R_RETURN(m_ds_service->SetUsbDeviceDescriptor(sf::InBuffer(reinterpret_cast<const u8 *>(desc), sizeof(*desc)), speed));
     }
 
     Result DsClient::SetBinaryObjectStore(u8 *data, int size) {
-        return m_ds_service->SetBinaryObjectStore(sf::InBuffer(reinterpret_cast<const u8 *>(data), size));
+        R_RETURN(m_ds_service->SetBinaryObjectStore(sf::InBuffer(reinterpret_cast<const u8 *>(data), size)));
     }
 
     Result DsClient::AddInterface(DsInterface *intf, sf::SharedPointer<ds::IDsInterface> *out_srv, uint8_t bInterfaceNumber) {
@@ -326,7 +326,7 @@ namespace ams::usb {
     }
 
     Result DsInterface::AppendConfigurationData(UsbDeviceSpeed speed, void *data, u32 size) {
-        return m_interface->AppendConfigurationData(m_interface_num, speed, sf::InBuffer(data, size));
+        R_RETURN(m_interface->AppendConfigurationData(m_interface_num, speed, sf::InBuffer(data, size)));
     }
 
     bool DsInterface::IsInitialized() {
@@ -350,7 +350,7 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_interface != nullptr);
 
-        return m_interface->GetSetupPacket(sf::OutBuffer(out, sizeof(*out)));
+        R_RETURN(m_interface->GetSetupPacket(sf::OutBuffer(out, sizeof(*out))));
     }
 
     Result DsInterface::Enable() {
@@ -561,12 +561,12 @@ namespace ams::usb {
             result = this->CtrlIn(nullptr, nullptr, 0);
         }
 
-        /* If we failed, stall. */
+        /* If we fail, stall. */
         if (R_FAILED(result)) {
             result = this->CtrlStall();
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result DsInterface::CtrlWrite(u32 *out_transferred, void *dst, u32 size) {
@@ -589,7 +589,7 @@ namespace ams::usb {
             result = this->CtrlStall();
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result DsInterface::CtrlDone() {
@@ -607,7 +607,7 @@ namespace ams::usb {
             result = this->CtrlStall();
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result DsInterface::CtrlStall() {
@@ -623,7 +623,7 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_interface != nullptr);
 
-        return m_interface->CtrlStall();
+        R_RETURN(m_interface->CtrlStall());
     }
 
     Result DsEndpoint::Initialize(DsInterface *interface, u8 bEndpointAddress) {
@@ -783,7 +783,7 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_endpoint != nullptr);
 
-        return m_endpoint->GetUrbReport(out);
+        R_RETURN(m_endpoint->GetUrbReport(out));
     }
 
     Result DsEndpoint::Cancel() {
@@ -796,7 +796,7 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_endpoint != nullptr);
 
-        return m_endpoint->Cancel();
+        R_RETURN(m_endpoint->Cancel());
     }
 
     Result DsEndpoint::SetZeroLengthTransfer(bool zlt) {
@@ -809,7 +809,7 @@ namespace ams::usb {
         /* Check that we have a service. */
         AMS_ABORT_UNLESS(m_endpoint != nullptr);
 
-        return m_endpoint->SetZlt(zlt);
+        R_RETURN(m_endpoint->SetZlt(zlt));
     }
 
 }

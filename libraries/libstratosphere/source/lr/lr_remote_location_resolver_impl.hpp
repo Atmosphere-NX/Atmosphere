@@ -29,55 +29,55 @@ namespace ams::lr {
         public:
             /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrLrResolveProgramPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrLrResolveProgramPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result RedirectProgramPath(const Path &path, ncm::ProgramId id) {
-                return ::lrLrRedirectProgramPath(std::addressof(m_srv), id.value, path.str);
+                R_RETURN(::lrLrRedirectProgramPath(std::addressof(m_srv), id.value, path.str));
             }
 
             Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrLrResolveApplicationControlPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrLrResolveApplicationControlPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrLrResolveApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrLrResolveApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
-                return ::lrLrResolveDataPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrLrResolveDataPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) {
-                return ::lrLrRedirectApplicationControlPath(std::addressof(m_srv), id.value, 0, path.str);
+                R_RETURN(::lrLrRedirectApplicationControlPath(std::addressof(m_srv), id.value, 0, path.str));
             }
 
             Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                return ::lrLrRedirectApplicationControlPath(std::addressof(m_srv), id.value, owner_id.value, path.str);
+                R_RETURN(::lrLrRedirectApplicationControlPath(std::addressof(m_srv), id.value, owner_id.value, path.str));
             }
 
             Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-                return ::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, 0, path.str);
+                R_RETURN(::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, 0, path.str));
             }
 
             Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                return ::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, owner_id.value, path.str);
+                R_RETURN(::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(m_srv), id.value, owner_id.value, path.str));
             }
 
             Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrLrResolveApplicationLegalInformationPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrLrResolveApplicationLegalInformationPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) {
-                return ::lrLrRedirectApplicationLegalInformationPath(std::addressof(m_srv), id.value, 0, path.str);
+                R_RETURN(::lrLrRedirectApplicationLegalInformationPath(std::addressof(m_srv), id.value, 0, path.str));
             }
 
             Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                return ::lrLrRedirectApplicationLegalInformationPath(std::addressof(m_srv), id.value, owner_id.value, path.str);
+                R_RETURN(::lrLrRedirectApplicationLegalInformationPath(std::addressof(m_srv), id.value, owner_id.value, path.str));
             }
 
             Result Refresh() {
-                return ::lrLrRefresh(std::addressof(m_srv));
+                R_RETURN(::lrLrRefresh(std::addressof(m_srv)));
             }
 
             Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
@@ -104,7 +104,7 @@ namespace ams::lr {
             }
 
             Result EraseProgramRedirection(ncm::ProgramId id) {
-                return ::lrLrEraseProgramRedirection(std::addressof(m_srv), id.value);
+                R_RETURN(::lrLrEraseProgramRedirection(std::addressof(m_srv), id.value));
             }
 
             Result EraseApplicationControlRedirection(ncm::ProgramId id) {

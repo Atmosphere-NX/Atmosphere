@@ -49,7 +49,7 @@ namespace ams::updater {
     }
 
     Result BisAccessor::Initialize() {
-        return fs::OpenBisPartition(std::addressof(m_storage), m_partition_id);
+        R_RETURN(fs::OpenBisPartition(std::addressof(m_storage), m_partition_id));
     }
 
     void BisAccessor::Finalize() {
@@ -58,12 +58,12 @@ namespace ams::updater {
 
     Result BisAccessor::Read(void *dst, size_t size, u64 offset) {
         AMS_ABORT_UNLESS((offset % SectorAlignment) == 0);
-        return m_storage->Read(static_cast<u32>(offset), dst, size);
+        R_RETURN(m_storage->Read(static_cast<u32>(offset), dst, size));
     }
 
     Result BisAccessor::Write(u64 offset, const void *src, size_t size) {
         AMS_ABORT_UNLESS((offset % SectorAlignment) == 0);
-        return m_storage->Write(static_cast<u32>(offset), src, size);
+        R_RETURN(m_storage->Write(static_cast<u32>(offset), src, size));
     }
 
     Result BisAccessor::Write(u64 offset, size_t size, const char *bip_path, void *work_buffer, size_t work_buffer_size) {
@@ -149,7 +149,7 @@ namespace ams::updater {
         size_t read_size;
         R_TRY(this->Read(&read_size, eks_work_buffer, EksSize, Boot0Partition::Eks));
 
-        return this->UpdateEksManually(dst_bct, eks_work_buffer);
+        R_RETURN(this->UpdateEksManually(dst_bct, eks_work_buffer));
     }
 
     Result Boot0Accessor::UpdateEksManually(void *dst_bct, const void *src_eks) {

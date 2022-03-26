@@ -129,7 +129,7 @@ namespace ams::fs {
     }
 
     Result CreateDirectory(const char *path) {
-        return TranslateFatFsError(f_mkdir(path));
+        R_RETURN(TranslateFatFsError(f_mkdir(path)));
     }
 
     Result OpenFile(FileHandle *out_file, const char *path, int mode) {
@@ -168,7 +168,7 @@ namespace ams::fs {
     }
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size) {
-        return ReadFile(handle, offset, buffer, size, fs::ReadOption::None);
+        R_RETURN(ReadFile(handle, offset, buffer, size, fs::ReadOption::None));
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
@@ -189,7 +189,7 @@ namespace ams::fs {
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size) {
-        return ReadFile(out, handle, offset, buffer, size, fs::ReadOption::None);
+        R_RETURN(ReadFile(out, handle, offset, buffer, size, fs::ReadOption::None));
     }
 
     Result GetFileSize(s64 *out, FileHandle handle) {
@@ -199,7 +199,7 @@ namespace ams::fs {
     }
 
     Result FlushFile(FileHandle handle) {
-        return TranslateFatFsError(f_sync(GetInternalFile(handle)));
+        R_RETURN(TranslateFatFsError(f_sync(GetInternalFile(handle))));
     }
 
     Result WriteFile(FileHandle handle, s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) {

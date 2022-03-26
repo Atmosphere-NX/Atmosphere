@@ -59,23 +59,23 @@ namespace ams::sdmmc {
     }
 
     Result SelectMmcPartition(Port port, MmcPartition mmc_partition) {
-        return GetMmcDeviceAccessor(port)->SelectMmcPartition(mmc_partition);
+        R_RETURN(GetMmcDeviceAccessor(port)->SelectMmcPartition(mmc_partition));
     }
 
     Result EraseMmc(Port port) {
-        return GetMmcDeviceAccessor(port)->EraseMmc();
+        R_RETURN(GetMmcDeviceAccessor(port)->EraseMmc());
     }
 
     Result GetMmcBootPartitionCapacity(u32 *out_num_sectors, Port port) {
-        return GetMmcDeviceAccessor(port)->GetMmcBootPartitionCapacity(out_num_sectors);
+        R_RETURN(GetMmcDeviceAccessor(port)->GetMmcBootPartitionCapacity(out_num_sectors));
     }
 
     Result GetMmcExtendedCsd(void *out_buffer, size_t buffer_size, Port port) {
-        return GetMmcDeviceAccessor(port)->GetMmcExtendedCsd(out_buffer, buffer_size);
+        R_RETURN(GetMmcDeviceAccessor(port)->GetMmcExtendedCsd(out_buffer, buffer_size));
     }
 
     Result CheckMmcConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width, Port port) {
-        return GetMmcDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width);
+        R_RETURN(GetMmcDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width));
     }
 
 }

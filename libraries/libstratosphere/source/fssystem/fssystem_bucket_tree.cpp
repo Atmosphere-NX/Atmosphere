@@ -237,7 +237,7 @@ namespace ams::fssystem {
 
         R_TRY(visitor->Initialize(this, offsets));
 
-        return visitor->Find(virtual_address);
+        R_RETURN(visitor->Find(virtual_address));
     }
 
     Result BucketTree::InvalidateCache() {
@@ -429,10 +429,10 @@ namespace ams::fssystem {
 
         PooledBuffer pool(node_size, 1);
         if (node_size <= pool.GetSize()) {
-            return this->FindEntrySetWithBuffer(out_index, virtual_address, node_index, pool.GetBuffer());
+            R_RETURN(this->FindEntrySetWithBuffer(out_index, virtual_address, node_index, pool.GetBuffer()));
         } else {
             pool.Deallocate();
-            return this->FindEntrySetWithoutBuffer(out_index, virtual_address, node_index);
+            R_RETURN(this->FindEntrySetWithoutBuffer(out_index, virtual_address, node_index));
         }
     }
 
@@ -486,10 +486,10 @@ namespace ams::fssystem {
 
         PooledBuffer pool(entry_set_size, 1);
         if (entry_set_size <= pool.GetSize()) {
-            return this->FindEntryWithBuffer(virtual_address, entry_set_index, pool.GetBuffer());
+            R_RETURN(this->FindEntryWithBuffer(virtual_address, entry_set_index, pool.GetBuffer()));
         } else {
             pool.Deallocate();
-            return this->FindEntryWithoutBuffer(virtual_address, entry_set_index);
+            R_RETURN(this->FindEntryWithoutBuffer(virtual_address, entry_set_index));
         }
     }
 

@@ -275,7 +275,7 @@ namespace ams::ldr {
 
     Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         if (g_cached_program_id != loc.program_id || g_cached_override_status != status) {
-            return LoadMeta(out_meta, loc, status);
+            R_RETURN(LoadMeta(out_meta, loc, status));
         }
         *out_meta = g_meta_cache.meta;
         R_SUCCEED();

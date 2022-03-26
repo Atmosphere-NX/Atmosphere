@@ -20,15 +20,15 @@
 namespace ams::sprofile::srv {
 
     Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
-        return m_manager->ImportProfile(import);
+        R_RETURN(m_manager->ImportProfile(import));
     }
 
     Result ProfileImporterImpl::Commit() {
-        return m_manager->Commit();
+        R_RETURN(m_manager->Commit());
     }
 
     Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
-        return m_manager->ImportMetadata(import);
+        R_RETURN(m_manager->ImportMetadata(import));
     }
 
 }

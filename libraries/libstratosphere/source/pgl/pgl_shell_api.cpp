@@ -58,7 +58,7 @@ namespace ams::pgl {
 
     #if defined(ATMOSPHERE_OS_HORIZON)
     Result Initialize() {
-        return ::pglInitialize();
+        R_RETURN(::pglInitialize());
     }
 
     void Finalize() {
@@ -68,50 +68,50 @@ namespace ams::pgl {
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 process_flags, u8 pgl_flags) {
         static_assert(sizeof(*out) == sizeof(u64));
         static_assert(sizeof(loc)  == sizeof(::NcmProgramLocation));
-        return ::pglLaunchProgram(reinterpret_cast<u64 *>(out), reinterpret_cast<const ::NcmProgramLocation *>(std::addressof(loc)), process_flags, pgl_flags);
+        R_RETURN(::pglLaunchProgram(reinterpret_cast<u64 *>(out), reinterpret_cast<const ::NcmProgramLocation *>(std::addressof(loc)), process_flags, pgl_flags));
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
-        return ::pglTerminateProcess(static_cast<u64>(process_id));
+        R_RETURN(::pglTerminateProcess(static_cast<u64>(process_id)));
     }
 
     Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 process_flags) {
         static_assert(sizeof(*out) == sizeof(u64));
-        return ::pglLaunchProgramFromHost(reinterpret_cast<u64 *>(out), content_path, process_flags);
+        R_RETURN(::pglLaunchProgramFromHost(reinterpret_cast<u64 *>(out), content_path, process_flags));
     }
 
     Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path) {
         static_assert(sizeof(*out) == sizeof(::PglContentMetaInfo));
-        return ::pglGetHostContentMetaInfo(reinterpret_cast<::PglContentMetaInfo *>(out), content_path);
+        R_RETURN(::pglGetHostContentMetaInfo(reinterpret_cast<::PglContentMetaInfo *>(out), content_path));
     }
 
     Result GetApplicationProcessId(os::ProcessId *out) {
         static_assert(sizeof(*out) == sizeof(u64));
-        return ::pglGetApplicationProcessId(reinterpret_cast<u64 *>(out));
+        R_RETURN(::pglGetApplicationProcessId(reinterpret_cast<u64 *>(out)));
     }
 
     Result BoostSystemMemoryResourceLimit(u64 size) {
-        return ::pglBoostSystemMemoryResourceLimit(size);
+        R_RETURN(::pglBoostSystemMemoryResourceLimit(size));
     }
 
     Result IsProcessTracked(bool *out, os::ProcessId process_id) {
-        return ::pglIsProcessTracked(out, static_cast<u64>(process_id));
+        R_RETURN(::pglIsProcessTracked(out, static_cast<u64>(process_id)));
     }
 
     Result EnableApplicationCrashReport(bool enabled) {
-        return ::pglEnableApplicationCrashReport(enabled);
+        R_RETURN(::pglEnableApplicationCrashReport(enabled));
     }
 
     Result IsApplicationCrashReportEnabled(bool *out) {
-        return ::pglIsApplicationCrashReportEnabled(out);
+        R_RETURN(::pglIsApplicationCrashReportEnabled(out));
     }
 
     Result EnableApplicationAllThreadDumpOnCrash(bool enabled) {
-        return ::pglEnableApplicationAllThreadDumpOnCrash(enabled);
+        R_RETURN(::pglEnableApplicationAllThreadDumpOnCrash(enabled));
     }
 
     Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
-        return ::pglTriggerApplicationSnapShotDumper(static_cast<::PglSnapShotDumpType>(dump_type), arg);
+        R_RETURN(::pglTriggerApplicationSnapShotDumper(static_cast<::PglSnapShotDumpType>(dump_type), arg));
     }
 
     Result GetEventObserver(pgl::EventObserver *out) {

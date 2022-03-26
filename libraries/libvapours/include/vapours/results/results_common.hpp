@@ -431,7 +431,7 @@ namespace ams::result::impl {
 /* =================================================================== */
 
 /// Returns a result.
-#define R_THROW(res_expr)                                                                                                                      \
+#define R_RETURN(res_expr)                                                                                                                      \
     {                                                                                                                                          \
         const ::ams::Result _tmp_r_throw_rc = (res_expr);                                                                                      \
         if constexpr (std::same_as<decltype(__TmpCurrentResultReference), ::ams::Result &>) { __TmpCurrentResultReference = _tmp_r_throw_rc; } \
@@ -439,7 +439,10 @@ namespace ams::result::impl {
     }
 
 /// Returns ResultSuccess()
-#define R_SUCCEED() R_THROW(::ams::ResultSuccess())
+#define R_SUCCEED() R_RETURN(::ams::ResultSuccess())
+
+/// Throws a result.
+#define R_THROW(res_expr) R_RETURN(res_expr)
 
 /// Evaluates an expression that returns a result, and returns the result if it would fail.
 #define R_TRY(res_expr)                                                       \
@@ -448,9 +451,6 @@ namespace ams::result::impl {
             R_THROW(_tmp_r_try_rc);                                           \
         }                                                                     \
     }
-
-/// Return a result.
-#define R_RETURN(res_expr) R_THROW(res_expr)
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX) && defined(ATMOSPHERE_IS_STRATOSPHERE) && !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
     #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)

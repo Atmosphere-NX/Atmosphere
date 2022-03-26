@@ -75,7 +75,7 @@ namespace ams::capsrv::server {
         size_t work_size = sizeof(g_work_memory.jpeg_decoder_memory);
 
         /* Call the decoder implementation. */
-        return DecodeJpegImpl(out.GetPointer(), out.GetSize(), in.GetPointer(), in.GetSize(), width, height, option, work, work_size);
+        R_RETURN(DecodeJpegImpl(out.GetPointer(), out.GetSize(), in.GetPointer(), in.GetSize(), width, height, option, work, work_size));
     }
 
 }

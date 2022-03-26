@@ -51,7 +51,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::Set(const ContentMetaKey &key, const sf::InBuffer &value) {
         R_TRY(this->EnsureEnabled());
-        return m_kvs->Set(key, value.GetPointer(), value.GetSize());
+        R_RETURN(m_kvs->Set(key, value.GetPointer(), value.GetSize()));
     }
 
     Result ContentMetaDatabaseImpl::Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) {
@@ -78,7 +78,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
-        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::nullopt);
+        R_RETURN(this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::nullopt));
     }
 
     Result ContentMetaDatabaseImpl::ListContentInfo(sf::Out<s32> out_count, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) {
@@ -340,7 +340,7 @@ namespace ams::ncm {
 
         /* Save and commit. */
         R_TRY(m_kvs->Save());
-        return fs::CommitSaveData(m_mount_name);
+        R_RETURN(fs::CommitSaveData(m_mount_name));
     }
 
     Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
@@ -435,7 +435,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
-        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::make_optional(id_offset));
+        R_RETURN(this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::make_optional(id_offset)));
     }
 
     Result ContentMetaDatabaseImpl::GetCount(sf::Out<u32> out_count) {

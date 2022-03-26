@@ -319,7 +319,7 @@ namespace ams::tipc {
                                 const Result method_result = message_buffer.GetRaw<u32>(raw_data_offset);
 
                                 /* Check that the result is the special deferral result. */
-                                R_THROW(tipc::ResultRequestDeferred::Includes(method_result));
+                                return tipc::ResultRequestDeferred::Includes(method_result);
                             } else {
                                 /* If deferral isn't supported, requests are never deferred. */
                                 return false;

@@ -386,7 +386,7 @@ namespace ams::spl::impl {
                     u8 seed[Drbg::SeedSize];
 
                     if (smc::Result res = smc::GenerateRandomBytes(seed, sizeof(seed)); res != smc::Result::Success) {
-                        return smc::ConvertResult(res);
+                        R_RETURN(smc::ConvertResult(res));
                     }
 
                     util::GetReference(g_drbg).Reseed(seed, sizeof(seed), nullptr, 0);
@@ -409,9 +409,9 @@ namespace ams::spl::impl {
             std::memcpy(layout.data, src, src_size);
 
             if (g_is_modern_device_unique_data) {
-                return smc::ConvertResult(smc::DecryptDeviceUniqueData(layout.data, src_size, access_key, key_source, static_cast<smc::DeviceUniqueDataMode>(option)));
+                R_RETURN(smc::ConvertResult(smc::DecryptDeviceUniqueData(layout.data, src_size, access_key, key_source, static_cast<smc::DeviceUniqueDataMode>(option))));
             } else {
-                return smc::ConvertResult(smc::DecryptAndStoreGcKey(layout.data, src_size, access_key, key_source, option));
+                R_RETURN(smc::ConvertResult(smc::DecryptAndStoreGcKey(layout.data, src_size, access_key, key_source, option)));
             }
         }
 
@@ -444,12 +444,12 @@ namespace ams::spl::impl {
                 smc::AsyncOperationKey op_key;
                 smc::Result res = smc::ModularExponentiateWithStorageKey(std::addressof(op_key), layout.base, layout.mod, mode);
                 if (res != smc::Result::Success) {
-                    return smc::ConvertResult(res);
+                    R_RETURN(smc::ConvertResult(res));
                 }
 
                 res = WaitAndGetResultData(g_work_buffer, out_size, op_key);
                 if (res != smc::Result::Success) {
-                    return smc::ConvertResult(res);
+                    R_RETURN(smc::ConvertResult(res));
                 }
             }
 
@@ -490,12 +490,12 @@ namespace ams::spl::impl {
                 smc::AsyncOperationKey op_key;
                 smc::Result res = smc::PrepareEsDeviceUniqueKey(std::addressof(op_key), layout.base, layout.mod, label_digest, label_digest_size, smc::GetPrepareEsDeviceUniqueKeyOption(type, generation));
                 if (res != smc::Result::Success) {
-                    return smc::ConvertResult(res);
+                    R_RETURN(smc::ConvertResult(res));
                 }
 
                 res = WaitAndGetResultData(g_work_buffer, sizeof(*out_access_key), op_key);
                 if (res != smc::Result::Success) {
-                    return smc::ConvertResult(res);
+                    R_RETURN(smc::ConvertResult(res));
                 }
             }
 
@@ -537,7 +537,7 @@ namespace ams::spl::impl {
             res = smc::Result::Success;
         }
 
-        return smc::ConvertResult(res);
+        R_RETURN(smc::ConvertResult(res));
     }
 
     Result ModularExponentiate(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size) {
@@ -573,12 +573,12 @@ namespace ams::spl::impl {
             smc::AsyncOperationKey op_key;
             smc::Result res = smc::ModularExponentiate(std::addressof(op_key), layout.base, layout.exp, exp_size, layout.mod);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
 
             res = WaitAndGetResultData(g_work_buffer, out_size, op_key);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
         }
 
@@ -629,7 +629,7 @@ namespace ams::spl::impl {
 
     /* Crypto. */
     Result GenerateAesKek(AccessKey *out_access_key, const KeySource &key_source, u32 generation, u32 option) {
-        return smc::ConvertResult(smc::GenerateAesKek(out_access_key, key_source, generation, option));
+        R_RETURN(smc::ConvertResult(smc::GenerateAesKek(out_access_key, key_source, generation, option)));
     }
 
     Result LoadAesKey(s32 keyslot, const AccessKey &access_key, const KeySource &key_source) {
@@ -653,14 +653,14 @@ namespace ams::spl::impl {
 
         R_TRY(LoadAesKey(keyslot_holder.GetIndex(), access_key, KeyGenerationSource));
 
-        return smc::ConvertResult(DecryptAes(out_key, keyslot_holder.GetIndex(), std::addressof(key_source)));
+        R_RETURN(smc::ConvertResult(DecryptAes(out_key, keyslot_holder.GetIndex(), std::addressof(key_source))));
     }
 
     Result DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option) {
         AccessKey access_key;
         R_TRY(GenerateAesKek(std::addressof(access_key), AesKeyDecryptionSource, generation, option));
 
-        return GenerateAesKey(out_key, access_key, key_source);
+        R_RETURN(GenerateAesKey(out_key, access_key, key_source));
     }
 
     Result ComputeCtr(void *dst, size_t dst_size, s32 keyslot, const void *src, size_t src_size, const IvCtr &iv_ctr) {
@@ -718,12 +718,12 @@ namespace ams::spl::impl {
             smc::AsyncOperationKey op_key;
             smc::Result res = smc::ComputeAes(std::addressof(op_key), dst_ll_addr, mode, iv_ctr, src_ll_addr, src_size);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
 
             res = WaitAndGetResult(op_key);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
         }
         os::FlushDataCache(dst, dst_size);
@@ -737,12 +737,12 @@ namespace ams::spl::impl {
             smc::AsyncOperationKey op_key;
             smc::Result res = smc::ComputeAes(std::addressof(op_key), reinterpret_cast<uintptr_t>(dst), mode, iv_ctr, reinterpret_cast<uintptr_t>(src), src_size);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
 
             res = WaitAndGetResult(op_key);
             if (res != smc::Result::Success) {
-                return smc::ConvertResult(res);
+                R_RETURN(smc::ConvertResult(res));
             }
         }
         #endif
@@ -754,7 +754,7 @@ namespace ams::spl::impl {
         R_UNLESS(size <= sizeof(g_work_buffer), spl::ResultInvalidBufferSize());
 
         std::memcpy(g_work_buffer, data, size);
-        return smc::ConvertResult(smc::ComputeCmac(out_cmac, GetPhysicalAesKeySlot(keyslot, true), g_work_buffer, size));
+        R_RETURN(smc::ConvertResult(smc::ComputeCmac(out_cmac, GetPhysicalAesKeySlot(keyslot, true), g_work_buffer, size)));
     }
 
     Result AllocateAesKeySlot(s32 *out_keyslot) {
@@ -842,22 +842,22 @@ namespace ams::spl::impl {
             std::memcpy(dst, layout.data, copy_size);
         }
 
-        return smc::ConvertResult(smc_res);
+        R_RETURN(smc::ConvertResult(smc_res));
     }
 
     /* SSL */
     Result DecryptAndStoreSslClientCertKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source) {
-        return DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreSslKey));
+        R_RETURN(DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreSslKey)));
     }
 
     Result ModularExponentiateWithSslClientCertKey(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size) {
-        return ModularExponentiateWithStorageKey(out, out_size, base, base_size, mod, mod_size, smc::ModularExponentiateWithStorageKeyMode::Ssl);
+        R_RETURN(ModularExponentiateWithStorageKey(out, out_size, base, base_size, mod, mod_size, smc::ModularExponentiateWithStorageKeyMode::Ssl));
     }
 
     /* ES */
     Result LoadEsDeviceKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
         if (g_is_modern_device_unique_data) {
-            return DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, option);
+            R_RETURN(DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, option));
         } else {
             struct LoadEsDeviceKeyLayout {
                 u8 data[DeviceUniqueDataMetaDataSize + 2 * Rsa2048BlockSize + 0x10];
@@ -869,33 +869,33 @@ namespace ams::spl::impl {
 
             std::memcpy(layout.data, src, src_size);
 
-            return smc::ConvertResult(smc::LoadEsDeviceKey(layout.data, src_size, access_key, key_source, option));
+            R_RETURN(smc::ConvertResult(smc::LoadEsDeviceKey(layout.data, src_size, access_key, key_source, option)));
         }
     }
 
     Result PrepareEsTitleKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
-        return PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::TitleKey, generation);
+        R_RETURN(PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::TitleKey, generation));
     }
 
     Result PrepareCommonEsTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation) {
-        return smc::ConvertResult(smc::PrepareCommonEsTitleKey(out_access_key, key_source, generation));
+        R_RETURN(smc::ConvertResult(smc::PrepareCommonEsTitleKey(out_access_key, key_source, generation)));
     }
 
     Result DecryptAndStoreDrmDeviceCertKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source) {
-        return DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreDrmDeviceCertKey));
+        R_RETURN(DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreDrmDeviceCertKey)));
     }
 
     Result ModularExponentiateWithDrmDeviceCertKey(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size) {
-        return ModularExponentiateWithStorageKey(out, out_size, base, base_size, mod, mod_size, smc::ModularExponentiateWithStorageKeyMode::DrmDeviceCert);
+        R_RETURN(ModularExponentiateWithStorageKey(out, out_size, base, base_size, mod, mod_size, smc::ModularExponentiateWithStorageKeyMode::DrmDeviceCert));
     }
 
     Result PrepareEsArchiveKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
-        return PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::ArchiveKey, generation);
+        R_RETURN(PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::ArchiveKey, generation));
     }
 
     /* FS */
     Result DecryptAndStoreGcKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
-        return DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, option);
+        R_RETURN(DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, option));
     }
 
     Result DecryptGcMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size) {
@@ -914,7 +914,7 @@ namespace ams::spl::impl {
     }
 
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which) {
-        return smc::ConvertResult(smc::GenerateSpecificAesKey(out_key, key_source, generation, which));
+        R_RETURN(smc::ConvertResult(smc::GenerateSpecificAesKey(out_key, key_source, generation, which)));
     }
 
     Result LoadPreparedAesKey(s32 keyslot, const AccessKey &access_key) {
@@ -937,7 +937,7 @@ namespace ams::spl::impl {
 
         const smc::Result smc_res = smc::GetConfig(hash, 4, ConfigItem::Package2Hash);
         if (smc_res != smc::Result::Success) {
-            return smc::ConvertResult(smc_res);
+            R_RETURN(smc::ConvertResult(smc_res));
         }
 
         std::memcpy(dst, hash, sizeof(hash));
@@ -970,7 +970,7 @@ namespace ams::spl::impl {
             std::memcpy(dst, layout.data, std::min(dst_size, src_size));
         }
 
-        return smc::ConvertResult(smc_res);
+        R_RETURN(smc::ConvertResult(smc_res));
     }
 
 }

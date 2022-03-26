@@ -520,8 +520,8 @@ namespace ams::ncm {
         public:
             using AccessorBase::AccessorBase;
         public:
-            Result GetHeader(ReadableStructPin<PatchMetaExtendedDataHeader> *out) { return this->AcquireReadableStructPin(out, 0); }
-            Result GetHeader(PatchMetaExtendedDataHeader *out) { return this->template ReadStruct<PatchMetaExtendedDataHeader>(out, 0); }
+            Result GetHeader(ReadableStructPin<PatchMetaExtendedDataHeader> *out) { R_RETURN(this->AcquireReadableStructPin(out, 0)); }
+            Result GetHeader(PatchMetaExtendedDataHeader *out) { R_RETURN(this->template ReadStruct<PatchMetaExtendedDataHeader>(out, 0)); }
 
             Result GetHistoryHeader(ReadableStructPin<PatchHistoryHeader> *out, s32 index) {
                 /* Ensure we have our header. */

@@ -43,15 +43,15 @@ namespace ams::socket {
     }
 
     Result Initialize(const Config &config) {
-        return impl::Initialize(config);
+        R_RETURN(impl::Initialize(config));
     }
 
     Result Finalize() {
-        return impl::Finalize();
+        R_RETURN(impl::Finalize());
     }
 
     Result InitializeAllocatorForInternal(void *buffer, size_t size) {
-        return impl::InitializeAllocatorForInternal(buffer, size);
+        R_RETURN(impl::InitializeAllocatorForInternal(buffer, size));
     }
 
     ssize_t RecvFrom(s32 desc, void *buffer, size_t buffer_size, MsgFlag flags, SockAddr *out_address, SockLenT *out_addr_len){

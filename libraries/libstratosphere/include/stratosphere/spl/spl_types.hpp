@@ -72,7 +72,7 @@ namespace ams::spl {
             R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnexpectedSecureMonitorResult());
 
             /* Return the error. */
-            return converted;
+            R_RETURN(converted);
         }
 
         enum class CipherMode {

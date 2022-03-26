@@ -174,7 +174,7 @@ namespace ams::kvdb {
     }
 
     Result FileKeyValueStore::Initialize(const char *dir) {
-        return this->InitializeWithCache(dir, nullptr, 0, 0);
+        R_RETURN(this->InitializeWithCache(dir, nullptr, 0, 0));
     }
 
     Result FileKeyValueStore::InitializeWithCache(const char *dir, void *cache_buffer, size_t cache_buffer_size, size_t cache_capacity) {

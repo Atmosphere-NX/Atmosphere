@@ -35,7 +35,7 @@ namespace ams::erpt::srv {
 
         SubmitContextForForcedShutdownDetection(ctx, data, data_size);
 
-        return Context::SubmitContext(ctx, data, data_size);
+        R_RETURN(Context::SubmitContext(ctx, data, data_size));
     }
 
     Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result) {
@@ -58,7 +58,7 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
-        return this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess());
+        R_RETURN(this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess()));
     }
 
     Result ContextImpl::SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) {
@@ -135,7 +135,7 @@ namespace ams::erpt::srv {
         char name_safe[AttachmentNameSizeMax];
         util::Strlcpy(name_safe, name, sizeof(name_safe));
 
-        return JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size);
+        R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size));
     }
 
     Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result) {
@@ -158,19 +158,19 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
-        return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess());
+        R_RETURN(this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess()));
     }
 
     Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
-        return Reporter::RegisterRunningApplet(program_id);
+        R_RETURN(Reporter::RegisterRunningApplet(program_id));
     }
 
     Result ContextImpl::UnregisterRunningApplet(ncm::ProgramId program_id) {
-        return Reporter::UnregisterRunningApplet(program_id);
+        R_RETURN(Reporter::UnregisterRunningApplet(program_id));
     }
 
     Result ContextImpl::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration) {
-        return Reporter::UpdateAppletSuspendedDuration(program_id, duration);
+        R_RETURN(Reporter::UpdateAppletSuspendedDuration(program_id, duration));
     }
 
     Result ContextImpl::InvalidateForcedShutdownDetection() {

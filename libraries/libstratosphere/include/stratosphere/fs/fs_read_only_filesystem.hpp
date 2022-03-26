@@ -36,11 +36,11 @@ namespace ams::fs {
                 virtual ~ReadOnlyFile() { /* ... */ }
             private:
                 virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
-                    return m_base_file->Read(out, offset, buffer, size, option);
+                    R_RETURN(m_base_file->Read(out, offset, buffer, size, option));
                 }
 
                 virtual Result DoGetSize(s64 *out) override final {
-                    return m_base_file->GetSize(out);
+                    R_RETURN(m_base_file->GetSize(out));
                 }
 
                 virtual Result DoFlush() override final {
@@ -66,7 +66,7 @@ namespace ams::fs {
                     switch (op_id) {
                         case OperationId::Invalidate:
                         case OperationId::QueryRange:
-                            return m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                            R_RETURN(m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                         default:
                             R_THROW(fs::ResultUnsupportedOperateRangeForReadOnlyFile());
                     }
@@ -104,11 +104,11 @@ namespace ams::fs {
             }
 
             virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const fs::Path &path, OpenDirectoryMode mode) override final {
-                return m_base_fs->OpenDirectory(out_dir, path, mode);
+                R_RETURN(m_base_fs->OpenDirectory(out_dir, path, mode));
             }
 
             virtual Result DoGetEntryType(DirectoryEntryType *out, const fs::Path &path) override final {
-                return m_base_fs->GetEntryType(out, path);
+                R_RETURN(m_base_fs->GetEntryType(out, path));
             }
 
             virtual Result DoCommit() override final {

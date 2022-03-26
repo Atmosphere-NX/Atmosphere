@@ -39,15 +39,15 @@ namespace ams::erpt::srv {
     }
 
     Result SessionImpl::OpenReport(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IReport>> out) {
-        return OpenInterface<erpt::sf::IReport, ReportImpl>(out);
+        R_RETURN((OpenInterface<erpt::sf::IReport, ReportImpl>(out)));
     }
 
     Result SessionImpl::OpenManager(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IManager>> out) {
-        return OpenInterface<erpt::sf::IManager, ManagerImpl>(out);
+        R_RETURN((OpenInterface<erpt::sf::IManager, ManagerImpl>(out)));
     }
 
     Result SessionImpl::OpenAttachment(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IAttachment>> out) {
-        return OpenInterface<erpt::sf::IAttachment, AttachmentImpl>(out);
+        R_RETURN((OpenInterface<erpt::sf::IAttachment, AttachmentImpl>(out)));
     }
 
 }

@@ -27,7 +27,7 @@ namespace ams::erpt::srv {
     }
 
     Result JournalForMeta::CommitJournal(Stream *stream) {
-        return stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(s_journal_meta)), sizeof(s_journal_meta));
+        R_RETURN(stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(s_journal_meta)), sizeof(s_journal_meta)));
     }
 
     Result JournalForMeta::RestoreJournal(Stream *stream) {

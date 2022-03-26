@@ -57,9 +57,9 @@ namespace ams::mitm::ns {
             switch (port_index) {
                 case PortIndex_Mitm:
                     if (hos::GetVersion() < hos::Version_3_0_0) {
-                        return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IAmMitmInterface, NsAmMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                        R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IAmMitmInterface, NsAmMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                     } else {
-                        return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IWebMitmInterface, NsWebMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                        R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IWebMitmInterface, NsWebMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                     }
 
                 AMS_UNREACHABLE_DEFAULT_CASE();

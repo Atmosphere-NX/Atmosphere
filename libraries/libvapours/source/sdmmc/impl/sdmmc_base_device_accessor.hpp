@@ -419,18 +419,18 @@ namespace ams::sdmmc::impl {
             }
 
             Result CheckRemoved() const {
-                return m_base_device->CheckRemoved();
+                R_RETURN(m_base_device->CheckRemoved());
             }
 
             Result IssueCommandAndCheckR1(u32 *out_response, u32 command_index, u32 command_arg, bool is_busy, DeviceState expected_state, u32 status_ignore_mask) const;
 
             Result IssueCommandAndCheckR1(u32 command_index, u32 command_arg, bool is_busy, DeviceState expected_state, u32 status_ignore_mask) const {
                 u32 dummy;
-                return this->IssueCommandAndCheckR1(std::addressof(dummy), command_index, command_arg, is_busy, expected_state, status_ignore_mask);
+                R_RETURN(this->IssueCommandAndCheckR1(std::addressof(dummy), command_index, command_arg, is_busy, expected_state, status_ignore_mask));
             }
 
             Result IssueCommandAndCheckR1(u32 command_index, u32 command_arg, bool is_busy, DeviceState expected_state) const {
-                return this->IssueCommandAndCheckR1(command_index, command_arg, is_busy, expected_state, 0);
+                R_RETURN(this->IssueCommandAndCheckR1(command_index, command_arg, is_busy, expected_state, 0));
             }
 
             Result IssueCommandGoIdleState() const;
@@ -441,11 +441,11 @@ namespace ams::sdmmc::impl {
 
             Result IssueCommandSendStatus(u32 status_ignore_mask) const {
                 u32 dummy;
-                return this->IssueCommandSendStatus(std::addressof(dummy), status_ignore_mask);
+                R_RETURN(this->IssueCommandSendStatus(std::addressof(dummy), status_ignore_mask));
             }
 
             Result IssueCommandSendStatus() const {
-                return this->IssueCommandSendStatus(0);
+                R_RETURN(this->IssueCommandSendStatus(0));
             }
 
             Result IssueCommandSetBlockLenToSectorSize() const;

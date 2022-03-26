@@ -461,10 +461,10 @@ namespace ams::sdmmc::impl {
                     this->AbortTransaction();
                 }
 
-                return result;
+                R_RETURN(result);
             } else if (sdmmc::ResultDeviceRemoved::Includes(result)) {
                 /* Otherwise, check if the device was removed. */
-                return result;
+                R_RETURN(result);
             } else {
                 /* If the device wasn't removed, cancel our transaction. */
                 this->AbortTransaction();
@@ -495,7 +495,7 @@ namespace ams::sdmmc::impl {
                     } else {
                         /* Otherwise, we have a generic failure. */
                         this->AbortTransaction();
-                        return result;
+                        R_RETURN(result);
                     }
                 }
             }
@@ -538,13 +538,13 @@ namespace ams::sdmmc::impl {
                     } else {
                         /* Abort the transaction. */
                         this->AbortTransaction();
-                        return result;
+                        R_RETURN(result);
                     }
 
-                    return result;
+                    R_RETURN(result);
                 } else if (sdmmc::ResultDeviceRemoved::Includes(result)) {
                     /* Otherwise, check if the device was removed. */
-                    return result;
+                    R_RETURN(result);
                 } else {
                     /* Otherwise, timeout if the transfer hasn't advanced. */
                     if (last_block_count != reg::Read(m_registers->block_count)) {
@@ -597,7 +597,7 @@ namespace ams::sdmmc::impl {
                         } else {
                             /* Otherwise, we have a generic failure. */
                             this->AbortTransaction();
-                            return result;
+                            R_RETURN(result);
                         }
                     }
                 }
@@ -967,7 +967,7 @@ namespace ams::sdmmc::impl {
             /* After we issue the command, we need to wait 8 device clocks. */
             ON_SCOPE_EXIT { WaitClocks(8, m_device_clock_frequency_khz); };
 
-            return this->IssueCommandWithDeviceClock(command, xfer_data, out_num_transferred_blocks);
+            R_RETURN(this->IssueCommandWithDeviceClock(command, xfer_data, out_num_transferred_blocks));
         }
     }
 
@@ -996,7 +996,7 @@ namespace ams::sdmmc::impl {
             /* After we issue the command, we need to wait 8 device clocks. */
             ON_SCOPE_EXIT { WaitClocks(8, m_device_clock_frequency_khz); };
 
-            return this->IssueStopTransmissionCommandWithDeviceClock(out_response);
+            R_RETURN(this->IssueStopTransmissionCommandWithDeviceClock(out_response));
         }
     }
 

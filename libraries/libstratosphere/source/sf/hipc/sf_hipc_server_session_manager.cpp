@@ -164,26 +164,26 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::RegisterSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->RegisterSession(std::addressof(session_ptr), session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+        R_RETURN(this->RegisterSession(std::addressof(session_ptr), session_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
     }
 
     Result ServerSessionManager::AcceptSession(os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->AcceptSession(std::addressof(session_ptr), port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+        R_RETURN(this->AcceptSession(std::addressof(session_ptr), port_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
     }
 
     #if AMS_SF_MITM_SUPPORTED
     Result ServerSessionManager::RegisterMitmSession(os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->RegisterMitmSession(std::addressof(session_ptr), mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+        R_RETURN(this->RegisterMitmSession(std::addressof(session_ptr), mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
     }
 
     Result ServerSessionManager::AcceptMitmSession(os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->AcceptMitmSession(std::addressof(session_ptr), mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+        R_RETURN(this->AcceptMitmSession(std::addressof(session_ptr), mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
     }
     #endif
 
@@ -243,10 +243,7 @@ namespace ams::sf::hipc {
             default:
             {
                 R_TRY_CATCH(this->ProcessRequestImpl(session, message, message)) {
-                    R_CATCH(sf::impl::ResultRequestContextChanged) {
-                        /* A meta message changing the request context has been sent. */
-                        return R_CURRENT_RESULT;
-                    }
+                    R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged) /* A meta message changing the request context has been sent. */
                     R_CATCH_ALL() {
                         /* All other results indicate something went very wrong. */
                         this->CloseSessionImpl(session);
@@ -285,12 +282,12 @@ namespace ams::sf::hipc {
         switch (cmif_command_type) {
             case CmifCommandType_Request:
             case CmifCommandType_RequestWithContext:
-                return this->DispatchRequest(session->m_srv_obj_holder.Clone(), session, in_message, out_message);
+                R_RETURN(this->DispatchRequest(session->m_srv_obj_holder.Clone(), session, in_message, out_message));
             case CmifCommandType_Control:
             case CmifCommandType_ControlWithContext:
-                return this->DispatchManagerRequest(session, in_message, out_message);
+                R_RETURN(this->DispatchManagerRequest(session, in_message, out_message));
             default:
-                return sf::hipc::ResultUnknownCommandType();
+                R_THROW(sf::hipc::ResultUnknownCommandType());
         }
     }
 

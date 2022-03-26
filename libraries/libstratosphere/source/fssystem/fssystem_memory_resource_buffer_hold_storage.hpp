@@ -45,42 +45,42 @@ namespace ams::fssystem {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->Read(offset, buffer, size);
+                R_RETURN(m_storage->Read(offset, buffer, size));
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                R_RETURN(m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
             }
 
             virtual Result GetSize(s64 *out) override {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->GetSize(out);
+                R_RETURN(m_storage->GetSize(out));
             }
 
             virtual Result Flush() override {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->Flush();
+                R_RETURN(m_storage->Flush());
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->Write(offset, buffer, size);
+                R_RETURN(m_storage->Write(offset, buffer, size));
             }
 
             virtual Result SetSize(s64 size) override {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_storage != nullptr);
 
-                return m_storage->SetSize(size);
+                R_RETURN(m_storage->SetSize(size));
             }
     };
 

@@ -120,7 +120,7 @@ namespace ams::tipc {
                     *out_object = GetReference(entry->object);
                     *out_holder = nullptr;
 
-                    return result;
+                    R_RETURN(result);
                 } else {
                     R_SUCCEED();
                 }

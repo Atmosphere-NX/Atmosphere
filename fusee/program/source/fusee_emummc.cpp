@@ -33,7 +33,7 @@ namespace ams::nxboot {
                         ShowFatalError("SdCard: unaligned access to %" PRIx64 ", size=%" PRIx64"\n", static_cast<u64>(offset), static_cast<u64>(size));
                     }
 
-                    return ReadSdCard(buffer, size, offset / sdmmc::SectorSize, size / sdmmc::SectorSize);
+                    R_RETURN(ReadSdCard(buffer, size, offset / sdmmc::SectorSize, size / sdmmc::SectorSize));
                 }
 
                 virtual Result Flush() override {
@@ -67,7 +67,7 @@ namespace ams::nxboot {
                         ShowFatalError("SdCard: unaligned access to %" PRIx64 ", size=%" PRIx64"\n", static_cast<u64>(offset), static_cast<u64>(size));
                     }
 
-                    return ReadMmc(buffer, size, Partition, offset / sdmmc::SectorSize, size / sdmmc::SectorSize);
+                    R_RETURN(ReadMmc(buffer, size, Partition, offset / sdmmc::SectorSize, size / sdmmc::SectorSize));
                 }
 
                 virtual Result Flush() override {
@@ -349,11 +349,11 @@ namespace ams::nxboot {
     }
 
     Result ReadBoot0(s64 offset, void *dst, size_t size) {
-        return g_boot0_storage->Read(offset, dst, size);
+        R_RETURN(g_boot0_storage->Read(offset, dst, size));
     }
 
     Result ReadPackage2(s64 offset, void *dst, size_t size) {
-        return g_package2_storage->Read(offset, dst, size);
+        R_RETURN(g_package2_storage->Read(offset, dst, size));
     }
 
 }

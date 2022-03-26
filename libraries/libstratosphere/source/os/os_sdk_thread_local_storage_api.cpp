@@ -22,7 +22,7 @@ namespace ams::os {
     /* TODO: Nintendo reserves half the TLS slots for SDK usage. */
     /* We don't have that ability...how should this work? */
     Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
-        return os::AllocateTlsSlot(out, destructor);
+        R_RETURN(os::AllocateTlsSlot(out, destructor));
     }
     #else
     Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {

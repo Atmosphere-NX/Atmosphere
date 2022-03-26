@@ -19,7 +19,7 @@
 namespace ams::mitm::ns {
 
     Result NsDocumentService::GetApplicationContentPath(const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type) {
-        return nswebGetApplicationContentPath(m_srv.get(), out_path.GetPointer(), out_path.GetSize(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+        R_RETURN(nswebGetApplicationContentPath(m_srv.get(), out_path.GetPointer(), out_path.GetSize(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type)));
     }
 
     Result NsDocumentService::ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type) {
@@ -30,11 +30,11 @@ namespace ams::mitm::ns {
             nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
             R_SUCCEED();
         }
-        return nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+        R_RETURN(nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type)));
     }
 
     Result NsDocumentService::GetRunningApplicationProgramId(sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id) {
-        return nswebGetRunningApplicationProgramId(m_srv.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id));
+        R_RETURN(nswebGetRunningApplicationProgramId(m_srv.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id)));
     }
 
     Result NsWebMitmService::GetDocumentInterface(sf::Out<sf::SharedPointer<impl::IDocumentInterface>> out) {

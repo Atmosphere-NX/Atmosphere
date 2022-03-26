@@ -117,11 +117,11 @@ namespace ams::ncm {
         R_TRY(this->GetContentInfoOfContentMeta(std::addressof(info), key));
 
         /* Prepare the content meta. */
-        return this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(info.GetId(), info.GetSize(), key), key, util::nullopt);
+        R_RETURN(this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(info.GetId(), info.GetSize(), key), key, util::nullopt));
     }
 
     Result PackageSystemUpdateTask::PrepareDependency() {
-        return this->PrepareSystemUpdateDependency();
+        R_RETURN(this->PrepareSystemUpdateDependency());
     }
 
     Result PackageSystemUpdateTask::GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key) {

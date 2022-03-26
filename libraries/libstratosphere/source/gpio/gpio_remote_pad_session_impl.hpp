@@ -29,47 +29,47 @@ namespace ams::gpio {
         public:
             /* Actual commands. */
             Result SetDirection(gpio::Direction direction) {
-                return ::gpioPadSetDirection(std::addressof(m_srv), static_cast<::GpioDirection>(static_cast<u32>(direction)));
+                R_RETURN(::gpioPadSetDirection(std::addressof(m_srv), static_cast<::GpioDirection>(static_cast<u32>(direction))));
             }
 
             Result GetDirection(ams::sf::Out<gpio::Direction> out) {
                 static_assert(sizeof(gpio::Direction) == sizeof(::GpioDirection));
-                return ::gpioPadGetDirection(std::addressof(m_srv), reinterpret_cast<::GpioDirection *>(out.GetPointer()));
+                R_RETURN(::gpioPadGetDirection(std::addressof(m_srv), reinterpret_cast<::GpioDirection *>(out.GetPointer())));
             }
 
             Result SetInterruptMode(gpio::InterruptMode mode) {
-                return ::gpioPadSetInterruptMode(std::addressof(m_srv), static_cast<::GpioInterruptMode>(static_cast<u32>(mode)));
+                R_RETURN(::gpioPadSetInterruptMode(std::addressof(m_srv), static_cast<::GpioInterruptMode>(static_cast<u32>(mode))));
             }
 
             Result GetInterruptMode(ams::sf::Out<gpio::InterruptMode> out) {
                 static_assert(sizeof(gpio::InterruptMode) == sizeof(::GpioInterruptMode));
-                return ::gpioPadGetInterruptMode(std::addressof(m_srv), reinterpret_cast<::GpioInterruptMode *>(out.GetPointer()));
+                R_RETURN(::gpioPadGetInterruptMode(std::addressof(m_srv), reinterpret_cast<::GpioInterruptMode *>(out.GetPointer())));
             }
 
             Result SetInterruptEnable(bool enable) {
-                return ::gpioPadSetInterruptEnable(std::addressof(m_srv), enable);
+                R_RETURN(::gpioPadSetInterruptEnable(std::addressof(m_srv), enable));
             }
 
             Result GetInterruptEnable(ams::sf::Out<bool> out) {
-                return ::gpioPadGetInterruptEnable(std::addressof(m_srv), out.GetPointer());
+                R_RETURN(::gpioPadGetInterruptEnable(std::addressof(m_srv), out.GetPointer()));
             }
 
             Result GetInterruptStatus(ams::sf::Out<gpio::InterruptStatus> out) {
                 static_assert(sizeof(gpio::InterruptStatus) == sizeof(::GpioInterruptStatus));
-                return ::gpioPadGetInterruptStatus(std::addressof(m_srv), reinterpret_cast<::GpioInterruptStatus *>(out.GetPointer()));
+                R_RETURN(::gpioPadGetInterruptStatus(std::addressof(m_srv), reinterpret_cast<::GpioInterruptStatus *>(out.GetPointer())));
             }
 
             Result ClearInterruptStatus() {
-                return ::gpioPadClearInterruptStatus(std::addressof(m_srv));
+                R_RETURN(::gpioPadClearInterruptStatus(std::addressof(m_srv)));
             }
 
             Result SetValue(gpio::GpioValue value) {
-                return ::gpioPadSetValue(std::addressof(m_srv), static_cast<::GpioValue>(static_cast<u32>(value)));
+                R_RETURN(::gpioPadSetValue(std::addressof(m_srv), static_cast<::GpioValue>(static_cast<u32>(value))));
             }
 
             Result GetValue(ams::sf::Out<gpio::GpioValue> out) {
                 static_assert(sizeof(gpio::GpioValue) == sizeof(::GpioValue));
-                return ::gpioPadGetValue(std::addressof(m_srv), reinterpret_cast<::GpioValue *>(out.GetPointer()));
+                R_RETURN(::gpioPadGetValue(std::addressof(m_srv), reinterpret_cast<::GpioValue *>(out.GetPointer())));
             }
 
             Result BindInterrupt(ams::sf::OutCopyHandle out) {
@@ -80,23 +80,23 @@ namespace ams::gpio {
             }
 
             Result UnbindInterrupt() {
-                return ::gpioPadUnbindInterrupt(std::addressof(m_srv));
+                R_RETURN(::gpioPadUnbindInterrupt(std::addressof(m_srv)));
             }
 
             Result SetDebounceEnabled(bool enable) {
-                return ::gpioPadSetDebounceEnabled(std::addressof(m_srv), enable);
+                R_RETURN(::gpioPadSetDebounceEnabled(std::addressof(m_srv), enable));
             }
 
             Result GetDebounceEnabled(ams::sf::Out<bool> out) {
-                return ::gpioPadGetDebounceEnabled(std::addressof(m_srv), out.GetPointer());
+                R_RETURN(::gpioPadGetDebounceEnabled(std::addressof(m_srv), out.GetPointer()));
             }
 
             Result SetDebounceTime(s32 ms) {
-                return ::gpioPadSetDebounceTime(std::addressof(m_srv), ms);
+                R_RETURN(::gpioPadSetDebounceTime(std::addressof(m_srv), ms));
             }
 
             Result GetDebounceTime(ams::sf::Out<s32> out) {
-                return ::gpioPadGetDebounceTime(std::addressof(m_srv), out.GetPointer());
+                R_RETURN(::gpioPadGetDebounceTime(std::addressof(m_srv), out.GetPointer()));
             }
 
             Result SetValueForSleepState(gpio::GpioValue value) {

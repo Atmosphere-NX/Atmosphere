@@ -36,17 +36,17 @@ namespace ams::boot {
 
     Result PmicDriver::GetOnOffIrq(u8 *out) {
         const u8 addr = 0x0B;
-        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        R_RETURN(ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr)));
     }
 
     Result PmicDriver::GetPowerStatus(u8 *out) {
         const u8 addr = 0x15;
-        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        R_RETURN(ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr)));
     }
 
     Result PmicDriver::GetNvErc(u8 *out) {
         const u8 addr = 0x0C;
-        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        R_RETURN(ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr)));
     }
 
     Result PmicDriver::GetPowerButtonPressed(bool *out) {

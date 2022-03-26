@@ -148,7 +148,7 @@ namespace ams::i2c::driver::impl {
                         os::SleepThread(m_retry_interval);
                         continue;
                     }
-                    return i2c::ResultBusBusy();
+                    R_THROW(i2c::ResultBusBusy());
                 }
             } R_END_TRY_CATCH;
 
@@ -160,14 +160,14 @@ namespace ams::i2c::driver::impl {
         /* Acquire exclusive access to the device. */
         std::scoped_lock lk(this->GetDevice().SafeCastTo<I2cDeviceProperty>().GetDriver().SafeCastTo<II2cDriver>().GetTransactionOrderMutex());
 
-        return this->ExecuteTransactionWithRetry(nullptr, Command::Send, src, src_size, option);
+        R_RETURN(this->ExecuteTransactionWithRetry(nullptr, Command::Send, src, src_size, option));
     }
 
     Result I2cSessionImpl::Receive(void *dst, size_t dst_size, TransactionOption option) {
         /* Acquire exclusive access to the device. */
         std::scoped_lock lk(this->GetDevice().SafeCastTo<I2cDeviceProperty>().GetDriver().SafeCastTo<II2cDriver>().GetTransactionOrderMutex());
 
-        return this->ExecuteTransactionWithRetry(dst, Command::Receive, nullptr, dst_size, option);
+        R_RETURN(this->ExecuteTransactionWithRetry(dst, Command::Receive, nullptr, dst_size, option));
     }
 
     Result I2cSessionImpl::ExecuteCommandList(void *dst, size_t dst_size, const void *src, size_t src_size) {

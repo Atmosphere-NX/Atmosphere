@@ -55,7 +55,7 @@ namespace ams::os {
             }
 
             Result Map(void **out, MemoryPermission owner_perm) {
-                return MapTransferMemory(out, std::addressof(m_tmem), owner_perm);
+                R_RETURN(MapTransferMemory(out, std::addressof(m_tmem), owner_perm));
             }
 
             void Unmap() {

@@ -19,11 +19,11 @@
 namespace ams::htcfs {
 
     Result GetWorkingDirectory(char *dst, size_t dst_size) {
-        return htcfs::GetClient().GetWorkingDirectory(dst, dst_size);
+        R_RETURN(htcfs::GetClient().GetWorkingDirectory(dst, dst_size));
     }
 
     Result GetWorkingDirectorySize(s32 *out) {
-        return htcfs::GetClient().GetWorkingDirectorySize(out);
+        R_RETURN(htcfs::GetClient().GetWorkingDirectorySize(out));
     }
 
 }

@@ -42,7 +42,7 @@ namespace ams::dd {
     }
 
     Result CreateDeviceAddressSpace(DeviceAddressSpaceType *das, u64 size) {
-        return CreateDeviceAddressSpace(das, 0, size);
+        R_RETURN(CreateDeviceAddressSpace(das, 0, size));
     }
 
     void DestroyDeviceAddressSpace(DeviceAddressSpaceType *das) {
@@ -86,7 +86,7 @@ namespace ams::dd {
         AMS_ASSERT(size > 0);
         AMS_ASSERT((process_address & (4_MB - 1)) == (device_address & (4_MB - 1)));
 
-        return impl::DeviceAddressSpaceImpl::MapAligned(das->device_handle, process_handle, process_address, size, device_address, device_perm);
+        R_RETURN(impl::DeviceAddressSpaceImpl::MapAligned(das->device_handle, process_handle, process_address, size, device_address, device_perm));
     }
 
     Result MapDeviceAddressSpaceNotAligned(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address, MemoryPermission device_perm) {
@@ -99,7 +99,7 @@ namespace ams::dd {
         AMS_ASSERT(device_address + size > device_address);
         AMS_ASSERT(size > 0);
 
-        return impl::DeviceAddressSpaceImpl::MapNotAligned(das->device_handle, process_handle, process_address, size, device_address, device_perm);
+        R_RETURN(impl::DeviceAddressSpaceImpl::MapNotAligned(das->device_handle, process_handle, process_address, size, device_address, device_perm));
     }
 
     void UnmapDeviceAddressSpace(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address) {
@@ -119,7 +119,7 @@ namespace ams::dd {
         /* Check pre-conditions. */
         AMS_ASSERT(das->state == DeviceAddressSpaceType::State_Initialized);
 
-        return impl::DeviceAddressSpaceImpl::Attach(das, device_name);
+        R_RETURN(impl::DeviceAddressSpaceImpl::Attach(das, device_name));
     }
 
     void DetachDeviceAddressSpace(DeviceAddressSpaceType *das, DeviceName device_name) {

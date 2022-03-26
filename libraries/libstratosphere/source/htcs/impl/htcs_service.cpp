@@ -148,7 +148,7 @@ namespace ams::htcs::impl {
         s64 cont_size;
         const Result result = this->SendContinue(std::addressof(cont_size), buffer, size, task_id, desc);
         if (R_FAILED(result)) {
-            return this->SendResults(out_err, out_size, task_id, desc);
+            R_RETURN(this->SendResults(out_err, out_size, task_id, desc));
         }
 
         /* Wait for the task to complete. */

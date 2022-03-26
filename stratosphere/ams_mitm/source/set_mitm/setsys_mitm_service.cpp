@@ -99,7 +99,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetSysMitmService::GetFirmwareVersion2(sf::Out<settings::FirmwareVersion> out) {
-        return GetFirmwareVersionImpl(out.GetPointer(), m_client_info);
+        R_RETURN(GetFirmwareVersionImpl(out.GetPointer(), m_client_info));
     }
 
     Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {

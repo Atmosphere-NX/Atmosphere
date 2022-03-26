@@ -30,7 +30,7 @@ namespace ams::lr {
         public:
             /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrRegLrResolveProgramPath(std::addressof(m_srv), id.value, out->str);
+                R_RETURN(::lrRegLrResolveProgramPath(std::addressof(m_srv), id.value, out->str));
             }
 
             Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {

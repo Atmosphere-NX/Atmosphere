@@ -52,7 +52,7 @@ namespace ams::secmon::fatal {
     }
 
     Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
-        return sdmmc::CheckSdCardConnection(out_sm, out_bw, Port);
+        R_RETURN(sdmmc::CheckSdCardConnection(out_sm, out_bw, Port));
     }
 
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {

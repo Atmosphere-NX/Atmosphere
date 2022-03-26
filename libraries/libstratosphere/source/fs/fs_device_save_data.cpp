@@ -38,7 +38,7 @@ namespace ams::fs {
             R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInDeviceSaveDataA());
 
             /* Register. */
-            return fsa::Register(name, std::move(fsa));
+            R_RETURN(fsa::Register(name, std::move(fsa)));
         }
 
     }

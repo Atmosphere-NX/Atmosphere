@@ -272,7 +272,7 @@ namespace ams::ncm {
         R_TRY(impl::CopyFile(savedata_db_path, bis_db_path));
 
         /* Commit the import. */
-        return fs::CommitSaveData(root->mount_name);
+        R_RETURN(fs::CommitSaveData(root->mount_name));
     }
 
     Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
@@ -289,10 +289,10 @@ namespace ams::ncm {
 
             /* Create a builder, and build. */
             ContentMetaDatabaseBuilder builder(std::addressof(meta_db));
-            return builder.BuildFromStorage(std::addressof(storage));
+            R_RETURN(builder.BuildFromStorage(std::addressof(storage)));
         } else {
             /* On 5.0.0+, building just performs an import. */
-            return this->ImportContentMetaDatabase(storage_id, false);
+            R_RETURN(this->ImportContentMetaDatabase(storage_id, false));
         }
     }
 
@@ -398,7 +398,7 @@ namespace ams::ncm {
         R_TRY(fs::EnsureDirectory(root->path));
 
         /* Initialize content and placeholder directories for the root. */
-        return ContentStorageImpl::InitializeBase(root->path);
+        R_RETURN(ContentStorageImpl::InitializeBase(root->path));
     }
 
     Result ContentManagerImpl::CreateContentMetaDatabase(StorageId storage_id) {
@@ -418,7 +418,7 @@ namespace ams::ncm {
         R_TRY(fs::EnsureDirectory(root->path));
 
         /* Commit our changes. */
-        return fs::CommitSaveData(root->mount_name);
+        R_RETURN(fs::CommitSaveData(root->mount_name));
     }
 
     Result ContentManagerImpl::VerifyContentStorage(StorageId storage_id) {
@@ -438,7 +438,7 @@ namespace ams::ncm {
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Ensure the root, content and placeholder directories exist for the storage. */
-        return ContentStorageImpl::VerifyBase(path);
+        R_RETURN(ContentStorageImpl::VerifyBase(path));
     }
 
     Result ContentManagerImpl::VerifyContentMetaDatabase(StorageId storage_id) {
@@ -509,11 +509,11 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::CloseContentStorageForcibly(StorageId storage_id) {
-        return this->InactivateContentStorage(storage_id);
+        R_RETURN(this->InactivateContentStorage(storage_id));
     }
 
     Result ContentManagerImpl::CloseContentMetaDatabaseForcibly(StorageId storage_id) {
-        return this->InactivateContentMetaDatabase(storage_id);
+        R_RETURN(this->InactivateContentMetaDatabase(storage_id));
     }
 
     Result ContentManagerImpl::CleanupContentMetaDatabase(StorageId storage_id) {
@@ -527,7 +527,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Delete save data for the content meta database root. */
-        return fs::DeleteSaveData(root->info.space_id, root->info.id);
+        R_RETURN(fs::DeleteSaveData(root->info.space_id, root->info.id));
     }
 
     Result ContentManagerImpl::ActivateContentStorage(StorageId storage_id) {

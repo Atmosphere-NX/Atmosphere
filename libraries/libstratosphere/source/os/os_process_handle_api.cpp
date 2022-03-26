@@ -33,11 +33,11 @@ namespace ams {
         }
 
         Result GetProcessId(os::ProcessId *out, NativeHandle handle) {
-            return ::ams::os::impl::ProcessHandleImpl::GetProcessId(out, handle);
+            R_RETURN(::ams::os::impl::ProcessHandleImpl::GetProcessId(out, handle));
         }
 
         Result GetProgramId(ncm::ProgramId *out, NativeHandle handle) {
-            return ::ams::os::impl::ProcessHandleImpl::GetProgramId(out, handle);
+            R_RETURN(::ams::os::impl::ProcessHandleImpl::GetProgramId(out, handle));
         }
 
     }

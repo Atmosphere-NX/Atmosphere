@@ -57,28 +57,28 @@ namespace ams::fssrv::impl {
             virtual ~RemoteStorage() { fsStorageClose(std::addressof(m_base_storage)); }
         public:
             Result Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size) {
-                return fsStorageRead(std::addressof(m_base_storage), offset, buffer.GetPointer(), size);
+                R_RETURN(fsStorageRead(std::addressof(m_base_storage), offset, buffer.GetPointer(), size));
             }
 
             Result Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size) {
-                return fsStorageWrite(std::addressof(m_base_storage), offset, buffer.GetPointer(), size);
+                R_RETURN(fsStorageWrite(std::addressof(m_base_storage), offset, buffer.GetPointer(), size));
             }
 
             Result Flush(){
-                return fsStorageFlush(std::addressof(m_base_storage));
+                R_RETURN(fsStorageFlush(std::addressof(m_base_storage)));
             }
 
             Result SetSize(s64 size) {
-                return fsStorageSetSize(std::addressof(m_base_storage), size);
+                R_RETURN(fsStorageSetSize(std::addressof(m_base_storage), size));
             }
 
             Result GetSize(ams::sf::Out<s64> out) {
-                return fsStorageGetSize(std::addressof(m_base_storage), out.GetPointer());
+                R_RETURN(fsStorageGetSize(std::addressof(m_base_storage), out.GetPointer()));
             }
 
             Result OperateRange(ams::sf::Out<fs::StorageQueryRangeInfo> out, s32 op_id, s64 offset, s64 size) {
                 static_assert(sizeof(::FsRangeInfo) == sizeof(fs::StorageQueryRangeInfo));
-                return fsStorageOperateRange(std::addressof(m_base_storage), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(out.GetPointer()));
+                R_RETURN(fsStorageOperateRange(std::addressof(m_base_storage), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(out.GetPointer())));
             }
     };
     static_assert(fssrv::sf::IsIStorage<RemoteStorage>);

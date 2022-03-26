@@ -26,7 +26,7 @@ namespace ams::htcfs {
             R_CONVERT(htcfs::ResultInternalError,     fs::ResultInternal())
         } R_END_TRY_CATCH;
 
-        return result;
+        R_RETURN(result);
     }
 
 }

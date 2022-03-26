@@ -45,11 +45,11 @@ namespace ams::updater {
 
     Result BisSave::Load() {
         size_t read_size;
-        return m_accessor.Read(std::addressof(read_size), m_save_buffer, SaveSize, Boot0Partition::BctSave);
+        R_RETURN(m_accessor.Read(std::addressof(read_size), m_save_buffer, SaveSize, Boot0Partition::BctSave));
     }
 
     Result BisSave::Save() {
-        return m_accessor.Write(m_save_buffer, SaveSize, Boot0Partition::BctSave);
+        R_RETURN(m_accessor.Write(m_save_buffer, SaveSize, Boot0Partition::BctSave));
     }
 
     bool BisSave::GetNeedsVerification(BootModeType mode) {

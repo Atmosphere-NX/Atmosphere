@@ -34,7 +34,7 @@ namespace ams::gpio::server {
     }
 
     Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
-        return this->OpenSession2(out, ConvertToDeviceCode(pad_name), ddsf::AccessMode_ReadWrite);
+        R_RETURN(this->OpenSession2(out, ConvertToDeviceCode(pad_name), ddsf::AccessMode_ReadWrite));
     }
 
     Result ManagerImpl::OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {

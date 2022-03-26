@@ -53,7 +53,7 @@ namespace ams::mitm::fs {
 
             switch (port_index) {
                 case PortIndex_Mitm:
-                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<IFsMitmInterface, FsMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                    R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<IFsMitmInterface, FsMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }

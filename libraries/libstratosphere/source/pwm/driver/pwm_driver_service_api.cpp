@@ -28,7 +28,7 @@ namespace ams::pwm::driver {
     }
 
     Result RegisterDeviceCode(DeviceCode device_code, IPwmDevice *device) {
-        return impl::RegisterDeviceCode(device_code, device);
+        R_RETURN(impl::RegisterDeviceCode(device_code, device));
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {

@@ -20,11 +20,11 @@
 namespace ams::sprofile::srv {
 
     Result ProfileControllerForDebugImpl::Reset() {
-        return m_manager->ResetSaveData();
+        R_RETURN(m_manager->ResetSaveData());
     }
 
     Result ProfileControllerForDebugImpl::GetRaw(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetRaw(out_type.GetPointer(), out_value.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetRaw(out_type.GetPointer(), out_value.GetPointer(), profile, key));
     }
 
 }

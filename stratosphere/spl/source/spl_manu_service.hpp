@@ -25,7 +25,7 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result ReencryptDeviceUniqueData(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option) {
-                return m_manager.ReencryptDeviceUniqueData(out.GetPointer(), out.GetSize(), src.GetPointer(), src.GetSize(), access_key_dec, source_dec, access_key_enc, source_enc, option);
+                R_RETURN(m_manager.ReencryptDeviceUniqueData(out.GetPointer(), out.GetSize(), src.GetPointer(), src.GetSize(), access_key_dec, source_dec, access_key_enc, source_enc, option));
             }
     };
     static_assert(spl::impl::IsIManuInterface<ManuService>);

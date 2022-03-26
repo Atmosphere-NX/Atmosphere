@@ -197,9 +197,7 @@ namespace ams::lm::srv {
                 .version = LogFileHeaderVersion
             };
 
-            R_TRY(fs::WriteFile(file, 0, std::addressof(header), sizeof(header), fs::WriteOption::Flush));
-
-            R_SUCCEED();
+            R_RETURN(fs::WriteFile(file, 0, std::addressof(header), sizeof(header), fs::WriteOption::Flush));
         }
 
         bool WriteLogFileHeader(const char *path) {
@@ -213,9 +211,7 @@ namespace ams::lm::srv {
             ON_SCOPE_EXIT { fs::CloseFile(file); };
 
             /* Write the data. */
-            R_TRY(fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush));
-
-            R_SUCCEED();
+            R_RETURN(fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush));
         }
 
         bool WriteLogFileBody(const char *path, s64 offset, const u8 *data, size_t size) {

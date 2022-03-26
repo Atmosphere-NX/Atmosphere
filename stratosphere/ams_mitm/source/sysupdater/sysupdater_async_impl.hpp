@@ -29,28 +29,21 @@ namespace ams::mitm::sysupdater {
 
             template<typename T>
             Result SaveErrorContextIfFailed(T &async, Result result) {
-                if (R_FAILED(result)) {
-                    async.GetErrorContext(std::addressof(m_error_context));
-                    return result;
-                }
+                ON_RESULT_FAILURE { async.GetErrorContext(std::addressof(m_error_context)); };
 
-                R_SUCCEED();
+                R_RETURN(result);
             }
 
             template<typename T>
             Result GetAndSaveErrorContext(T &async) {
-                R_TRY(this->SaveErrorContextIfFailed(async, async.Get()));
-                R_SUCCEED();
+                R_RETURN(this->SaveErrorContextIfFailed(async, async.Get()));
             }
 
             template<typename T>
             Result SaveInternalTaskErrorContextIfFailed(T &async, Result result) {
-                if (R_FAILED(result)) {
-                    async.CreateErrorContext(std::addressof(m_error_context));
-                    return result;
-                }
+                ON_RESULT_FAILURE { async.CreateErrorContext(std::addressof(m_error_context)); };
 
-                R_SUCCEED();
+                R_RETURN(result);
             }
 
             const err::ErrorContext &GetErrorContextImpl() {
@@ -82,7 +75,7 @@ namespace ams::mitm::sysupdater {
             virtual ~AsyncResultBase() { /* ... */ }
 
             Result Get() {
-                return ToAsyncResult(this->GetImpl());
+                R_RETURN(ToAsyncResult(this->GetImpl()));
             }
         private:
             virtual Result GetImpl() = 0;

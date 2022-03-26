@@ -101,13 +101,13 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             Result CheckAndHandleError() {
                 const Result result = this->GetTransactionResult();
                 this->HandleTransactionError(result);
+
                 if (R_FAILED(result)) {
                     this->DisableInterruptMask();
                     os::ClearInterruptEvent(std::addressof(m_interrupt_event));
-                    return result;
                 }
 
-                R_SUCCEED();
+                R_RETURN(result);
             }
         public:
             virtual void InitializeDriver() override;

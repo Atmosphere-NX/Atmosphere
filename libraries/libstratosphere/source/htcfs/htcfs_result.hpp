@@ -49,7 +49,7 @@ namespace ams::htcfs {
     }
 
     inline Result ConvertHtcfsResult(s64 param) {
-        return ConvertHtcfsResult(static_cast<HtcfsResult>(param));
+        R_RETURN(ConvertHtcfsResult(static_cast<HtcfsResult>(param)));
     }
 
 }

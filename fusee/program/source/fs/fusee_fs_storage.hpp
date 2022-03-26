@@ -73,15 +73,15 @@ namespace ams::fs {
             ReadOnlyStorageAdapter(IStorage &s) : m_storage(s) { /* ... */ }
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                return m_storage.Read(offset, buffer, size);
+                R_RETURN(m_storage.Read(offset, buffer, size));
             }
 
             virtual Result Flush() override {
-                return m_storage.Flush();
+                R_RETURN(m_storage.Flush());
             }
 
             virtual Result GetSize(s64 *out) override {
-                return m_storage.GetSize(out);
+                R_RETURN(m_storage.GetSize(out));
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
@@ -108,7 +108,7 @@ namespace ams::fs {
                 /* Validate arguments and read. */
                 R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
                 R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
-                return m_storage.Read(m_offset + offset, buffer, size);
+                R_RETURN(m_storage.Read(m_offset + offset, buffer, size));
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override{
@@ -118,11 +118,11 @@ namespace ams::fs {
                 /* Validate arguments and write. */
                 R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
                 R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
-                return m_storage.Write(m_offset + offset, buffer, size);
+                R_RETURN(m_storage.Write(m_offset + offset, buffer, size));
             }
 
             virtual Result Flush() override {
-                return m_storage.Flush();
+                R_RETURN(m_storage.Flush());
             }
 
             virtual Result GetSize(s64 *out) override {

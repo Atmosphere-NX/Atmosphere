@@ -28,7 +28,7 @@ namespace ams::ncm {
             const size_t path_len = util::SNPrintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
             AMS_ABORT_UNLESS(path_len < MaxPackagePathLength);
 
-            return fs::ConvertToFsCommonPath(dst, dst_size, package_path);
+            R_RETURN(fs::ConvertToFsCommonPath(dst, dst_size, package_path));
         }
 
         Result LoadContentMeta(ncm::AutoBuffer *out, const char *package_root_path, const fs::DirectoryEntry &entry) {
@@ -37,7 +37,7 @@ namespace ams::ncm {
             char path[MaxPackagePathLength];
             R_TRY(ConvertToFsCommonPath(path, sizeof(path), package_root_path, entry.name));
 
-            return ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(out, path);
+            R_RETURN(ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(out, path));
         }
 
         template<typename F>
@@ -123,7 +123,7 @@ namespace ams::ncm {
         }
 
         /* Commit our changes. */
-        return m_db->Commit();
+        R_RETURN(m_db->Commit());
     }
 
     Result ContentMetaDatabaseBuilder::BuildFromPackage(const char *package_root_path) {
@@ -144,11 +144,11 @@ namespace ams::ncm {
             R_UNLESS(content_id, ncm::ResultInvalidPackageFormat());
 
             /* Build using the meta. */
-            return this->BuildFromPackageContentMeta(package_meta.Get(), package_meta.GetSize(), ContentInfo::Make(*content_id, entry.file_size, ContentType::Meta));
+            R_RETURN(this->BuildFromPackageContentMeta(package_meta.Get(), package_meta.GetSize(), ContentInfo::Make(*content_id, entry.file_size, ContentType::Meta)));
         }));
 
         /* Commit our changes. */
-        return m_db->Commit();
+        R_RETURN(m_db->Commit());
     }
 
     Result ContentMetaDatabaseBuilder::Cleanup() {
@@ -171,7 +171,7 @@ namespace ams::ncm {
         }
 
         /* Commit our deletions. */
-        return m_db->Commit();
+        R_RETURN(m_db->Commit());
     }
 
     Result ListApplicationPackage(s32 *out_count, ApplicationId *out_ids, size_t max_out_ids, const char *package_root_path) {

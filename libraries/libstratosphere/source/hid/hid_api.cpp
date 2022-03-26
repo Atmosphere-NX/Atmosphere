@@ -52,7 +52,7 @@ namespace ams::hid {
             if (!g_initialized_hid) {
                 if (!serviceIsActive(hidGetServiceSession())) {
                     if (!pm::info::HasLaunchedBootProgram(ncm::SystemProgramId::Hid)) {
-                        return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
+                        R_THROW(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
                     }
                     InitializeHid();
                 }

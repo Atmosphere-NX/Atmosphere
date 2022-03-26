@@ -32,23 +32,23 @@ namespace ams::fs {
             virtual ~RemoteStorage() { fsStorageClose(std::addressof(m_base_storage)); }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                return fsStorageRead(std::addressof(m_base_storage), offset, buffer, size);
+                R_RETURN(fsStorageRead(std::addressof(m_base_storage), offset, buffer, size));
             };
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                return fsStorageWrite(std::addressof(m_base_storage), offset, buffer, size);
+                R_RETURN(fsStorageWrite(std::addressof(m_base_storage), offset, buffer, size));
             };
 
             virtual Result Flush() override {
-                return fsStorageFlush(std::addressof(m_base_storage));
+                R_RETURN(fsStorageFlush(std::addressof(m_base_storage)));
             };
 
             virtual Result GetSize(s64 *out_size) override {
-                return fsStorageGetSize(std::addressof(m_base_storage), out_size);
+                R_RETURN(fsStorageGetSize(std::addressof(m_base_storage), out_size));
             };
 
             virtual Result SetSize(s64 size) override {
-                return fsStorageSetSize(std::addressof(m_base_storage), size);
+                R_RETURN(fsStorageSetSize(std::addressof(m_base_storage), size));
             };
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {

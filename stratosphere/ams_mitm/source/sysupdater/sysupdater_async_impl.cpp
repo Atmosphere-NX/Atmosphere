@@ -70,7 +70,7 @@ namespace ams::mitm::sysupdater {
     }
 
     Result AsyncPrepareSdCardUpdateImpl::Execute() {
-        return m_task->PrepareAndExecute();
+        R_RETURN(m_task->PrepareAndExecute());
     }
 
     void AsyncPrepareSdCardUpdateImpl::CancelImpl() {

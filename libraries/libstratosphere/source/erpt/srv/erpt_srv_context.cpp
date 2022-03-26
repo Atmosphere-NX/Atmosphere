@@ -100,7 +100,7 @@ namespace ams::erpt::srv {
         });
         R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
 
-        return it->AddContextToCategory(entry, data, data_size);
+        R_RETURN(it->AddContextToCategory(entry, data, data_size));
     }
 
     Result Context::SubmitContextRecord(std::unique_ptr<ContextRecord> record) {
@@ -109,7 +109,7 @@ namespace ams::erpt::srv {
         });
         R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
 
-        return it->AddContextRecordToCategory(std::move(record));
+        R_RETURN(it->AddContextRecordToCategory(std::move(record)));
     }
 
     Result Context::WriteContextsToReport(Report *report) {
@@ -132,7 +132,7 @@ namespace ams::erpt::srv {
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
         /* Submit the context record. */
-        return SubmitContextRecord(std::move(record));
+        R_RETURN(SubmitContextRecord(std::move(record)));
     }
 
 }

@@ -99,7 +99,7 @@ namespace ams::dmnt {
             result = HardwareBreakPointManager::SetExecutionBreakPoint(m_reg, m_ctx, 0);
             this->Reset();
         }
-        return result;
+        R_RETURN(result);
     }
 
     Result HardwareBreakPoint::Set(DebugProcess *debug_process, uintptr_t address, size_t size, bool is_step) {
@@ -159,7 +159,7 @@ namespace ams::dmnt {
             AMS_DMNT2_GDB_LOG_ERROR("SetContextBreakPoint FAIL 0x%08x ctx=%d\n", result.GetValue(), ctx);
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     svc::HardwareBreakPointRegisterName HardwareBreakPointManager::GetWatchPointContextRegister() {
@@ -176,7 +176,7 @@ namespace ams::dmnt {
             AMS_DMNT2_GDB_LOG_ERROR("SetContextBreakPoint FAIL 0x%08x reg=%d, ctx=%d, address=%lx\n", result.GetValue(), reg, ctx, address);
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     void HardwareBreakPointManager::CountBreakPointRegisters() {

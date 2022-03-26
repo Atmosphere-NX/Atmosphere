@@ -72,7 +72,7 @@ namespace ams::ncm {
 
     Result HostContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
-        return m_registered_content->GetPath(out.GetPointer(), content_id);
+        R_RETURN(m_registered_content->GetPath(out.GetPointer(), content_id));
     }
 
     Result HostContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
@@ -201,7 +201,7 @@ namespace ams::ncm {
 
     Result HostContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
         AMS_ABORT_UNLESS(spl::IsDevelopment());
-        return m_registered_content->RegisterPath(content_id, path);
+        R_RETURN(m_registered_content->RegisterPath(content_id, path));
     }
 
     Result HostContentStorageImpl::ClearRegisteredPath() {

@@ -26,20 +26,20 @@ namespace ams::sm::manager {
     /* Manager API. */
     Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus status, const void *acid, size_t acid_size, const void *aci, size_t aci_size) {
         static_assert(sizeof(status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition");
-        return smManagerAtmosphereRegisterProcess(static_cast<u64>(process_id), static_cast<u64>(program_id), reinterpret_cast<const CfgOverrideStatus *>(std::addressof(status)), acid, acid_size, aci, aci_size);
+        R_RETURN(smManagerAtmosphereRegisterProcess(static_cast<u64>(process_id), static_cast<u64>(program_id), reinterpret_cast<const CfgOverrideStatus *>(std::addressof(status)), acid, acid_size, aci, aci_size));
     }
 
     Result UnregisterProcess(os::ProcessId process_id) {
-        return smManagerUnregisterProcess(static_cast<u64>(process_id));
+        R_RETURN(smManagerUnregisterProcess(static_cast<u64>(process_id)));
     }
 
     /* Atmosphere extensions. */
     Result EndInitialDefers() {
-        return smManagerAtmosphereEndInitialDefers();
+        R_RETURN(smManagerAtmosphereEndInitialDefers());
     }
 
     Result HasMitm(bool *out, ServiceName name) {
-        return smManagerAtmosphereHasMitm(out, impl::ConvertName(name));
+        R_RETURN(smManagerAtmosphereHasMitm(out, impl::ConvertName(name)));
     }
     #endif
 

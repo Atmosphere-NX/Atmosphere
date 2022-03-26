@@ -273,7 +273,7 @@ namespace ams::settings::fwdbg {
         Result ParseSettingsItemValue(const char *name, const char *key, const char *value) {
             R_TRY(ValidateSettingsName(name));
             R_TRY(ValidateSettingsItemKey(key));
-            return ParseSettingsItemValueImpl(name, key, value);
+            R_RETURN(ParseSettingsItemValueImpl(name, key, value));
         }
 
         static int SystemSettingsIniHandler(void *user, const char *name, const char *key, const char *value) {

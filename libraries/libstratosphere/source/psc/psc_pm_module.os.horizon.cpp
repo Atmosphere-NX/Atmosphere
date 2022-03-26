@@ -69,7 +69,7 @@ namespace ams::psc {
     Result PmModule::GetRequest(PmState *out_state, PmFlagSet *out_flags) {
         R_UNLESS(m_initialized, psc::ResultNotInitialized());
 
-        return m_intf->GetRequest(out_state, out_flags);
+        R_RETURN(m_intf->GetRequest(out_state, out_flags));
     }
 
     Result PmModule::Acknowledge(PmState state, Result res) {
@@ -77,9 +77,9 @@ namespace ams::psc {
         R_UNLESS(m_initialized, psc::ResultNotInitialized());
 
         if (hos::GetVersion() >= hos::Version_5_1_0) {
-            return m_intf->AcknowledgeEx(state);
+            R_RETURN(m_intf->AcknowledgeEx(state));
         } else {
-            return m_intf->Acknowledge();
+            R_RETURN(m_intf->Acknowledge());
         }
     }
 

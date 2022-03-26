@@ -140,32 +140,31 @@ namespace ams::updater {
                 const auto entry = FindEntry(which);
                 AMS_ABORT_UNLESS(size >= entry->size);
 
-                R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
+                ON_RESULT_SUCCESS { *out_size = entry->size; };
 
-                *out_size = entry->size;
-                R_SUCCEED();
+                R_RETURN(BisAccessor::Read(dst, entry->size, entry->offset));
             }
 
             Result Write(const void *src, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
                 AMS_ABORT_UNLESS(size <= entry->size);
                 AMS_ABORT_UNLESS((size % BisAccessor::SectorAlignment) == 0);
-                return BisAccessor::Write(entry->offset, src, size);
+                R_RETURN(BisAccessor::Write(entry->offset, src, size));
             }
 
             Result Write(const char *bip_path, void *work_buffer, size_t work_buffer_size, EnumType which) {
                 const auto entry = FindEntry(which);
-                return BisAccessor::Write(entry->offset, entry->size, bip_path, work_buffer, work_buffer_size);
+                R_RETURN(BisAccessor::Write(entry->offset, entry->size, bip_path, work_buffer, work_buffer_size));
             }
 
             Result Clear(void *work_buffer, size_t work_buffer_size, EnumType which) {
                 const auto entry = FindEntry(which);
-                return BisAccessor::Clear(entry->offset, entry->size, work_buffer, work_buffer_size);
+                R_RETURN(BisAccessor::Clear(entry->offset, entry->size, work_buffer, work_buffer_size));
             }
 
             Result GetHash(void *dst, u64 hash_size, void *work_buffer, size_t work_buffer_size, EnumType which) {
                 const auto entry = FindEntry(which);
-                return BisAccessor::GetHash(dst, entry->offset, entry->size, hash_size, work_buffer, work_buffer_size);
+                R_RETURN(BisAccessor::GetHash(dst, entry->offset, entry->size, hash_size, work_buffer, work_buffer_size));
             }
     };
 

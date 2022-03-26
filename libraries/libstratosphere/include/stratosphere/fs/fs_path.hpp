@@ -205,7 +205,7 @@ namespace ams::fs {
                 /* Check the path is valid. */
                 R_UNLESS(path != nullptr, fs::ResultNullptrArgument());
 
-                return this->Initialize(path, std::strlen(path));
+                R_RETURN(this->Initialize(path, std::strlen(path)));
             }
 
             Result InitializeWithFormat(const char *fmt, ...) __attribute__((format (printf, 2, 3))) {

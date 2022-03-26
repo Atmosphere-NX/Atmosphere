@@ -355,25 +355,25 @@ namespace ams::kvdb {
                 }
 
                 /* Save the buffer to disk. */
-                return this->Commit(buffer, destructive);
+                R_RETURN(this->Commit(buffer, destructive));
             }
 
             Result Set(const Key &key, const void *value, size_t value_size) {
-                return m_index.Set(key, value, value_size);
+                R_RETURN(m_index.Set(key, value, value_size));
             }
 
             template<typename Value>
             Result Set(const Key &key, const Value &value) {
                 /* Only allow setting pod. */
                 static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
-                return this->Set(key, std::addressof(value), sizeof(Value));
+                R_RETURN(this->Set(key, std::addressof(value), sizeof(Value)));
             }
 
             template<typename Value>
             Result Set(const Key &key, const Value *value) {
                 /* Only allow setting pod. */
                 static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
-                return this->Set(key, value, sizeof(Value));
+                R_RETURN(this->Set(key, value, sizeof(Value)));
             }
 
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
@@ -427,7 +427,7 @@ namespace ams::kvdb {
             }
 
             Result Remove(const Key &key) {
-                return m_index.Remove(key);
+                R_RETURN(m_index.Remove(key));
             }
 
             Entry *begin() {

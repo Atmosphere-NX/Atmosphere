@@ -526,7 +526,7 @@ namespace ams::ro::impl {
             context->SetNrrInfoInUse(nrr_info, false);
             std::memset(nrr_info, 0, sizeof(*nrr_info));
         }
-        return UnmapNrr(context->GetProcessHandle(), nrr_backup.mapped_header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
+        R_RETURN(UnmapNrr(context->GetProcessHandle(), nrr_backup.mapped_header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address));
     }
 
     Result MapManualLoadModuleMemory(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
@@ -594,7 +594,7 @@ namespace ams::ro::impl {
             context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
-        return UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size);
+        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size));
     }
 
     /* Debug service implementations. */

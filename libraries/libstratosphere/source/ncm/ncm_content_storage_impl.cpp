@@ -36,7 +36,7 @@ namespace ams::ncm {
         Result EnsureContentDirectory(ContentId id, MakeContentPathFunction func, const char *root_path) {
             PathString path;
             MakeContentPath(std::addressof(path), id, func, root_path);
-            return fs::EnsureParentDirectory(path);
+            R_RETURN(fs::EnsureParentDirectory(path));
         }
 
         Result DeleteContentFile(ContentId id, MakeContentPathFunction func, const char *root_path) {
@@ -121,7 +121,7 @@ namespace ams::ncm {
         template<typename F>
         Result TraverseDirectory(const char *root_path, int max_level, F f) {
             bool should_continue = false;
-            return TraverseDirectory(std::addressof(should_continue), root_path, max_level, f);
+            R_RETURN(TraverseDirectory(std::addressof(should_continue), root_path, max_level, f));
         }
 
         bool IsContentPath(const char *path) {
@@ -205,7 +205,7 @@ namespace ams::ncm {
         m_path.Assign(dir);
 
         /* Open the directory. */
-        return this->OpenCurrentDirectory();
+        R_RETURN(this->OpenCurrentDirectory());
     }
 
     Result ContentStorageImpl::ContentIterator::GetNext(util::optional<fs::DirectoryEntry> *out) {
@@ -291,7 +291,7 @@ namespace ams::ncm {
         m_path = m_path.MakeSubString(0, i + 1);
 
         /* Try to load again from the parent directory. */
-        return this->LoadEntries();
+        R_RETURN(this->LoadEntries());
     }
 
     ContentStorageImpl::~ContentStorageImpl() {
@@ -307,7 +307,7 @@ namespace ams::ncm {
 
         /* Create the placeholder directory. */
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
-        return fs::EnsureDirectory(path);
+        R_RETURN(fs::EnsureDirectory(path));
     }
 
     Result ContentStorageImpl::CleanupBase(const char *root_path) {
@@ -319,7 +319,7 @@ namespace ams::ncm {
 
         /* Create the placeholder directory. */
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
-        return CleanDirectoryRecursively(path);
+        R_RETURN(CleanDirectoryRecursively(path));
     }
 
     Result ContentStorageImpl::VerifyBase(const char *root_path) {
@@ -399,12 +399,12 @@ namespace ams::ncm {
     Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
         R_TRY(this->EnsureEnabled());
         R_TRY(EnsureContentDirectory(content_id, m_make_content_path_func, m_root_path));
-        return m_placeholder_accessor.CreatePlaceHolderFile(placeholder_id, size);
+        R_RETURN(m_placeholder_accessor.CreatePlaceHolderFile(placeholder_id, size));
     }
 
     Result ContentStorageImpl::DeletePlaceHolder(PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
-        return m_placeholder_accessor.DeletePlaceHolderFile(placeholder_id);
+        R_RETURN(m_placeholder_accessor.DeletePlaceHolderFile(placeholder_id));
     }
 
     Result ContentStorageImpl::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
@@ -425,7 +425,7 @@ namespace ams::ncm {
         /* Ensure offset is valid. */
         R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
-        return m_placeholder_accessor.WritePlaceHolderFile(placeholder_id, offset, data.GetPointer(), data.GetSize());
+        R_RETURN(m_placeholder_accessor.WritePlaceHolderFile(placeholder_id, offset, data.GetPointer(), data.GetSize()));
     }
 
     Result ContentStorageImpl::Register(PlaceHolderId placeholder_id, ContentId content_id) {
@@ -452,7 +452,7 @@ namespace ams::ncm {
     Result ContentStorageImpl::Delete(ContentId content_id) {
         R_TRY(this->EnsureEnabled());
         this->InvalidateFileCache();
-        return DeleteContentFile(content_id, m_make_content_path_func, m_root_path);
+        R_RETURN(DeleteContentFile(content_id, m_make_content_path_func, m_root_path));
     }
 
     Result ContentStorageImpl::Has(sf::Out<bool> out, ContentId content_id) {
@@ -692,7 +692,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
         R_TRY(this->EnsureEnabled());
-        return m_placeholder_accessor.SetPlaceHolderFileSize(placeholder_id, size);
+        R_RETURN(m_placeholder_accessor.SetPlaceHolderFileSize(placeholder_id, size));
     }
 
     Result ContentStorageImpl::ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) {
@@ -708,7 +708,7 @@ namespace ams::ncm {
         R_TRY(this->OpenContentIdFile(content_id));
 
         /* Read from the requested offset up to the requested size. */
-        return fs::ReadFile(m_cached_file_handle, offset, buf.GetPointer(), buf.GetSize());
+        R_RETURN(fs::ReadFile(m_cached_file_handle, offset, buf.GetPointer(), buf.GetSize()));
     }
 
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
@@ -729,7 +729,7 @@ namespace ams::ncm {
         R_TRY(this->GetPlaceHolderPath(std::addressof(path), placeholder_id));
 
         /* Get the rights id for the placeholder id. */
-        return GetRightsId(out_rights_id.GetPointer(), path);
+        R_RETURN(GetRightsId(out_rights_id.GetPointer(), path));
     }
 
     Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
@@ -786,15 +786,15 @@ namespace ams::ncm {
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Write the provided data to the file. */
-        return fs::WriteFile(file, offset, data.GetPointer(), data.GetSize(), fs::WriteOption::Flush);
+        R_RETURN(fs::WriteFile(file, offset, data.GetPointer(), data.GetSize(), fs::WriteOption::Flush));
     }
 
     Result ContentStorageImpl::GetFreeSpaceSize(sf::Out<s64> out_size) {
-        return fs::GetFreeSpaceSize(out_size.GetPointer(), m_root_path);
+        R_RETURN(fs::GetFreeSpaceSize(out_size.GetPointer(), m_root_path));
     }
 
     Result ContentStorageImpl::GetTotalSpaceSize(sf::Out<s64> out_size) {
-        return fs::GetTotalSpaceSize(out_size.GetPointer(), m_root_path);
+        R_RETURN(fs::GetTotalSpaceSize(out_size.GetPointer(), m_root_path));
     }
 
     Result ContentStorageImpl::FlushPlaceHolder() {

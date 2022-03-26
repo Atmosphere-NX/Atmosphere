@@ -56,7 +56,7 @@ namespace ams::mitm::bpc {
 
             switch (port_index) {
                 case PortIndex_Mitm:
-                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IBpcMitmInterface, BpcMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                    R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IBpcMitmInterface, BpcMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }

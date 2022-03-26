@@ -41,7 +41,7 @@ namespace ams::mitm::fs {
 
                 /* Fast case. */
                 if (sector_ofs == 0 && util::IsAligned(size, SectorSize)) {
-                    return Base::Read(offset, buffer, size);
+                    R_RETURN(Base::Read(offset, buffer, size));
                 }
 
                 R_TRY(Base::Read(seek, m_sector_buf, SectorSize));
@@ -85,7 +85,7 @@ namespace ams::mitm::fs {
 
                 /* Fast case. */
                 if (sector_ofs == 0 && util::IsAligned(size, SectorSize)) {
-                    return Base::Write(offset, buffer, size);
+                    R_RETURN(Base::Write(offset, buffer, size));
                 }
 
                 /* Load existing sector data. */

@@ -34,7 +34,7 @@ namespace ams::pwm::server {
     }
 
     Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, pwm::ChannelName channel_name) {
-        return this->OpenSession2(out, ConvertToDeviceCode(channel_name));
+        R_RETURN(this->OpenSession2(out, ConvertToDeviceCode(channel_name)));
     }
 
     Result ManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, DeviceCode device_code) {

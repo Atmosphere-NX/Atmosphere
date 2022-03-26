@@ -61,7 +61,7 @@ namespace ams::fs::impl {
                 if (!fs::ResultNotEnoughFreeSpace::Includes(r)) {
                     m_write_result = r;
                 }
-                return r;
+                R_RETURN(r);
             }
     };
 

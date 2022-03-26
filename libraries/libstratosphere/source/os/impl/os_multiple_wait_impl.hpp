@@ -77,7 +77,7 @@ namespace ams::os::impl {
             }
 
             Result ReplyAndReceive(MultiWaitHolderBase **out, NativeHandle reply_target) {
-                return this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target);
+                R_RETURN(this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target));
             }
 
             /* List management. */

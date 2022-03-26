@@ -47,12 +47,12 @@ namespace ams::os {
     Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority, s32 ideal_core) {
         ValidateThreadArguments(thread, stack, stack_size, priority);
         AMS_ASSERT(GetThreadAvailableCoreMask() & (1ul << ideal_core));
-        return impl::GetThreadManager().CreateThread(thread, function, argument, stack, stack_size, priority, ideal_core);
+        R_RETURN(impl::GetThreadManager().CreateThread(thread, function, argument, stack, stack_size, priority, ideal_core));
     }
 
     Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority) {
         ValidateThreadArguments(thread, stack, stack_size, priority);
-        return impl::GetThreadManager().CreateThread(thread, function, argument, stack, stack_size, priority);
+        R_RETURN(impl::GetThreadManager().CreateThread(thread, function, argument, stack, stack_size, priority));
     }
 
     void DestroyThread(ThreadType *thread) {

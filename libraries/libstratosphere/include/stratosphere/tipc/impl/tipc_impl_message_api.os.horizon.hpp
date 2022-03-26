@@ -34,15 +34,15 @@ namespace ams::tipc::impl {
     }
 
     ALWAYS_INLINE Result CloseHandle(tipc::NativeHandle handle) {
-        return svc::CloseHandle(handle);
+        R_RETURN(svc::CloseHandle(handle));
     }
 
     ALWAYS_INLINE Result CreateSession(tipc::NativeHandle *out_server_session_handle, tipc::NativeHandle *out_client_session_handle, bool is_light, uintptr_t name) {
-        return svc::CreateSession(out_server_session_handle, out_client_session_handle, is_light, name);
+        R_RETURN(svc::CreateSession(out_server_session_handle, out_client_session_handle, is_light, name));
     }
 
     ALWAYS_INLINE Result AcceptSession(tipc::NativeHandle *out_handle, tipc::NativeHandle port) {
-        return svc::AcceptSession(out_handle, port);
+        R_RETURN(svc::AcceptSession(out_handle, port));
     }
 
 }

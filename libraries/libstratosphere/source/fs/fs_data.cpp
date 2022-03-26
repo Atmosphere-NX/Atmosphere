@@ -50,7 +50,7 @@ namespace ams::fs::impl {
             R_UNLESS(fs != nullptr, fs::ResultAllocationMemoryFailedInDataB());
             R_TRY(fs->Initialize(std::move(storage), cache_buffer, cache_size, use_cache));
 
-            return fsa::Register(name, std::move(fs), nullptr, use_data_cache, use_path_cache, false);
+            R_RETURN(fsa::Register(name, std::move(fs), nullptr, use_data_cache, use_path_cache, false));
         }
 
     }
@@ -73,7 +73,7 @@ namespace ams::fs::impl {
         /* Validate the mount name. */
         AMS_FS_R_TRY(impl::CheckMountName(name));
 
-        return MountDataImpl(name, data_id, storage_id, nullptr, 0, false, false, false);
+        R_RETURN(MountDataImpl(name, data_id, storage_id, nullptr, 0, false, false, false));
     }
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size) {
@@ -82,7 +82,7 @@ namespace ams::fs::impl {
 
         AMS_FS_R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
 
-        return MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, false, false);
+        R_RETURN(MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, false, false));
     }
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache) {
@@ -91,7 +91,7 @@ namespace ams::fs::impl {
 
         AMS_FS_R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
 
-        return MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, use_data_cache, use_path_cache);
+        R_RETURN(MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, use_data_cache, use_path_cache));
     }
 
 }

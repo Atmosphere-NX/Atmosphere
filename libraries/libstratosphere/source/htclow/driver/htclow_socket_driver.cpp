@@ -226,7 +226,7 @@ namespace ams::htclow::driver {
         }
 
         /* Return our connection result. */
-        return m_connect_result;
+        R_RETURN(m_connect_result);
     }
 
     void SocketDriver::Shutdown() {

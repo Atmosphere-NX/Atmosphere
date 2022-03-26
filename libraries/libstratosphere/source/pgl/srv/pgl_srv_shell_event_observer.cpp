@@ -71,7 +71,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellEventObserverCmif::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
-        return this->PopEventInfo(out.GetPointer());
+        R_RETURN(this->PopEventInfo(out.GetPointer()));
     }
 
     Result ShellEventObserverTipc::GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
@@ -80,7 +80,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellEventObserverTipc::GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
-        return this->PopEventInfo(out.GetPointer());
+        R_RETURN(this->PopEventInfo(out.GetPointer()));
     }
 
 }

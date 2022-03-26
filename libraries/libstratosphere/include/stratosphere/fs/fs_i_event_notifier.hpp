@@ -25,7 +25,7 @@ namespace ams::fs {
 
             Result BindEvent(os::SystemEventType *out, os::EventClearMode clear_mode) {
                 AMS_ASSERT(out != nullptr);
-                return this->DoBindEvent(out, clear_mode);
+                R_RETURN(this->DoBindEvent(out, clear_mode));
             }
         private:
             virtual Result DoBindEvent(os::SystemEventType *out, os::EventClearMode clear_mode) = 0;

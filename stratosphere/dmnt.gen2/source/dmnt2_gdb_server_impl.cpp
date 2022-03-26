@@ -957,7 +957,7 @@ namespace ams::dmnt {
 
                 s32 dummy = -1;
                 svc::Handle handle = m_debug_process.GetHandle();
-                return svc::WaitSynchronization(std::addressof(dummy), std::addressof(handle), 1, TimeSpan::FromMilliSeconds(20).GetNanoSeconds());
+                R_RETURN(svc::WaitSynchronization(std::addressof(dummy), std::addressof(handle), 1, TimeSpan::FromMilliSeconds(20).GetNanoSeconds()));
             }();
 
             /* Check if we're killed. */

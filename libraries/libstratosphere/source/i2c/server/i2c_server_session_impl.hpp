@@ -44,31 +44,31 @@ namespace ams::i2c::server {
         public:
             /* Actual commands. */
             Result SendOld(const ams::sf::InBuffer &in_data, i2c::TransactionOption option) {
-                return i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option);
+                R_RETURN(i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option));
             }
 
             Result ReceiveOld(const ams::sf::OutBuffer &out_data, i2c::TransactionOption option) {
-                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option);
+                R_RETURN(i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option));
             }
 
             Result ExecuteCommandListOld(const ams::sf::OutBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list){
-                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
+                R_RETURN(i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand)));
             }
 
             Result Send(const ams::sf::InAutoSelectBuffer &in_data, i2c::TransactionOption option) {
-                return i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option);
+                R_RETURN(i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option));
             }
 
             Result Receive(const ams::sf::OutAutoSelectBuffer &out_data, i2c::TransactionOption option) {
-                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option);
+                R_RETURN(i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option));
             }
 
             Result ExecuteCommandList(const ams::sf::OutAutoSelectBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list) {
-                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
+                R_RETURN(i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand)));
             }
 
             Result SetRetryPolicy(s32 max_retry_count, s32 retry_interval_us) {
-                return i2c::driver::SetRetryPolicy(m_internal_session, max_retry_count, retry_interval_us);
+                R_RETURN(i2c::driver::SetRetryPolicy(m_internal_session, max_retry_count, retry_interval_us));
             }
     };
     static_assert(i2c::sf::IsISession<SessionImpl>);

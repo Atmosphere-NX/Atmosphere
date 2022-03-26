@@ -41,7 +41,7 @@ namespace ams::os {
         impl::MultiWaitHolderBase *holder_base;
         ON_SCOPE_EXIT { *out = CastToMultiWaitHolder(holder_base); };
 
-        return impl.ReplyAndReceive(std::addressof(holder_base), reply_target);
+        R_RETURN(impl.ReplyAndReceive(std::addressof(holder_base), reply_target));
     }
 
 }

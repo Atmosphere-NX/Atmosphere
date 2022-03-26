@@ -152,7 +152,7 @@ namespace ams::os::impl {
     }
 
     Result ThreadManager::CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority) {
-        return this->CreateThread(thread, function, argument, stack, stack_size, priority, m_impl.GetDefaultCoreNumber());
+        R_RETURN(this->CreateThread(thread, function, argument, stack, stack_size, priority, m_impl.GetDefaultCoreNumber()));
     }
 
     void ThreadManager::DestroyThread(ThreadType *thread) {

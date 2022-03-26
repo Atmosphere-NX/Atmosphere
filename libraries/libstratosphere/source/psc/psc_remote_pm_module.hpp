@@ -38,21 +38,21 @@ namespace ams::psc {
             Result GetRequest(ams::sf::Out<PmState> out_state, ams::sf::Out<PmFlagSet> out_flags) {
                 static_assert(sizeof(PmState) == sizeof(::PscPmState));
                 static_assert(sizeof(PmFlagSet) == sizeof(u32));
-                return ::pscPmModuleGetRequest(std::addressof(m_module), reinterpret_cast<::PscPmState *>(out_state.GetPointer()), reinterpret_cast<u32 *>(out_flags.GetPointer()));
+                R_RETURN(::pscPmModuleGetRequest(std::addressof(m_module), reinterpret_cast<::PscPmState *>(out_state.GetPointer()), reinterpret_cast<u32 *>(out_flags.GetPointer())));
             }
 
             Result Acknowledge() {
                 /* NOTE: libnx does not separate acknowledge/acknowledgeEx. */
-                return ::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(0));
+                R_RETURN(::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(0)));
             }
 
             Result Finalize() {
-                return ::pscPmModuleFinalize(std::addressof(m_module));
+                R_RETURN(::pscPmModuleFinalize(std::addressof(m_module)));
             }
 
             Result AcknowledgeEx(PmState state) {
                 static_assert(sizeof(state) == sizeof(::PscPmState));
-                return ::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(state));
+                R_RETURN(::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(state)));
             }
     };
     static_assert(psc::sf::IsIPmModule<RemotePmModule>);

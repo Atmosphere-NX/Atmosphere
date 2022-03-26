@@ -44,11 +44,11 @@ namespace ams::fssystem {
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
 
             virtual Result GetSize(s64 *out) override {
-                return m_base_storage->GetSize(out);
+                R_RETURN(m_base_storage->GetSize(out));
             }
 
             virtual Result Flush() override {
-                return m_base_storage->Flush();
+                R_RETURN(m_base_storage->Flush());
             }
 
             virtual Result SetSize(s64 size) override {

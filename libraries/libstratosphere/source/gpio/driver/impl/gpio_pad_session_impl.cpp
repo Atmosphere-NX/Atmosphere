@@ -110,7 +110,7 @@ namespace ams::gpio::driver::impl {
         AMS_ASSERT(driver.GetInterruptControlMutex(pad).IsLockedByCurrentThread());
 
         /* Set interrupt enabled. */
-        return driver.SetInterruptEnabled(std::addressof(pad), pad.IsInterruptRequiredForDriver());
+        R_RETURN(driver.SetInterruptEnabled(std::addressof(pad), pad.IsInterruptRequiredForDriver()));
     }
 
     Result PadSessionImpl::GetInterruptEnabled(bool *out) const {

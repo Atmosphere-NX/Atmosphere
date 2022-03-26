@@ -113,7 +113,7 @@ namespace ams::fssystem {
             bool IsInitialized() const { return m_table.IsInitialized(); }
 
             Result Initialize(IAllocator *allocator, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 entry_count) {
-                return m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count);
+                R_RETURN(m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count));
             }
 
             void SetStorage(s32 idx, fs::SubStorage storage) {

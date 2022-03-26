@@ -122,19 +122,19 @@ namespace ams::htclow::ctrl {
 
         switch (header.packet_type) {
             case HtcctrlPacketType_ConnectFromHost:
-                return this->ProcessReceiveConnectPacket();
+                R_RETURN(this->ProcessReceiveConnectPacket());
             case HtcctrlPacketType_ReadyFromHost:
-                return this->ProcessReceiveReadyPacket(body, body_size);
+                R_RETURN(this->ProcessReceiveReadyPacket(body, body_size));
             case HtcctrlPacketType_SuspendFromHost:
-                return this->ProcessReceiveSuspendPacket();
+                R_RETURN(this->ProcessReceiveSuspendPacket());
             case HtcctrlPacketType_ResumeFromHost:
-                return this->ProcessReceiveResumePacket();
+                R_RETURN(this->ProcessReceiveResumePacket());
             case HtcctrlPacketType_DisconnectFromHost:
-                return this->ProcessReceiveDisconnectPacket();
+                R_RETURN(this->ProcessReceiveDisconnectPacket());
             case HtcctrlPacketType_BeaconQuery:
-                return this->ProcessReceiveBeaconQueryPacket();
+                R_RETURN(this->ProcessReceiveBeaconQueryPacket());
             default:
-                return this->ProcessReceiveUnexpectedPacket();
+                R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
     }
 
@@ -142,7 +142,7 @@ namespace ams::htclow::ctrl {
         /* Try to transition to sent connect state. */
         if (R_FAILED(this->SetState(HtcctrlState_SentConnectFromHost))) {
             /* We couldn't transition to sent connect. */
-            return this->ProcessReceiveUnexpectedPacket();
+            R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
 
         /* Send a connect packet. */
@@ -160,7 +160,7 @@ namespace ams::htclow::ctrl {
 
         /* Check that our version is correct. */
         if (m_version < ProtocolVersion) {
-            return this->ProcessReceiveUnexpectedPacket();
+            R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
 
         /* Set our version. */
@@ -169,7 +169,7 @@ namespace ams::htclow::ctrl {
 
         /* Set our state. */
         if (R_FAILED(this->SetState(HtcctrlState_SentReadyFromHost))) {
-            return this->ProcessReceiveUnexpectedPacket();
+            R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
 
         /* Ready ourselves. */
@@ -181,7 +181,7 @@ namespace ams::htclow::ctrl {
         /* Try to set our state to enter sleep. */
         if (R_FAILED(this->SetState(HtcctrlState_EnterSleep))) {
             /* We couldn't transition to sleep. */
-            return this->ProcessReceiveUnexpectedPacket();
+            R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
 
         R_SUCCEED();
@@ -191,7 +191,7 @@ namespace ams::htclow::ctrl {
         /* If our state is sent-resume, change to readied. */
         if (m_state_machine->GetHtcctrlState() != HtcctrlState_SentResumeFromTarget || R_FAILED(this->SetState(HtcctrlState_Ready))) {
             /* We couldn't perform a valid resume transition. */
-            return this->ProcessReceiveUnexpectedPacket();
+            R_RETURN(this->ProcessReceiveUnexpectedPacket());
         }
 
         R_SUCCEED();

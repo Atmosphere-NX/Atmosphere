@@ -70,12 +70,12 @@ namespace ams::usb {
 
     Result RemoteDsService::GetState(sf::Out<usb::UsbState> out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatchOut(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 3 : 4, *out);
+        R_RETURN(serviceDispatchOut(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 3 : 4, *out));
     }
 
     Result RemoteDsService::ClearDeviceData() {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 4 : 5);
+        R_RETURN(serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 4 : 5));
     }
 
     Result RemoteDsService::AddUsbStringDescriptor(sf::Out<u8> out, const sf::InBuffer &desc) {
@@ -88,7 +88,7 @@ namespace ams::usb {
 
     Result RemoteDsService::DeleteUsbStringDescriptor(u8 index) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatchIn(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 6 : 7, index);
+        R_RETURN(serviceDispatchIn(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 6 : 7, index));
     }
 
     Result RemoteDsService::SetUsbDeviceDescriptor(const sf::InBuffer &desc, usb::UsbDeviceSpeed speed) {
@@ -109,12 +109,12 @@ namespace ams::usb {
 
     Result RemoteDsService::Enable() {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 9 : 10);
+        R_RETURN(serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 9 : 10));
     }
 
     Result RemoteDsService::Disable() {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 10 : 11);
+        R_RETURN(serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 10 : 11));
     }
     #endif
 

@@ -179,31 +179,31 @@ namespace ams::mitm::fs {
 
 
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                    return m_impl->Read(offset, buffer, size);
+                    R_RETURN(m_impl->Read(offset, buffer, size));
                 }
 
                 virtual Result GetSize(s64 *out_size) override {
-                    return m_impl->GetSize(out_size);
+                    R_RETURN(m_impl->GetSize(out_size));
                 }
 
                 virtual Result Flush() override {
-                    return m_impl->Flush();
+                    R_RETURN(m_impl->Flush());
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                    return m_impl->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                    R_RETURN(m_impl->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                     /* TODO: Better result code? */
                     AMS_UNUSED(offset, buffer, size);
-                    return ams::fs::ResultUnsupportedOperation();
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
                 }
 
                 virtual Result SetSize(s64 size) override {
                     /* TODO: Better result code? */
                     AMS_UNUSED(size);
-                    return ams::fs::ResultUnsupportedOperation();
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
                 }
         };
 

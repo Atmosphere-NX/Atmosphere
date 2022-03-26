@@ -18,7 +18,7 @@
 namespace ams::ldr {
 
     Result InitializeForShell() {
-        return ::ldrShellInitialize();
+        R_RETURN(::ldrShellInitialize());
     }
 
     Result FinalizeForShell() {
@@ -27,11 +27,11 @@ namespace ams::ldr {
     }
 
     Result SetProgramArgument(ncm::ProgramId program_id, const void *arg, size_t size) {
-        return ::ldrShellSetProgramArguments(static_cast<u64>(program_id), arg, size);
+        R_RETURN(::ldrShellSetProgramArguments(static_cast<u64>(program_id), arg, size));
     }
 
     Result FlushArguments() {
-        return ::ldrShellFlushArguments();
+        R_RETURN(::ldrShellFlushArguments());
     }
 
 }

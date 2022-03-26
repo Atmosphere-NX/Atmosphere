@@ -43,7 +43,7 @@ namespace ams::lr {
         public:
             Result ResolveProgramPath(Path *out, ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveProgramPath(out, id);
+                R_RETURN(m_interface->ResolveProgramPath(out, id));
             }
 
             void RedirectProgramPath(const Path &path, ncm::ProgramId id) {
@@ -53,17 +53,17 @@ namespace ams::lr {
 
             Result ResolveApplicationControlPath(Path *out, ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveApplicationControlPath(out, id);
+                R_RETURN(m_interface->ResolveApplicationControlPath(out, id));
             }
 
             Result ResolveApplicationHtmlDocumentPath(Path *out, ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveApplicationHtmlDocumentPath(out, id);
+                R_RETURN(m_interface->ResolveApplicationHtmlDocumentPath(out, id));
             }
 
             Result ResolveDataPath(Path *out, ncm::DataId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveDataPath(out, id);
+                R_RETURN(m_interface->ResolveDataPath(out, id));
             }
 
             void RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
@@ -86,7 +86,7 @@ namespace ams::lr {
 
             Result ResolveApplicationLegalInformationPath(Path *out, ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveApplicationLegalInformationPath(out, id);
+                R_RETURN(m_interface->ResolveApplicationLegalInformationPath(out, id));
             }
 
             void RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
@@ -100,7 +100,7 @@ namespace ams::lr {
 
             Result Refresh() {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->Refresh();
+                R_RETURN(m_interface->Refresh());
             }
 
             void RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
@@ -115,41 +115,41 @@ namespace ams::lr {
             Result ClearApplicationRedirection() {
                 AMS_ASSERT(m_interface != nullptr);
                 AMS_ASSERT(hos::GetVersion() < hos::Version_9_0_0);
-                return this->ClearApplicationRedirection(nullptr, 0);
+                R_RETURN(this->ClearApplicationRedirection(nullptr, 0));
             }
 
             Result ClearApplicationRedirection(const ncm::ProgramId *excluding_ids, size_t num_ids) {
                 AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
-                    return m_interface->ClearApplicationRedirection(sf::InArray<ncm::ProgramId>(excluding_ids, num_ids));
+                    R_RETURN(m_interface->ClearApplicationRedirection(sf::InArray<ncm::ProgramId>(excluding_ids, num_ids)));
                 } else {
-                    return m_interface->ClearApplicationRedirectionDeprecated();
+                    R_RETURN(m_interface->ClearApplicationRedirectionDeprecated());
                 }
             }
 
             Result EraseProgramRedirection(ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->EraseProgramRedirection(id);
+                R_RETURN(m_interface->EraseProgramRedirection(id));
             }
 
             Result EraseApplicationControlRedirection(ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->EraseApplicationControlRedirection(id);
+                R_RETURN(m_interface->EraseApplicationControlRedirection(id));
             }
 
             Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->EraseApplicationHtmlDocumentRedirection(id);
+                R_RETURN(m_interface->EraseApplicationHtmlDocumentRedirection(id));
             }
 
             Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->EraseApplicationLegalInformationRedirection(id);
+                R_RETURN(m_interface->EraseApplicationLegalInformationRedirection(id));
             }
 
             Result ResolveProgramPathForDebug(Path *out, ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->ResolveProgramPathForDebug(out, id);
+                R_RETURN(m_interface->ResolveProgramPathForDebug(out, id));
             }
 
             void RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) {
@@ -168,7 +168,7 @@ namespace ams::lr {
 
             Result EraseProgramRedirectionForDebug(ncm::ProgramId id) {
                 AMS_ASSERT(m_interface != nullptr);
-                return m_interface->EraseProgramRedirectionForDebug(id);
+                R_RETURN(m_interface->EraseProgramRedirectionForDebug(id));
             }
     };
 

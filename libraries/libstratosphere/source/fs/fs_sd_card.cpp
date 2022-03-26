@@ -66,7 +66,7 @@ namespace ams::fs {
         R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
         /* Register. */
-        return fsa::Register(name, std::move(fsa), std::move(generator));
+        R_RETURN(fsa::Register(name, std::move(fsa), std::move(generator)));
     }
 
     Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name) {
@@ -92,7 +92,7 @@ namespace ams::fs {
         R_TRY(subdir_fs->Initialize(fs_path));
 
         /* Register. */
-        return fsa::Register(name, std::move(subdir_fs));
+        R_RETURN(fsa::Register(name, std::move(subdir_fs)));
     }
 
     Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out) {

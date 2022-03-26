@@ -23,17 +23,17 @@ namespace ams::boot {
         const u8 update_val = 0x10;
         R_TRY(WriteI2cRegister(m_i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr)));
         os::SleepThread(TimeSpan::FromMilliSeconds(16));
-        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), &address, sizeof(address));
+        R_RETURN(ReadI2cRegister(m_i2c_session, out, sizeof(*out), &address, sizeof(address)));
     }
 
     Result RtcDriver::GetRtcIntr(u8 *out) {
         const u8 addr = 0x00;
-        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), &addr, sizeof(addr));
+        R_RETURN(ReadI2cRegister(m_i2c_session, out, sizeof(*out), &addr, sizeof(addr)));
     }
 
     Result RtcDriver::GetRtcIntrM(u8 *out) {
         const u8 addr = 0x01;
-        return this->ReadRtcRegister(out, addr);
+        R_RETURN(this->ReadRtcRegister(out, addr));
     }
 
 }

@@ -46,19 +46,19 @@ namespace ams::erpt::srv {
     Result AttachmentImpl::Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)  {
         R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return m_attachment->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize()));
+        R_RETURN(m_attachment->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize())));
     }
 
     Result AttachmentImpl::SetFlags(AttachmentFlagSet flags)  {
         R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return m_attachment->SetFlags(flags);
+        R_RETURN(m_attachment->SetFlags(flags));
     }
 
     Result AttachmentImpl::GetFlags(ams::sf::Out<AttachmentFlagSet> out)  {
         R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return m_attachment->GetFlags(out.GetPointer());
+        R_RETURN(m_attachment->GetFlags(out.GetPointer()));
     }
 
     Result AttachmentImpl::Close()  {
@@ -73,7 +73,7 @@ namespace ams::erpt::srv {
     Result AttachmentImpl::GetSize(ams::sf::Out<s64> out)  {
         R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return m_attachment->GetSize(out.GetPointer());
+        R_RETURN(m_attachment->GetSize(out.GetPointer()));
     }
 
 }

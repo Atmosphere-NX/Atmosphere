@@ -74,7 +74,7 @@ namespace ams::mitm::fs {
         /* Check if we have nothing to do. */
         R_SUCCEED_IF(size == 0);
 
-        return Base::Read(offset, _buffer, size);
+        R_RETURN(Base::Read(offset, _buffer, size));
     }
 
     Result Boot0Storage::Write(s64 offset, const void *_buffer, size_t size) {
@@ -115,7 +115,7 @@ namespace ams::mitm::fs {
 
         /* We want to protect AutoRCM from NS on ipatched units. If we can modify bct pubks or we're not touching any of them, proceed. */
         if (this->CanModifyBctPublicKey() || offset >= BctEndOffset || (util::AlignUp(offset, BctSize) >= BctEndOffset && (offset % BctSize) >= BctPubkEnd)) {
-            return Base::Write(offset, buffer, size);
+            R_RETURN(Base::Write(offset, buffer, size));
         }
 
         /* Handle any data written past the end of the pubk region. */
@@ -136,7 +136,7 @@ namespace ams::mitm::fs {
             }
         }
 
-        return Base::Write(0, g_boot0_bct_buffer, BctEndOffset);
+        R_RETURN(Base::Write(0, g_boot0_bct_buffer, BctEndOffset));
     }
 
     CustomPublicKeyBoot0Storage::CustomPublicKeyBoot0Storage(FsStorage &s, const sm::MitmProcessInfo &c, spl::SocType soc) : Base(s), m_client_info(c), m_soc_type(soc) {
@@ -174,7 +174,7 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Perform whatever remains of the read. */
-        return Base::Read(offset, buffer, size);
+        R_RETURN(Base::Read(offset, buffer, size));
     }
 
     Result CustomPublicKeyBoot0Storage::Write(s64 offset, const void *_buffer, size_t size) {
@@ -236,7 +236,7 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Perform whatever remains of the write. */
-        return Base::Write(offset, buffer, size);
+        R_RETURN(Base::Write(offset, buffer, size));
     }
 
     bool DetectBoot0CustomPublicKey(::FsStorage &storage) {

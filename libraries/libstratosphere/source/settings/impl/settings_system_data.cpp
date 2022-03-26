@@ -48,7 +48,7 @@ namespace ams::settings::impl {
 
         Result LazyFileAccessor::Open(const char *path, int mode) {
             /* Open our file. */
-            return fs::OpenFile(std::addressof(m_file), path, mode);
+            R_RETURN(fs::OpenFile(std::addressof(m_file), path, mode));
         }
 
         void LazyFileAccessor::Close() {
@@ -98,7 +98,7 @@ namespace ams::settings::impl {
 
             /* If the read is too big for the cache, read the data directly. */
             if (size > sizeof(m_buffer)) {
-                return fs::ReadFile(m_file, offset, dst, size);
+                R_RETURN(fs::ReadFile(m_file, offset, dst, size));
             }
 
             /* Get the file size. */
@@ -107,7 +107,7 @@ namespace ams::settings::impl {
 
             /* If the file is too small, read the data directly. */
             if (file_size < offset + static_cast<s64>(size)) {
-                return fs::ReadFile(m_file, offset, dst, size);
+                R_RETURN(fs::ReadFile(m_file, offset, dst, size));
             }
 
             /* Determine the read size. */
@@ -152,11 +152,11 @@ namespace ams::settings::impl {
     }
 
     Result SystemData::Mount() {
-        return fs::MountSystemData(m_mount_name, m_system_data_id);
+        R_RETURN(fs::MountSystemData(m_mount_name, m_system_data_id));
     }
 
     Result SystemData::OpenToRead() {
-        return GetLazyFileAccessor().Open(m_file_path, fs::OpenMode_Read);
+        R_RETURN(GetLazyFileAccessor().Open(m_file_path, fs::OpenMode_Read));
     }
 
     void SystemData::Close() {
@@ -164,7 +164,7 @@ namespace ams::settings::impl {
     }
 
     Result SystemData::Read(s64 offset, void *dst, size_t size) {
-        return GetLazyFileAccessor().Read(offset, dst, size);
+        R_RETURN(GetLazyFileAccessor().Read(offset, dst, size));
     }
 
 }

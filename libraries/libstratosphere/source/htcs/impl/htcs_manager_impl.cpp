@@ -47,55 +47,55 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManagerImpl::CreateSocket(s32 *out_err, s32 *out_desc, bool enable_disconnection_emulation) {
-        return m_service.CreateSocket(out_err, out_desc, enable_disconnection_emulation);
+        R_RETURN(m_service.CreateSocket(out_err, out_desc, enable_disconnection_emulation));
     }
 
     Result HtcsManagerImpl::DestroySocket(s32 desc) {
-        return m_service.DestroySocket(desc);
+        R_RETURN(m_service.DestroySocket(desc));
     }
 
     Result HtcsManagerImpl::Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address) {
-        return m_service.Connect(out_err, desc, address);
+        R_RETURN(m_service.Connect(out_err, desc, address));
     }
 
     Result HtcsManagerImpl::Bind(s32 *out_err, s32 desc, const SockAddrHtcs &address) {
-        return m_service.Bind(out_err, desc, address);
+        R_RETURN(m_service.Bind(out_err, desc, address));
     }
 
     Result HtcsManagerImpl::Listen(s32 *out_err, s32 desc, s32 backlog_count) {
-        return m_service.Listen(out_err, desc, backlog_count);
+        R_RETURN(m_service.Listen(out_err, desc, backlog_count));
     }
 
     Result HtcsManagerImpl::Receive(s32 *out_err, s64 *out_size, char *buffer, size_t size, s32 desc, s32 flags) {
-        return m_service.Receive(out_err, out_size, buffer, size, desc, flags);
+        R_RETURN(m_service.Receive(out_err, out_size, buffer, size, desc, flags));
     }
 
     Result HtcsManagerImpl::Send(s32 *out_err, s64 *out_size, const char *buffer, size_t size, s32 desc, s32 flags) {
-        return m_service.Send(out_err, out_size, buffer, size, desc, flags);
+        R_RETURN(m_service.Send(out_err, out_size, buffer, size, desc, flags));
     }
 
     Result HtcsManagerImpl::Shutdown(s32 *out_err, s32 desc, s32 how) {
-        return m_service.Shutdown(out_err, desc, how);
+        R_RETURN(m_service.Shutdown(out_err, desc, how));
     }
 
     Result HtcsManagerImpl::Fcntl(s32 *out_err, s32 *out_res, s32 desc, s32 command, s32 value) {
-        return m_service.Fcntl(out_err, out_res, desc, command, value);
+        R_RETURN(m_service.Fcntl(out_err, out_res, desc, command, value));
     }
 
     Result HtcsManagerImpl::AcceptStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc) {
-        return m_service.AcceptStart(out_task_id, out_handle, desc);
+        R_RETURN(m_service.AcceptStart(out_task_id, out_handle, desc));
     }
 
     Result HtcsManagerImpl::AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc) {
-        return m_service.AcceptResults(out_err, out_desc, out_address, task_id, desc);
+        R_RETURN(m_service.AcceptResults(out_err, out_desc, out_address, task_id, desc));
     }
 
     Result HtcsManagerImpl::RecvStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
-        return m_service.ReceiveSmallStart(out_task_id, out_handle, size, desc, flags);
+        R_RETURN(m_service.ReceiveSmallStart(out_task_id, out_handle, size, desc, flags));
     }
 
     Result HtcsManagerImpl::RecvResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
-        return m_service.ReceiveSmallResults(out_err, out_size, buffer, buffer_size, task_id, desc);
+        R_RETURN(m_service.ReceiveSmallResults(out_err, out_size, buffer, buffer_size, task_id, desc));
     }
 
     Result HtcsManagerImpl::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags) {
@@ -110,6 +110,8 @@ namespace ams::htcs::impl {
         if (R_SUCCEEDED(result) || htcs::ResultCompleted::Includes(result) || htc::ResultTaskQueueNotAvailable::Includes(result)) {
             *out_task_id = task_id;
             *out_handle  = handle;
+
+            R_SUCCEED();
         } else {
             os::SystemEventType event;
             os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
@@ -120,10 +122,8 @@ namespace ams::htcs::impl {
 
             os::DestroySystemEvent(std::addressof(event));
 
-            return result;
+            R_RETURN(result);
         }
-
-        R_SUCCEED();
     }
 
     Result HtcsManagerImpl::SendLargeStart(u32 *out_task_id, os::NativeHandle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags) {
@@ -133,27 +133,27 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManagerImpl::SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
-        return m_service.SendSmallResults(out_err, out_size, task_id, desc);
+        R_RETURN(m_service.SendSmallResults(out_err, out_size, task_id, desc));
     }
 
     Result HtcsManagerImpl::StartSend(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
-        return m_service.SendStart(out_task_id, out_handle, desc, size, flags);
+        R_RETURN(m_service.SendStart(out_task_id, out_handle, desc, size, flags));
     }
 
     Result HtcsManagerImpl::ContinueSend(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
-        return m_service.SendContinue(out_size, buffer, buffer_size, task_id, desc);
+        R_RETURN(m_service.SendContinue(out_size, buffer, buffer_size, task_id, desc));
     }
 
     Result HtcsManagerImpl::EndSend(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
-        return m_service.SendResults(out_err, out_size, task_id, desc);
+        R_RETURN(m_service.SendResults(out_err, out_size, task_id, desc));
     }
 
     Result HtcsManagerImpl::StartRecv(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
-        return m_service.ReceiveStart(out_task_id, out_handle, size, desc, flags);
+        R_RETURN(m_service.ReceiveStart(out_task_id, out_handle, size, desc, flags));
     }
 
     Result HtcsManagerImpl::EndRecv(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
-        return m_service.ReceiveResults(out_err, out_size, buffer, buffer_size, task_id, desc);
+        R_RETURN(m_service.ReceiveResults(out_err, out_size, buffer, buffer_size, task_id, desc));
     }
 
     Result HtcsManagerImpl::StartSelect(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
@@ -179,11 +179,11 @@ namespace ams::htcs::impl {
             *out_handle  = handle;
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result HtcsManagerImpl::EndSelect(s32 *out_err, bool *out_empty, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
-        return m_service.SelectEnd(out_err, out_empty, read_handles, write_handles, exception_handles, task_id);
+        R_RETURN(m_service.SelectEnd(out_err, out_empty, read_handles, write_handles, exception_handles, task_id));
     }
 
 }

@@ -495,7 +495,7 @@ namespace ams::fatal::srv {
             /* Don't show the fatal error screen until we've verified the battery is okay. */
             m_context->battery_event->Wait();
 
-            return ShowFatal();
+            R_RETURN(ShowFatal());
         }
 
         void BacklightControlTask::TurnOnBacklight() {

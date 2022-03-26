@@ -20,23 +20,23 @@
 namespace ams::sprofile::srv {
 
     Result ProfileReaderImpl::GetSigned64(sf::Out<s64> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetSigned64(out.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetSigned64(out.GetPointer(), profile, key));
     }
 
     Result ProfileReaderImpl::GetUnsigned64(sf::Out<u64> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetUnsigned64(out.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetUnsigned64(out.GetPointer(), profile, key));
     }
 
     Result ProfileReaderImpl::GetSigned32(sf::Out<s32> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetSigned32(out.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetSigned32(out.GetPointer(), profile, key));
     }
 
     Result ProfileReaderImpl::GetUnsigned32(sf::Out<u32> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetUnsigned32(out.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetUnsigned32(out.GetPointer(), profile, key));
     }
 
     Result ProfileReaderImpl::GetByte(sf::Out<u8> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        return m_manager->GetByte(out.GetPointer(), profile, key);
+        R_RETURN(m_manager->GetByte(out.GetPointer(), profile, key));
     }
 
 }

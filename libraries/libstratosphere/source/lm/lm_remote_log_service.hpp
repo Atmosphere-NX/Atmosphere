@@ -40,7 +40,7 @@ namespace ams::lm {
             }
 
             Result SetDestination(u32 destination) {
-                return serviceDispatchIn(std::addressof(m_srv), 1, destination);
+                R_RETURN(serviceDispatchIn(std::addressof(m_srv), 1, destination));
             }
     };
     static_assert(lm::IsILogger<RemoteLogger>);

@@ -78,7 +78,7 @@ namespace ams::nxboot {
         sdmmc::SetSdCardWorkBuffer(SdCardPort, g_sd_work_buffer, sizeof(g_sd_work_buffer));
 
         /* Activate the SD card. */
-        return sdmmc::Activate(SdCardPort);
+        R_RETURN(sdmmc::Activate(SdCardPort));
     }
 
     void FinalizeSdCard() {
@@ -90,19 +90,19 @@ namespace ams::nxboot {
     }
 
     Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
-        return sdmmc::CheckSdCardConnection(out_sm, out_bw, SdCardPort);
+        R_RETURN(sdmmc::CheckSdCardConnection(out_sm, out_bw, SdCardPort));
     }
 
     Result GetSdCardMemoryCapacity(u32 *out_num_sectors) {
-        return sdmmc::GetDeviceMemoryCapacity(out_num_sectors, SdCardPort);
+        R_RETURN(sdmmc::GetDeviceMemoryCapacity(out_num_sectors, SdCardPort));
     }
 
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {
-        return sdmmc::Read(dst, size, SdCardPort, sector_index, sector_count);
+        R_RETURN(sdmmc::Read(dst, size, SdCardPort, sector_index, sector_count));
     }
 
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size) {
-        return sdmmc::Write(SdCardPort, sector_index, sector_count, src, size);
+        R_RETURN(sdmmc::Write(SdCardPort, sector_index, sector_count, src, size));
     }
 
 }

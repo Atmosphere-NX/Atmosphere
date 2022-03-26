@@ -23,9 +23,9 @@ namespace ams::sf::hipc {
             s32 unused_index;
             if (message_buf == hipc::GetMessageBufferOnTls()) {
                 /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
-                return svc::ReplyAndReceive(&unused_index, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max());
+                R_RETURN(svc::ReplyAndReceive(&unused_index, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max()));
             } else {
-                return svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max());
+                R_RETURN(svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max()));
             }
         }
 
@@ -33,9 +33,9 @@ namespace ams::sf::hipc {
             s32 unused_index;
             if (message_buf == hipc::GetMessageBufferOnTls()) {
                 /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
-                return svc::ReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0);
+                R_RETURN(svc::ReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0));
             } else {
-                return svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 0, session_handle, 0);
+                R_RETURN(svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 0, session_handle, 0));
             }
         }
 

@@ -25,11 +25,11 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result DecryptDeviceUniqueDataDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
-                return m_manager.DecryptDeviceUniqueData(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, option);
+                R_RETURN(m_manager.DecryptDeviceUniqueData(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, option));
             }
 
             Result DecryptDeviceUniqueData(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-                return m_manager.DecryptDeviceUniqueData(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptDeviceUniqueData));
+                R_RETURN(m_manager.DecryptDeviceUniqueData(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptDeviceUniqueData)));
             }
     };
     static_assert(spl::impl::IsIDeviceUniqueDataInterface<DeviceUniqueDataService>);

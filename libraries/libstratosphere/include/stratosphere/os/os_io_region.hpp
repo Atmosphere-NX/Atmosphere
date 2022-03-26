@@ -60,7 +60,7 @@ namespace ams::os {
             }
 
             Result Map(void **out, MemoryPermission perm) {
-                return MapIoRegion(out, std::addressof(m_io_region), perm);
+                R_RETURN(MapIoRegion(out, std::addressof(m_io_region), perm));
             }
 
             void Unmap() {

@@ -135,28 +135,28 @@ namespace ams::fssrv::impl {
             virtual ~RemoteFile() { fsFileClose(std::addressof(m_base_file)); }
         public:
             Result Read(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size, fs::ReadOption option) {
-                return fsFileRead(std::addressof(m_base_file), offset, buffer.GetPointer(), size, option._value, reinterpret_cast<u64 *>(out.GetPointer()));
+                R_RETURN(fsFileRead(std::addressof(m_base_file), offset, buffer.GetPointer(), size, option._value, reinterpret_cast<u64 *>(out.GetPointer())));
             }
 
             Result Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size, fs::WriteOption option) {
-                return fsFileWrite(std::addressof(m_base_file), offset, buffer.GetPointer(), size, option._value);
+                R_RETURN(fsFileWrite(std::addressof(m_base_file), offset, buffer.GetPointer(), size, option._value));
             }
 
             Result Flush(){
-                return fsFileFlush(std::addressof(m_base_file));
+                R_RETURN(fsFileFlush(std::addressof(m_base_file)));
             }
 
             Result SetSize(s64 size) {
-                return fsFileSetSize(std::addressof(m_base_file), size);
+                R_RETURN(fsFileSetSize(std::addressof(m_base_file), size));
             }
 
             Result GetSize(ams::sf::Out<s64> out) {
-                return fsFileGetSize(std::addressof(m_base_file), out.GetPointer());
+                R_RETURN(fsFileGetSize(std::addressof(m_base_file), out.GetPointer()));
             }
 
             Result OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size) {
                 static_assert(sizeof(::FsRangeInfo) == sizeof(fs::FileQueryRangeInfo));
-                return fsFileOperateRange(std::addressof(m_base_file), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(out.GetPointer()));
+                R_RETURN(fsFileOperateRange(std::addressof(m_base_file), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(out.GetPointer())));
             }
 
             Result OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size) {
@@ -178,11 +178,11 @@ namespace ams::fssrv::impl {
         public:
             Result Read(ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries) {
                 static_assert(sizeof(::FsDirectoryEntry) == sizeof(fs::DirectoryEntry));
-                return fsDirRead(std::addressof(m_base_dir), out.GetPointer(), out_entries.GetSize() / sizeof(fs::DirectoryEntry), reinterpret_cast<::FsDirectoryEntry *>(out_entries.GetPointer()));
+                R_RETURN(fsDirRead(std::addressof(m_base_dir), out.GetPointer(), out_entries.GetSize() / sizeof(fs::DirectoryEntry), reinterpret_cast<::FsDirectoryEntry *>(out_entries.GetPointer())));
             }
 
             Result GetEntryCount(ams::sf::Out<s64> out) {
-                return fsDirGetEntryCount(std::addressof(m_base_dir), out.GetPointer());
+                R_RETURN(fsDirGetEntryCount(std::addressof(m_base_dir), out.GetPointer()));
             }
     };
     static_assert(fssrv::sf::IsIDirectory<RemoteDirectory>);
@@ -199,61 +199,61 @@ namespace ams::fssrv::impl {
         public:
             /* Command API. */
             Result CreateFile(const fssrv::sf::Path &path, s64 size, s32 option) {
-                return fsFsCreateFile(std::addressof(m_base_fs), path.str, size, option);
+                R_RETURN(fsFsCreateFile(std::addressof(m_base_fs), path.str, size, option));
             }
 
             Result DeleteFile(const fssrv::sf::Path &path) {
-                return fsFsDeleteFile(std::addressof(m_base_fs), path.str);
+                R_RETURN(fsFsDeleteFile(std::addressof(m_base_fs), path.str));
             }
 
             Result CreateDirectory(const fssrv::sf::Path &path) {
-                return fsFsCreateDirectory(std::addressof(m_base_fs), path.str);
+                R_RETURN(fsFsCreateDirectory(std::addressof(m_base_fs), path.str));
             }
 
             Result DeleteDirectory(const fssrv::sf::Path &path) {
-                return fsFsDeleteDirectory(std::addressof(m_base_fs), path.str);
+                R_RETURN(fsFsDeleteDirectory(std::addressof(m_base_fs), path.str));
             }
 
             Result DeleteDirectoryRecursively(const fssrv::sf::Path &path) {
-                return fsFsDeleteDirectoryRecursively(std::addressof(m_base_fs), path.str);
+                R_RETURN(fsFsDeleteDirectoryRecursively(std::addressof(m_base_fs), path.str));
             }
 
             Result RenameFile(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path) {
-                return fsFsRenameFile(std::addressof(m_base_fs), old_path.str, new_path.str);
+                R_RETURN(fsFsRenameFile(std::addressof(m_base_fs), old_path.str, new_path.str));
             }
 
             Result RenameDirectory(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path) {
-                return fsFsRenameDirectory(std::addressof(m_base_fs), old_path.str, new_path.str);
+                R_RETURN(fsFsRenameDirectory(std::addressof(m_base_fs), old_path.str, new_path.str));
             }
 
             Result GetEntryType(ams::sf::Out<u32> out, const fssrv::sf::Path &path) {
                 static_assert(sizeof(::FsDirEntryType) == sizeof(u32));
-                return fsFsGetEntryType(std::addressof(m_base_fs), path.str, reinterpret_cast<::FsDirEntryType *>(out.GetPointer()));
+                R_RETURN(fsFsGetEntryType(std::addressof(m_base_fs), path.str, reinterpret_cast<::FsDirEntryType *>(out.GetPointer())));
             }
 
             Result Commit() {
-                return fsFsCommit(std::addressof(m_base_fs));
+                R_RETURN(fsFsCommit(std::addressof(m_base_fs)));
             }
 
             Result GetFreeSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path) {
-                return fsFsGetFreeSpace(std::addressof(m_base_fs), path.str, out.GetPointer());
+                R_RETURN(fsFsGetFreeSpace(std::addressof(m_base_fs), path.str, out.GetPointer()));
             }
 
             Result GetTotalSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path) {
-                return fsFsGetTotalSpace(std::addressof(m_base_fs), path.str, out.GetPointer());
+                R_RETURN(fsFsGetTotalSpace(std::addressof(m_base_fs), path.str, out.GetPointer()));
             }
 
             Result CleanDirectoryRecursively(const fssrv::sf::Path &path) {
-                return fsFsCleanDirectoryRecursively(std::addressof(m_base_fs), path.str);
+                R_RETURN(fsFsCleanDirectoryRecursively(std::addressof(m_base_fs), path.str));
             }
 
             Result GetFileTimeStampRaw(ams::sf::Out<fs::FileTimeStampRaw> out, const fssrv::sf::Path &path) {
                 static_assert(sizeof(fs::FileTimeStampRaw) == sizeof(::FsTimeStampRaw));
-                return fsFsGetFileTimeStampRaw(std::addressof(m_base_fs), path.str, reinterpret_cast<::FsTimeStampRaw *>(out.GetPointer()));
+                R_RETURN(fsFsGetFileTimeStampRaw(std::addressof(m_base_fs), path.str, reinterpret_cast<::FsTimeStampRaw *>(out.GetPointer())));
             }
 
             Result QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
-                return fsFsQueryEntry(std::addressof(m_base_fs), out_buf.GetPointer(), out_buf.GetSize(), in_buf.GetPointer(), in_buf.GetSize(), path.str, static_cast<FsFileSystemQueryId>(query_id));
+                R_RETURN(fsFsQueryEntry(std::addressof(m_base_fs), out_buf.GetPointer(), out_buf.GetSize(), in_buf.GetPointer(), in_buf.GetSize(), path.str, static_cast<FsFileSystemQueryId>(query_id)));
             }
 
             Result OpenFile(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);

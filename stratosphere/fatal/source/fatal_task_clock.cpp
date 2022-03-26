@@ -70,7 +70,7 @@ namespace ams::fatal::srv {
         }
 
         Result AdjustClockTask::Run() {
-            return AdjustClock();
+            R_RETURN(AdjustClock());
         }
 
     }

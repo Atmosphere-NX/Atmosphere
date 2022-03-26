@@ -133,8 +133,8 @@ namespace ams::pgl::srv {
 
                 Result GetContentPath(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
                     switch (m_extension_type) {
-                        case ExtensionType::Nsp:  return this->GetContentPathInNsp(out, type, index);
-                        case ExtensionType::Nspd: return this->GetContentPathInNspd(out, type, index);
+                        case ExtensionType::Nsp:  R_RETURN(this->GetContentPathInNsp(out, type, index));
+                        case ExtensionType::Nspd: R_RETURN(this->GetContentPathInNspd(out, type, index));
                         AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }
@@ -263,7 +263,7 @@ namespace ams::pgl::srv {
                     R_UNLESS(has_content, pgl::ResultContentMetaNotFound());
 
                     /* Read the content meta buffer. */
-                    return ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(std::addressof(m_content_meta_buffer), meta_path.str);
+                    R_RETURN(ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(std::addressof(m_content_meta_buffer), meta_path.str));
                 }
 
                 Result SearchContent(bool *out, lr::Path *out_path, const char *extension, fs::OpenDirectoryMode mode) const {
@@ -332,7 +332,7 @@ namespace ams::pgl::srv {
         host_resolver.RedirectProgramPath(content_path, reader.GetProgramId());
 
         /* Launch the program. */
-        return pgl::srv::LaunchProgram(out, ncm::ProgramLocation::Make(reader.GetProgramId(), ncm::StorageId::Host), pm_flags, pgl::LaunchFlags_None);
+        R_RETURN(pgl::srv::LaunchProgram(out, ncm::ProgramLocation::Make(reader.GetProgramId(), ncm::StorageId::Host), pm_flags, pgl::LaunchFlags_None));
     }
 
     Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *package_path) {

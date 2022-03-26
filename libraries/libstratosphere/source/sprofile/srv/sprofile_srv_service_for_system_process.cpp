@@ -32,7 +32,7 @@ namespace ams::sprofile::srv {
     }
 
     Result ServiceForSystemProcess::OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out) {
-        return m_profile_manager->GetUpdateObserverManager().OpenObserver(out, m_memory_resource);
+        R_RETURN(m_profile_manager->GetUpdateObserverManager().OpenObserver(out, m_memory_resource));
     }
 
     Result ServiceForSystemProcess::OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileControllerForDebug>> out) {

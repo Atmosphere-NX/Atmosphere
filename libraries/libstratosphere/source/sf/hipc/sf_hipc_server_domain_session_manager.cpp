@@ -181,7 +181,7 @@ namespace ams::sf::hipc {
                 }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {
-                    return this->CloneCurrentObjectImpl(out, m_manager);
+                    R_RETURN(this->CloneCurrentObjectImpl(out, m_manager));
                 }
 
                 void QueryPointerBufferSize(sf::Out<u16> out) {
@@ -189,7 +189,7 @@ namespace ams::sf::hipc {
                 }
 
                 Result CloneCurrentObjectEx(sf::OutMoveHandle out, u32 tag) {
-                    return this->CloneCurrentObjectImpl(out, m_manager->GetSessionManagerByTag(tag));
+                    R_RETURN(this->CloneCurrentObjectImpl(out, m_manager->GetSessionManagerByTag(tag)));
                 }
         };
         static_assert(IsIHipcManager<HipcManagerImpl>);
@@ -201,7 +201,7 @@ namespace ams::sf::hipc {
         /* Note: This is safe, as no additional references to the hipc manager can ever be stored. */
         /* The shared pointer to stack object is definitely gross, though. */
         UnmanagedServiceObject<impl::IHipcManager, impl::HipcManagerImpl> hipc_manager(this, session);
-        return this->DispatchRequest(cmif::ServiceObjectHolder(hipc_manager.GetShared()), session, in_message, out_message);
+        R_RETURN(this->DispatchRequest(cmif::ServiceObjectHolder(hipc_manager.GetShared()), session, in_message, out_message));
     }
 
 }

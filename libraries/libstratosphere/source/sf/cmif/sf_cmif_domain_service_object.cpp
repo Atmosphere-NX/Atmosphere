@@ -18,12 +18,12 @@
 namespace ams::sf::cmif {
 
     Result DomainServiceObjectDispatchTable::ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const  {
-        return this->ProcessMessageImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data);
+        R_RETURN(this->ProcessMessageImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data));
     }
 
     #if AMS_SF_MITM_SUPPORTED
     Result DomainServiceObjectDispatchTable::ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-        return this->ProcessMessageForMitmImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data);
+        R_RETURN(this->ProcessMessageForMitmImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data));
     }
     #endif
 
@@ -50,14 +50,14 @@ namespace ams::sf::cmif {
                     ctx.processor->SetImplementationProcessor(std::addressof(domain_processor));
                 }
                 ctx.srv_obj = target_object.GetServiceObjectUnsafe();
-                return target_object.ProcessMessage(ctx, in_message_raw_data);
+                R_RETURN(target_object.ProcessMessage(ctx, in_message_raw_data));
             }
             case CmifDomainRequestType_Close:
                 /* TODO: N doesn't error check here. Should we? */
                 domain->UnregisterObject(target_object_id);
                 R_SUCCEED();
             default:
-                return sf::cmif::ResultInvalidInHeader();
+                R_THROW(sf::cmif::ResultInvalidInHeader());
         }
     }
 
@@ -75,7 +75,7 @@ namespace ams::sf::cmif {
 
                 /* Mitm. If we don't have a target object, we should forward to let the server handle. */
                 if (!target_object) {
-                    return ctx.session->ForwardRequest(ctx);
+                    R_RETURN(ctx.session->ForwardRequest(ctx));
                 }
 
                 R_UNLESS(in_header->data_size + in_header->num_in_objects * sizeof(DomainObjectId) <= in_domain_raw_data.GetSize(), sf::cmif::ResultInvalidHeaderSize());
@@ -90,7 +90,7 @@ namespace ams::sf::cmif {
                     ctx.processor->SetImplementationProcessor(std::addressof(domain_processor));
                 }
                 ctx.srv_obj = target_object.GetServiceObjectUnsafe();
-                return target_object.ProcessMessage(ctx, in_message_raw_data);
+                R_RETURN(target_object.ProcessMessage(ctx, in_message_raw_data));
             }
             case CmifDomainRequestType_Close:
             {
@@ -98,7 +98,7 @@ namespace ams::sf::cmif {
 
                 /* If the object is not in the domain, tell the server to close it. */
                 if (!target_object) {
-                    return ctx.session->ForwardRequest(ctx);
+                    R_RETURN(ctx.session->ForwardRequest(ctx));
                 }
 
                 /* If the object is in the domain, close our copy of it. Mitm objects are required to close their associated domain id, so this shouldn't cause desynch. */
@@ -106,7 +106,7 @@ namespace ams::sf::cmif {
                 R_SUCCEED();
             }
             default:
-                return sf::cmif::ResultInvalidInHeader();
+                R_THROW(sf::cmif::ResultInvalidInHeader());
         }
     }
     #endif
@@ -118,7 +118,7 @@ namespace ams::sf::cmif {
         /* Nintendo reserves domain object IDs here. We do this later, to support mitm semantics. */
 
         /* Pass onwards. */
-        return m_impl_processor->PrepareForProcess(ctx, runtime_metadata);
+        R_RETURN(m_impl_processor->PrepareForProcess(ctx, runtime_metadata));
     }
 
     Result DomainServiceObjectProcessor::GetInObjects(ServiceObjectHolder *in_objects) const {

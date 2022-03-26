@@ -75,11 +75,11 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::Open(impl::ChannelInternalType channel) {
-        return m_mux.Open(channel);
+        R_RETURN(m_mux.Open(channel));
     }
 
     Result HtclowManagerImpl::Close(impl::ChannelInternalType channel) {
-        return m_mux.Close(channel);
+        R_RETURN(m_mux.Close(channel));
     }
 
     void HtclowManagerImpl::Resume() {
@@ -118,7 +118,7 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::ConnectEnd(impl::ChannelInternalType channel, u32 task_id) {
-        return m_mux.ConnectEnd(channel, task_id);
+        R_RETURN(m_mux.ConnectEnd(channel, task_id));
     }
 
     void HtclowManagerImpl::Disconnect() {
@@ -126,11 +126,11 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::FlushBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
-        return m_mux.FlushBegin(out_task_id, channel);
+        R_RETURN(m_mux.FlushBegin(out_task_id, channel));
     }
 
     Result HtclowManagerImpl::FlushEnd(u32 task_id) {
-        return m_mux.FlushEnd(task_id);
+        R_RETURN(m_mux.FlushEnd(task_id));
     }
 
     ChannelState HtclowManagerImpl::GetChannelState(impl::ChannelInternalType channel) {
@@ -158,27 +158,27 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
-        return m_mux.ReceiveBegin(out_task_id, channel, size);
+        R_RETURN(m_mux.ReceiveBegin(out_task_id, channel, size));
     }
 
     Result HtclowManagerImpl::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id) {
-        return m_mux.ReceiveEnd(out, dst, dst_size, channel, task_id);
+        R_RETURN(m_mux.ReceiveEnd(out, dst, dst_size, channel, task_id));
     }
 
     Result HtclowManagerImpl::SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel) {
-        return m_mux.SendBegin(out_task_id, out, src, src_size, channel);
+        R_RETURN(m_mux.SendBegin(out_task_id, out, src, src_size, channel));
     }
 
     Result HtclowManagerImpl::SendEnd(u32 task_id) {
-        return m_mux.SendEnd(task_id);
+        R_RETURN(m_mux.SendEnd(task_id));
     }
 
     Result HtclowManagerImpl::WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
-        return m_mux.WaitReceiveBegin(out_task_id, channel, size);
+        R_RETURN(m_mux.WaitReceiveBegin(out_task_id, channel, size));
     }
 
     Result HtclowManagerImpl::WaitReceiveEnd(u32 task_id) {
-        return m_mux.WaitReceiveEnd(task_id);
+        R_RETURN(m_mux.WaitReceiveEnd(task_id));
     }
 
     void HtclowManagerImpl::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {
@@ -202,7 +202,7 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::Shutdown(impl::ChannelInternalType channel) {
-        return m_mux.Shutdown(channel);
+        R_RETURN(m_mux.Shutdown(channel));
     }
 
 }

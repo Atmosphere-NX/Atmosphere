@@ -108,22 +108,22 @@ namespace ams {
                 switch (port_index) {
                     case PortIndex_General:
                         if (g_use_new_server) {
-                            return this->AcceptImpl(server, m_general_service_object.GetShared());
+                            R_RETURN(this->AcceptImpl(server, m_general_service_object.GetShared()));
                         } else {
-                            return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IDeprecatedGeneralInterface, spl::DeprecatedService>(m_allocator, m_secure_monitor_manager));
+                            R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IDeprecatedGeneralInterface, spl::DeprecatedService>(m_allocator, m_secure_monitor_manager)));
                         }
                     case PortIndex_Random:
-                        return this->AcceptImpl(server, m_random_service_object.GetShared());
+                        R_RETURN(this->AcceptImpl(server, m_random_service_object.GetShared()));
                     case PortIndex_Crypto:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ICryptoInterface, spl::CryptoService>(m_allocator, m_secure_monitor_manager));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ICryptoInterface, spl::CryptoService>(m_allocator, m_secure_monitor_manager)));
                     case PortIndex_Fs:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IFsInterface,     spl::FsService>(m_allocator, m_secure_monitor_manager));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IFsInterface,     spl::FsService>(m_allocator, m_secure_monitor_manager)));
                     case PortIndex_Ssl:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ISslInterface,    spl::SslService>(m_allocator, m_secure_monitor_manager));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ISslInterface,    spl::SslService>(m_allocator, m_secure_monitor_manager)));
                     case PortIndex_Es:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IEsInterface,     spl::EsService>(m_allocator, m_secure_monitor_manager));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IEsInterface,     spl::EsService>(m_allocator, m_secure_monitor_manager)));
                     case PortIndex_Manu:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IManuInterface,   spl::ManuService>(m_allocator, m_secure_monitor_manager));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IManuInterface,   spl::ManuService>(m_allocator, m_secure_monitor_manager)));
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }

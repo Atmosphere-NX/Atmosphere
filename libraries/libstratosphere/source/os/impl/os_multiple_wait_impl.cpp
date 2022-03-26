@@ -26,6 +26,18 @@ namespace ams::os::impl {
         m_target_impl.SetCurrentThreadHandleForCancelWait();
         MultiWaitHolderBase *holder = this->LinkHoldersToObjectList();
 
+        /* When we're done, cleanup and set output. */
+        ON_SCOPE_EXIT {
+            /* Unlink holders from the current object list. */
+            this->UnlinkHoldersFromObjectList();
+
+            /* Clear cancel wait. */
+            m_target_impl.ClearCurrentThreadHandleForCancelWait();
+
+            /* Set output holder. */
+            *out = holder;
+        };
+
         /* Check if we've been signaled. */
         {
             std::scoped_lock lk(m_cs_wait);
@@ -35,28 +47,16 @@ namespace ams::os::impl {
         }
 
         /* Process object array. */
-        Result wait_result = ResultSuccess();
         if (holder != nullptr) {
-            if (reply && reply_target != os::InvalidNativeHandle) {
-                s32 index;
-                wait_result = m_target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0));
-                if (R_FAILED(wait_result)) {
-                    holder = nullptr;
-                }
-            }
+            R_SUCCEED_IF(!(reply && reply_target != os::InvalidNativeHandle));
+
+            ON_RESULT_FAILURE { holder = nullptr; };
+
+            s32 index;
+            R_RETURN(m_target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0)))
         } else {
-            wait_result = this->WaitAnyHandleImpl(std::addressof(holder), infinite, timeout, reply, reply_target);
+            R_RETURN(this->WaitAnyHandleImpl(std::addressof(holder), infinite, timeout, reply, reply_target));
         }
-
-        /* Unlink holders from the current object list. */
-        this->UnlinkHoldersFromObjectList();
-
-        m_target_impl.ClearCurrentThreadHandleForCancelWait();
-
-        /* Set output holder. */
-        *out = holder;
-
-        return wait_result;
     }
 
     Result MultiWaitImpl::WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target) {
@@ -93,7 +93,7 @@ namespace ams::os::impl {
 
             if (index == WaitInvalid) {
                 *out = nullptr;
-                return wait_result;
+                R_RETURN(wait_result);
             }
 
             switch (index) {
@@ -104,11 +104,11 @@ namespace ams::os::impl {
                             std::scoped_lock lk(m_cs_wait);
                             m_signaled_holder = min_timeout_object;
                             *out              = min_timeout_object;
-                            return wait_result;
+                            R_RETURN(wait_result);
                         }
                     } else {
                         *out = nullptr;
-                        return wait_result;
+                        R_RETURN(wait_result);
                     }
                     break;
                 case WaitCancelled:
@@ -116,7 +116,7 @@ namespace ams::os::impl {
                         std::scoped_lock lk(m_cs_wait);
                         if (m_signaled_holder) {
                             *out = m_signaled_holder;
-                            return wait_result;
+                            R_RETURN(wait_result);
                         }
                     }
                     break;
@@ -128,7 +128,7 @@ namespace ams::os::impl {
                             std::scoped_lock lk(m_cs_wait);
                             m_signaled_holder = objects[index];
                             *out              = objects[index];
-                            return wait_result;
+                            R_RETURN(wait_result);
                         } else {
                             AMS_ABORT_UNLESS(MaximumHandleCount > 0);
                         }

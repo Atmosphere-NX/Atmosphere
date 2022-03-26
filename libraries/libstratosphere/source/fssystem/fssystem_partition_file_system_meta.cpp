@@ -47,7 +47,7 @@ namespace ams::fssystem {
         R_UNLESS(m_buffer != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemMetaA());
 
         /* Perform regular initialization. */
-        return this->Initialize(storage, m_buffer, m_meta_data_size);
+        R_RETURN(this->Initialize(storage, m_buffer, m_meta_data_size));
     }
 
     template <typename Format>

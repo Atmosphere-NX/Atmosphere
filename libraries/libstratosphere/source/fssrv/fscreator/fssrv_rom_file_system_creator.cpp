@@ -37,18 +37,18 @@ namespace ams::fssrv::fscreator {
                     /* Check if the buffer is eligible for cache. */
                     size_t buffer_size = 0;
                     if (R_FAILED(RomFsFileSystem::GetRequiredWorkingMemorySize(std::addressof(buffer_size), storage.get())) || buffer_size == 0 || buffer_size >= 128_KB) {
-                        return RomFsFileSystem::Initialize(std::move(storage), nullptr, 0, false);
+                        R_RETURN(RomFsFileSystem::Initialize(std::move(storage), nullptr, 0, false));
                     }
 
                     /* Allocate a buffer. */
                     m_meta_cache_buffer = m_allocator->Allocate(buffer_size);
                     if (m_meta_cache_buffer == nullptr) {
-                        return RomFsFileSystem::Initialize(std::move(storage), nullptr, 0, false);
+                        R_RETURN(RomFsFileSystem::Initialize(std::move(storage), nullptr, 0, false));
                     }
 
                     /* Initialize with cache buffer. */
                     m_meta_cache_buffer_size = buffer_size;
-                    return RomFsFileSystem::Initialize(std::move(storage), m_meta_cache_buffer, m_meta_cache_buffer_size, true);
+                    R_RETURN(RomFsFileSystem::Initialize(std::move(storage), m_meta_cache_buffer, m_meta_cache_buffer_size, true));
                 }
         };
 

@@ -22,11 +22,11 @@ namespace ams::pm::shell {
     Result WEAK_SYMBOL LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags) {
         static_assert(sizeof(ncm::ProgramLocation) == sizeof(NcmProgramLocation));
         static_assert(alignof(ncm::ProgramLocation) == alignof(NcmProgramLocation));
-        return pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<u64 *>(out));
+        R_RETURN(pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<u64 *>(out)));
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
-        return ::pmshellTerminateProcess(static_cast<u64>(process_id));
+        R_RETURN(::pmshellTerminateProcess(static_cast<u64>(process_id)));
     }
 
     Result GetProcessEventEvent(os::SystemEvent *out) {
@@ -38,24 +38,24 @@ namespace ams::pm::shell {
 
     Result GetProcessEventInfo(ProcessEventInfo *out) {
         static_assert(sizeof(*out) == sizeof(::PmProcessEventInfo));
-        return ::pmshellGetProcessEventInfo(reinterpret_cast<::PmProcessEventInfo *>(out));
+        R_RETURN(::pmshellGetProcessEventInfo(reinterpret_cast<::PmProcessEventInfo *>(out)));
     }
 
     Result GetApplicationProcessIdForShell(os::ProcessId *out) {
         static_assert(sizeof(*out) == sizeof(u64));
-        return ::pmshellGetApplicationProcessIdForShell(reinterpret_cast<u64 *>(out));
+        R_RETURN(::pmshellGetApplicationProcessIdForShell(reinterpret_cast<u64 *>(out)));
     }
 
     Result BoostSystemMemoryResourceLimit(u64 size) {
-        return ::pmshellBoostSystemMemoryResourceLimit(size);
+        R_RETURN(::pmshellBoostSystemMemoryResourceLimit(size));
     }
 
     Result BoostApplicationThreadResourceLimit() {
-        return ::pmshellBoostApplicationThreadResourceLimit();
+        R_RETURN(::pmshellBoostApplicationThreadResourceLimit());
     }
 
     Result BoostSystemThreadResourceLimit() {
-        return ::pmshellBoostSystemThreadResourceLimit();
+        R_RETURN(::pmshellBoostSystemThreadResourceLimit());
     }
     #endif
 

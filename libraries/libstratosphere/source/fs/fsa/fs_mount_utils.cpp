@@ -125,7 +125,7 @@ namespace ams::fs::impl {
         MountName mount_name;
         R_TRY(GetMountNameAndSubPath(std::addressof(mount_name), out_sub_path, path));
 
-        return impl::Find(out_accessor, mount_name.str);
+        R_RETURN(impl::Find(out_accessor, mount_name.str));
     }
 
     Result Unmount(const char *name) {

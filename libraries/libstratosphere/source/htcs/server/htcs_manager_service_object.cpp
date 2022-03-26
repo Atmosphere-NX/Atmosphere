@@ -44,7 +44,7 @@ namespace ams::htcs::server {
     }
 
     Result ManagerServiceObject::CreateSocketOld(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out) {
-        return this->CreateSocket(out_err, out, false);
+        R_RETURN(this->CreateSocket(out_err, out, false));
     }
 
     Result ManagerServiceObject::CreateSocket(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, bool enable_disconnection_emulation) {
@@ -94,7 +94,7 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* End the select. */
-        return manager->EndSelect(out_err.GetPointer(), out_count.GetPointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), task_id);
+        R_RETURN(manager->EndSelect(out_err.GetPointer(), out_count.GetPointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), task_id));
     }
 
 }

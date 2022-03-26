@@ -96,9 +96,9 @@ namespace ams::sf::hipc {
 
         /* Create new session. */
         if (server->m_static_object) {
-            return this->AcceptSession(server->m_port_handle, server->m_static_object.Clone());
+            R_RETURN(this->AcceptSession(server->m_port_handle, server->m_static_object.Clone()));
         } else {
-            return this->OnNeedsToAccept(server->m_index, server);
+            R_RETURN(this->OnNeedsToAccept(server->m_index, server));
         }
     }
 
@@ -110,7 +110,7 @@ namespace ams::sf::hipc {
         ON_SCOPE_EXIT { this->LinkToDeferredList(server); };
 
         /* Create resources for new session. */
-        return this->OnNeedsToAccept(server->m_index, server);
+        R_RETURN(this->OnNeedsToAccept(server->m_index, server));
     }
     #endif
 
@@ -164,13 +164,13 @@ namespace ams::sf::hipc {
     Result ServerManagerBase::Process(os::MultiWaitHolderType *holder) {
         switch (static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder))) {
             case UserDataTag::Server:
-                return this->ProcessForServer(holder);
+                R_RETURN(this->ProcessForServer(holder));
             case UserDataTag::Session:
-                return this->ProcessForSession(holder);
+                R_RETURN(this->ProcessForSession(holder));
             #if AMS_SF_MITM_SUPPORTED
             case UserDataTag::MitmServer:
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
-                return this->ProcessForMitmServer(holder);
+                R_RETURN(this->ProcessForMitmServer(holder));
             #endif
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

@@ -27,7 +27,7 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result GenerateRandomBytes(const sf::OutBuffer &out) {
-                return m_manager.GenerateRandomBytes(out.GetPointer(), out.GetSize());
+                R_RETURN(m_manager.GenerateRandomBytes(out.GetPointer(), out.GetSize()));
             }
     };
     static_assert(spl::impl::IsIRandomInterface<RandomService>);

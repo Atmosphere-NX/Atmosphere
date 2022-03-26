@@ -1197,7 +1197,7 @@ namespace ams::sf::impl {
 
                 sf::IServiceObject * const this_ptr = ctx.srv_obj;
                 command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-                    return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+                    R_RETURN(invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...));
                 }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value>());
             }
 
@@ -1205,7 +1205,7 @@ namespace ams::sf::impl {
                 cmif::PointerAndSize out_raw_data;
                 ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
                 R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
-                return command_result;
+                R_RETURN(command_result);
             }
         }
 
@@ -1254,14 +1254,14 @@ namespace ams::sf::impl {
         constexpr bool ReturnsVoid   = std::is_same<Return, void>::value;
         static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
 
-        return InvokeServiceCommandImplCommon<CommandMeta, Arguments...>(out_header_ptr, ctx, in_raw_data, +[](sf::IServiceObject *srv_obj, Arguments &&... args) -> Result {
+        R_RETURN((InvokeServiceCommandImplCommon<CommandMeta, Arguments...>(out_header_ptr, ctx, in_raw_data, +[](sf::IServiceObject *srv_obj, Arguments &&... args) -> Result {
             if constexpr (ReturnsResult) {
-                return (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
+                R_RETURN((static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...));
             } else {
                 (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
                 R_SUCCEED();
             }
-        });
+        })));
     }
 
 }

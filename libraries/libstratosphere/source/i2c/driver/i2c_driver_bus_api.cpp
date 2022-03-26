@@ -27,14 +27,10 @@ namespace ams::i2c::driver {
         Result OpenSessionImpl(I2cSession *out, I2cDeviceProperty *device) {
             /* Construct the session. */
             auto *session = std::construct_at(std::addressof(impl::GetI2cSessionImpl(*out)), DefaultRetryCount, DefaultRetryInterval);
-            auto session_guard = SCOPE_GUARD { std::destroy_at(session); };
+            ON_RESULT_FAILURE { std::destroy_at(session); };
 
             /* Open the session. */
-            R_TRY(session->Open(device, ddsf::AccessMode_ReadWrite));
-
-            /* We succeeded. */
-            session_guard.Cancel();
-            R_SUCCEED();
+            R_RETURN(session->Open(device, ddsf::AccessMode_ReadWrite));
         }
 
     }
@@ -48,9 +44,7 @@ namespace ams::i2c::driver {
         AMS_ASSERT(device != nullptr);
 
         /* Open the session. */
-        R_TRY(OpenSessionImpl(out, device));
-
-        R_SUCCEED();
+        R_RETURN(OpenSessionImpl(out, device));
     }
 
     void CloseSession(I2cSession &session) {
@@ -61,14 +55,14 @@ namespace ams::i2c::driver {
         AMS_ASSERT(src != nullptr);
         AMS_ABORT_UNLESS(src_size > 0);
 
-        return impl::GetOpenI2cSessionImpl(session).Send(src, src_size, option);
+        R_RETURN(impl::GetOpenI2cSessionImpl(session).Send(src, src_size, option));
     }
 
     Result Receive(void *dst, size_t dst_size, I2cSession &session, TransactionOption option) {
         AMS_ASSERT(dst != nullptr);
         AMS_ABORT_UNLESS(dst_size > 0);
 
-        return impl::GetOpenI2cSessionImpl(session).Receive(dst, dst_size, option);
+        R_RETURN(impl::GetOpenI2cSessionImpl(session).Receive(dst, dst_size, option));
     }
 
     Result ExecuteCommandList(void *dst, size_t dst_size, I2cSession &session, const void *src, size_t src_size) {
@@ -78,14 +72,14 @@ namespace ams::i2c::driver {
         AMS_ABORT_UNLESS(src_size > 0);
         AMS_ABORT_UNLESS(dst_size > 0);
 
-        return impl::GetOpenI2cSessionImpl(session).ExecuteCommandList(dst, dst_size, src, src_size);
+        R_RETURN(impl::GetOpenI2cSessionImpl(session).ExecuteCommandList(dst, dst_size, src, src_size));
     }
 
     Result SetRetryPolicy(I2cSession &session, int max_retry_count, int retry_interval_us) {
         AMS_ASSERT(max_retry_count > 0);
         AMS_ASSERT(retry_interval_us > 0);
 
-        return impl::GetOpenI2cSessionImpl(session).SetRetryPolicy(max_retry_count, retry_interval_us);
+        R_RETURN(impl::GetOpenI2cSessionImpl(session).SetRetryPolicy(max_retry_count, retry_interval_us));
     }
 
 }

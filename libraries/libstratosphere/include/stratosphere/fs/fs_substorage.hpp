@@ -84,7 +84,7 @@ namespace ams::fs {
                 /* Validate arguments and read. */
                 R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
                 R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
-                return m_base_storage->Read(m_offset + offset, buffer, size);
+                R_RETURN(m_base_storage->Read(m_offset + offset, buffer, size));
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override{
@@ -97,12 +97,12 @@ namespace ams::fs {
                 /* Validate arguments and write. */
                 R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
                 R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
-                return m_base_storage->Write(m_offset + offset, buffer, size);
+                R_RETURN(m_base_storage->Write(m_offset + offset, buffer, size));
             }
 
             virtual Result Flush() override {
                 R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
-                return m_base_storage->Flush();
+                R_RETURN(m_base_storage->Flush());
             }
 
             virtual Result SetSize(s64 size) override {

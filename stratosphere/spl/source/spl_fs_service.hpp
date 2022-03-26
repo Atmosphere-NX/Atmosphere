@@ -25,27 +25,27 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result DecryptAndStoreGcKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
-                return m_manager.DecryptAndStoreGcKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
+                R_RETURN(m_manager.DecryptAndStoreGcKey(src.GetPointer(), src.GetSize(), access_key, key_source, option));
             }
 
             Result DecryptAndStoreGcKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-                return m_manager.DecryptAndStoreGcKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreGcKey));
+                R_RETURN(m_manager.DecryptAndStoreGcKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreGcKey)));
             }
 
             Result DecryptGcMessage(sf::Out<u32> out_size, const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest) {
-                return m_manager.DecryptGcMessage(out_size.GetPointer(), out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize());
+                R_RETURN(m_manager.DecryptGcMessage(out_size.GetPointer(), out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize()));
             }
 
             Result GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
-                return m_manager.GenerateSpecificAesKey(out_key.GetPointer(), key_source, generation, which);
+                R_RETURN(m_manager.GenerateSpecificAesKey(out_key.GetPointer(), key_source, generation, which));
             }
 
             Result LoadPreparedAesKey(s32 keyslot, AccessKey access_key) {
-                return m_manager.LoadPreparedAesKey(keyslot, this, access_key);
+                R_RETURN(m_manager.LoadPreparedAesKey(keyslot, this, access_key));
             }
 
             Result GetPackage2Hash(const sf::OutPointerBuffer &dst) {
-                return m_manager.GetPackage2Hash(dst.GetPointer(), dst.GetSize());
+                R_RETURN(m_manager.GetPackage2Hash(dst.GetPointer(), dst.GetSize()));
             }
     };
     static_assert(spl::impl::IsIFsInterface<FsService>);

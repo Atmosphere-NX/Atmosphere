@@ -105,13 +105,13 @@ namespace ams::sf::cmif {
 
         /* Forward any meta-context change result. */
         if (sf::impl::ResultRequestContextChanged::Includes(command_result)) {
-            return command_result;
+            R_RETURN(command_result);
         }
 
         /* Otherwise, ensure that we're able to write the output header. */
         if (out_header == nullptr) {
             AMS_ABORT_UNLESS(R_FAILED(command_result));
-            return command_result;
+            R_RETURN(command_result);
         }
 
         /* Write output header to raw data. */
@@ -138,7 +138,7 @@ namespace ams::sf::cmif {
 
         /* If we didn't find a handler, forward the request. */
         if (cmd_handler == nullptr) {
-            return ctx.session->ForwardRequest(ctx);
+            R_RETURN(ctx.session->ForwardRequest(ctx));
         }
 
         /* Invoke handler. */
@@ -147,18 +147,18 @@ namespace ams::sf::cmif {
 
         /* If we should, forward the request to the forward session. */
         if (sm::mitm::ResultShouldForwardToSession::Includes(command_result)) {
-            return ctx.session->ForwardRequest(ctx);
+            R_RETURN(ctx.session->ForwardRequest(ctx));
         }
 
         /* Forward any meta-context change result. */
         if (sf::impl::ResultRequestContextChanged::Includes(command_result)) {
-            return command_result;
+            R_RETURN(command_result);
         }
 
         /* Otherwise, ensure that we're able to write the output header. */
         if (out_header == nullptr) {
             AMS_ABORT_UNLESS(R_FAILED(command_result));
-            return command_result;
+            R_RETURN(command_result);
         }
 
         /* Write output header to raw data. */

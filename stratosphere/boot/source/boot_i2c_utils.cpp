@@ -49,7 +49,7 @@ namespace ams::boot {
         R_ABORT_UNLESS(formatter.EnqueueSendCommand(i2c::TransactionOption_StartCondition, cmd, cmd_size));
         R_ABORT_UNLESS(formatter.EnqueueReceiveCommand(static_cast<i2c::TransactionOption>(i2c::TransactionOption_StartCondition | i2c::TransactionOption_StopCondition), dst_size));
 
-        return RetryUntilSuccess([&]() { return i2c::driver::ExecuteCommandList(dst, dst_size, session, cmd_list, formatter.GetCurrentLength()); });
+        R_RETURN(RetryUntilSuccess([&]() { R_RETURN(i2c::driver::ExecuteCommandList(dst, dst_size, session, cmd_list, formatter.GetCurrentLength())); }));
     }
 
     Result WriteI2cRegister(i2c::driver::I2cSession &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size) {
@@ -62,11 +62,11 @@ namespace ams::boot {
         std::memcpy(cmd_list + 0, cmd, cmd_size);
         std::memcpy(cmd_list + cmd_size, src, src_size);
 
-        return RetryUntilSuccess([&]() { return i2c::driver::Send(session, cmd_list, src_size + cmd_size, static_cast<i2c::TransactionOption>(i2c::TransactionOption_StartCondition | i2c::TransactionOption_StopCondition)); });
+        R_RETURN(RetryUntilSuccess([&]() { R_RETURN(i2c::driver::Send(session, cmd_list, src_size + cmd_size, static_cast<i2c::TransactionOption>(i2c::TransactionOption_StartCondition | i2c::TransactionOption_StopCondition))); }));
     }
 
     Result WriteI2cRegister(i2c::driver::I2cSession &session, const u8 address, const u8 value) {
-        return WriteI2cRegister(session, std::addressof(value), sizeof(value), &address, sizeof(address));
+        R_RETURN(WriteI2cRegister(session, std::addressof(value), sizeof(value), &address, sizeof(address)));
     }
 
 }

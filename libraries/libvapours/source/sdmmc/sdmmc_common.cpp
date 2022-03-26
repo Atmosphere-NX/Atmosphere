@@ -99,7 +99,7 @@ namespace ams::sdmmc {
     }
 
     Result Activate(Port port) {
-        return GetDeviceAccessor(port)->Activate();
+        R_RETURN(GetDeviceAccessor(port)->Activate());
     }
 
     void Deactivate(Port port) {
@@ -107,35 +107,35 @@ namespace ams::sdmmc {
     }
 
     Result Read(void *dst, size_t dst_size, Port port, u32 sector_index, u32 num_sectors) {
-        return GetDeviceAccessor(port)->ReadWrite(sector_index, num_sectors, dst, dst_size, true);
+        R_RETURN(GetDeviceAccessor(port)->ReadWrite(sector_index, num_sectors, dst, dst_size, true));
     }
 
     Result Write(Port port, u32 sector_index, u32 num_sectors, const void *src, size_t src_size) {
-        return GetDeviceAccessor(port)->ReadWrite(sector_index, num_sectors, const_cast<void *>(src), src_size, false);
+        R_RETURN(GetDeviceAccessor(port)->ReadWrite(sector_index, num_sectors, const_cast<void *>(src), src_size, false));
     }
 
     Result CheckConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width, Port port) {
-        return GetDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width);
+        R_RETURN(GetDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width));
     }
 
     Result GetDeviceSpeedMode(SpeedMode *out, Port port) {
-        return GetDeviceAccessor(port)->GetSpeedMode(out);
+        R_RETURN(GetDeviceAccessor(port)->GetSpeedMode(out));
     }
 
     Result GetDeviceMemoryCapacity(u32 *out_num_sectors, Port port) {
-        return GetDeviceAccessor(port)->GetMemoryCapacity(out_num_sectors);
+        R_RETURN(GetDeviceAccessor(port)->GetMemoryCapacity(out_num_sectors));
     }
 
     Result GetDeviceStatus(u32 *out_device_status, Port port) {
-        return GetDeviceAccessor(port)->GetDeviceStatus(out_device_status);
+        R_RETURN(GetDeviceAccessor(port)->GetDeviceStatus(out_device_status));
     }
 
     Result GetDeviceCid(void *out, size_t out_size, Port port) {
-        return GetDeviceAccessor(port)->GetCid(out, out_size);
+        R_RETURN(GetDeviceAccessor(port)->GetCid(out, out_size));
     }
 
     Result GetDeviceCsd(void *out, size_t out_size, Port port) {
-        return GetDeviceAccessor(port)->GetCsd(out, out_size);
+        R_RETURN(GetDeviceAccessor(port)->GetCsd(out, out_size));
     }
 
     void GetAndClearErrorInfo(ErrorInfo *out_error_info, size_t *out_log_size, char *out_log_buffer, size_t log_buffer_size, Port port) {

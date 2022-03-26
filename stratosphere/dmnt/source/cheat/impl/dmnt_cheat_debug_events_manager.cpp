@@ -84,9 +84,9 @@ namespace ams::dmnt::cheat::impl {
 
                 Result ContinueDebugEvent(os::NativeHandle debug_handle) {
                     if (hos::GetVersion() >= hos::Version_3_0_0) {
-                        return svc::ContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, nullptr, 0);
+                        R_RETURN(svc::ContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, nullptr, 0));
                     } else {
-                        return svc::LegacyContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, 0);
+                        R_RETURN(svc::LegacyContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, 0));
                     }
                 }
 
@@ -138,7 +138,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* Send handle to correct core, wait for continue to finish. */
                     this->SendHandle(target_core, cheat_dbg_hnd);
-                    return this->GetContinueResult(target_core);
+                    R_RETURN(this->GetContinueResult(target_core));
                 }
         };
 
@@ -152,7 +152,7 @@ namespace ams::dmnt::cheat::impl {
     }
 
     Result ContinueCheatProcess(os::NativeHandle cheat_dbg_hnd) {
-        return GetReference(g_events_manager).ContinueCheatProcess(cheat_dbg_hnd);
+        R_RETURN(GetReference(g_events_manager).ContinueCheatProcess(cheat_dbg_hnd));
     }
 
 }

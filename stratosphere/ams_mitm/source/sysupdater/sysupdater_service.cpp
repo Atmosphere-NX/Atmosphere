@@ -60,7 +60,7 @@ namespace ams::mitm::sysupdater {
             const size_t path_len = util::SNPrintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
             AMS_ABORT_UNLESS(path_len < ams::fs::EntryNameLengthMax);
 
-            return ams::fs::ConvertToFsCommonPath(dst, dst_size, package_path);
+            R_RETURN(ams::fs::ConvertToFsCommonPath(dst, dst_size, package_path));
         }
 
         Result LoadContentMeta(ncm::AutoBuffer *out, const char *package_root_path, const fs::DirectoryEntry &entry) {
@@ -69,7 +69,7 @@ namespace ams::mitm::sysupdater {
             char path[ams::fs::EntryNameLengthMax];
             R_TRY(ConvertToFsCommonPath(path, sizeof(path), package_root_path, entry.name));
 
-            return ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path);
+            R_RETURN(ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
         }
 
         Result ReadContentMetaPath(ncm::AutoBuffer *out, const char *package_root, const ncm::ContentInfo &content_info) {
@@ -84,7 +84,7 @@ namespace ams::mitm::sysupdater {
             R_TRY(ConvertToFsCommonPath(content_path.str, sizeof(content_path.str), package_root, cnmt_nca_name));
 
             /* Read the content meta path. */
-            return ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, content_path.str);
+            R_RETURN(ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, content_path.str));
         }
 
         Result GetSystemUpdateUpdateContentInfoFromPackage(ncm::ContentInfo *out, const char *package_root) {
@@ -154,7 +154,7 @@ namespace ams::mitm::sysupdater {
             /* Declare helper for result validation. */
             auto ValidateResult = [&](Result result) ALWAYS_INLINE_LAMBDA -> Result {
                 *out_result = result;
-                return result;
+                R_RETURN(result);
             };
 
             /* Iterate over all files to find all content metas. */
@@ -411,11 +411,11 @@ namespace ams::mitm::sysupdater {
     };
 
     Result SystemUpdateService::SetupUpdate(sf::CopyHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
-        return this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, GetFirmwareVariationId());
+        R_RETURN(this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, GetFirmwareVariationId()));
     }
 
     Result SystemUpdateService::SetupUpdateWithVariation(sf::CopyHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
-        return this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, firmware_variation_id);
+        R_RETURN(this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, firmware_variation_id));
     }
 
     Result SystemUpdateService::RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<sf::SharedPointer<ns::impl::IAsyncResult>> out_async) {

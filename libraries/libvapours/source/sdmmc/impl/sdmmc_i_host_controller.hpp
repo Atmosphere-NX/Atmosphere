@@ -177,11 +177,11 @@ namespace ams::sdmmc::impl {
             virtual Result IssueStopTransmissionCommand(u32 *out_response) = 0;
 
             ALWAYS_INLINE Result IssueCommand(const Command *command, TransferData *xfer_data) {
-                return this->IssueCommand(command, xfer_data, nullptr);
+                R_RETURN(this->IssueCommand(command, xfer_data, nullptr));
             }
 
             ALWAYS_INLINE Result IssueCommand(const Command *command) {
-                return this->IssueCommand(command, nullptr, nullptr);
+                R_RETURN(this->IssueCommand(command, nullptr, nullptr));
             }
 
             virtual void GetLastResponse(u32 *out_response, size_t response_size, ResponseType response_type) const = 0;

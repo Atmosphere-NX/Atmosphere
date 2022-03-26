@@ -56,7 +56,7 @@ namespace ams::pgl {
                 }
 
                 virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {
-                    return m_cmif_interface->GetProcessEventInfo(out);
+                    R_RETURN(m_cmif_interface->GetProcessEventInfo(out));
                 }
         };
 
@@ -78,7 +78,7 @@ namespace ams::pgl {
                 }
 
                 virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {
-                    return m_tipc_interface.GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo>(out));
+                    R_RETURN(m_tipc_interface.GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo>(out)));
                 }
         };
 
@@ -113,11 +113,11 @@ namespace ams::pgl {
             }
         public:
             Result GetSystemEvent(os::SystemEventType *out) {
-                return m_impl->GetSystemEvent(out);
+                R_RETURN(m_impl->GetSystemEvent(out));
             }
 
             Result GetProcessEventInfo(pm::ProcessEventInfo *out) {
-                return m_impl->GetProcessEventInfo(out);
+                R_RETURN(m_impl->GetProcessEventInfo(out));
             }
     };
 

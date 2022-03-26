@@ -95,19 +95,19 @@ namespace ams::fs {
             virtual ~ReadOnlyStorageAdapter() { /* ... */ }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                return m_storage->Read(offset, buffer, size);
+                R_RETURN(m_storage->Read(offset, buffer, size));
             }
 
             virtual Result Flush() override {
-                return m_storage->Flush();
+                R_RETURN(m_storage->Flush());
             }
 
             virtual Result GetSize(s64 *out) override {
-                return m_storage->GetSize(out);
+                R_RETURN(m_storage->GetSize(out));
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                return m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                R_RETURN(m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {

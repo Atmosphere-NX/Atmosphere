@@ -20,7 +20,7 @@ namespace ams::fs {
 
     Result FileHandleStorage::UpdateSize() {
         R_SUCCEED_IF(m_size != InvalidSize);
-        return GetFileSize(std::addressof(m_size), m_handle);
+        R_RETURN(GetFileSize(std::addressof(m_size), m_handle));
     }
 
     Result FileHandleStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -36,7 +36,7 @@ namespace ams::fs {
         /* Ensure our access is valid. */
         R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
-        return ReadFile(m_handle, offset, buffer, size, fs::ReadOption());
+        R_RETURN(ReadFile(m_handle, offset, buffer, size, fs::ReadOption()));
     }
 
     Result FileHandleStorage::Write(s64 offset, const void *buffer, size_t size) {
@@ -52,11 +52,11 @@ namespace ams::fs {
         /* Ensure our access is valid. */
         R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
-        return WriteFile(m_handle, offset, buffer, size, fs::WriteOption());
+        R_RETURN(WriteFile(m_handle, offset, buffer, size, fs::WriteOption()));
     }
 
     Result FileHandleStorage::Flush() {
-        return FlushFile(m_handle);
+        R_RETURN(FlushFile(m_handle));
     }
 
     Result FileHandleStorage::GetSize(s64 *out_size) {
@@ -67,7 +67,7 @@ namespace ams::fs {
 
     Result FileHandleStorage::SetSize(s64 size) {
         m_size = InvalidSize;
-        return SetFileSize(m_handle, size);
+        R_RETURN(SetFileSize(m_handle, size));
     }
 
 }

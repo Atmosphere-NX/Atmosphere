@@ -205,7 +205,7 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManager::AcceptStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc) {
-        return m_impl->AcceptStart(out_task_id, out_handle, desc);
+        R_RETURN(m_impl->AcceptStart(out_task_id, out_handle, desc));
     }
 
     void HtcsManager::AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc) {
@@ -228,7 +228,7 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManager::RecvStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
-        return m_impl->RecvStart(out_task_id, out_handle, size, desc, flags);
+        R_RETURN(m_impl->RecvStart(out_task_id, out_handle, size, desc, flags));
     }
 
     void HtcsManager::RecvResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -256,11 +256,11 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManager::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags) {
-        return m_impl->SendStart(out_task_id, out_handle, buffer, size, desc, flags);
+        R_RETURN(m_impl->SendStart(out_task_id, out_handle, buffer, size, desc, flags));
     }
 
     Result HtcsManager::SendLargeStart(u32 *out_task_id, os::NativeHandle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags) {
-        return m_impl->SendLargeStart(out_task_id, out_handle, buffers, sizes, count, desc, flags);
+        R_RETURN(m_impl->SendLargeStart(out_task_id, out_handle, buffers, sizes, count, desc, flags));
     }
 
     void HtcsManager::SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
@@ -288,7 +288,7 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManager::StartSend(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
-        return m_impl->StartSend(out_task_id, out_handle, desc, size, flags);
+        R_RETURN(m_impl->StartSend(out_task_id, out_handle, desc, size, flags));
     }
 
     Result HtcsManager::ContinueSend(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -329,7 +329,7 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsManager::StartRecv(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
-        return m_impl->StartRecv(out_task_id, out_handle, size, desc, flags);
+        R_RETURN(m_impl->StartRecv(out_task_id, out_handle, size, desc, flags));
     }
 
     void HtcsManager::EndRecv(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {

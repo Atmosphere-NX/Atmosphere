@@ -50,7 +50,7 @@ namespace ams::dmnt {
             if (R_FAILED(result)) {
                 AMS_DMNT2_GDB_LOG_ERROR("SetDataBreakPoint FAIL 0x%08x, reg=%d, address=0x%lx\n", result.GetValue(), reg, address);
             }
-            return result;
+            R_RETURN(result);
         }
 
     }
@@ -101,7 +101,7 @@ namespace ams::dmnt {
             result = SetDataBreakPoint(m_reg, m_ctx, 0, 0, false, false);
             this->Reset();
         }
-        return result;
+        R_RETURN(result);
     }
 
     Result WatchPoint::Set(DebugProcess *debug_process, uintptr_t address, size_t size, bool read, bool write) {
@@ -143,7 +143,7 @@ namespace ams::dmnt {
         R_UNLESS(bp != nullptr, svc::ResultOutOfHandles());
 
         /* Set the watchpoint. */
-        return bp->Set(m_debug_process, address, size, read, write);
+        R_RETURN(bp->Set(m_debug_process, address, size, read, write));
     }
 
     Result HardwareWatchPointManager::GetWatchPointInfo(u64 address, bool &read, bool &write) {

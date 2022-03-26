@@ -140,11 +140,11 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverImpl::Refresh() {
-        return this->RefreshImpl(nullptr, 0);
+        R_RETURN(this->RefreshImpl(nullptr, 0));
     }
 
     Result RegisteredLocationResolverImpl::RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) {
-        return this->RefreshImpl(ids.GetPointer(), ids.GetSize());
+        R_RETURN(this->RefreshImpl(ids.GetPointer(), ids.GetSize()));
     }
 
 }

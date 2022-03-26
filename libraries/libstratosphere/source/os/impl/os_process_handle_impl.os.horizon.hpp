@@ -25,11 +25,11 @@ namespace ams::os::impl {
             }
 
             static ALWAYS_INLINE Result GetProcessId(ProcessId *out, NativeHandle handle) {
-                return svc::GetProcessId(std::addressof(out->value), handle);
+                R_RETURN(svc::GetProcessId(std::addressof(out->value), handle));
             }
 
             static ALWAYS_INLINE Result GetProgramId(ncm::ProgramId *out, NativeHandle handle) {
-                return svc::GetInfo(std::addressof(out->value), svc::InfoType_ProgramId, handle, 0);
+                R_RETURN(svc::GetInfo(std::addressof(out->value), svc::InfoType_ProgramId, handle, 0));
             }
     };
 

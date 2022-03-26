@@ -58,7 +58,7 @@ namespace ams::mitm::socket::resolver {
 
             switch (port_index) {
                 case PortIndex_Mitm:
-                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<IResolver, ResolverImpl>(decltype(fsrv)(fsrv), client_info), fsrv);
+                    R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<IResolver, ResolverImpl>(decltype(fsrv)(fsrv), client_info), fsrv));
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }

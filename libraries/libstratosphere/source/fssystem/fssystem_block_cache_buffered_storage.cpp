@@ -191,7 +191,7 @@ namespace ams::fssystem {
                 if (!entry.is_cached) {
                     if (const Result result = m_data_storage->Read(entry.range.offset, src, entry.range.size); R_FAILED(result)) {
                         m_block_cache_manager.ReleaseCacheEntry(std::addressof(entry), range);
-                        return this->UpdateLastResult(result);
+                        R_RETURN(this->UpdateLastResult(result));
                     }
                     entry.is_cached = true;
                 }
@@ -293,7 +293,7 @@ namespace ams::fssystem {
                 if (!entry.is_cached && ((offset != entry.range.offset) || (offset + size < static_cast<size_t>(entry.range.GetEndOffset())))) {
                     if (Result result = m_data_storage->Read(entry.range.offset, dst, entry.range.size); R_FAILED(result)) {
                         m_block_cache_manager.ReleaseCacheEntry(std::addressof(entry), range);
-                        return this->UpdateLastResult(result);
+                        R_RETURN(this->UpdateLastResult(result));
                     }
                 }
                 entry.is_cached = true;

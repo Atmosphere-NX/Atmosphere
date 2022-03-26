@@ -400,7 +400,7 @@ namespace ams::pgl::srv {
 
     Result TerminateProcess(os::ProcessId process_id) {
         /* Ask PM to terminate the process. */
-        return pm::shell::TerminateProcess(process_id);
+        R_RETURN(pm::shell::TerminateProcess(process_id));
     }
 
     Result GetApplicationProcessId(os::ProcessId *out) {
@@ -415,7 +415,7 @@ namespace ams::pgl::srv {
 
     Result BoostSystemMemoryResourceLimit(u64 size) {
         /* Ask PM to boost the limit. */
-        return pm::shell::BoostSystemMemoryResourceLimit(size);
+        R_RETURN(pm::shell::BoostSystemMemoryResourceLimit(size));
     }
 
     bool IsProcessTracked(os::ProcessId process_id) {
@@ -493,7 +493,7 @@ namespace ams::pgl::srv {
 
         /* Launch the snapshot dumper, clearing the global tracker process id. */
         ON_SCOPE_EXIT { g_ssd_process_id = os::InvalidProcessId; };
-        return TriggerSnapShotDumper(process_id, dump_type, arg);
+        R_RETURN(TriggerSnapShotDumper(process_id, dump_type, arg));
     }
 
 }

@@ -67,11 +67,11 @@ namespace ams::htclow::mux {
     Result ChannelImpl::ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size) {
         switch (header.packet_type) {
             case PacketType_Data:
-                return this->ProcessReceiveDataPacket(header.version, header.share, header.offset, body, body_size);
+                R_RETURN(this->ProcessReceiveDataPacket(header.version, header.share, header.offset, body, body_size));
             case PacketType_MaxData:
-                return this->ProcessReceiveMaxDataPacket(header.version, header.share);
+                R_RETURN(this->ProcessReceiveMaxDataPacket(header.version, header.share));
             case PacketType_Error:
-                return this->ProcessReceiveErrorPacket();
+                R_RETURN(this->ProcessReceiveErrorPacket());
             default:
                 R_THROW(htclow::ResultProtocolError());
         }

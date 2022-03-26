@@ -422,7 +422,7 @@ namespace ams::erpt::srv {
         R_TRY(record->Initialize(ctx, data, data_size));
 
         /* Create the report. */
-        return CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments);
+        R_RETURN(CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments));
     }
 
     Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments) {

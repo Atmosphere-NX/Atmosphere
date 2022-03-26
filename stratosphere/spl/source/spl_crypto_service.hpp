@@ -30,35 +30,35 @@ namespace ams::spl {
         public:
             /* Actual commands. */
             Result GenerateAesKek(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
-                return m_manager.GenerateAesKek(out_access_key.GetPointer(), key_source, generation, option);
+                R_RETURN(m_manager.GenerateAesKek(out_access_key.GetPointer(), key_source, generation, option));
             }
 
             Result LoadAesKey(s32 keyslot, AccessKey access_key, KeySource key_source) {
-                return m_manager.LoadAesKey(keyslot, this, access_key, key_source);
+                R_RETURN(m_manager.LoadAesKey(keyslot, this, access_key, key_source));
             }
 
             Result GenerateAesKey(sf::Out<AesKey> out_key, AccessKey access_key, KeySource key_source) {
-                return m_manager.GenerateAesKey(out_key.GetPointer(), access_key, key_source);
+                R_RETURN(m_manager.GenerateAesKey(out_key.GetPointer(), access_key, key_source));
             }
 
             Result DecryptAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option) {
-                return m_manager.DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
+                R_RETURN(m_manager.DecryptAesKey(out_key.GetPointer(), key_source, generation, option));
             }
 
             Result ComputeCtr(const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
-                return m_manager.ComputeCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
+                R_RETURN(m_manager.ComputeCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr));
             }
 
             Result ComputeCmac(sf::Out<Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf) {
-                return m_manager.ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize());
+                R_RETURN(m_manager.ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize()));
             }
 
             Result AllocateAesKeySlot(sf::Out<s32> out_keyslot) {
-                return m_manager.AllocateAesKeySlot(out_keyslot.GetPointer(), this);
+                R_RETURN(m_manager.AllocateAesKeySlot(out_keyslot.GetPointer(), this));
             }
 
             Result DeallocateAesKeySlot(s32 keyslot) {
-                return m_manager.DeallocateAesKeySlot(keyslot, this);
+                R_RETURN(m_manager.DeallocateAesKeySlot(keyslot, this));
             }
 
             Result GetAesKeySlotAvailableEvent(sf::OutCopyHandle out_hnd) {

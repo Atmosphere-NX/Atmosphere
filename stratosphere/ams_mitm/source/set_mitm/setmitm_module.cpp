@@ -57,9 +57,9 @@ namespace ams::mitm::settings {
 
             switch (port_index) {
                 case PortIndex_SetMitm:
-                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetMitmInterface, SetMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                    R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetMitmInterface, SetMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                 case PortIndex_SetSysMitm:
-                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetSysMitmInterface, SetSysMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                    R_RETURN(this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetSysMitmInterface, SetSysMitmService>(decltype(fsrv)(fsrv), client_info), fsrv));
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }

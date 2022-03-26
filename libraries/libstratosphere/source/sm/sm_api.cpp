@@ -47,24 +47,24 @@ namespace ams::sm {
 
     /* Ordinary SM API. */
     Result GetServiceHandle(os::NativeHandle *out, ServiceName name) {
-        return smGetServiceOriginal(out, impl::ConvertName(name));
+        R_RETURN(smGetServiceOriginal(out, impl::ConvertName(name)));
     }
 
     Result RegisterService(os::NativeHandle *out, ServiceName name, size_t max_sessions, bool is_light) {
-        return smRegisterService(out, impl::ConvertName(name), is_light, static_cast<int>(max_sessions));
+        R_RETURN(smRegisterService(out, impl::ConvertName(name), is_light, static_cast<int>(max_sessions)));
     }
 
     Result UnregisterService(ServiceName name) {
-        return smUnregisterService(impl::ConvertName(name));
+        R_RETURN(smUnregisterService(impl::ConvertName(name)));
     }
 
     /* Atmosphere extensions. */
     Result HasService(bool *out, ServiceName name) {
-        return smAtmosphereHasService(out, impl::ConvertName(name));
+        R_RETURN(smAtmosphereHasService(out, impl::ConvertName(name)));
     }
 
     Result WaitService(ServiceName name) {
-        return smAtmosphereWaitService(impl::ConvertName(name));
+        R_RETURN(smAtmosphereWaitService(impl::ConvertName(name)));
     }
     #else
     Result Initialize() {

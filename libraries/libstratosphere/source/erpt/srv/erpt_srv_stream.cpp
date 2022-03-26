@@ -28,7 +28,7 @@ namespace ams::erpt::srv {
 
     Result Stream::DeleteStream(const char *path) {
         R_UNLESS(s_can_access_fs, erpt::ResultInvalidPowerState());
-        return fs::DeleteFile(path);
+        R_RETURN(fs::DeleteFile(path));
     }
 
     Result Stream::CommitStream() {
@@ -47,7 +47,7 @@ namespace ams::erpt::srv {
         R_TRY(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-        return fs::GetFileSize(out, file);
+        R_RETURN(fs::GetFileSize(out, file));
     }
 
     Stream::Stream() : m_buffer_size(0), m_file_position(0), m_buffer_count(0), m_buffer(nullptr), m_stream_mode(StreamMode_Invalid), m_initialized(false) {
@@ -206,7 +206,7 @@ namespace ams::erpt::srv {
     }
 
     Result Stream::GetStreamSize(s64 *out) const {
-        return GetStreamSize(out, m_file_name);
+        R_RETURN(GetStreamSize(out, m_file_name));
     }
 
     Result Stream::Flush() {

@@ -628,7 +628,7 @@ namespace ams::tipc::impl {
         typename Processor::OutHandleHolderType out_handles_holder;
         const Result command_result = [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
             if constexpr (ReturnsResult) {
-                return (object->*ServiceCommandImpl)(Processor::template DeserializeArgument<Ix>(message_buffer, out_raw_holder, out_handles_holder)...);
+                R_RETURN((object->*ServiceCommandImpl)(Processor::template DeserializeArgument<Ix>(message_buffer, out_raw_holder, out_handles_holder)...));
             } else {
                 (object->*ServiceCommandImpl)(Processor::template DeserializeArgument<Ix>(message_buffer, out_raw_holder, out_handles_holder)...);
                 R_SUCCEED();

@@ -76,7 +76,7 @@ namespace ams::fssystem {
         R_TRY(CreateSoftwareDecryptor(std::addressof(sw_decryptor)));
 
         /* Initialize. */
-        return this->Initialize(allocator, key, key_size, secure_value, 0, data_storage, fs::SubStorage(std::addressof(table_storage), node_storage_offset, node_storage_size), fs::SubStorage(std::addressof(table_storage), entry_storage_offset, entry_storage_size), header.entry_count, std::move(sw_decryptor));
+        R_RETURN(this->Initialize(allocator, key, key_size, secure_value, 0, data_storage, fs::SubStorage(std::addressof(table_storage), node_storage_offset, node_storage_size), fs::SubStorage(std::addressof(table_storage), entry_storage_offset, entry_storage_size), header.entry_count, std::move(sw_decryptor)));
     }
 
     Result AesCtrCounterExtendedStorage::Initialize(IAllocator *allocator, const void *key, size_t key_size, u32 secure_value, s64 counter_offset, fs::SubStorage data_storage, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 entry_count, std::unique_ptr<IDecryptor> &&decryptor) {

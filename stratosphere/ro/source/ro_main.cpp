@@ -62,11 +62,11 @@ namespace ams {
             ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
                 switch (port_index) {
                     case PortIndex_DebugMonitor:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IDebugMonitorInterface, ro::DebugMonitorService>(std::addressof(g_server_allocator)));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IDebugMonitorInterface, ro::DebugMonitorService>(std::addressof(g_server_allocator))));
                     case PortIndex_User:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IRoInterface, ro::RoService>(std::addressof(g_server_allocator), ro::NrrKind_User));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IRoInterface, ro::RoService>(std::addressof(g_server_allocator), ro::NrrKind_User)));
                     case PortIndex_JitPlugin:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IRoInterface, ro::RoService>(std::addressof(g_server_allocator), ro::NrrKind_JitPlugin));
+                        R_RETURN(this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<ro::impl::IRoInterface, ro::RoService>(std::addressof(g_server_allocator), ro::NrrKind_JitPlugin)));
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }

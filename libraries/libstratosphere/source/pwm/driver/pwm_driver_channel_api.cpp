@@ -25,14 +25,10 @@ namespace ams::pwm::driver {
         Result OpenSessionImpl(ChannelSession *out, IPwmDevice *device) {
             /* Construct the session. */
             auto *session = std::construct_at(std::addressof(impl::GetChannelSessionImpl(*out)));
-            auto session_guard = SCOPE_GUARD { std::destroy_at(session); };
+            ON_RESULT_FAILURE { std::destroy_at(session); };
 
             /* Open the session. */
-            R_TRY(session->Open(device, ddsf::AccessMode_ReadWrite));
-
-            /* We succeeded. */
-            session_guard.Cancel();
-            R_SUCCEED();
+            R_RETURN(session->Open(device, ddsf::AccessMode_ReadWrite));
         }
 
     }

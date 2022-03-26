@@ -499,7 +499,7 @@ namespace ams::sdmmc::impl {
                 SdHostStandardController::AbortTransaction();
                 R_THROW(sdmmc::ResultIssueTuningCommandSoftwareTimeout());
             } else {
-                return result;
+                R_RETURN(result);
             }
         }
         #else
@@ -804,7 +804,7 @@ namespace ams::sdmmc::impl {
             this->CalibrateDriveStrength(SdHostStandardController::GetBusPower());
         }
 
-        return SdHostStandardController::IssueCommand(command, xfer_data, out_num_transferred_blocks);
+        R_RETURN(SdHostStandardController::IssueCommand(command, xfer_data, out_num_transferred_blocks));
     }
 
     Result SdmmcController::IssueStopTransmissionCommand(u32 *out_response) {
@@ -813,7 +813,7 @@ namespace ams::sdmmc::impl {
             this->CalibrateDriveStrength(SdHostStandardController::GetBusPower());
         }
 
-        return SdHostStandardController::IssueStopTransmissionCommand(out_response);
+        R_RETURN(SdHostStandardController::IssueStopTransmissionCommand(out_response));
     }
 
     Result SdmmcController::Tuning(SpeedMode speed_mode, u32 command_index) {
@@ -957,7 +957,7 @@ namespace ams::sdmmc::impl {
         /* Nintendo sets the current bus power regardless of whether the call succeeds. */
         ON_SCOPE_EXIT { m_current_bus_power = BusPower_3_3V; };
 
-        /* TODO: return pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
+        /* TODO: R_RETURN(pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000)); */
         R_SUCCEED();
     }
 
@@ -986,7 +986,7 @@ namespace ams::sdmmc::impl {
         /* Nintendo sets the current bus power regardless of whether the call succeeds. */
         ON_SCOPE_EXIT { m_current_bus_power = BusPower_1_8V; };
 
-        /* TODO: return pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+        /* TODO: R_RETURN(pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000)); */
         R_SUCCEED();
     }
 
@@ -1013,11 +1013,11 @@ namespace ams::sdmmc::impl {
     Result Sdmmc1Controller::PowerOn(BusPower bus_power) {
         #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
         if (m_is_pcv_control) {
-            return this->PowerOnForPcvControl(bus_power);
+            R_RETURN(this->PowerOnForPcvControl(bus_power));
         } else
         #endif
         {
-            return this->PowerOnForRegisterControl(bus_power);
+            R_RETURN(this->PowerOnForRegisterControl(bus_power));
         }
     }
 
@@ -1035,11 +1035,11 @@ namespace ams::sdmmc::impl {
     Result Sdmmc1Controller::LowerBusPower() {
         #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
         if (m_is_pcv_control) {
-            return this->LowerBusPowerForPcvControl();
+            R_RETURN(this->LowerBusPowerForPcvControl());
         } else
         #endif
         {
-            return this->LowerBusPowerForRegisterControl();
+            R_RETURN(this->LowerBusPowerForRegisterControl());
         }
     }
 

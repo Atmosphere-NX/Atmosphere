@@ -22,35 +22,35 @@ namespace ams::sm::mitm {
     #if AMS_SF_MITM_SUPPORTED
     /* Mitm API. */
     Result InstallMitm(os::NativeHandle *out_port, os::NativeHandle *out_query, ServiceName name) {
-        return impl::DoWithPerThreadSession([&](TipcService *fwd) {
-            return smAtmosphereMitmInstall(fwd, out_port, out_query, impl::ConvertName(name));
-        });
+        R_RETURN(impl::DoWithPerThreadSession([&](TipcService *fwd) {
+            R_RETURN(smAtmosphereMitmInstall(fwd, out_port, out_query, impl::ConvertName(name)));
+        }));
     }
 
     Result UninstallMitm(ServiceName name) {
-        return smAtmosphereMitmUninstall(impl::ConvertName(name));
+        R_RETURN(smAtmosphereMitmUninstall(impl::ConvertName(name)));
     }
 
     Result DeclareFutureMitm(ServiceName name) {
-        return smAtmosphereMitmDeclareFuture(impl::ConvertName(name));
+        R_RETURN(smAtmosphereMitmDeclareFuture(impl::ConvertName(name)));
     }
 
     Result ClearFutureMitm(ServiceName name) {
-        return smAtmosphereMitmClearFuture(impl::ConvertName(name));
+        R_RETURN(smAtmosphereMitmClearFuture(impl::ConvertName(name)));
     }
 
     Result AcknowledgeSession(Service *out_service, MitmProcessInfo *out_info, ServiceName name) {
         return impl::DoWithMitmAcknowledgementSession([&]() {
-            return smAtmosphereMitmAcknowledgeSession(out_service, reinterpret_cast<void *>(out_info), impl::ConvertName(name));
+            R_RETURN(smAtmosphereMitmAcknowledgeSession(out_service, reinterpret_cast<void *>(out_info), impl::ConvertName(name)));
         });
     }
 
     Result HasMitm(bool *out, ServiceName name) {
-        return smAtmosphereHasMitm(out, impl::ConvertName(name));
+        R_RETURN(smAtmosphereHasMitm(out, impl::ConvertName(name)));
     }
 
     Result WaitMitm(ServiceName name) {
-        return smAtmosphereWaitMitm(impl::ConvertName(name));
+        R_RETURN(smAtmosphereWaitMitm(impl::ConvertName(name)));
     }
     #endif
     #endif

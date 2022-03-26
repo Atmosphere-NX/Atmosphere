@@ -51,27 +51,27 @@ namespace ams::sdmmc {
     }
 
     Result AwakenGcAsic(Port port) {
-        return GetGcAsicDeviceAccessor(port)->AwakenGcAsic();
+        R_RETURN(GetGcAsicDeviceAccessor(port)->AwakenGcAsic());
     }
 
     Result WriteGcAsicOperation(Port port, const void *op_buf, size_t op_buf_size) {
-        return GetGcAsicDeviceAccessor(port)->WriteGcAsicOperation(op_buf, op_buf_size);
+        R_RETURN(GetGcAsicDeviceAccessor(port)->WriteGcAsicOperation(op_buf, op_buf_size));
     }
 
     Result FinishGcAsicOperation(Port port) {
-        return GetGcAsicDeviceAccessor(port)->FinishGcAsicOperation();
+        R_RETURN(GetGcAsicDeviceAccessor(port)->FinishGcAsicOperation());
     }
 
     Result AbortGcAsicOperation(Port port) {
-        return GetGcAsicDeviceAccessor(port)->AbortGcAsicOperation();
+        R_RETURN(GetGcAsicDeviceAccessor(port)->AbortGcAsicOperation());
     }
 
     Result SleepGcAsic(Port port) {
-        return GetGcAsicDeviceAccessor(port)->SleepGcAsic();
+        R_RETURN(GetGcAsicDeviceAccessor(port)->SleepGcAsic());
     }
 
     Result UpdateGcAsicKey(Port port) {
-        return GetGcAsicDeviceAccessor(port)->UpdateGcAsicKey();
+        R_RETURN(GetGcAsicDeviceAccessor(port)->UpdateGcAsicKey());
     }
 
     void SignalGcRemovedEvent(Port port) {

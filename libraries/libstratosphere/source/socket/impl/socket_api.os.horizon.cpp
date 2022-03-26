@@ -251,7 +251,7 @@ namespace ams::socket::impl {
     }
 
     Result Initialize(const Config &config) {
-        return InitializeCommon(config);
+        R_RETURN(InitializeCommon(config));
     }
 
     Result Finalize() {

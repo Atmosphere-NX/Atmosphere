@@ -48,11 +48,11 @@ namespace ams::erpt::srv {
     }
 
     Result Journal::Delete(ReportId report_id) {
-        return JournalForReports::DeleteReport(report_id);
+        R_RETURN(JournalForReports::DeleteReport(report_id));
     }
 
     Result Journal::GetAttachmentList(AttachmentList *out, ReportId report_id) {
-        return JournalForAttachments::GetAttachmentList(out, report_id);
+        R_RETURN(JournalForAttachments::GetAttachmentList(out, report_id));
     }
 
     util::Uuid Journal::GetJournalId() {
@@ -64,7 +64,7 @@ namespace ams::erpt::srv {
     }
 
     Result Journal::GetReportList(ReportList *out, ReportType type_filter) {
-        return JournalForReports::GetReportList(out, type_filter);
+        R_RETURN(JournalForReports::GetReportList(out, type_filter));
     }
 
     u32 Journal::GetStoredReportCount(ReportType type) {
@@ -109,11 +109,11 @@ namespace ams::erpt::srv {
     }
 
     Result Journal::Store(JournalRecord<ReportInfo> *record) {
-        return JournalForReports::StoreRecord(record);
+        R_RETURN(JournalForReports::StoreRecord(record));
     }
 
     Result Journal::Store(JournalRecord<AttachmentInfo> *record) {
-        return JournalForAttachments::StoreRecord(record);
+        R_RETURN(JournalForAttachments::StoreRecord(record));
     }
 
 }

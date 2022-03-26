@@ -45,27 +45,27 @@ namespace ams::fssystem {
                 }
             public:
                 virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
-                    return m_base_file->Read(out, offset, buffer, size, option);
+                    R_RETURN(m_base_file->Read(out, offset, buffer, size, option));
                 }
 
                 virtual Result DoGetSize(s64 *out) override {
-                    return m_base_file->GetSize(out);
+                    R_RETURN(m_base_file->GetSize(out));
                 }
 
                 virtual Result DoFlush() override {
-                    return m_base_file->Flush();
+                    R_RETURN(m_base_file->Flush());
                 }
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
-                    return m_base_file->Write(offset, buffer, size, option);
+                    R_RETURN(m_base_file->Write(offset, buffer, size, option));
                 }
 
                 virtual Result DoSetSize(s64 size) override {
-                    return m_base_file->SetSize(size);
+                    R_RETURN(m_base_file->SetSize(size));
                 }
 
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                    return m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                    R_RETURN(m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                 }
             public:
                 virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
