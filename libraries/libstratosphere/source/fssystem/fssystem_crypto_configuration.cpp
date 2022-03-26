@@ -136,13 +136,13 @@ namespace ams::fssystem {
         void ComputeCtr(void *dst, size_t dst_size, int key_slot_idx, const void *src, size_t src_size, const void *iv, size_t iv_size) {
             if (dst == src) {
                 /* If the destination and source are the same, we'll use an intermediate buffer. */
-                constexpr size_t MinimumSizeToSkipLocking = 256_KB;
-                constexpr size_t MinimumWorkBufferSize    = 16_KB;
+                constexpr size_t MinimumSizeToRequireLocking = 256_KB;
+                constexpr size_t MinimumWorkBufferSize       = 16_KB;
 
-                /* If the request isn't too large, acquire a lock to prevent too many small requests in flight simultaneously. */
+                /* If the request isn't too large, acquire a lock to prevent too many large requests in flight simultaneously. */
                 static constinit os::SdkMutex s_small_work_buffer_mutex;
                 util::optional<std::scoped_lock<os::SdkMutex>> lk = util::nullopt;
-                if (dst_size < MinimumSizeToSkipLocking) {
+                if (dst_size >= MinimumSizeToRequireLocking) {
                     lk.emplace(s_small_work_buffer_mutex);
                 }
 
