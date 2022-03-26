@@ -499,7 +499,9 @@ namespace ams::fatal::srv {
         }
 
         void BacklightControlTask::TurnOnBacklight() {
-            lblSwitchBacklightOn(0);
+            R_ABORT_UNLESS(::lblInitialize());
+            ::lblSwitchBacklightOn(0);
+            ::lblExit();
         }
 
         Result BacklightControlTask::Run() {

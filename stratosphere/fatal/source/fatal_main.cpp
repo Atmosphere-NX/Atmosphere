@@ -124,7 +124,6 @@ namespace ams {
                 R_ABORT_UNLESS(pcvInitialize());
             }
 
-            R_ABORT_UNLESS(lblInitialize());
             R_ABORT_UNLESS(psmInitialize());
             R_ABORT_UNLESS(spsmInitialize());
             R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
