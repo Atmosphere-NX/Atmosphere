@@ -139,11 +139,11 @@ namespace ams::fssystem {
                 constexpr size_t MinimumSizeToRequireLocking = 256_KB;
                 constexpr size_t MinimumWorkBufferSize       = 16_KB;
 
-                /* If the request isn't too large, acquire a lock to prevent too many large requests in flight simultaneously. */
-                static constinit os::SdkMutex s_small_work_buffer_mutex;
+                /* If the request is large enough, acquire a lock to prevent too many large requests in flight simultaneously. */
+                static constinit os::SdkMutex s_large_work_buffer_mutex;
                 util::optional<std::scoped_lock<os::SdkMutex>> lk = util::nullopt;
                 if (dst_size >= MinimumSizeToRequireLocking) {
-                    lk.emplace(s_small_work_buffer_mutex);
+                    lk.emplace(s_large_work_buffer_mutex);
                 }
 
                 /* Allocate a pooled buffer. */
