@@ -199,7 +199,7 @@ namespace ams::fssystem {
 
         s64 bs_size = 0;
         R_TRY(this->GetSize(std::addressof(bs_size)));
-        R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+        R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
         /* Determine extents. */
         const auto offset_end         = offset + static_cast<s64>(size);

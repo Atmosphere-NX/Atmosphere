@@ -92,7 +92,7 @@ namespace ams::fssystem {
         R_UNLESS(offset <= data_size, fs::ResultInvalidOffset());
 
         /* Validate the access range. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))), fs::ResultOutOfRange());
+        R_TRY(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))));
 
         /* Determine the read extents. */
         size_t read_size = size;
@@ -174,7 +174,9 @@ namespace ams::fssystem {
 
         /* Validate arguments. */
         R_UNLESS(buffer != nullptr,                          fs::ResultNullptrArgument());
-        R_UNLESS(IStorage::CheckOffsetAndSize(offset, size), fs::ResultInvalidOffset());
+
+        /* Check the offset/size. */
+        R_TRY(IStorage::CheckOffsetAndSize(offset, size));
 
         /* Validate the offset. */
         s64 data_size;
@@ -182,7 +184,7 @@ namespace ams::fssystem {
         R_UNLESS(offset < data_size, fs::ResultInvalidOffset());
 
         /* Validate the access range. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))), fs::ResultOutOfRange());
+        R_TRY(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))));
 
         /* Validate preconditions. */
         AMS_ASSERT(util::IsAligned(offset, m_verification_block_size));

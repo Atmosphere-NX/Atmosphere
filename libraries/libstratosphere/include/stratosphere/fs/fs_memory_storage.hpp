@@ -34,7 +34,7 @@ namespace ams::fs {
 
                 /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+                R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
                 /* Copy from memory. */
                 std::memcpy(buffer, m_buf + offset, size);
@@ -47,7 +47,7 @@ namespace ams::fs {
 
                 /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+                R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
                 /* Copy to memory. */
                 std::memcpy(m_buf + offset, buffer, size);

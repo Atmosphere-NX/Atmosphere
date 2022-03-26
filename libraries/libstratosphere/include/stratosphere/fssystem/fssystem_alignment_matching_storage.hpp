@@ -62,7 +62,7 @@ namespace ams::fssystem {
 
                 s64 bs_size = 0;
                 R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+                R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
                 return AlignmentMatchingStorageImpl::Read(m_base_storage, work_buf, sizeof(work_buf), DataAlign, BufferAlign, offset, static_cast<char *>(buffer), size);
             }
@@ -80,7 +80,7 @@ namespace ams::fssystem {
 
                 s64 bs_size = 0;
                 R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+                R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
                 return AlignmentMatchingStorageImpl::Write(m_base_storage, work_buf, sizeof(work_buf), DataAlign, BufferAlign, offset, static_cast<const char *>(buffer), size);
             }
@@ -119,7 +119,7 @@ namespace ams::fssystem {
                     /* Get the base storage size. */
                     s64 bs_size = 0;
                     R_TRY(this->GetSize(std::addressof(bs_size)));
-                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    R_TRY(fs::IStorage::CheckOffsetAndSize(offset, size));
 
                     /* Operate on the base storage. */
                     const auto valid_size         = std::min(size, bs_size - offset);
@@ -160,7 +160,7 @@ namespace ams::fssystem {
 
                 s64 bs_size = 0;
                 R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+                R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
                 /* Allocate a pooled buffer. */
                 PooledBuffer pooled_buffer;
@@ -178,7 +178,7 @@ namespace ams::fssystem {
 
                 s64 bs_size = 0;
                 R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+                R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
                 /* Allocate a pooled buffer. */
                 PooledBuffer pooled_buffer;
@@ -221,7 +221,7 @@ namespace ams::fssystem {
                     /* Get the base storage size. */
                     s64 bs_size = 0;
                     R_TRY(this->GetSize(std::addressof(bs_size)));
-                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    R_TRY(fs::IStorage::CheckOffsetAndSize(offset, size));
 
                     /* Operate on the base storage. */
                     const auto valid_size         = std::min(size, bs_size - offset);
@@ -268,7 +268,7 @@ namespace ams::fssystem {
 
                 s64 bs_size = 0;
                 R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckAccessRange(offset, size, bs_size), fs::ResultOutOfRange());
+                R_TRY(fs::IStorage::CheckAccessRange(offset, size, bs_size));
 
                 /* Allocate a pooled buffer. */
                 PooledBuffer pooled_buffer(m_data_align, m_data_align);
@@ -308,7 +308,7 @@ namespace ams::fssystem {
                     /* Get the base storage size. */
                     s64 bs_size = 0;
                     R_TRY(this->GetSize(std::addressof(bs_size)));
-                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    R_TRY(fs::IStorage::CheckOffsetAndSize(offset, size));
 
                     /* Operate on the base storage. */
                     const auto valid_size         = std::min(size, bs_size - offset);

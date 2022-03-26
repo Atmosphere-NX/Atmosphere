@@ -20,7 +20,7 @@
 
 namespace ams::fs {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     class IStorage {
         public:
             virtual ~IStorage() { /* ... */ }
@@ -38,28 +38,41 @@ namespace ams::fs {
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) = 0;
 
             virtual Result OperateRange(OperationId op_id, s64 offset, s64 size) {
-                return this->OperateRange(nullptr, 0, op_id, offset, size, nullptr, 0);
+                R_RETURN(this->OperateRange(nullptr, 0, op_id, offset, size, nullptr, 0));
             }
         public:
-            static inline bool CheckAccessRange(s64 offset, s64 size, s64 total_size) {
-                return offset >= 0 &&
-                       size >= 0 &&
-                       size <= total_size &&
-                       offset <= (total_size - size);
+            static inline Result CheckAccessRange(s64 offset, s64 size, s64 total_size) {
+                R_UNLESS(offset >= 0,                                    fs::ResultInvalidOffset());
+                R_UNLESS(size >= 0,                                      fs::ResultInvalidSize());
+                R_UNLESS(util::CanAddWithoutOverflow<s64>(offset, size), fs::ResultOutOfRange());
+                R_UNLESS(offset + size <= total_size,                    fs::ResultOutOfRange());
+                R_SUCCEED();
             }
 
-            static inline bool CheckAccessRange(s64 offset, size_t size, s64 total_size) {
-                return CheckAccessRange(offset, static_cast<s64>(size), total_size);
+            static ALWAYS_INLINE Result CheckAccessRange(s64 offset, size_t size, s64 total_size) {
+                R_RETURN(CheckAccessRange(offset, static_cast<s64>(size), total_size));
             }
 
-            static inline bool CheckOffsetAndSize(s64 offset, s64 size) {
-                return offset >= 0 &&
-                       size >= 0 &&
-                       offset <= (offset + size);
+            static inline Result CheckOffsetAndSize(s64 offset, s64 size) {
+                R_UNLESS(offset >= 0,                                    fs::ResultInvalidOffset());
+                R_UNLESS(size >= 0,                                      fs::ResultInvalidSize());
+                R_UNLESS(util::CanAddWithoutOverflow<s64>(offset, size), fs::ResultOutOfRange());
+                R_SUCCEED();
             }
 
-            static inline bool CheckOffsetAndSize(s64 offset, size_t size) {
-                return CheckOffsetAndSize(offset, static_cast<s64>(size));
+            static ALWAYS_INLINE Result CheckOffsetAndSize(s64 offset, size_t size) {
+                R_RETURN(CheckOffsetAndSize(offset, static_cast<s64>(size)));
+            }
+
+            static inline Result CheckOffsetAndSizeWithResult(s64 offset, s64 size, Result fail_result) {
+                R_TRY_CATCH(CheckOffsetAndSize(offset, size)) {
+                    R_CONVERT_ALL(fail_result);
+                } R_END_TRY_CATCH;
+                R_SUCCEED();
+            }
+
+            static ALWAYS_INLINE Result CheckOffsetAndSizeWithResult(s64 offset, size_t size, Result fail_result) {
+                R_RETURN(CheckOffsetAndSizeWithResult(offset, static_cast<s64>(size), fail_result));
             }
     };
 

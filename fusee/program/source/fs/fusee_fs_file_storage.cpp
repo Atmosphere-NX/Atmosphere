@@ -34,7 +34,7 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+        R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
         return ReadFile(m_handle, offset, buffer, size, fs::ReadOption());
     }
@@ -50,7 +50,7 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+        R_TRY(IStorage::CheckAccessRange(offset, size, m_size));
 
         return WriteFile(m_handle, offset, buffer, size, fs::WriteOption());
     }
