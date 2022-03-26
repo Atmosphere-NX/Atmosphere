@@ -133,6 +133,52 @@ namespace ams::fssystem {
             R_ABORT_UNLESS(spl::GenerateAesKey(dst, dst_size, GetNcaKekAccessKey(key_type), src, src_size));
         }
 
+        void ComputeCtr(void *dst, size_t dst_size, int key_slot_idx, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+            if (dst == src) {
+                /* If the destination and source are the same, we'll use an intermediate buffer. */
+                constexpr size_t MinimumSizeToSkipLocking = 256_KB;
+                constexpr size_t MinimumWorkBufferSize    = 16_KB;
+
+                /* If the request isn't too large, acquire a lock to prevent too many small requests in flight simultaneously. */
+                static constinit os::SdkMutex s_small_work_buffer_mutex;
+                util::optional<std::scoped_lock<os::SdkMutex>> lk = util::nullopt;
+                if (dst_size < MinimumSizeToSkipLocking) {
+                    lk.emplace(s_small_work_buffer_mutex);
+                }
+
+                /* Allocate a pooled buffer. */
+                PooledBuffer pooled_buffer;
+                pooled_buffer.AllocateParticularlyLarge(dst_size, MinimumWorkBufferSize);
+
+                /* Copy the iv locally. */
+                AMS_ASSERT(iv_size == crypto::Aes128CtrEncryptor::IvSize);
+                u8 work_iv[crypto::Aes128CtrEncryptor::IvSize];
+                std::memcpy(work_iv, iv, sizeof(work_iv));
+
+                /* Process all data. */
+                size_t processed = 0;
+                while (processed < dst_size) {
+                    /* Determine the currently processable size. */
+                    const size_t cur_size = std::min<size_t>(dst_size - processed, pooled_buffer.GetSize());
+
+                    /* Process. */
+                    R_ABORT_UNLESS(spl::ComputeCtr(pooled_buffer.GetBuffer(), cur_size, key_slot_idx, static_cast<const u8 *>(src) + processed, cur_size, work_iv, sizeof(work_iv)));
+
+                    /* Copy to dst. */
+                    std::memcpy(static_cast<u8 *>(dst) + processed, pooled_buffer.GetBuffer(), cur_size);
+
+                    /* Advance. */
+                    processed += cur_size;
+
+                    /* Increment the counter. */
+                    fssystem::AddCounter(work_iv, sizeof(work_iv), cur_size / crypto::Aes128CtrEncryptor::BlockSize);
+                }
+            } else {
+                /* If the destination and source are different, we can just call ComputeCtr directly. */
+                R_ABORT_UNLESS(spl::ComputeCtr(dst, dst_size, key_slot_idx, src, src_size, iv, iv_size));
+            }
+        }
+
         void DecryptAesCtr(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
             std::unique_ptr<KeySlotCacheAccessor> accessor;
 
@@ -145,7 +191,7 @@ namespace ams::fssystem {
                 }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-            R_ABORT_UNLESS(spl::ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size));
+            ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size);
         }
 
         void DecryptAesCtrForPreparedKey(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
@@ -165,7 +211,7 @@ namespace ams::fssystem {
                 }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-            R_ABORT_UNLESS(spl::ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size));
+            ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size);
         }
 
         bool VerifySign1(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation, const NcaCryptoConfiguration &cfg) {
