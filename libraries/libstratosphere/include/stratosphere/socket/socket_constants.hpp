@@ -21,6 +21,8 @@ namespace ams::socket {
     constexpr inline s32 InvalidSocket = -1;
     constexpr inline s32 SocketError   = -1;
 
+    constexpr inline u32 MaxSocketsPerClient = 0x80;
+
     constexpr inline auto DefaultTcpAutoBufferSizeMax      = 192_KB;
     constexpr inline auto MinTransferMemorySize            = (2 * DefaultTcpAutoBufferSizeMax + 128_KB);
     constexpr inline auto MinSocketAllocatorSize           = 128_KB;

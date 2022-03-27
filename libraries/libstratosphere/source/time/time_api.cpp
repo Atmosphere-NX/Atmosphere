@@ -62,7 +62,7 @@ namespace ams::time {
 
             R_TRY(::timeInitialize());
             #else
-            AMS_ABORT("TODO");
+            // TODO: Real AMS_ABORT("TODO");
             #endif
 
             g_initialize_count++;
@@ -96,7 +96,7 @@ namespace ams::time {
                 #if defined(ATMOSPHERE_OS_HORIZON)
                 ::timeExit();
                 #else
-                AMS_ABORT("TODO");
+                // TODO: Real AMS_ABORT("TODO");
                 #endif
                 g_initialize_mode = InitializeMode_None;
             }

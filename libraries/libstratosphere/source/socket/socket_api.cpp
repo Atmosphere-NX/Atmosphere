@@ -90,6 +90,10 @@ namespace ams::socket {
         return impl::Bind(desc, address, len);
     }
 
+    s32 Connect(s32 desc, const SockAddr *address, SockLenT len) {
+        return impl::Connect(desc, address, len);
+    }
+
     s32 GetSockName(s32 desc, SockAddr *out_address, SockLenT *out_addr_len) {
         return impl::GetSockName(desc, out_address, out_addr_len);
     }

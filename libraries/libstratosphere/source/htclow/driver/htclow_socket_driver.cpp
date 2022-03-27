@@ -175,7 +175,7 @@ namespace ams::htclow::driver {
         };
 
         /* Send the auto-connect packet. */
-        socket::SendTo(desc, auto_connect_packet, len, socket::MsgFlag::MsgFlag_None, reinterpret_cast<const socket::SockAddr *>(std::addressof(sockaddr)), sizeof(sockaddr));
+        socket::SendTo(desc, auto_connect_packet, len, socket::MsgFlag::Msg_None, reinterpret_cast<const socket::SockAddr *>(std::addressof(sockaddr)), sizeof(sockaddr));
     }
 
     Result SocketDriver::Open() {
@@ -247,7 +247,7 @@ namespace ams::htclow::driver {
         /* Repeatedly send data until it's all sent. */
         ssize_t cur_sent;
         for (ssize_t sent = 0; sent < src_size; sent += cur_sent) {
-            cur_sent = socket::Send(m_client_socket, static_cast<const u8 *>(src) + sent, src_size - sent, socket::MsgFlag::MsgFlag_None);
+            cur_sent = socket::Send(m_client_socket, static_cast<const u8 *>(src) + sent, src_size - sent, socket::MsgFlag::Msg_None);
             R_UNLESS(cur_sent > 0, htclow::ResultSocketSendError());
         }
 
@@ -261,7 +261,7 @@ namespace ams::htclow::driver {
         /* Repeatedly receive data until it's all sent. */
         ssize_t cur_recv;
         for (ssize_t received = 0; received < dst_size; received += cur_recv) {
-            cur_recv = socket::Recv(m_client_socket, static_cast<u8 *>(dst) + received, dst_size - received, socket::MsgFlag::MsgFlag_None);
+            cur_recv = socket::Recv(m_client_socket, static_cast<u8 *>(dst) + received, dst_size - received, socket::MsgFlag::Msg_None);
             R_UNLESS(cur_recv > 0, htclow::ResultSocketReceiveError());
         }
 

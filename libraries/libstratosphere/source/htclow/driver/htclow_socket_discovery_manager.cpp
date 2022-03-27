@@ -100,7 +100,7 @@ namespace ams::htclow::driver {
             TmipcHeader header;
             socket::SockAddr recv_sockaddr;
             socket::SockLenT recv_sockaddr_len = sizeof(recv_sockaddr);
-            const auto recv_res = socket::RecvFrom(m_socket, std::addressof(header), sizeof(header), socket::MsgFlag::MsgFlag_None, std::addressof(recv_sockaddr), std::addressof(recv_sockaddr_len));
+            const auto recv_res = socket::RecvFrom(m_socket, std::addressof(header), sizeof(header), socket::MsgFlag::Msg_None, std::addressof(recv_sockaddr), std::addressof(recv_sockaddr_len));
 
             /* Check that our receive was valid. */
             R_UNLESS(recv_res >= 0,                              htclow::ResultSocketReceiveFromError());
@@ -126,7 +126,7 @@ namespace ams::htclow::driver {
             }
 
             if (header.data_len > 0) {
-                const auto body_res = socket::RecvFrom(m_socket, packet_data, header.data_len, socket::MsgFlag::MsgFlag_None, std::addressof(recv_sockaddr), std::addressof(recv_sockaddr_len));
+                const auto body_res = socket::RecvFrom(m_socket, packet_data, header.data_len, socket::MsgFlag::Msg_None, std::addressof(recv_sockaddr), std::addressof(recv_sockaddr_len));
                 R_UNLESS(body_res >= 0, htclow::ResultSocketReceiveFromError());
                 R_UNLESS(recv_sockaddr_len == sizeof(recv_sockaddr), htclow::ResultSocketReceiveFromError());
 
@@ -139,7 +139,7 @@ namespace ams::htclow::driver {
             const auto len = MakeBeaconResponsePacket(packet_data, sizeof(packet_data));
 
             /* Send the beacon response data. */
-            const auto send_res = socket::SendTo(m_socket, packet_data, len, socket::MsgFlag::MsgFlag_None, std::addressof(recv_sockaddr), sizeof(recv_sockaddr));
+            const auto send_res = socket::SendTo(m_socket, packet_data, len, socket::MsgFlag::Msg_None, std::addressof(recv_sockaddr), sizeof(recv_sockaddr));
             R_UNLESS(send_res >= 0, htclow::ResultSocketSendToError());
         }
 

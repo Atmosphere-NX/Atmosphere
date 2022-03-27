@@ -42,6 +42,8 @@ namespace ams::socket {
 
         IpProto_Udp     = 17,
 
+        IpProto_None    = 59,
+
         IpProto_UdpLite = 136,
 
         IpProto_Raw     = 255,
@@ -80,10 +82,27 @@ namespace ams::socket {
     };
 
     enum class MsgFlag : s32 {
-        MsgFlag_None    = (0 << 0),
+        Msg_None      = (0 << 0),
+
+        Msg_Oob       = (1 << 0),
+        Msg_Peek      = (1 << 1),
+        Msg_DontRoute = (1 << 2),
         /* ... */
-        MsgFlag_WaitAll = (1 << 6),
+        Msg_Trunc     = (1 << 4),
+        Msg_CTrunc    = (1 << 5),
+        Msg_WaitAll   = (1 << 6),
+        Msg_DontWait  = (1 << 7),
         /* ... */
+    };
+
+    enum class FcntlCommand : u32 {
+        F_GetFl = 3,
+        F_SetFl = 4,
+    };
+
+    enum class FcntlFlag : u32 {
+        None       = (0 <<  0),
+        O_NonBlock = (1 << 11),
     };
 
     enum class ShutdownMethod : u32 {
@@ -140,6 +159,16 @@ namespace ams::socket {
         AddrInfo *ai_next;
     };
 
+    struct TimeVal {
+        long tv_sec;
+        long tv_usec;
+    };
+
+    struct Linger {
+        int l_onoff;
+        int l_linger;
+    };
+
     #define AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(__ENUM__) \
         constexpr inline __ENUM__ operator | (__ENUM__  lhs, __ENUM__ rhs) { return static_cast<__ENUM__>(static_cast<std::underlying_type_t<__ENUM__>>(lhs) | static_cast<std::underlying_type_t<__ENUM__>>(rhs)); } \
         constexpr inline __ENUM__ operator |=(__ENUM__ &lhs, __ENUM__ rhs) { return lhs = lhs | rhs; }                                                                                                                \
@@ -151,6 +180,8 @@ namespace ams::socket {
 
     AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(Type)
     AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(AddrInfoFlag)
+    AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(MsgFlag)
+    AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(FcntlFlag)
 
     #undef AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS
 

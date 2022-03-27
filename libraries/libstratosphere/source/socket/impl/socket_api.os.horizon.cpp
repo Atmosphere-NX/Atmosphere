@@ -505,6 +505,28 @@ namespace ams::socket::impl {
         return result;
     }
 
+    s32 Connect(s32 desc, const SockAddr *address, SockLenT len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (address == nullptr || len == 0) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdConnect(desc, ConvertForLibnx(address), len);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
     s32 GetSockName(s32 desc, SockAddr *out_address, SockLenT *out_addr_len) {
         /* Check pre-conditions. */
         AMS_ABORT_UNLESS(IsInitialized());

@@ -47,6 +47,8 @@ namespace ams::socket::impl {
     s32 Accept(s32 desc, SockAddr *out_address, SockLenT *out_addr_len);
     s32 Bind(s32 desc, const SockAddr *address, SockLenT len);
 
+    s32 Connect(s32 desc, const SockAddr *address, SockLenT len);
+
     s32 GetSockName(s32 desc, SockAddr *out_address, SockLenT *out_addr_len);
     s32 SetSockOpt(s32 desc, Level level, Option option_name, const void *option_value, SockLenT option_size);
 
