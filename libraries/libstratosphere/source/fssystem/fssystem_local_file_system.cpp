@@ -178,11 +178,6 @@ namespace ams::fssystem {
             }
 
             R_SUCCEED();
-
-            /* Set the file size. */
-            R_UNLESS(::SetEndOfFile(handle), ConvertLastErrorToResult());
-
-            R_SUCCEED();
         }
 
         class LocalFile : public ::ams::fs::fsa::IFile, public ::ams::fs::impl::Newable {
