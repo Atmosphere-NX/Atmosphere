@@ -26,6 +26,7 @@ namespace ams::os {
     Result CreateIoRegion(IoRegionType *io_region, NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission);
 
     void AttachIoRegionHandle(IoRegionType *io_region, size_t size, NativeHandle handle, bool managed);
+    os::NativeHandle DetachIoRegionHandle(IoRegionType *io_region);
 
     void DestroyIoRegion(IoRegionType *io_region);
 

@@ -26,6 +26,7 @@ namespace ams::os {
             State_NotInitialized = 0,
             State_Initialized    = 1,
             State_Mapped         = 2,
+            State_Detached       = 3,
         };
 
         NativeHandle handle;
