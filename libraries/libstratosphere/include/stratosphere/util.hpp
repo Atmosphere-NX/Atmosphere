@@ -19,3 +19,4 @@
 #include <stratosphere/util/util_compression.hpp>
 #include <stratosphere/util/util_ini.hpp>
 #include <stratosphere/util/util_singleton_traits.hpp>
+#include <stratosphere/util/util_lock_free_atomic_type.hpp>
