@@ -17,19 +17,19 @@
 
 namespace ams::fs {
 
-    s64 HierarchicalRomFileTable::QueryDirectoryEntryBucketStorageSize(s64 count) {
+    s64 HierarchicalRomFileTable::QueryDirectoryEntryBucketStorageSize(StorageSizeType count) {
         return DirectoryEntryMapTable::QueryBucketStorageSize(count);
     }
 
-    size_t HierarchicalRomFileTable::QueryDirectoryEntrySize(size_t aux_size) {
+    s64 HierarchicalRomFileTable::QueryDirectoryEntrySize(StorageSizeType aux_size) {
         return DirectoryEntryMapTable::QueryEntrySize(aux_size);
     }
 
-    s64 HierarchicalRomFileTable::QueryFileEntryBucketStorageSize(s64 count) {
+    s64 HierarchicalRomFileTable::QueryFileEntryBucketStorageSize(StorageSizeType count) {
         return FileEntryMapTable::QueryBucketStorageSize(count);
     }
 
-    size_t HierarchicalRomFileTable::QueryFileEntrySize(size_t aux_size) {
+    s64 HierarchicalRomFileTable::QueryFileEntrySize(StorageSizeType aux_size) {
         return FileEntryMapTable::QueryEntrySize(aux_size);
     }
 
@@ -68,7 +68,6 @@ namespace ams::fs {
         Position root_pos = RootPosition;
         EntryKey root_key = {};
         root_key.key.parent = root_pos;
-        RomPathTool::InitEntryName(std::addressof(root_key.name));
         RomDirectoryEntry root_entry = {
             .next = InvalidPosition,
             .dir  = InvalidPosition,
@@ -77,7 +76,7 @@ namespace ams::fs {
         R_RETURN(m_dir_table.Add(std::addressof(root_pos), root_key, root_entry));
     }
 
-    Result HierarchicalRomFileTable::CreateDirectory(RomDirectoryId *out, const RomPathChar *path, const DirectoryInfo &info) {
+    Result HierarchicalRomFileTable::CreateDirectory(RomDirectoryId *out, const RomPathChar *path) {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(path != nullptr);
 
@@ -92,7 +91,6 @@ namespace ams::fs {
             .dir  = InvalidPosition,
             .file = InvalidPosition,
         };
-        AMS_UNUSED(info);
 
         Position new_pos = 0;
         R_TRY_CATCH(m_dir_table.Add(std::addressof(new_pos), new_key, new_entry)) {
@@ -205,28 +203,6 @@ namespace ams::fs {
         R_SUCCEED();
     }
 
-    Result HierarchicalRomFileTable::GetDirectoryInformation(DirectoryInfo *out, const RomPathChar *path) {
-        AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(path != nullptr);
-
-        RomDirectoryEntry parent_entry = {};
-        EntryKey key = {};
-        R_TRY(this->FindDirectoryRecursive(std::addressof(key), std::addressof(parent_entry), path));
-
-        R_RETURN(this->GetDirectoryInformation(out, key));
-    }
-
-    Result HierarchicalRomFileTable::GetDirectoryInformation(DirectoryInfo *out, RomDirectoryId id) {
-        AMS_ASSERT(out != nullptr);
-
-        RomDirectoryEntry entry = {};
-        R_TRY(this->GetDirectoryEntry(std::addressof(entry), id));
-
-        AMS_UNUSED(out);
-
-        R_SUCCEED();
-    }
-
     Result HierarchicalRomFileTable::OpenFile(FileInfo *out, const RomPathChar *path) {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(path != nullptr);
@@ -318,22 +294,22 @@ namespace ams::fs {
         AMS_ASSERT(out_dir_entry_size != nullptr);
         AMS_ASSERT(out_file_entry_size != nullptr);
 
-        *out_dir_entry_size = m_dir_table.GetTotalEntrySize();
+        *out_dir_entry_size  = m_dir_table.GetTotalEntrySize();
         *out_file_entry_size = m_file_table.GetTotalEntrySize();
         R_SUCCEED();
     }
 
-    Result HierarchicalRomFileTable::GetGrandParent(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, Position pos, RomPathTool::RomEntryName name, const RomPathChar *path) {
+    Result HierarchicalRomFileTable::GetParent(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, Position pos, RomPathTool::RomEntryName name, const RomPathChar *path) {
         AMS_ASSERT(out_pos != nullptr);
         AMS_ASSERT(out_dir_key != nullptr);
         AMS_ASSERT(out_dir_entry != nullptr);
         AMS_ASSERT(path != nullptr);
 
-        RomEntryKey gp_key = {};
-        RomDirectoryEntry gp_entry = {};
-        R_TRY(m_dir_table.GetByPosition(std::addressof(gp_key), std::addressof(gp_entry), pos));
-        out_dir_key->key.parent = gp_key.parent;
+        RomEntryKey p_key = {};
+        RomDirectoryEntry p_entry = {};
+        R_TRY(m_dir_table.GetByPosition(std::addressof(p_key), std::addressof(p_entry), pos));
 
+        out_dir_key->key = p_key;
         R_TRY(RomPathTool::GetParentDirectoryName(std::addressof(out_dir_key->name), name, path));
 
         R_TRY(this->GetDirectoryEntry(out_pos, out_dir_entry, *out_dir_key));
@@ -362,13 +338,13 @@ namespace ams::fs {
 
             R_TRY(parser->GetNextDirectoryName(std::addressof(dir_key.name)));
 
-            if (RomPathTool::IsCurrentDirectory(dir_key.name)) {
+            if (dir_key.name.IsCurrentDirectory()) {
                 dir_key = old_key;
                 continue;
-            } else if (RomPathTool::IsParentDirectory(dir_key.name)) {
+            } else if (dir_key.name.IsParentDirectory()) {
                 R_UNLESS(parent_pos != RootPosition, fs::ResultDirectoryUnobtainable());
 
-                R_TRY(this->GetGrandParent(std::addressof(parent_pos), std::addressof(dir_key), std::addressof(dir_entry), dir_key.key.parent, dir_key.name, path));
+                R_TRY(this->GetParent(std::addressof(parent_pos), std::addressof(dir_key), std::addressof(dir_entry), dir_key.key.parent, dir_key.name, path));
             } else {
                 dir_key.key.parent = parent_pos;
                 R_TRY_CATCH(this->GetDirectoryEntry(std::addressof(dir_pos), std::addressof(dir_entry), dir_key)) {
@@ -401,31 +377,31 @@ namespace ams::fs {
             RomPathTool::RomEntryName name = {};
             R_TRY(parser.GetAsDirectoryName(std::addressof(name)));
 
-            if (RomPathTool::IsCurrentDirectory(name)) {
+            if (name.IsCurrentDirectory()) {
                 *out_key = parent_key;
                 if (out_key->key.parent != RootPosition) {
                     Position pos = 0;
-                    R_TRY(this->GetGrandParent(std::addressof(pos), std::addressof(parent_key), out_dir_entry, out_key->key.parent, out_key->name, path));
+                    R_TRY(this->GetParent(std::addressof(pos), std::addressof(parent_key), out_dir_entry, out_key->key.parent, out_key->name, path));
                 }
-            } else if (RomPathTool::IsParentDirectory(name)) {
+            } else if (name.IsParentDirectory()) {
                 R_UNLESS(parent_pos != RootPosition, fs::ResultDirectoryUnobtainable());
 
                 Position pos = 0;
                 RomDirectoryEntry cur_entry = {};
-                R_TRY(this->GetGrandParent(std::addressof(pos), out_key, std::addressof(cur_entry), parent_key.key.parent, parent_key.name, path));
+                R_TRY(this->GetParent(std::addressof(pos), out_key, std::addressof(cur_entry), parent_key.key.parent, parent_key.name, path));
 
                 if (out_key->key.parent != RootPosition) {
-                    R_TRY(this->GetGrandParent(std::addressof(pos), std::addressof(parent_key), out_dir_entry, out_key->key.parent, out_key->name, path));
+                    R_TRY(this->GetParent(std::addressof(pos), std::addressof(parent_key), out_dir_entry, out_key->key.parent, out_key->name, path));
                 }
             } else {
                 out_key->name = name;
-                out_key->key.parent = (out_key->name.length > 0) ? parent_pos : RootPosition;
+                out_key->key.parent = out_key->name.IsRootDirectory() ? RootPosition : parent_pos;
             }
         } else {
             {
                 RomPathTool::RomEntryName name = {};
                 R_TRY(parser.GetAsDirectoryName(std::addressof(name)));
-                R_UNLESS(!RomPathTool::IsParentDirectory(name) || parent_pos != RootPosition, fs::ResultDirectoryUnobtainable());
+                R_UNLESS(!name.IsParentDirectory() || parent_pos != RootPosition, fs::ResultDirectoryUnobtainable());
             }
 
             R_UNLESS(!parser.IsDirectoryPath(), fs::ResultDbmInvalidOperation());
@@ -461,7 +437,7 @@ namespace ams::fs {
             const Result get_res = m_dir_table.Get(std::addressof(pos), std::addressof(entry), key);
             if (!fs::ResultDbmKeyNotFound::Includes(get_res)) {
                 R_TRY(get_res);
-                R_RETURN(if_exists);
+                R_THROW(if_exists);
             }
         }
 
@@ -472,9 +448,10 @@ namespace ams::fs {
             const Result get_res = m_file_table.Get(std::addressof(pos), std::addressof(entry), key);
             if (!fs::ResultDbmKeyNotFound::Includes(get_res)) {
                 R_TRY(get_res);
-                R_RETURN(if_exists);
+                R_THROW(if_exists);
             }
         }
+
         R_SUCCEED();
     }
 
@@ -540,18 +517,6 @@ namespace ams::fs {
         R_UNLESS(R_FAILED(dir_res),                            fs::ResultDbmInvalidOperation());
         R_UNLESS(!fs::ResultDbmKeyNotFound::Includes(dir_res), fs::ResultDbmFileNotFound());
         R_RETURN(dir_res);
-    }
-
-    Result HierarchicalRomFileTable::GetDirectoryInformation(DirectoryInfo *out, const EntryKey &key) {
-        AMS_ASSERT(out != nullptr);
-
-        Position pos = 0;
-        RomDirectoryEntry entry = {};
-        R_TRY(this->GetDirectoryEntry(std::addressof(pos), std::addressof(entry), key));
-
-        AMS_UNUSED(out);
-
-        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::OpenFile(FileInfo *out, const EntryKey &key) {

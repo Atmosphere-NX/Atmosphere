@@ -586,7 +586,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RANGE(DbmNotFound, 7901, 7904);
             R_DEFINE_ERROR_RESULT(DbmKeyNotFound,       7902);
             R_DEFINE_ERROR_RESULT(DbmFileNotFound,      7903);
-            R_DEFINE_ERROR_RESULT(DbmDirectoryNotFound,  7904);
+            R_DEFINE_ERROR_RESULT(DbmDirectoryNotFound, 7904);
 
         R_DEFINE_ERROR_RESULT(DbmAlreadyExists,         7906);
         R_DEFINE_ERROR_RESULT(DbmKeyFull,               7907);

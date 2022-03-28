@@ -18,36 +18,60 @@
 
 namespace ams::fs::RomPathTool {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
 
     constexpr inline u32 MaxPathLength = 0x300;
 
-    struct RomEntryName {
-        size_t length;
-        const RomPathChar *path;
-    };
-    static_assert(util::is_pod<RomEntryName>::value);
-
-    constexpr void InitEntryName(RomEntryName *entry) {
-        AMS_ASSERT(entry != nullptr);
-        entry->length = 0;
-    }
-
-    constexpr inline bool IsSeparator(RomPathChar c) {
+    constexpr ALWAYS_INLINE bool IsSeparator(RomPathChar c) {
         return c == RomStringTraits::DirectorySeparator;
     }
 
-    constexpr inline bool IsNullTerminator(RomPathChar c) {
+    constexpr ALWAYS_INLINE bool IsNullTerminator(RomPathChar c) {
         return c == RomStringTraits::NullTerminator;
     }
 
-    constexpr inline bool IsDot(RomPathChar c) {
+    constexpr ALWAYS_INLINE bool IsDot(RomPathChar c) {
         return c == RomStringTraits::Dot;
     }
 
-    constexpr inline bool IsCurrentDirectory(const RomEntryName &name) {
-        return name.length == 1 && IsDot(name.path[0]);
-    }
+    class RomEntryName {
+        private:
+            const RomPathChar *m_path;
+            size_t m_length;
+        public:
+            constexpr RomEntryName() : m_path(nullptr), m_length(0) {
+                /* ... */
+            }
+
+            constexpr void Initialize(const RomPathChar *p, size_t len) {
+                m_path   = p;
+                m_length = len;
+            }
+
+            constexpr bool IsCurrentDirectory() const {
+                return m_length == 1 && IsDot(m_path[0]);
+            }
+
+            constexpr bool IsParentDirectory() const {
+                return m_length == 2 && IsDot(m_path[0]) && IsDot(m_path[1]);
+            }
+
+            constexpr bool IsRootDirectory() const {
+                return m_length == 0;
+            }
+
+            constexpr const RomPathChar *begin() const {
+                return m_path;
+            }
+
+            constexpr const RomPathChar *end() const {
+                return m_path + m_length;
+            }
+
+            constexpr size_t length() const {
+                return m_length;
+            }
+    };
 
     constexpr inline bool IsCurrentDirectory(const RomPathChar *p, size_t length) {
         AMS_ASSERT(p != nullptr);
@@ -57,10 +81,6 @@ namespace ams::fs::RomPathTool {
     constexpr inline bool IsCurrentDirectory(const RomPathChar *p) {
         AMS_ASSERT(p != nullptr);
         return IsDot(p[0]) && IsNullTerminator(p[1]);
-    }
-
-    constexpr inline bool IsParentDirectory(const RomEntryName &name) {
-        return name.length == 2 && IsDot(name.path[0]) && IsDot(name.path[1]);
     }
 
     constexpr inline bool IsParentDirectory(const RomPathChar *p) {

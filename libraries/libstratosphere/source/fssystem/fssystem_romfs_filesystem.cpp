@@ -343,14 +343,11 @@ namespace ams::fssystem {
         R_TRY(this->CheckPathFormat(path));
 
         R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
-            fs::RomDirectoryInfo dir_info;
+            fs::HierarchicalRomFileTable::FindPosition find_pos;
 
-            R_TRY_CATCH(m_rom_file_table.GetDirectoryInformation(std::addressof(dir_info), path.GetString())) {
+            R_TRY_CATCH(m_rom_file_table.FindOpen(std::addressof(find_pos), path.GetString())) {
                 R_CONVERT(fs::ResultDbmNotFound, fs::ResultPathNotFound())
                 R_CATCH(fs::ResultDbmInvalidOperation) {
-                    RomFileTable::FileInfo file_info;
-                    R_TRY(this->GetFileInfo(std::addressof(file_info), path));
-
                     *out = fs::DirectoryEntryType_File;
                     R_SUCCEED();
                 }

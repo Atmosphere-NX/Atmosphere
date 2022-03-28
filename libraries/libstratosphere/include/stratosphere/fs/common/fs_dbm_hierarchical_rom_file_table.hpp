@@ -20,10 +20,11 @@
 
 namespace ams::fs {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     class HierarchicalRomFileTable {
         public:
-            using Position = u32;
+            using Position        = u32;
+            using StorageSizeType = u32;
 
             struct FindPosition {
                 Position next_dir;
@@ -31,8 +32,7 @@ namespace ams::fs {
             };
             static_assert(util::is_pod<FindPosition>::value);
 
-            using DirectoryInfo = RomDirectoryInfo;
-            using FileInfo      = RomFileInfo;
+            using FileInfo = RomFileInfo;
 
             static constexpr RomFileId PositionToFileId(Position pos) {
                 return static_cast<RomFileId>(pos);
@@ -81,11 +81,11 @@ namespace ams::fs {
                     using Base      = KeyValueRomStorageTemplate<ImplKeyType, ValueType, MaxKeyLength>;
                 public:
                     Result Add(Position *out, const ClientKeyType &key, const Value &value) {
-                        R_RETURN(Base::AddInternal(out, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar), value));
+                        R_RETURN(Base::AddInternal(out, key.key, key.Hash(), key.name.begin(), key.name.length(), value));
                     }
 
                     Result Get(Position *out_pos, Value *out_val, const ClientKeyType &key) {
-                        R_RETURN(Base::GetInternal(out_pos, out_val, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar)));
+                        R_RETURN(Base::GetInternal(out_pos, out_val, key.key, key.Hash(), key.name.begin(), key.name.length()));
                     }
 
                     Result GetByPosition(ImplKey *out_key, Value *out_val, Position pos) {
@@ -122,16 +122,15 @@ namespace ams::fs {
 
                 constexpr u32 Hash() const {
                     u32 hash = this->key.parent ^ 123456789;
-                    const RomPathChar *       name = this->name.path;
-                    const RomPathChar * const end  = name + this->name.length;
-                    while (name < end) {
-                        const u32 cur = static_cast<u32>(static_cast<std::make_unsigned<RomPathChar>::type>(*(name++)));
-                        hash = ((hash >> 5) | (hash << 27)) ^ cur;
+                    const RomPathChar *       cur = this->name.begin();
+                    const RomPathChar * const end = this->name.end();
+                    while (cur < end) {
+                        const u32 c = static_cast<u32>(static_cast<std::make_unsigned<RomPathChar>::type>(*(cur++)));
+                        hash = ((hash >> 5) | (hash << 27)) ^ c;
                     }
                     return hash;
                 }
             };
-            static_assert(util::is_pod<EntryKey>::value);
 
             using DirectoryEntryMapTable = EntryMapTable<RomEntryKey, EntryKey, RomDirectoryEntry>;
             using FileEntryMapTable      = EntryMapTable<RomEntryKey, EntryKey, RomFileEntry>;
@@ -139,34 +138,23 @@ namespace ams::fs {
             DirectoryEntryMapTable m_dir_table;
             FileEntryMapTable m_file_table;
         public:
-            static s64 QueryDirectoryEntryBucketStorageSize(s64 count);
-            static size_t QueryDirectoryEntrySize(size_t aux_size);
-            static s64 QueryFileEntryBucketStorageSize(s64 count);
-            static size_t QueryFileEntrySize(size_t aux_size);
+            static s64 QueryDirectoryEntryBucketStorageSize(StorageSizeType count);
+            static s64 QueryDirectoryEntrySize(StorageSizeType aux_size);
+            static s64 QueryFileEntryBucketStorageSize(StorageSizeType count);
+            static s64 QueryFileEntrySize(StorageSizeType aux_size);
 
             static Result Format(SubStorage dir_bucket, SubStorage file_bucket);
         public:
             HierarchicalRomFileTable();
 
-            constexpr u32 GetDirectoryEntryCount() const {
-                return m_dir_table.GetEntryCount();
-            }
-
-            constexpr u32 GetFileEntryCount() const {
-                return m_file_table.GetEntryCount();
-            }
-
             Result Initialize(SubStorage dir_bucket, SubStorage dir_entry, SubStorage file_bucket, SubStorage file_entry);
             void Finalize();
 
             Result CreateRootDirectory();
-            Result CreateDirectory(RomDirectoryId *out, const RomPathChar *path, const DirectoryInfo &info);
+            Result CreateDirectory(RomDirectoryId *out, const RomPathChar *path);
             Result CreateFile(RomFileId *out, const RomPathChar *path, const FileInfo &info);
             Result ConvertPathToDirectoryId(RomDirectoryId *out, const RomPathChar *path);
             Result ConvertPathToFileId(RomFileId *out, const RomPathChar *path);
-
-            Result GetDirectoryInformation(DirectoryInfo *out, const RomPathChar *path);
-            Result GetDirectoryInformation(DirectoryInfo *out, RomDirectoryId id);
 
             Result OpenFile(FileInfo *out, const RomPathChar *path);
             Result OpenFile(FileInfo *out, RomFileId id);
@@ -179,7 +167,7 @@ namespace ams::fs {
 
             Result QueryRomFileSystemSize(s64 *out_dir_entry_size, s64 *out_file_entry_size);
         private:
-            Result GetGrandParent(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, Position pos, RomPathTool::RomEntryName name, const RomPathChar *path);
+            Result GetParent(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, Position pos, RomPathTool::RomEntryName name, const RomPathChar *path);
 
             Result FindParentDirectoryRecursive(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, RomPathTool::PathParser *parser, const RomPathChar *path);
 
@@ -194,8 +182,6 @@ namespace ams::fs {
 
             Result GetFileEntry(Position *out_pos, RomFileEntry *out_entry, const EntryKey &key);
             Result GetFileEntry(RomFileEntry *out_entry, RomFileId id);
-
-            Result GetDirectoryInformation(DirectoryInfo *out, const EntryKey &key);
 
             Result OpenFile(FileInfo *out, const EntryKey &key);
 

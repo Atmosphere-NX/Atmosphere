@@ -18,10 +18,10 @@
 
 namespace ams::fs {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     using RomPathChar    = char;
-    using RomFileId      = s32;
-    using RomDirectoryId = s32;
+    using RomFileId      = u32;
+    using RomDirectoryId = u32;
 
     struct RomFileSystemInformation {
         s64 size;
@@ -37,11 +37,6 @@ namespace ams::fs {
     };
     static_assert(util::is_pod<RomFileSystemInformation>::value);
     static_assert(sizeof(RomFileSystemInformation) == 0x50);
-
-    struct RomDirectoryInfo {
-        /* ... */
-    };
-    static_assert(util::is_pod<RomDirectoryInfo>::value);
 
     struct RomFileInfo {
         Int64 offset;
