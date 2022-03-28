@@ -158,6 +158,18 @@ namespace ams::fssystem {
         R_SUCCEED();
     }
 
+    Result TryAcquireCountSemaphore(util::unique_lock<SemaphoreAdaptor> *out, SemaphoreAdaptor *adaptor) {
+        /* Create deferred unique lock. */
+        util::unique_lock<SemaphoreAdaptor> lock(*adaptor, std::defer_lock);
+
+        /* Try to lock. */
+        R_UNLESS(lock.try_lock(), fs::ResultOpenCountLimit());
+
+        /* Set the output lock. */
+        *out = std::move(lock);
+        R_SUCCEED();
+    }
+
     void AddCounter(void *_counter, size_t counter_size, u64 value) {
         u8 *counter   = static_cast<u8 *>(_counter);
         u64 remaining = value;

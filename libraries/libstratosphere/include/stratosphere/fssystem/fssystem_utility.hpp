@@ -112,10 +112,30 @@ namespace ams::fssystem {
         R_RETURN(CopyDirectoryRecursively(fs, fs, dst_path, src_path, entry, work_buf, work_buf_size));
     }
 
-    /* Semaphore adapter class. */
-    class SemaphoreAdapter : public os::Semaphore {
+    /* Locking utilities. */
+    class SemaphoreAdaptor : public os::Semaphore {
         public:
-            SemaphoreAdapter(int c, int mc) : os::Semaphore(c, mc) { /* ... */ }
+            SemaphoreAdaptor(int c, int mc) : os::Semaphore(c, mc) { /* ... */ }
+
+            bool TryLock(int *out_acquired, int count) {
+                AMS_ASSERT(count > 0);
+
+                for (auto i = 0; i < count; ++i) {
+                    if (!this->TryAcquire()) {
+                        *out_acquired = i;
+                        return false;
+                    }
+                }
+
+                *out_acquired = count;
+                return true;
+            }
+
+            void Unlock(int count) {
+                if (count > 0) {
+                    this->Release(count);
+                }
+            }
 
             bool try_lock() {
                 return this->TryAcquire();
@@ -125,6 +145,83 @@ namespace ams::fssystem {
                 this->Release();
             }
     };
+
+    Result TryAcquireCountSemaphore(util::unique_lock<SemaphoreAdaptor> *out, SemaphoreAdaptor *adaptor);
+
+    class IUniqueLock {
+        NON_COPYABLE(IUniqueLock);
+        NON_MOVEABLE(IUniqueLock);
+        public:
+            virtual ~IUniqueLock() { /* ... */ }
+    };
+
+    template<typename T>
+    class UniqueLockWithPin final : public IUniqueLock, public ::ams::fs::impl::Newable {
+        private:
+            util::unique_lock<SemaphoreAdaptor> m_lock;
+            T m_pinned_object;
+        public:
+            UniqueLockWithPin(util::unique_lock<SemaphoreAdaptor> lock, T obj) : m_lock(std::move(lock)), m_pinned_object(std::move(obj)) { /* ... */ }
+
+            virtual ~UniqueLockWithPin() override {
+                m_lock = {};
+            }
+    };
+
+    template<typename T>
+    class MultiLockWithPin final : public IUniqueLock, public ::ams::fs::impl::Newable {
+        private:
+            T m_pinned_object;
+            SemaphoreAdaptor *m_semaphore_adaptor;
+            int m_lock_count;
+        public:
+            MultiLockWithPin(T obj, SemaphoreAdaptor *adaptor) : m_pinned_object(std::move(obj)), m_semaphore_adaptor(adaptor), m_lock_count(0) {
+                /* ... */
+            }
+
+            virtual ~MultiLockWithPin() override {
+                if (m_lock_count > 0) {
+                    m_semaphore_adaptor->Unlock(m_lock_count);
+                }
+            }
+
+            Result Lock(int count) {
+                AMS_ASSERT(m_lock_count == 0);
+
+                R_UNLESS(m_semaphore_adaptor->TryLock(std::addressof(m_lock_count), count), fs::ResultOpenCountLimit());
+
+                R_SUCCEED();
+            }
+    };
+
+    template<typename T>
+    Result MakeUniqueLockWithPin(std::unique_ptr<IUniqueLock> *out, SemaphoreAdaptor *adaptor, T obj) {
+        /* Create the semaphore unique lock. */
+        util::unique_lock<SemaphoreAdaptor> sema_lock;
+        R_TRY(TryAcquireCountSemaphore(std::addressof(sema_lock), adaptor));
+
+        /* Create the output unique lock. */
+        auto result_lock = std::unique_ptr<UniqueLockWithPin<T>>(new UniqueLockWithPin<T>(std::move(sema_lock), std::move(obj)));
+        R_UNLESS(result_lock != nullptr, fs::ResultAllocationMemoryFailedNew());
+
+        /* Set the output. */
+        *out = std::move(result_lock);
+        R_SUCCEED();
+    }
+
+    template<typename T>
+    Result MakeUniqueLockWithPin(std::unique_ptr<IUniqueLock> *out, SemaphoreAdaptor *adaptor, int count, T obj) {
+        /* Create the output unique lock. */
+        auto result_lock = std::unique_ptr<MultiLockWithPin<T>>(new MultiLockWithPin<T>(std::move(obj), adaptor));
+        R_UNLESS(result_lock != nullptr, fs::ResultAllocationMemoryFailedNew());
+
+        /* Acquire the output lock. */
+        R_TRY(result_lock->Lock(count));
+
+        /* Set the output. */
+        *out = std::move(result_lock);
+        R_SUCCEED();
+    }
 
     /* Other utility. */
     Result HasFile(bool *out, fs::fsa::IFileSystem *fs, const fs::Path &path);
