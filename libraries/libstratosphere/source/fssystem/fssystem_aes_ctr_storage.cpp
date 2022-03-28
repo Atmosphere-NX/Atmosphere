@@ -145,21 +145,24 @@ namespace ams::fssystem {
 
     template<typename BasePointer>
     Result AesCtrStorage<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
-        /* Handle the zero size case. */
-        if (size == 0) {
-            if (op_id == fs::OperationId::QueryRange) {
-                R_UNLESS(dst != nullptr,                         fs::ResultNullptrArgument());
-                R_UNLESS(dst_size == sizeof(fs::QueryRangeInfo), fs::ResultInvalidSize());
+        /* If operation isn't invalidate, special case. */
+        if (op_id != fs::OperationId::Invalidate) {
+            /* Handle the zero-size case. */
+            if (size == 0) {
+                if (op_id == fs::OperationId::QueryRange) {
+                    R_UNLESS(dst != nullptr,                         fs::ResultNullptrArgument());
+                    R_UNLESS(dst_size == sizeof(fs::QueryRangeInfo), fs::ResultInvalidSize());
 
-                reinterpret_cast<fs::QueryRangeInfo *>(dst)->Clear();
+                    reinterpret_cast<fs::QueryRangeInfo *>(dst)->Clear();
+                }
+
+                R_SUCCEED();
             }
 
-            R_SUCCEED();
+            /* Ensure alignment. */
+            R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidArgument());
+            R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidArgument());
         }
-
-        /* Ensure alignment. */
-        R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidArgument());
-        R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidArgument());
 
         switch (op_id) {
             case fs::OperationId::QueryRange:

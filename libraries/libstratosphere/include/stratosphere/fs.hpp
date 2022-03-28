@@ -65,4 +65,5 @@
 #include <stratosphere/fs/fs_program_index_map_info.hpp>
 #include <stratosphere/fs/impl/fs_access_log_impl.hpp>
 #include <stratosphere/fs/impl/fs_hash_generator_factory_selector.hpp>
+#include <stratosphere/fs/impl/fs_storage_service_object_adapter.hpp>
 #include <stratosphere/fs/fs_api.hpp>

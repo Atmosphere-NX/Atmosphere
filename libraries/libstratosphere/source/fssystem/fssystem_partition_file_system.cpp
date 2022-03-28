@@ -90,24 +90,33 @@ namespace ams::fssystem {
 
             virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                 /* Validate preconditions for operation. */
+                s64 operate_offset;
+                s64 operate_size;
                 switch (op_id) {
                     case fs::OperationId::Invalidate:
                         R_UNLESS((m_mode & fs::OpenMode_Read)  != 0, fs::ResultReadNotPermitted());
                         R_UNLESS((m_mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperateRangeForPartitionFile());
+
+                        /* Set offset/size. */
+                        operate_offset = 0;
+                        operate_size   = std::numeric_limits<s64>::max();
                         break;
                     case fs::OperationId::QueryRange:
+                        /* Validate offset and size. */
+                        R_UNLESS(offset                          >= 0,                                         fs::ResultOutOfRange());
+                        R_UNLESS(offset                          <= static_cast<s64>(m_partition_entry->size), fs::ResultOutOfRange());
+                        R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
+                        R_UNLESS(static_cast<s64>(offset + size) >= offset,                                    fs::ResultInvalidSize());
+
+                        /* Set offset/size. */
+                        operate_offset = m_parent->m_meta_data_size + m_partition_entry->offset + offset;
+                        operate_size   = size;
                         break;
                     default:
                         R_THROW(fs::ResultUnsupportedOperateRangeForPartitionFile());
                 }
 
-                /* Validate offset and size. */
-                R_UNLESS(offset                          >= 0,                                         fs::ResultOutOfRange());
-                R_UNLESS(offset                          <= static_cast<s64>(m_partition_entry->size), fs::ResultOutOfRange());
-                R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
-                R_UNLESS(static_cast<s64>(offset + size) >= offset,                                    fs::ResultInvalidSize());
-
-                R_RETURN(m_parent->m_base_storage->OperateRange(dst, dst_size, op_id, m_parent->m_meta_data_size + m_partition_entry->offset + offset, size, src, src_size));
+                R_RETURN(m_parent->m_base_storage->OperateRange(dst, dst_size, op_id, operate_offset, operate_size, src, src_size));
             }
         public:
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {

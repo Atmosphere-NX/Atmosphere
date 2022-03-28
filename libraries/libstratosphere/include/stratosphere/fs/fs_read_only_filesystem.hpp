@@ -156,18 +156,17 @@ namespace ams::fs {
             }
 
             virtual Result DoGetFreeSpaceSize(s64 *out, const fs::Path &path) override final {
-                AMS_UNUSED(out, path);
-                R_THROW(fs::ResultUnsupportedCommitProvisionallyForReadOnlyFileSystem());
+                R_RETURN(m_base_fs->GetFreeSpaceSize(out, path));
             }
 
             virtual Result DoGetTotalSpaceSize(s64 *out, const fs::Path &path) override final {
                 AMS_UNUSED(out, path);
-                R_THROW(fs::ResultUnsupportedCommitProvisionallyForReadOnlyFileSystem());
+                R_THROW(fs::ResultUnsupportedGetTotalSpaceSizeForReadOnlyFileSystem());
             }
 
             virtual Result DoCommitProvisionally(s64 counter) override final {
                 AMS_UNUSED(counter);
-                R_THROW(fs::ResultUnsupportedGetTotalSpaceSizeForReadOnlyFileSystem());
+                R_THROW(fs::ResultUnsupportedCommitProvisionallyForReadOnlyFileSystem());
             }
     };
 

@@ -14,17 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fs/impl/fs_newable.hpp>
 
 namespace ams::fs::impl {
 
+    template<typename StorageInterface>
     class StorageServiceObjectAdapter : public ::ams::fs::impl::Newable, public ::ams::fs::IStorage {
         NON_COPYABLE(StorageServiceObjectAdapter);
         NON_MOVEABLE(StorageServiceObjectAdapter);
         private:
-            sf::SharedPointer<fssrv::sf::IStorage> m_x;
+            sf::SharedPointer<StorageInterface> m_x;
         public:
-            explicit StorageServiceObjectAdapter(sf::SharedPointer<fssrv::sf::IStorage> &&o) : m_x(o) { /* ... */}
+            explicit StorageServiceObjectAdapter(sf::SharedPointer<StorageInterface> &&o) : m_x(o) { /* ... */}
             virtual ~StorageServiceObjectAdapter() { /* ... */ }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override final {

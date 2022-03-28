@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
 #include "impl/fs_file_system_service_object_adapter.hpp"
-#include "impl/fs_storage_service_object_adapter.hpp"
 #include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
@@ -121,7 +120,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(fsp->OpenBisStorage(std::addressof(s), static_cast<u32>(id)));
 
         /* Allocate a new storage wrapper. */
-        auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
+        auto storage = std::make_unique<impl::StorageServiceObjectAdapter<fssrv::sf::IStorage>>(std::move(s));
         AMS_FS_R_UNLESS(storage != nullptr, fs::ResultAllocationMemoryFailedInBisC());
 
         *out = std::move(storage);

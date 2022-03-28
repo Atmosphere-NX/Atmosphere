@@ -77,21 +77,24 @@ namespace ams::fssystem {
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     switch (op_id) {
                         case fs::OperationId::Invalidate:
+                            {
+                                R_RETURN(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
+                                    R_RETURN(m_parent->GetBaseStorage()->OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max()));
+                                }, AMS_CURRENT_FUNCTION_NAME));
+                            }
                         case fs::OperationId::QueryRange:
                             {
-                                R_UNLESS(offset >= 0,          fs::ResultOutOfRange());
-                                R_UNLESS(this->GetSize() >= 0, fs::ResultOutOfRange());
+                                R_UNLESS(offset >= 0,               fs::ResultInvalidOffset());
+                                R_UNLESS(this->GetSize() >= offset, fs::ResultOutOfRange());
 
                                 auto operate_size = size;
                                 if (offset + operate_size > this->GetSize() || offset + operate_size < offset) {
                                     operate_size = this->GetSize() - offset;
                                 }
 
-                                R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
-                                    R_TRY(m_parent->GetBaseStorage()->OperateRange(dst, dst_size, op_id, m_start + offset, operate_size, src, src_size));
-                                    R_SUCCEED();
+                                R_RETURN(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
+                                    R_RETURN(m_parent->GetBaseStorage()->OperateRange(dst, dst_size, op_id, m_start + offset, operate_size, src, src_size));
                                 }, AMS_CURRENT_FUNCTION_NAME));
-                                R_SUCCEED();
                             }
                         default:
                             R_THROW(fs::ResultUnsupportedOperateRangeForRomFsFile());

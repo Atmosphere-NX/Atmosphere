@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
 #include "impl/fs_file_system_proxy_service_object.hpp"
-#include "impl/fs_storage_service_object_adapter.hpp"
 
 namespace ams::fs::impl {
 
@@ -35,7 +34,7 @@ namespace ams::fs::impl {
             sf::SharedPointer<fssrv::sf::IStorage> s;
             AMS_FS_R_TRY(OpenDataStorageByDataIdImpl(std::addressof(s), data_id, storage_id));
 
-            auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
+            auto storage = std::make_unique<impl::StorageServiceObjectAdapter<fssrv::sf::IStorage>>(std::move(s));
             R_UNLESS(storage != nullptr, fs::ResultAllocationMemoryFailedInDataA());
 
             *out = std::move(storage);

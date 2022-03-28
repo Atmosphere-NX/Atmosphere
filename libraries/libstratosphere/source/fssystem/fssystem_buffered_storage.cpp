@@ -722,10 +722,7 @@ namespace ams::fssystem {
 
         /* Invalidate caches, if we should. */
         if (op_id == fs::OperationId::Invalidate) {
-            SharedCache cache(this);
-            while (cache.AcquireNextOverlappedCache(offset, size)) {
-                cache.Invalidate();
-            }
+            this->InvalidateCaches();
         }
 
         R_RETURN(m_base_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
