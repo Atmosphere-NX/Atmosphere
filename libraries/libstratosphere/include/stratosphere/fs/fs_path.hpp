@@ -151,22 +151,26 @@ namespace ams::fs {
                 R_SUCCEED();
             }
 
-            const char *GetString() const {
+            constexpr const char *GetString() const {
                 /* Check pre-conditions. */
                 AMS_ASSERT(this->IsNormalized());
 
                 return m_str;
             }
 
-            size_t GetLength() const {
-                return std::strlen(this->GetString());
+            constexpr size_t GetLength() const {
+                if (std::is_constant_evaluated()) {
+                    return util::Strlen(this->GetString());
+                } else {
+                    return std::strlen(this->GetString());
+                }
             }
 
-            bool IsEmpty() const {
+            constexpr bool IsEmpty() const {
                 return *m_str == '\x00';
             }
 
-            bool IsMatchHead(const char *p, size_t len) const {
+           constexpr  bool IsMatchHead(const char *p, size_t len) const {
                 return util::Strncmp(this->GetString(), p, len) == 0;
             }
 
@@ -657,6 +661,11 @@ namespace ams::fs {
 
         /* Set up the path. */
         R_RETURN(SetUpFixedPath(out, buf));
+    }
+
+    constexpr inline bool IsWindowsDriveRootPath(const fs::Path &path) {
+        const char * const str = path.GetString();
+        return fs::IsWindowsDrive(str) && (str[2] == StringTraits::DirectorySeparator || str[2] == StringTraits::AlternateDirectorySeparator) && str[3] == StringTraits::NullTerminator;
     }
 
 }

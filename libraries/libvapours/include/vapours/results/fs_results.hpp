@@ -452,6 +452,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(ExtensionSizeInvalid,  6067);
 
                 R_DEFINE_ERROR_RESULT(InvalidOpenMode, 6072);
+                R_DEFINE_ERROR_RESULT(TooLargeSize,    6073);
 
                 R_DEFINE_ERROR_RANGE(InvalidEnumValue,  6080, 6099);
                     R_DEFINE_ERROR_RESULT(InvalidSaveDataState, 6081);

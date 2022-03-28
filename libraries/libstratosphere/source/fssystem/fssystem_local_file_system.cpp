@@ -128,6 +128,9 @@ namespace ams::fssystem {
 
                 /* If the error was access denied, we want to try again. */
                 R_UNLESS(err == ERROR_ACCESS_DENIED, ConvertLastErrorToResult());
+
+                /* Sleep before checking again. */
+                ::Sleep(2);
             }
 
             /* We received access denied 25 times in a row. */
@@ -160,8 +163,21 @@ namespace ams::fssystem {
 
         Result SetFileSizeImpl(HANDLE handle, s64 size) {
             /* Seek to the desired size. */
-            LONG high = size >> BITSIZEOF(LONG);
-            ::SetFilePointer(handle, static_cast<LONG>(size), std::addressof(high), FILE_BEGIN);
+            LARGE_INTEGER seek;
+            seek.QuadPart = size;
+            R_UNLESS(::SetFilePointerEx(handle, seek, nullptr, FILE_BEGIN) != 0, ConvertLastErrorToResult());
+
+            /* Try to set the file size. */
+            if (::SetEndOfFile(handle) == 0) {
+                /* Check if the error resulted from too large size. */
+                R_UNLESS(::GetLastError() == ERROR_INVALID_PARAMETER, ConvertLastErrorToResult());
+                R_UNLESS(size <= INT64_C(0x00000FFFFFFF0000),         ConvertLastErrorToResult());
+
+                /* The file size is too large. */
+                R_THROW(fs::ResultTooLargeSize());
+            }
+
+            R_SUCCEED();
 
             /* Set the file size. */
             R_UNLESS(::SetEndOfFile(handle), ConvertLastErrorToResult());
@@ -313,6 +329,10 @@ namespace ams::fssystem {
                  }
         };
 
+        bool IsDirectory(const WIN32_FIND_DATAW &fd) {
+            return fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+        }
+
         class LocalDirectory : public ::ams::fs::fsa::IDirectory, public ::ams::fs::impl::Newable {
             private:
                 std::unique_ptr<wchar_t[], ::ams::fs::impl::Deleter> m_path;
@@ -320,12 +340,14 @@ namespace ams::fssystem {
                 HANDLE m_search_handle;
                 fs::OpenDirectoryMode m_open_mode;
             public:
-                LocalDirectory(HANDLE d, HANDLE s, fs::OpenDirectoryMode m, std::unique_ptr<wchar_t[], ::ams::fs::impl::Deleter> &&p) : m_path(std::move(p)), m_dir_handle(d), m_search_handle(s) {
+                LocalDirectory(HANDLE d, fs::OpenDirectoryMode m, std::unique_ptr<wchar_t[], ::ams::fs::impl::Deleter> &&p) : m_path(std::move(p)), m_dir_handle(d), m_search_handle(INVALID_HANDLE_VALUE) {
                     m_open_mode = static_cast<fs::OpenDirectoryMode>(util::ToUnderlying(m) & ~util::ToUnderlying(fs::OpenDirectoryMode_NotRequireFileSize));
                 }
 
                 virtual ~LocalDirectory() {
-                    ::FindClose(m_search_handle);
+                    if (m_search_handle != INVALID_HANDLE_VALUE) {
+                        ::FindClose(m_search_handle);
+                    }
                     ::CloseHandle(m_dir_handle);
                 }
             public:
@@ -335,7 +357,14 @@ namespace ams::fssystem {
                         /* Read the next file. */
                         WIN32_FIND_DATAW fd;
                         std::memset(fd.cFileName, 0, sizeof(fd.cFileName));
-                        if (!::FindNextFileW(m_search_handle, std::addressof(fd))) {
+                        if (m_search_handle == INVALID_HANDLE_VALUE) {
+                            /* Create our search handle. */
+                            if (m_search_handle = ::FindFirstFileW(m_path.get(), std::addressof(fd)); m_search_handle == INVALID_HANDLE_VALUE) {
+                                /* Check that we failed because there are no files. */
+                                R_UNLESS(::GetLastError() == ERROR_FILE_NOT_FOUND, ConvertLastErrorToResult());
+                                break;
+                            }
+                        } else if (!::FindNextFileW(m_search_handle, std::addressof(fd))) {
                             /* Check that we failed because we ran out of files. */
                             R_UNLESS(::GetLastError() == ERROR_NO_MORE_FILES, ConvertLastErrorToResult());
                             break;
@@ -353,8 +382,7 @@ namespace ams::fssystem {
                         const auto wide_res = ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, entry.name, sizeof(entry.name), nullptr, nullptr);
                         R_UNLESS(wide_res != 0, fs::ResultInvalidPath());
 
-                        entry.type = (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? fs::DirectoryEntryType_Directory : fs::DirectoryEntryType_File;
-
+                        entry.type      = IsDirectory(fd) ? fs::DirectoryEntryType_Directory : fs::DirectoryEntryType_File;
                         entry.file_size = static_cast<s64>(fd.nFileSizeLow) | static_cast<s64>(static_cast<u64>(fd.nFileSizeHigh) << BITSIZEOF(fd.nFileSizeLow));
                     }
 
@@ -393,7 +421,7 @@ namespace ams::fssystem {
                     }
 
                     /* Return whether our open mode supports the target. */
-                    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                    if (IsDirectory(fd)) {
                         return m_open_mode != fs::OpenDirectoryMode_File;
                     } else {
                         return m_open_mode != fs::OpenDirectoryMode_Directory;
@@ -644,11 +672,9 @@ namespace ams::fssystem {
                 uintptr_t m_basep = 0;
                 #endif
             public:
-                LocalDirectory(int d, int s, fs::OpenDirectoryMode m, std::unique_ptr<char[], ::ams::fs::impl::Deleter> &&p) : m_path(std::move(p)), m_dir_handle(d), m_temp_entries(nullptr), m_temp_entries_count(0), m_temp_entries_ofs(0) {
+                LocalDirectory(int d, fs::OpenDirectoryMode m, std::unique_ptr<char[], ::ams::fs::impl::Deleter> &&p) : m_path(std::move(p)), m_dir_handle(d), m_temp_entries(nullptr), m_temp_entries_count(0), m_temp_entries_ofs(0) {
                     m_open_mode             = static_cast<fs::OpenDirectoryMode>(util::ToUnderlying(m) & ~util::ToUnderlying(fs::OpenDirectoryMode_NotRequireFileSize));
                     m_not_require_file_size = m & fs::OpenDirectoryMode_NotRequireFileSize;
-                    AMS_ASSERT(s < 0);
-                    AMS_UNUSED(s);
                 }
 
                 virtual ~LocalDirectory() {
@@ -1269,6 +1295,7 @@ namespace ams::fssystem {
                     }
                 } R_END_TRY_CATCH;
             }
+            ON_RESULT_FAILURE { ::DeleteFileW(native_path.get()); };
             ON_SCOPE_EXIT { ::CloseHandle(handle); };
 
             /* Set the file as sparse. */
@@ -1289,6 +1316,7 @@ namespace ams::fssystem {
                 return ::open(native_path.get(), O_WRONLY | O_CREAT | O_EXCL, 0666);
             });
             R_UNLESS(handle >= 0, ConvertErrnoToResult(ErrnoSource_CreateFile));
+            ON_RESULT_FAILURE { ::unlink(native_path.get()); };
             ON_SCOPE_EXIT { CloseFileDescriptor(handle); };
 
             /* Set the file as sparse. */
@@ -1381,6 +1409,13 @@ namespace ams::fssystem {
     }
 
     Result LocalFileSystem::DoDeleteDirectory(const fs::Path &path) {
+        /* Guard against deletion of raw drive. */
+        #if defined(ATMOSPHERE_OS_WINDOWS)
+        R_UNLESS(!fs::IsWindowsDriveRootPath(path), fs::ResultDirectoryNotDeletable());
+        #else
+        /* TODO: Linux/macOS? */
+        #endif
+
         /* Resolve the path. */
         NativePathBuffer native_path;
         R_TRY(this->ResolveFullPath(std::addressof(native_path), path, MaxFilePathLength, 0, true));
@@ -1404,6 +1439,13 @@ namespace ams::fssystem {
     }
 
     Result LocalFileSystem::DoDeleteDirectoryRecursively(const fs::Path &path) {
+        /* Guard against deletion of raw drive. */
+        #if defined(ATMOSPHERE_OS_WINDOWS)
+        R_UNLESS(!fs::IsWindowsDriveRootPath(path), fs::ResultDirectoryNotDeletable());
+        #else
+        /* TODO: Linux/macOS? */
+        #endif
+
         /* Resolve the path. */
         NativePathBuffer native_path;
         R_TRY(this->ResolveFullPath(std::addressof(native_path), path, MaxFilePathLength, 0, true));
@@ -1585,6 +1627,13 @@ namespace ams::fssystem {
             R_UNLESS(dir_handle != INVALID_HANDLE_VALUE, ConvertLastErrorToResult());
             ON_RESULT_FAILURE { ::CloseHandle(dir_handle); };
 
+            /* Check that we tried to open a directory. */
+            fs::DirectoryEntryType type;
+            R_TRY(GetEntryTypeImpl(std::addressof(type), native_path.get()));
+
+            /* If the type isn't directory, return path not found. */
+            R_UNLESS(type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
+
             /* Fix up the path for us to perform a windows search. */
             const auto native_len = ::wcslen(native_path.get());
             const bool has_sep = native_len > 0 && native_path[native_len - 1] == '\\';
@@ -1596,40 +1645,15 @@ namespace ams::fssystem {
                 native_path[native_len + 1] = '*';
                 native_path[native_len + 2] = 0;
             }
-
-            /* Open windows search handle. */
-            WIN32_FIND_DATAW fd;
-            const auto search_handle = ::FindFirstFileW(native_path.get(), std::addressof(fd));
-            if (search_handle == INVALID_HANDLE_VALUE) {
-                /* Convert the last error to a result. */
-                const auto last_error_result = ConvertLastErrorToResult();
-
-                /* Fix the path, so that we can check if we tried to open a file. */
-                native_path[native_len] = 0;
-
-                /* Check if we tried to open a directory. */
-                fs::DirectoryEntryType type;
-                R_TRY(GetEntryTypeImpl(std::addressof(type), native_path.get()));
-
-                /* If the type isn't directory, return path not found. */
-                R_UNLESS(type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
-
-                /* Return the error we encountered earlier. */
-                R_THROW(last_error_result);
-            }
-            ON_RESULT_FAILURE_2 { ::CloseHandle(search_handle); };
             #else
             /* Open the directory. */
             const auto dir_handle = RetryForEIntr([&] () ALWAYS_INLINE_LAMBDA { return ::open(native_path.get(), O_RDONLY | O_DIRECTORY); });
             R_UNLESS(dir_handle >= 0, ConvertErrnoToResult(ErrnoSource_OpenDirectory));
             ON_RESULT_FAILURE { CloseFileDescriptor(dir_handle); };
-
-            /* Non-windows doesn't have separate search handle. */
-            const auto search_handle = -1;
             #endif
 
             /* Create a new local directory. */
-            auto dir = std::make_unique<LocalDirectory>(dir_handle, search_handle, mode, std::move(native_path));
+            auto dir = std::make_unique<LocalDirectory>(dir_handle, mode, std::move(native_path));
             R_UNLESS(dir != nullptr, fs::ResultAllocationMemoryFailedInLocalFileSystemB());
 
             /* Set the output directory. */
