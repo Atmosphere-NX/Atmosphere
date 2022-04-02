@@ -214,10 +214,19 @@ namespace ams::fssystem {
             ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size);
         }
 
-        bool VerifySign1(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation, const NcaCryptoConfiguration &cfg) {
-            const u8 *mod         = cfg.header_1_sign_key_moduli[generation];
+        bool VerifySign1Prod(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation) {
+            const u8 *mod         = g_nca_crypto_configuration_prod.header_1_sign_key_moduli[generation];
             const size_t mod_size = NcaCryptoConfiguration::Rsa2048KeyModulusSize;
-            const u8 *exp         = cfg.header_1_sign_key_public_exponent;
+            const u8 *exp         = g_nca_crypto_configuration_prod.header_1_sign_key_public_exponent;
+            const size_t exp_size = NcaCryptoConfiguration::Rsa2048KeyPublicExponentSize;
+
+            return crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, data, data_size);
+        }
+
+        bool VerifySign1Dev(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation) {
+            const u8 *mod         = g_nca_crypto_configuration_dev.header_1_sign_key_moduli[generation];
+            const size_t mod_size = NcaCryptoConfiguration::Rsa2048KeyModulusSize;
+            const u8 *exp         = g_nca_crypto_configuration_dev.header_1_sign_key_public_exponent;
             const size_t exp_size = NcaCryptoConfiguration::Rsa2048KeyPublicExponentSize;
 
             return crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, data, data_size);
@@ -227,7 +236,7 @@ namespace ams::fssystem {
 
     const ::ams::fssystem::NcaCryptoConfiguration *GetNcaCryptoConfiguration(bool prod) {
         /* Decide which configuration to use. */
-        NcaCryptoConfiguration *cfg = prod ? std::addressof(g_nca_crypto_configuration_prod) : std::addressof(g_nca_crypto_configuration_dev);
+        NcaCryptoConfiguration * const cfg = prod ? std::addressof(g_nca_crypto_configuration_prod) : std::addressof(g_nca_crypto_configuration_dev);
         std::memcpy(cfg, fssrv::GetDefaultNcaCryptoConfiguration(prod), sizeof(NcaCryptoConfiguration));
 
         /* Set the key generation functions. */
@@ -236,7 +245,7 @@ namespace ams::fssystem {
         cfg->encrypt_aes_xts_external      = nullptr;
         cfg->decrypt_aes_ctr               = DecryptAesCtr;
         cfg->decrypt_aes_ctr_external      = DecryptAesCtrForPreparedKey;
-        cfg->verify_sign1                  = VerifySign1;
+        cfg->verify_sign1                  = prod ? VerifySign1Prod : VerifySign1Dev;
         cfg->is_plaintext_header_available = !prod;
         cfg->is_available_sw_key           = true;
 

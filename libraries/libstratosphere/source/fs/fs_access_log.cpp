@@ -253,6 +253,8 @@ namespace ams::fs::impl {
             ADD_ENUM_CASE(AesXts);
             ADD_ENUM_CASE(AesCtr);
             ADD_ENUM_CASE(AesCtrEx);
+            ADD_ENUM_CASE(AesCtrSkipLayerHash);
+            ADD_ENUM_CASE(AesCtrExSkipLayerHash);
             default: return ToValueString(static_cast<int>(id));
         }
     }
@@ -264,6 +266,18 @@ namespace ams::fs::impl {
             ADD_ENUM_CASE(None);
             ADD_ENUM_CASE(HierarchicalSha256Hash);
             ADD_ENUM_CASE(HierarchicalIntegrityHash);
+            ADD_ENUM_CASE(AutoSha3);
+            ADD_ENUM_CASE(HierarchicalSha3256Hash);
+            ADD_ENUM_CASE(HierarchicalIntegritySha3Hash);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaFsHeader::MetaDataHashType>(fssystem::NcaFsHeader::MetaDataHashType id) {
+        switch (id) {
+            using enum fssystem::NcaFsHeader::MetaDataHashType;
+            ADD_ENUM_CASE(None);
+            ADD_ENUM_CASE(HierarchicalIntegrity);
             default: return ToValueString(static_cast<int>(id));
         }
     }

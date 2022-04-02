@@ -122,7 +122,7 @@ namespace ams::fssystem {
             const u8 *msg         = static_cast<const u8 *>(static_cast<const void *>(std::addressof(m_header.magic)));
             const size_t msg_size = NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount;
 
-            m_is_header_sign1_signature_valid = crypto_cfg.verify_sign1(sig, sig_size, msg, msg_size, m_header.header1_signature_key_generation, crypto_cfg);
+            m_is_header_sign1_signature_valid = crypto_cfg.verify_sign1(sig, sig_size, msg, msg_size, m_header.header1_signature_key_generation);
 
             #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
             R_UNLESS(m_is_header_sign1_signature_valid, fs::ResultNcaHeaderSignature1VerificationFailed());

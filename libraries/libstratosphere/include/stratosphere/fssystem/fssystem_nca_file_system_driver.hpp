@@ -38,7 +38,7 @@ namespace ams::fssystem {
     using DecryptAesCtrFunction = void (*)(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *src_key, size_t src_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
 
     using CryptAesXtsFunction   = Result (*)(void *dst, size_t dst_size, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
-    using VerifySign1Function   = bool (*)(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation, const NcaCryptoConfiguration &cfg);
+    using VerifySign1Function   = bool (*)(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation);
 
     struct NcaCryptoConfiguration {
         static constexpr size_t Rsa2048KeyModulusSize         = crypto::Rsa2048PssSha256Verifier::ModulusSize;
