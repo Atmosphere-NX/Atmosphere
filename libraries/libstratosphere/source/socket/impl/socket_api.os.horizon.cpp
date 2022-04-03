@@ -113,35 +113,19 @@ namespace ams::socket::impl {
     }
 
     u32 InetHtonl(u32 host) {
-        if constexpr (util::IsBigEndian()) {
-            return host;
-        } else {
-            return util::SwapBytes(host);
-        }
+        return util::ConvertToBigEndian(host);
     }
 
     u16 InetHtons(u16 host) {
-        if constexpr (util::IsBigEndian()) {
-            return host;
-        } else {
-            return util::SwapBytes(host);
-        }
+        return util::ConvertToBigEndian(host);
     }
 
     u32 InetNtohl(u32 net) {
-        if constexpr (util::IsBigEndian()) {
-            return net;
-        } else {
-            return util::SwapBytes(net);
-        }
+        return util::ConvertFromBigEndian(net);
     }
 
     u16 InetNtohs(u16 net) {
-        if constexpr (util::IsBigEndian()) {
-            return net;
-        } else {
-            return util::SwapBytes(net);
-        }
+        return util::ConvertFromBigEndian(net);
     }
 
     namespace {

@@ -30,108 +30,91 @@ namespace ams::util {
 
     }
 
-    template <typename T> requires std::integral<T>
-    class BitsOf {
-        private:
-            static constexpr ALWAYS_INLINE int GetLsbPos(T v) {
-                return __builtin_ctzll(static_cast<u64>(v));
-            }
+    template<std::integral T>
+    constexpr inline T ReverseBits(T x, int sw_bits = 1, int swar_words = 1) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= swar_words && swar_words < (BITSIZEOF(T) + 1));
+        AMS_ASSERT(BITSIZEOF(T) % swar_words == 0);
+        AMS_ASSERT(0 <= sw_bits && sw_bits < ((BITSIZEOF(T) / swar_words) + 1));
+        AMS_ASSERT((BITSIZEOF(T) / swar_words) % sw_bits == 0);
 
-            T m_value;
-        public:
-            /* Note: GCC has a bug in constant-folding here. Workaround: wrap entire caller with constexpr. */
-            constexpr ALWAYS_INLINE BitsOf(T value = T(0u)) : m_value(value) {
-                /* ... */
-            }
+        using U = typename std::make_unsigned<T>::type;
+        const int word_size = BITSIZEOF(T) / swar_words;
+        const int k = word_size - sw_bits;
 
-            constexpr ALWAYS_INLINE bool operator==(const BitsOf &other) const {
-                return m_value == other.m_value;
-            }
+        U u = std::bit_cast<U, T>(x);
+        for (int i = 1; i < BITSIZEOF(T); i <<= 1) {
+            const U mask  = static_cast<U>(static_cast<U>(-1) / ((static_cast<U>(1) << i) + 1));
 
-            constexpr ALWAYS_INLINE bool operator!=(const BitsOf &other) const {
-                return m_value != other.m_value;
+            if (k & i) {
+                u = static_cast<U>(((u & mask) << i) | ((u & static_cast<U>(~mask)) >> i));
             }
+        }
 
-            constexpr ALWAYS_INLINE int operator*() const {
-                return GetLsbPos(m_value);
-            }
+        return std::bit_cast<T, U>(u);
+    }
 
-            constexpr ALWAYS_INLINE BitsOf &operator++() {
-                m_value &= ~(T(1u) << GetLsbPos(m_value));
-                return *this;
-            }
-
-            constexpr ALWAYS_INLINE BitsOf &operator++(int) {
-                BitsOf ret(m_value);
-                ++(*this);
-                return ret;
-            }
-
-            constexpr ALWAYS_INLINE BitsOf begin() const {
-                return *this;
-            }
-
-            constexpr ALWAYS_INLINE BitsOf end() const {
-                return BitsOf(T(0u));
-            }
-    };
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T ReverseBytes(T x, int sw_bytes = 1, int swar_words = 1) {
+        return ReverseBits(x, sw_bytes * BITSIZEOF(u8), swar_words);
+    }
 
     template<typename T = u64, typename ...Args> requires std::integral<T>
     constexpr ALWAYS_INLINE T CombineBits(Args... args) {
         return (... | (T(1u) << args));
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T ResetLeastSignificantOneBit(T x) {
         return x & (x - 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T SetLeastSignificantZeroBit(T x) {
         return x | (x + 1);
     }
 
-    template<typename T> requires std::integral<T>
-    constexpr ALWAYS_INLINE T LeastSignificantOneBit(T x) {
-        return x & ~(x - 1);
-    }
-
-    template<typename T> requires std::integral<T>
-    constexpr ALWAYS_INLINE T LeastSignificantZeroBit(T x) {
-        return ~x & (x + 1);
-    }
-
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T ResetTrailingOnes(T x) {
         return x & (x + 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T SetTrailingZeros(T x) {
         return x | (x - 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T LeastSignificantOneBit(T x) {
+        return x & ~(x - 1);
+    }
+
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T LeastSignificantZeroBit(T x) {
+        return ~x & (x + 1);
+    }
+
+    template<std::integral T>
     constexpr ALWAYS_INLINE T MaskTrailingZeros(T x) {
         return (~x) & (x - 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T MaskTrailingOnes(T x) {
-        return ~((~x) | (x + 1));
+        return x & ~(x + 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T MaskTrailingZerosAndLeastSignificantOneBit(T x) {
         return x ^ (x - 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T MaskTrailingOnesAndLeastSignificantZeroBit(T x) {
         return x ^ (x + 1);
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE int PopCount(T x) {
         using U = typename std::make_unsigned<T>::type;
         U u = static_cast<U>(x);
@@ -164,7 +147,7 @@ namespace ams::util {
         }
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE int CountLeadingZeros(T x) {
         if (std::is_constant_evaluated()) {
             for (size_t i = 0; i < impl::Log2<BITSIZEOF(T)>; ++i) {
@@ -174,9 +157,8 @@ namespace ams::util {
             return PopCount(static_cast<T>(~x));
         } else {
             using U = typename std::make_unsigned<T>::type;
-            const U u = static_cast<U>(x);
 
-            if (u != 0) {
+            if (const U u = static_cast<U>(x); u != 0) {
                 if constexpr (std::is_same<U, unsigned long long>::value) {
                     return __builtin_clzll(u);
                 } else if constexpr (std::is_same<U, unsigned long>::value) {
@@ -198,7 +180,7 @@ namespace ams::util {
     static_assert(CountLeadingZeros(static_cast<u64>(1) << 5) == BITSIZEOF(u64) - 1 - 5);
     static_assert(CountLeadingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE int CountTrailingZeros(T x) {
         if (std::is_constant_evaluated()) {
             auto count = 0;
@@ -209,8 +191,7 @@ namespace ams::util {
             return count;
         } else {
             using U = typename std::make_unsigned<T>::type;
-            const U u = static_cast<U>(x);
-            if (u != 0) {
+            if (const U u = static_cast<U>(x); u != 0) {
                 if constexpr (std::is_same<U, unsigned long long>::value) {
                     return __builtin_ctzll(u);
                 } else if constexpr (std::is_same<U, unsigned long>::value) {
@@ -231,31 +212,39 @@ namespace ams::util {
     static_assert(CountTrailingZeros(static_cast<u64>(1) << 5) == 5);
     static_assert(CountTrailingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE bool IsPowerOfTwo(T x) {
         return x > 0 && ResetLeastSignificantOneBit(x) == 0;
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T CeilingPowerOfTwo(T x) {
         AMS_ASSERT(x > 0);
         return T(1) << (BITSIZEOF(T) - CountLeadingZeros(T(x - 1)));
     }
 
-    template<typename T> requires std::integral<T>
+    template<std::integral T>
     constexpr ALWAYS_INLINE T FloorPowerOfTwo(T x) {
         AMS_ASSERT(x > 0);
         return T(1) << (BITSIZEOF(T) - CountLeadingZeros(x) - 1);
     }
 
-    template<typename T, typename U>
+    template<std::integral T, std::integral U>
     constexpr ALWAYS_INLINE T DivideUp(T v, U d) {
         using Unsigned = typename std::make_unsigned<U>::type;
+        using Sum      = decltype(T{0} + U{0});
+
+        #if defined(ATMOSPHERE_IS_STRATOSPHERE)
+        AMS_ASSERT(v >= 0);
+        AMS_ASSERT(d > 0);
+        AMS_ASSERT(static_cast<Sum>(v) <= (std::numeric_limits<Sum>::max() - static_cast<Sum>(d) + static_cast<Sum>(1)));
+        #endif
+
         const Unsigned add = static_cast<Unsigned>(d) - 1;
-        return static_cast<T>((v + add) / d);
+        return static_cast<T>((static_cast<Sum>(v) + static_cast<Sum>(add)) / static_cast<Sum>(d));
     }
 
-    template<typename T, T N, T D>
+    template<std::integral T, T N, T D>
     constexpr ALWAYS_INLINE T ScaleByConstantFactorUp(const T V) {
         /* Multiplying and dividing by large numerator/denominator can cause error to be introduced. */
         /* This algorithm multiples/divides in stages, so as to mitigate this (particularly with large denominator). */
