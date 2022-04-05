@@ -1,4 +1,8 @@
 # Changelog
+## 1.3.1
++ Support was added for 14.1.0.
++ A number of minor under the hood improvements to accuracy were made to better reflect latest official system module behavior, particularly around FS apis.
++ General system stability improvements to enhance the user's experience.
 ## 1.3.0
 + Support was added for 14.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.
