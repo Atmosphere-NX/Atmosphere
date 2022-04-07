@@ -131,7 +131,7 @@ namespace ams::os {
 
             sema->count += count;
 
-            GetReference(sema->cv_not_zero).Signal();
+            GetReference(sema->cv_not_zero).Broadcast();
             GetReference(sema->waitlist).SignalAllThreads();
         }
     }
