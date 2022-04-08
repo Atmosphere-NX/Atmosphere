@@ -54,6 +54,10 @@ namespace ams::fs {
                     }
 
                     constexpr WriteBuffer &operator=(WriteBuffer &&rhs) {
+                        if (m_buffer != nullptr) {
+                            ::ams::fs::impl::Deallocate(m_buffer, this->GetLength());
+                        }
+
                         m_buffer                   = rhs.m_buffer;
                         m_length_and_is_normalized = rhs.m_length_and_is_normalized;
 
