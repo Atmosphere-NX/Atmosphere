@@ -330,7 +330,7 @@ namespace ams::fssrv::impl {
         R_RETURN(m_base_fs->GetFileTimeStampRaw(out.GetPointer(), fs_path));
     }
 
-    Result FileSystemInterfaceAdapter::QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
+    Result FileSystemInterfaceAdapter::QueryEntry(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
         /* Check that we have permission to perform the operation. */
         switch (static_cast<fs::fsa::QueryId>(query_id)) {
             using enum fs::fsa::QueryId;

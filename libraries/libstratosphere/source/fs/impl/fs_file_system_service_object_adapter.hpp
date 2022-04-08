@@ -256,7 +256,7 @@ namespace ams::fs::impl {
                 fssrv::sf::Path fsp_path;
                 R_TRY(GetPathForServiceObject(std::addressof(fsp_path), path));
 
-                R_RETURN(m_x->QueryEntry(sf::OutBuffer(dst, dst_size), sf::InBuffer(src, src_size), static_cast<s32>(query), fsp_path));
+                R_RETURN(m_x->QueryEntry(sf::OutNonSecureBuffer(dst, dst_size), sf::InNonSecureBuffer(src, src_size), static_cast<s32>(query), fsp_path));
             }
     };
 

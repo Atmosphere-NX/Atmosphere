@@ -120,7 +120,7 @@ namespace ams::fssrv::impl {
             Result CleanDirectoryRecursively(const fssrv::sf::Path &path);
             Result GetFileTimeStampRaw(ams::sf::Out<fs::FileTimeStampRaw> out, const fssrv::sf::Path &path);
 
-            Result QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path);
+            Result QueryEntry(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path);
     };
 
     #if defined(ATMOSPHERE_OS_HORIZON)
@@ -252,7 +252,7 @@ namespace ams::fssrv::impl {
                 R_RETURN(fsFsGetFileTimeStampRaw(std::addressof(m_base_fs), path.str, reinterpret_cast<::FsTimeStampRaw *>(out.GetPointer())));
             }
 
-            Result QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
+            Result QueryEntry(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
                 R_RETURN(fsFsQueryEntry(std::addressof(m_base_fs), out_buf.GetPointer(), out_buf.GetSize(), in_buf.GetPointer(), in_buf.GetSize(), path.str, static_cast<FsFileSystemQueryId>(query_id)));
             }
 
