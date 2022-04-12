@@ -24,7 +24,7 @@ namespace ams::os {
 
         TimeSpan SaturatedAdd(TimeSpan t1, TimeSpan t2);
         void StopTimerUnsafe(TimerEventType *event);
-        bool UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(TimerEventType *event, TimeSpan cur_time);
+        bool UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(TimerEventType *event, TimeSpan cur_time);
 
     }
 

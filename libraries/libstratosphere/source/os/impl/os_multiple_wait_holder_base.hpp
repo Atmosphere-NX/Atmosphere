@@ -30,46 +30,50 @@ namespace ams::os::impl {
         public:
             /* Gets whether the held object is currently signaled. */
             virtual TriBool IsSignaled() const = 0;
+
             /* Adds to multi wait's object list, returns is signaled. */
-            virtual TriBool LinkToObjectList() = 0;
+            virtual TriBool AddToObjectList() = 0;
+
             /* Removes from the multi wait's object list. */
-            virtual void UnlinkFromObjectList() = 0;
-            /* Gets handle to output, returns os::InvalidNativeHandle on failure. */
-            virtual NativeHandle GetHandle() const = 0;
+            virtual void RemoveFromObjectList() = 0;
+
+            /* Gets whether waitable has a native handle, writes to output if it does. */
+            virtual bool GetNativeHandle(os::NativeHandle *) const = 0;
+
             /* Gets the amount of time remaining until this wakes up. */
-            virtual TimeSpan GetAbsoluteWakeupTime() const {
+            virtual TimeSpan GetAbsoluteTimeToWakeup() const {
                 return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
             }
 
             /* Interface with multi wait. */
-            void SetMultiWait(MultiWaitImpl *m) {
+            ALWAYS_INLINE void SetMultiWait(MultiWaitImpl *m) {
                 m_multi_wait = m;
             }
 
-            MultiWaitImpl *GetMultiWait() const {
+            ALWAYS_INLINE MultiWaitImpl *GetMultiWait() const {
                 return m_multi_wait;
             }
 
-            bool IsLinked() const {
-                return m_multi_wait != nullptr;
-            }
+            ALWAYS_INLINE bool IsLinked()    const { return m_multi_wait != nullptr; }
+            ALWAYS_INLINE bool IsNotLinked() const { return m_multi_wait == nullptr; }
     };
 
-    class MultiWaitHolderOfUserObject : public MultiWaitHolderBase {
+    class MultiWaitHolderOfUserWaitObject : public MultiWaitHolderBase {
         public:
             /* All user objects have no handle to wait on. */
-            virtual NativeHandle GetHandle() const override final {
-                return os::InvalidNativeHandle;
+            virtual bool GetNativeHandle(os::NativeHandle *) const override final {
+                return false;
             }
     };
 
-    class MultiWaitHolderOfKernelObject : public MultiWaitHolderBase {
+    class MultiWaitHolderOfNativeWaitObject : public MultiWaitHolderBase {
         public:
-            /* All kernel objects have native handles, and thus don't have object list semantics. */
-            virtual TriBool LinkToObjectList() override final {
+            /* All native objects have native handles, and thus don't have object list semantics. */
+            virtual TriBool AddToObjectList() override final {
                 return TriBool::Undefined;
             }
-            virtual void UnlinkFromObjectList() override final {
+
+            virtual void RemoveFromObjectList() override final {
                 /* ... */
             }
     };

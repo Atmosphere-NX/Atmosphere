@@ -49,7 +49,7 @@ namespace ams::os {
             }
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).WakeupAllMultiWaitThreadsUnsafe();
         }
 
     }
@@ -110,7 +110,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -137,7 +137,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -154,7 +154,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -172,7 +172,7 @@ namespace ams::os {
 
                 /* Update. */
                 auto cur_time = impl::GetCurrentTick().ToTimeSpan();
-                if (impl::UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(event, cur_time)) {
+                if (impl::UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(event, cur_time)) {
                     SignalTimerEventImplUnsafe(event);
                     break;
                 }
@@ -201,7 +201,7 @@ namespace ams::os {
 
             /* Update. */
             auto cur_time = impl::GetCurrentTick().ToTimeSpan();
-            if (impl::UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(event, cur_time)) {
+            if (impl::UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(event, cur_time)) {
                 SignalTimerEventImplUnsafe(event);
             }
 
@@ -228,7 +228,7 @@ namespace ams::os {
 
             /* Update. */
             auto cur_time = impl::GetCurrentTick().ToTimeSpan();
-            impl::UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(event, cur_time);
+            impl::UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(event, cur_time);
 
             /* Signal. */
             SignalTimerEventImplUnsafe(event);
@@ -243,7 +243,7 @@ namespace ams::os {
 
             /* Update. */
             auto cur_time = impl::GetCurrentTick().ToTimeSpan();
-            if (impl::UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(event, cur_time)) {
+            if (impl::UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(event, cur_time)) {
                 SignalTimerEventImplUnsafe(event);
             }
 

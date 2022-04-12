@@ -19,7 +19,7 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfInterProcessEvent : public MultiWaitHolderOfKernelObject {
+    class MultiWaitHolderOfInterProcessEvent : public MultiWaitHolderOfNativeWaitObject {
         private:
             InterProcessEventType *m_event;
         public:
@@ -30,8 +30,9 @@ namespace ams::os::impl {
                 return TriBool::Undefined;
             }
 
-            virtual NativeHandle GetHandle() const override {
-                return m_event->readable_handle;
+            virtual bool GetNativeHandle(os::NativeHandle *out) const override {
+                *out = m_event->readable_handle;
+                return true;
             }
     };
 

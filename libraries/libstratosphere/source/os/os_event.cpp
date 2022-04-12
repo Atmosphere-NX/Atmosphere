@@ -89,7 +89,7 @@ namespace ams::os {
         }
 
         /* Wake up whatever manager, if any. */
-        GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
+        GetReference(event->multi_wait_object_list_storage).WakeupAllMultiWaitThreadsUnsafe();
     }
 
     void WaitEvent(EventType *event) {

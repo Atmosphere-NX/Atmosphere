@@ -19,11 +19,11 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfEvent : public MultiWaitHolderOfUserObject {
+    class MultiWaitHolderOfEvent : public MultiWaitHolderOfUserWaitObject {
         private:
             EventType *m_event;
         private:
-            TriBool IsSignaledImpl() const {
+            ALWAYS_INLINE TriBool IsSignaledUnsafe() const {
                 return m_event->signaled ? TriBool::True : TriBool::False;
             }
         public:
@@ -32,20 +32,20 @@ namespace ams::os::impl {
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
                 std::scoped_lock lk(GetReference(m_event->cs_event));
-                return this->IsSignaledImpl();
+                return this->IsSignaledUnsafe();
             }
 
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool AddToObjectList() override {
                 std::scoped_lock lk(GetReference(m_event->cs_event));
 
-                GetReference(m_event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
-                return this->IsSignaledImpl();
+                GetReference(m_event->multi_wait_object_list_storage).PushBackToList(*this);
+                return this->IsSignaledUnsafe();
             }
 
-            virtual void UnlinkFromObjectList() override {
+            virtual void RemoveFromObjectList() override {
                 std::scoped_lock lk(GetReference(m_event->cs_event));
 
-                GetReference(m_event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).EraseFromList(*this);
             }
     };
 

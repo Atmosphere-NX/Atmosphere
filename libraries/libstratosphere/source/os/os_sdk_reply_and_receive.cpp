@@ -36,7 +36,7 @@ namespace ams::os {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(impl.IsListNotEmpty());
 
         impl::MultiWaitHolderBase *holder_base;
         ON_SCOPE_EXIT { *out = CastToMultiWaitHolder(holder_base); };

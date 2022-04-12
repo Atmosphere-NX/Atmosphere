@@ -21,13 +21,15 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfTimerEvent : public MultiWaitHolderOfUserObject {
+    class MultiWaitHolderOfTimerEvent : public MultiWaitHolderOfUserWaitObject {
         private:
             TimerEventType *m_event;
         private:
-            TriBool IsSignaledImpl() const {
-                TimeSpan cur_time = this->GetMultiWait()->GetCurrentTime();
-                UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(m_event, cur_time);
+            TriBool IsSignaledUnsafe() const {
+                TimeSpan cur_time = this->GetMultiWait()->GetCurrTime();
+
+                os::impl::UpdateSignalStateAndRecalcNextTimeToWakeupUnsafe(m_event, cur_time);
+
                 return m_event->signaled ? TriBool::True : TriBool::False;
             }
         public:
@@ -36,31 +38,30 @@ namespace ams::os::impl {
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
                 std::scoped_lock lk(GetReference(m_event->cs_timer_event));
-                return this->IsSignaledImpl();
+
+                return this->IsSignaledUnsafe();
             }
 
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool AddToObjectList() override {
                 std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                GetReference(m_event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
-                return this->IsSignaledImpl();
+                GetReference(m_event->multi_wait_object_list_storage).PushBackToList(*this);
+
+                return this->IsSignaledUnsafe();
             }
 
-            virtual void UnlinkFromObjectList() override {
+            virtual void RemoveFromObjectList() override {
                 std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                GetReference(m_event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).EraseFromList(*this);
             }
 
             /* Gets the amount of time remaining until this wakes up. */
-            virtual TimeSpan GetAbsoluteWakeupTime() const override {
+            virtual TimeSpan GetAbsoluteTimeToWakeup() const override {
                 std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                if (m_event->timer_state == TimerEventType::TimerState_Stop) {
-                    return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
-                }
-
-                return GetReference(m_event->next_time_to_wakeup);
+                return m_event->timer_state != TimerEventType::TimerState_Stop ? GetReference(m_event->next_time_to_wakeup)
+                                                                               : TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
             }
     };
 

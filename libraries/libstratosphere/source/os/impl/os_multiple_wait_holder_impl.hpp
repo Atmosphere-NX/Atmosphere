@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_multiple_wait_holder_of_handle.hpp"
+#include "os_multiple_wait_holder_of_native_handle.hpp"
 #include "os_multiple_wait_holder_of_event.hpp"
 #include "os_multiple_wait_holder_of_inter_process_event.hpp"
 #include "os_multiple_wait_holder_of_interrupt_event.hpp"
@@ -27,30 +27,30 @@ namespace ams::os::impl {
 
     struct MultiWaitHolderImpl {
         union {
-            util::TypedStorage<MultiWaitHolderOfHandle>                   holder_of_handle_storage;
+            util::TypedStorage<MultiWaitHolderOfNativeHandle>             holder_of_native_handle_storage;
             util::TypedStorage<MultiWaitHolderOfEvent>                    holder_of_event_storage;
             util::TypedStorage<MultiWaitHolderOfInterProcessEvent>        holder_of_inter_process_event_storage;
             util::TypedStorage<MultiWaitHolderOfInterruptEvent>           holder_of_interrupt_event_storage;
             util::TypedStorage<MultiWaitHolderOfTimerEvent>               holder_of_timer_event_storage;
             util::TypedStorage<MultiWaitHolderOfThread>                   holder_of_thread_storage;
             util::TypedStorage<MultiWaitHolderOfSemaphore>                holder_of_semaphore_storage;
-            util::TypedStorage<MultiWaitHolderOfMessageQueueForNotFull>   holder_of_mq_for_not_full_storage;
-            util::TypedStorage<MultiWaitHolderOfMessageQueueForNotEmpty>  holder_of_mq_for_not_empty_storage;
+            util::TypedStorage<MultiWaitHolderOfMessageQueueNotFull>      holder_of_mq_not_full_storage;
+            util::TypedStorage<MultiWaitHolderOfMessageQueueNotEmpty>     holder_of_mq_not_empty_storage;
         };
     };
 
     #define CHECK_HOLDER(T) \
     static_assert(std::is_base_of<::ams::os::impl::MultiWaitHolderBase, T>::value && std::is_trivially_destructible<T>::value, #T)
 
-    CHECK_HOLDER(MultiWaitHolderOfHandle);
+    CHECK_HOLDER(MultiWaitHolderOfNativeHandle);
     CHECK_HOLDER(MultiWaitHolderOfEvent);
     CHECK_HOLDER(MultiWaitHolderOfInterProcessEvent);
     CHECK_HOLDER(MultiWaitHolderOfInterruptEvent);
     CHECK_HOLDER(MultiWaitHolderOfTimerEvent);
     CHECK_HOLDER(MultiWaitHolderOfThread);
     CHECK_HOLDER(MultiWaitHolderOfSemaphore);
-    CHECK_HOLDER(MultiWaitHolderOfMessageQueueForNotFull);
-    CHECK_HOLDER(MultiWaitHolderOfMessageQueueForNotEmpty);
+    CHECK_HOLDER(MultiWaitHolderOfMessageQueueNotFull);
+    CHECK_HOLDER(MultiWaitHolderOfMessageQueueNotEmpty);
 
     #undef CHECK_HOLDER
 

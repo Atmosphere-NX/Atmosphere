@@ -111,7 +111,7 @@ namespace ams::os::impl {
         thread->state = ThreadType::State_Terminated;
 
         GetReference(thread->cv_thread).Broadcast();
-        GetReference(thread->waitlist).SignalAllThreads();
+        GetReference(thread->waitlist).WakeupAllMultiWaitThreadsUnsafe();
     }
 
     void ThreadManager::CleanupThread() {

@@ -84,7 +84,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::EnqueueUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -102,7 +102,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::EnqueueUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -127,7 +127,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::EnqueueUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -148,7 +148,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::JamUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -166,7 +166,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::JamUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -191,7 +191,7 @@ namespace ams::os {
             /* Send, signal. */
             MessageQueueHelper::JamUnsafe(mq, data);
             GetReference(mq->cv_not_empty).Broadcast();
-            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+            GetReference(mq->waitlist_not_empty).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -212,7 +212,7 @@ namespace ams::os {
             /* Receive, signal. */
             *out = MessageQueueHelper::DequeueUnsafe(mq);
             GetReference(mq->cv_not_full).Broadcast();
-            GetReference(mq->waitlist_not_full).SignalAllThreads();
+            GetReference(mq->waitlist_not_full).WakeupAllMultiWaitThreadsUnsafe();
         }
     }
 
@@ -230,7 +230,7 @@ namespace ams::os {
             /* Receive, signal. */
             *out = MessageQueueHelper::DequeueUnsafe(mq);
             GetReference(mq->cv_not_full).Broadcast();
-            GetReference(mq->waitlist_not_full).SignalAllThreads();
+            GetReference(mq->waitlist_not_full).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -255,7 +255,7 @@ namespace ams::os {
             /* Receive, signal. */
             *out = MessageQueueHelper::DequeueUnsafe(mq);
             GetReference(mq->cv_not_full).Broadcast();
-            GetReference(mq->waitlist_not_full).SignalAllThreads();
+            GetReference(mq->waitlist_not_full).WakeupAllMultiWaitThreadsUnsafe();
         }
 
         return true;
@@ -324,10 +324,10 @@ namespace ams::os {
 
         switch (type) {
             case MessageQueueWaitType::ForNotFull:
-                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_for_not_full_storage, mq);
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_not_full_storage, mq);
                 break;
             case MessageQueueWaitType::ForNotEmpty:
-                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_for_not_empty_storage, mq);
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_not_empty_storage, mq);
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

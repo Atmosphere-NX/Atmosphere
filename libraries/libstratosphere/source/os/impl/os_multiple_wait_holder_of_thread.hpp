@@ -18,7 +18,7 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfThread : public MultiWaitHolderOfUserObject {
+    class MultiWaitHolderOfThread : public MultiWaitHolderOfUserWaitObject {
         private:
             ThreadType *m_thread;
         private:
@@ -34,17 +34,17 @@ namespace ams::os::impl {
                 return this->IsSignaledImpl();
             }
 
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool AddToObjectList() override {
                 std::scoped_lock lk(GetReference(m_thread->cs_thread));
 
-                GetReference(m_thread->waitlist).LinkMultiWaitHolder(*this);
+                GetReference(m_thread->waitlist).PushBackToList(*this);
                 return this->IsSignaledImpl();
             }
 
-            virtual void UnlinkFromObjectList() override {
+            virtual void RemoveFromObjectList() override {
                 std::scoped_lock lk(GetReference(m_thread->cs_thread));
 
-                GetReference(m_thread->waitlist).UnlinkMultiWaitHolder(*this);
+                GetReference(m_thread->waitlist).EraseFromList(*this);
             }
     };
 

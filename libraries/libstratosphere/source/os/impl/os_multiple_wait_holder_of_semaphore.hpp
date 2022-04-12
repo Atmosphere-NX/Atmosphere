@@ -19,7 +19,7 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfSemaphore : public MultiWaitHolderOfUserObject {
+    class MultiWaitHolderOfSemaphore : public MultiWaitHolderOfUserWaitObject {
         private:
             SemaphoreType *m_semaphore;
         private:
@@ -35,17 +35,17 @@ namespace ams::os::impl {
                 return this->IsSignaledImpl();
             }
 
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool AddToObjectList() override {
                 std::scoped_lock lk(GetReference(m_semaphore->cs_sema));
 
-                GetReference(m_semaphore->waitlist).LinkMultiWaitHolder(*this);
+                GetReference(m_semaphore->waitlist).PushBackToList(*this);
                 return this->IsSignaledImpl();
             }
 
-            virtual void UnlinkFromObjectList() override {
+            virtual void RemoveFromObjectList() override {
                 std::scoped_lock lk(GetReference(m_semaphore->cs_sema));
 
-                GetReference(m_semaphore->waitlist).UnlinkMultiWaitHolder(*this);
+                GetReference(m_semaphore->waitlist).EraseFromList(*this);
             }
     };
 

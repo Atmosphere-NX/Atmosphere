@@ -18,7 +18,7 @@
 
 namespace ams::os::impl {
 
-    class MultiWaitHolderOfInterruptEvent : public MultiWaitHolderOfKernelObject {
+    class MultiWaitHolderOfInterruptEvent : public MultiWaitHolderOfNativeWaitObject {
         private:
             InterruptEventType *m_event;
         public:
@@ -29,7 +29,7 @@ namespace ams::os::impl {
                 return TriBool::Undefined;
             }
 
-            virtual NativeHandle GetHandle() const override;
+            virtual bool GetNativeHandle(os::NativeHandle *out) const override;
     };
 
 }

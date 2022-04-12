@@ -19,57 +19,64 @@
 
 namespace ams::os::impl {
 
-    template<MessageQueueWaitType WaitType>
-    class MultiWaitHolderOfMessageQueue : public MultiWaitHolderOfUserObject {
-        static_assert(WaitType == MessageQueueWaitType::ForNotEmpty || WaitType == MessageQueueWaitType::ForNotFull);
+    class MultiWaitHolderOfMessageQueueNotEmpty : public MultiWaitHolderOfUserWaitObject {
         private:
             MessageQueueType *m_mq;
         private:
-            constexpr inline TriBool IsSignaledImpl() const {
-                if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
-                    /* ForNotEmpty. */
-                    return m_mq->count > 0 ? TriBool::True : TriBool::False;
-                } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
-                    /* ForNotFull */
-                    return m_mq->count < m_mq->capacity ? TriBool::True : TriBool::False;
-                } else {
-                    static_assert(WaitType != WaitType);
-                }
-            }
-
-            constexpr inline MultiWaitObjectList &GetObjectList() const {
-                if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
-                    return GetReference(m_mq->waitlist_not_empty);
-                } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
-                    return GetReference(m_mq->waitlist_not_full);
-                } else {
-                    static_assert(WaitType != WaitType);
-                }
+            ALWAYS_INLINE TriBool IsSignaledUnsafe() const {
+                return m_mq->count > 0 ? TriBool::True : TriBool::False;
             }
         public:
-            explicit MultiWaitHolderOfMessageQueue(MessageQueueType *mq) : m_mq(mq) { /* ... */ }
+            explicit MultiWaitHolderOfMessageQueueNotEmpty(MessageQueueType *mq) : m_mq(mq) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
                 std::scoped_lock lk(GetReference(m_mq->cs_queue));
-                return this->IsSignaledImpl();
+                return this->IsSignaledUnsafe();
             }
 
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool AddToObjectList() override {
                 std::scoped_lock lk(GetReference(m_mq->cs_queue));
 
-                this->GetObjectList().LinkMultiWaitHolder(*this);
-                return this->IsSignaledImpl();
+                GetReference(m_mq->waitlist_not_empty).PushBackToList(*this);
+                return this->IsSignaledUnsafe();
             }
 
-            virtual void UnlinkFromObjectList() override {
+            virtual void RemoveFromObjectList() override {
                 std::scoped_lock lk(GetReference(m_mq->cs_queue));
 
-                this->GetObjectList().UnlinkMultiWaitHolder(*this);
+                GetReference(m_mq->waitlist_not_empty).EraseFromList(*this);
             }
     };
 
-    using MultiWaitHolderOfMessageQueueForNotEmpty = MultiWaitHolderOfMessageQueue<MessageQueueWaitType::ForNotEmpty>;
-    using MultiWaitHolderOfMessageQueueForNotFull  = MultiWaitHolderOfMessageQueue<MessageQueueWaitType::ForNotFull>;
+    class MultiWaitHolderOfMessageQueueNotFull : public MultiWaitHolderOfUserWaitObject {
+        private:
+            MessageQueueType *m_mq;
+        private:
+            ALWAYS_INLINE TriBool IsSignaledUnsafe() const {
+                return m_mq->count < m_mq->capacity ? TriBool::True : TriBool::False;
+            }
+        public:
+            explicit MultiWaitHolderOfMessageQueueNotFull(MessageQueueType *mq) : m_mq(mq) { /* ... */ }
+
+            /* IsSignaled, Link, Unlink implemented. */
+            virtual TriBool IsSignaled() const override {
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
+                return this->IsSignaledUnsafe();
+            }
+
+            virtual TriBool AddToObjectList() override {
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
+
+                GetReference(m_mq->waitlist_not_full).PushBackToList(*this);
+                return this->IsSignaledUnsafe();
+            }
+
+            virtual void RemoveFromObjectList() override {
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
+
+                GetReference(m_mq->waitlist_not_full).EraseFromList(*this);
+            }
+    };
 
 }

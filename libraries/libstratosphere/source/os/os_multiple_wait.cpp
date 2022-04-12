@@ -44,7 +44,7 @@ namespace ams::os {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(impl.IsEmpty());
+        AMS_ASSERT(impl.IsListEmpty());
         AMS_UNUSED(impl);
 
         /* Mark not initialized. */
@@ -58,7 +58,7 @@ namespace ams::os {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(impl.IsListNotEmpty());
 
         auto *holder = CastToMultiWaitHolder(impl.WaitAny());
         AMS_ASSERT(holder != nullptr);
@@ -69,7 +69,7 @@ namespace ams::os {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(impl.IsListNotEmpty());
 
         auto *holder = CastToMultiWaitHolder(impl.TryWaitAny());
         return holder;
@@ -79,7 +79,7 @@ namespace ams::os {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(impl.IsListNotEmpty());
         AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
         auto *holder = CastToMultiWaitHolder(impl.TimedWaitAny(timeout));
@@ -89,7 +89,7 @@ namespace ams::os {
     void FinalizeMultiWaitHolder(MultiWaitHolderType *holder) {
         auto *holder_base = reinterpret_cast<impl::MultiWaitHolderBase *>(GetPointer(holder->impl_storage));
 
-        AMS_ASSERT(!holder_base->IsLinked());
+        AMS_ASSERT(holder_base->IsNotLinked());
 
         /* Destroy. */
         static_assert(std::is_trivially_destructible<impl::MultiWaitHolderBase>::value);
@@ -102,9 +102,9 @@ namespace ams::os {
         auto *holder_base = reinterpret_cast<impl::MultiWaitHolderBase *>(GetPointer(holder->impl_storage));
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
-        AMS_ASSERT(!holder_base->IsLinked());
+        AMS_ASSERT(holder_base->IsNotLinked());
 
-        impl.LinkMultiWaitHolder(*holder_base);
+        impl.PushBackToList(*holder_base);
         holder_base->SetMultiWait(std::addressof(impl));
     }
 
@@ -114,7 +114,7 @@ namespace ams::os {
         /* Don't allow unlinking of an unlinked holder. */
         AMS_ABORT_UNLESS(holder_base->IsLinked());
 
-        holder_base->GetMultiWait()->UnlinkMultiWaitHolder(*holder_base);
+        holder_base->GetMultiWait()->EraseFromList(*holder_base);
         holder_base->SetMultiWait(nullptr);
     }
 
@@ -123,7 +123,7 @@ namespace ams::os {
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
 
-        return impl.UnlinkAll();
+        return impl.EraseAllFromList();
     }
 
     void MoveAllMultiWaitHolder(MultiWaitType *_dst, MultiWaitType *_src) {
@@ -133,7 +133,7 @@ namespace ams::os {
         AMS_ASSERT(_dst->state == MultiWaitType::State_Initialized);
         AMS_ASSERT(_src->state == MultiWaitType::State_Initialized);
 
-        return dst.MoveAllFrom(src);
+        return dst.MoveAllFromOther(src);
     }
 
     void SetMultiWaitHolderUserData(MultiWaitHolderType *holder, uintptr_t user_data) {
@@ -147,7 +147,7 @@ namespace ams::os {
     void InitializeMultiWaitHolder(MultiWaitHolderType *holder, NativeHandle handle) {
         AMS_ASSERT(handle != os::InvalidNativeHandle);
 
-        util::ConstructAt(GetReference(holder->impl_storage).holder_of_handle_storage, handle);
+        util::ConstructAt(GetReference(holder->impl_storage).holder_of_native_handle_storage, handle);
 
         holder->user_data = 0;
     }

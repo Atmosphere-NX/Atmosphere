@@ -44,24 +44,20 @@ namespace ams::os::impl {
             InternalCriticalSection m_cs_wait;
             MultiWaitTargetImpl m_target_impl;
         private:
-            Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
-            Result WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
-            s32                BuildHandleArray(NativeHandle out_handles[], MultiWaitHolderBase *out_objects[], s32 num);
+            template<bool AllowReply>
+            Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, NativeHandle reply_target);
 
-            MultiWaitHolderBase *LinkHoldersToObjectList();
-            void                UnlinkHoldersFromObjectList();
+            template<bool AllowReply>
+            Result InternalWaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, NativeHandle reply_target);
 
-            MultiWaitHolderBase *RecalculateNextTimeout(TimeSpan *out_min_timeout, TimeSpan end_time);
+            s32 ConstructObjectsArray(NativeHandle out_handles[], MultiWaitHolderBase *out_objects[], s32 num);
 
-            MultiWaitHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout) {
-                MultiWaitHolderBase *holder = nullptr;
+            MultiWaitHolderBase *AddToEachObjectListAndCheckObjectState();
+            void                 RemoveFromEachObjectList();
 
-                const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, os::InvalidNativeHandle);
-                R_ASSERT(wait_result);
-                AMS_UNUSED(wait_result);
+            MultiWaitHolderBase *RecalcMultiWaitTimeout(TimeSpan *out_min_timeout, TimeSpan end_time);
 
-                return holder;
-            }
+            MultiWaitHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout);
         public:
             /* Wait. */
             MultiWaitHolderBase *WaitAny() {
@@ -76,44 +72,47 @@ namespace ams::os::impl {
                 return this->WaitAnyImpl(false, ts);
             }
 
-            Result ReplyAndReceive(MultiWaitHolderBase **out, NativeHandle reply_target) {
-                R_RETURN(this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target));
-            }
+            Result ReplyAndReceive(MultiWaitHolderBase **out, NativeHandle reply_target);
 
             /* List management. */
-            bool IsEmpty() const {
+            bool IsListEmpty() const {
                 return m_multi_wait_list.empty();
             }
 
-            void LinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+            bool IsListNotEmpty() const {
+                return !m_multi_wait_list.empty();
+            }
+
+            void PushBackToList(MultiWaitHolderBase &holder_base) {
                 m_multi_wait_list.push_back(holder_base);
             }
 
-            void UnlinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+            void EraseFromList(MultiWaitHolderBase &holder_base) {
                 m_multi_wait_list.erase(m_multi_wait_list.iterator_to(holder_base));
             }
 
-            void UnlinkAll() {
-                while (!this->IsEmpty()) {
+            void EraseAllFromList() {
+                while (!m_multi_wait_list.empty()) {
                     m_multi_wait_list.front().SetMultiWait(nullptr);
                     m_multi_wait_list.pop_front();
                 }
             }
 
-            void MoveAllFrom(MultiWaitImpl &other) {
+            void MoveAllFromOther(MultiWaitImpl &other) {
                 /* Set ourselves as multi wait for all of the other's holders. */
                 for (auto &w : other.m_multi_wait_list) {
                     w.SetMultiWait(this);
                 }
+
                 m_multi_wait_list.splice(m_multi_wait_list.end(), other.m_multi_wait_list);
             }
 
             /* Other. */
-            TimeSpan GetCurrentTime() const {
+            TimeSpan GetCurrTime() const {
                 return m_current_time;
             }
 
-            void SignalAndWakeupThread(MultiWaitHolderBase *holder_base);
+            void NotifyAndWakeupThread(MultiWaitHolderBase *holder_base);
     };
 
 }

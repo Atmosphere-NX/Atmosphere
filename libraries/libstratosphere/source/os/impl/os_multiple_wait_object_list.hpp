@@ -25,15 +25,15 @@ namespace ams::os::impl {
         private:
             ListType m_object_list;
         public:
-            void SignalAllThreads() {
+            void WakeupAllMultiWaitThreadsUnsafe() {
                 for (MultiWaitHolderBase &holder_base : m_object_list) {
-                    holder_base.GetMultiWait()->SignalAndWakeupThread(std::addressof(holder_base));
+                    holder_base.GetMultiWait()->NotifyAndWakeupThread(std::addressof(holder_base));
                 }
             }
 
-            void BroadcastAllThreads() {
+            void BroadcastToUpdateObjectStateUnsafe() {
                 for (MultiWaitHolderBase &holder_base : m_object_list) {
-                    holder_base.GetMultiWait()->SignalAndWakeupThread(nullptr);
+                    holder_base.GetMultiWait()->NotifyAndWakeupThread(nullptr);
                 }
             }
 
@@ -41,11 +41,11 @@ namespace ams::os::impl {
                 return m_object_list.empty();
             }
 
-            void LinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+            void PushBackToList(MultiWaitHolderBase &holder_base) {
                 m_object_list.push_back(holder_base);
             }
 
-            void UnlinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+            void EraseFromList(MultiWaitHolderBase &holder_base) {
                 m_object_list.erase(m_object_list.iterator_to(holder_base));
             }
     };
