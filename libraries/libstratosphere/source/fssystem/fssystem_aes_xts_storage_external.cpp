@@ -111,7 +111,7 @@ namespace ams::fssystem {
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
 
         /* Ensure we can encrypt. */
-        R_UNLESS(m_decrypt_function != nullptr, fs::ResultNullptrArgument());
+        R_UNLESS(m_encrypt_function != nullptr, fs::ResultNullptrArgument());
 
         /* We can only write at block aligned offsets. */
         R_UNLESS(util::IsAligned(offset, AesBlockSize), fs::ResultInvalidArgument());
