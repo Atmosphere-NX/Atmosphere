@@ -38,7 +38,7 @@ namespace ams::os {
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);
         AMS_ASSERT(impl.IsListNotEmpty());
 
-        impl::MultiWaitHolderBase *holder_base;
+        impl::MultiWaitHolderBase *holder_base = nullptr;
         ON_SCOPE_EXIT { *out = CastToMultiWaitHolder(holder_base); };
 
         R_RETURN(impl.ReplyAndReceive(std::addressof(holder_base), reply_target));
