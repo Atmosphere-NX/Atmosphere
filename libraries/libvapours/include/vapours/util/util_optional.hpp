@@ -32,6 +32,11 @@ namespace ams::util {
                 }
         };
 
+        template<typename F>
+        struct OptionalFunction {
+            F &m_f;
+        };
+
     }
 
     struct nullopt_t {
@@ -67,6 +72,9 @@ namespace ams::util {
 
                 template<typename V, typename... Args>
                 constexpr ALWAYS_INLINE StorageType(std::initializer_list<V> il, Args &&... args) : m_value(il, std::forward<Args>(args)...) { /* ... */ }
+
+                template<typename F, typename Arg>
+                constexpr ALWAYS_INLINE StorageType(OptionalFunction<F> f, Arg &&arg) : m_value(std::invoke(std::forward<F>(f.m_f), std::forward<Arg>(arg))) { /* ... */ }
             };
 
             template<typename U>
@@ -81,6 +89,9 @@ namespace ams::util {
 
                 template<typename V, typename... Args>
                 constexpr ALWAYS_INLINE StorageType(std::initializer_list<V> il, Args &&... args) : m_value(il, std::forward<Args>(args)...) { /* ... */ }
+
+                template<typename F, typename Arg>
+                constexpr ALWAYS_INLINE StorageType(OptionalFunction<F> f, Arg &&arg) : m_value(std::invoke(std::forward<F>(f.m_f), std::forward<Arg>(arg))) { /* ... */ }
 
                 constexpr ALWAYS_INLINE ~StorageType() { /* ... */ }
             };
@@ -135,6 +146,12 @@ namespace ams::util {
             constexpr void Destroy() {
                 m_engaged = false;
                 std::destroy_at(std::addressof(m_payload.m_value));
+            }
+
+            template<typename F, typename Arg>
+            constexpr void Apply(impl::OptionalFunction<F> f, Arg &&arg) {
+                std::construct_at(std::addressof(m_payload), f, std::forward<Arg>(arg));
+                m_engaged = true;
             }
 
             constexpr ALWAYS_INLINE       T &Get()       { return m_payload.m_value; }
@@ -233,6 +250,11 @@ namespace ams::util {
                 constexpr void DestructImpl() { static_cast<Derived *>(this)->m_payload.Destroy(); }
 
                 constexpr void ResetImpl() { static_cast<Derived *>(this)->m_payload.Reset(); }
+
+                template<typename F, typename Arg>
+                constexpr void ApplyImpl(OptionalFunction<F> f, Arg &&arg) {
+                    static_cast<Derived *>(this)->m_payload.Apply(f, std::forward<Arg>(arg));
+                }
 
                 constexpr ALWAYS_INLINE bool IsEngagedImpl() const { return static_cast<const Derived *>(this)->m_payload.m_engaged; }
 
@@ -338,6 +360,11 @@ namespace ams::util {
                                                     std::is_assignable<T &, optional<U> &>::value ||
                                                     std::is_assignable<T &, const optional<U> &&>::value ||
                                                     std::is_assignable<T &, optional<U> &&>::value;
+        template<typename T>
+        constexpr inline bool IsOptional = false;
+
+        template<typename T>
+        constexpr inline bool IsOptional<optional<T>> = true;
 
     }
 
@@ -509,7 +536,80 @@ namespace ams::util {
                 return this->IsEngagedImpl() ? std::move(this->GetImpl()) : static_cast<T>(std::forward<U>(u));
             }
 
+            template<typename F>
+            constexpr auto and_then(F &&f) & {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, T &>::type>::type;
+                static_assert(impl::IsOptional<typename std::remove_cvref<U>::type>);
+                return this->IsEngagedImpl() ? std::invoke(std::forward<F>(f), **this) : U{};
+            }
+
+            template<typename F>
+            constexpr auto and_then(F &&f) const & {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, const T &>::type>::type;
+                static_assert(impl::IsOptional<typename std::remove_cvref<U>::type>);
+                return this->IsEngagedImpl() ? std::invoke(std::forward<F>(f), **this) : U{};
+            }
+
+            template<typename F>
+            constexpr auto and_then(F &&f) && {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, T>::type>::type;
+                static_assert(impl::IsOptional<typename std::remove_cvref<U>::type>);
+                return this->IsEngagedImpl() ? std::invoke(std::forward<F>(f), std::move(**this)) : U{};
+            }
+
+            template<typename F>
+            constexpr auto and_then(F &&f) const && {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, const T>::type>::type;
+                static_assert(impl::IsOptional<typename std::remove_cvref<U>::type>);
+                return this->IsEngagedImpl() ? std::invoke(std::forward<F>(f), std::move(**this)) : U{};
+            }
+
+            template<typename F>
+            constexpr auto transform(F &&f) & {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, T &>::type>::type;
+                return this->IsEngagedImpl() ? optional<U>(impl::OptionalFunction<F>{f}, **this) : optional<U>{};
+            }
+
+            template<typename F>
+            constexpr auto transform(F &&f) const & {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, const T &>::type>::type;
+                return this->IsEngagedImpl() ? optional<U>(impl::OptionalFunction<F>{f}, **this) : optional<U>{};
+            }
+
+            template<typename F>
+            constexpr auto transform(F &&f) && {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, T>::type>::type;
+                return this->IsEngagedImpl() ? optional<U>(impl::OptionalFunction<F>{f}, std::move(**this)) : optional<U>{};
+            }
+
+            template<typename F>
+            constexpr auto transform(F &&f) const && {
+                using U = typename std::remove_cvref<typename std::invoke_result<F, const T>::type>::type;
+                return this->IsEngagedImpl() ? optional<U>(impl::OptionalFunction<F>{f}, std::move(**this)) : optional<U>{};
+            }
+
+            template<typename F> requires std::invocable<F> && std::copy_constructible<T>
+            constexpr optional or_else(F &&f) const & {
+                using U = typename std::invoke_result<F>::type;
+                static_assert(std::same_as<typename std::remove_cvref_t<U>, optional>);
+                return this->IsEngagedImpl() ? *this : std::forward<F>(f)();
+            }
+
+            template<typename F> requires std::invocable<F> && std::move_constructible<T>
+            constexpr optional or_else(F &&f) && {
+                using U = typename std::invoke_result<F>::type;
+                static_assert(std::same_as<typename std::remove_cvref_t<U>, optional>);
+                return this->IsEngagedImpl() ? std::move(*this) : std::forward<F>(f)();
+            }
+
             constexpr void reset() { this->ResetImpl(); }
+        private:
+            template<typename U> friend class optional;
+
+            template<typename F, typename Arg>
+            constexpr explicit optional(impl::OptionalFunction<F> f, Arg &&arg) {
+                this->ApplyImpl(f, std::forward<Arg>(arg));
+            }
     };
 
     namespace impl {
@@ -587,16 +687,6 @@ namespace ams::util {
 
     template<typename T, typename U>
     constexpr inline impl::optional_ge_t<U, T> operator>=(const U &lhs, const optional<T> &rhs) { return !rhs || lhs >= *rhs; }
-
-    namespace impl {
-
-        template<typename T>
-        constexpr inline bool IsOptional = false;
-
-        template<typename T>
-        constexpr inline bool IsOptional<optional<T>> = true;
-
-    }
 
     template<typename T, typename U> requires (!impl::IsOptional<U>) && std::three_way_comparable_with<T, U>
     constexpr inline std::compare_three_way_result_t<T, U> operator<=>(const optional<T> &lhs, const U &rhs) {
