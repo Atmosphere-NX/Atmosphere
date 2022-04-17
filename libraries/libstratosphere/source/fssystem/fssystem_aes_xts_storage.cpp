@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     void AesXtsStorage<BasePointer>::MakeAesXtsIv(void *dst, size_t dst_size, s64 offset, size_t block_size) {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size == IvSize);
@@ -29,7 +29,7 @@ namespace ams::fssystem {
         util::StoreBigEndian<s64>(reinterpret_cast<s64 *>(out_addr + sizeof(s64)), offset / block_size);
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     AesXtsStorage<BasePointer>::AesXtsStorage(BasePointer base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size) : m_base_storage(std::move(base)), m_block_size(block_size), m_mutex() {
         AMS_ASSERT(m_base_storage != nullptr);
         AMS_ASSERT(key1 != nullptr);
@@ -45,7 +45,7 @@ namespace ams::fssystem {
         std::memcpy(m_iv, iv, IvSize);
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::Read(s64 offset, void *buffer, size_t size) {
         /* Allow zero-size reads. */
         R_SUCCEED_IF(size == 0);
@@ -111,7 +111,7 @@ namespace ams::fssystem {
         R_SUCCEED();
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::Write(s64 offset, const void *buffer, size_t size) {
         /* Allow zero-size writes. */
         R_SUCCEED_IF(size == 0);
@@ -209,24 +209,24 @@ namespace ams::fssystem {
         R_SUCCEED();
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::Flush() {
         R_RETURN(m_base_storage->Flush());
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::SetSize(s64 size) {
         R_UNLESS(util::IsAligned(size, AesBlockSize), fs::ResultUnexpectedInAesXtsStorageA());
 
         R_RETURN(m_base_storage->SetSize(size));
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::GetSize(s64 *out) {
         R_RETURN(m_base_storage->GetSize(out));
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorage<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Unless invalidating cache, check the arguments. */
         if (op_id != fs::OperationId::Invalidate) {

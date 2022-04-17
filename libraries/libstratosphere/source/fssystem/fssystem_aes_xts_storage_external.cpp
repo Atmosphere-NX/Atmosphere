@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     AesXtsStorageExternal<BasePointer>::AesXtsStorageExternal(BasePointer bs, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size, CryptAesXtsFunction ef, CryptAesXtsFunction df) : m_base_storage(std::move(bs)), m_block_size(block_size), m_encrypt_function(ef), m_decrypt_function(df) {
         AMS_ASSERT(key_size == KeySize);
         AMS_ASSERT(iv_size == IvSize);
@@ -34,7 +34,7 @@ namespace ams::fssystem {
         std::memcpy(m_iv, iv, IvSize);
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::Read(s64 offset, void *buffer, size_t size) {
         /* Allow zero size. */
         R_SUCCEED_IF(size == 0);
@@ -102,7 +102,7 @@ namespace ams::fssystem {
         R_SUCCEED();
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::Write(s64 offset, const void *buffer, size_t size) {
         /* Allow zero-size writes. */
         R_SUCCEED_IF(size == 0);
@@ -195,7 +195,7 @@ namespace ams::fssystem {
         R_SUCCEED();
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Unless invalidating cache, check the arguments. */
         if (op_id != fs::OperationId::Invalidate) {
@@ -210,17 +210,17 @@ namespace ams::fssystem {
         R_RETURN(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::GetSize(s64 *out) {
         R_RETURN(m_base_storage->GetSize(out));
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::Flush() {
         R_RETURN(m_base_storage->Flush());
     }
 
-    template<typename BasePointer>
+    template<fs::PointerToStorage BasePointer>
     Result AesXtsStorageExternal<BasePointer>::SetSize(s64 size) {
         R_UNLESS(util::IsAligned(size, AesBlockSize), fs::ResultUnexpectedInAesXtsStorageA());
 

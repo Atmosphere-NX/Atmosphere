@@ -29,7 +29,9 @@ namespace ams::fssystem {
             NON_COPYABLE(ShaHashGenerator);
             NON_MOVEABLE(ShaHashGenerator);
             private:
-                Traits::Generator m_generator;
+                using Generator = typename Traits::Generator;
+            private:
+                Generator m_generator;
             public:
                 ShaHashGenerator() = default;
             protected:

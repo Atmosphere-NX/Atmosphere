@@ -67,7 +67,7 @@ endif
 
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export LDFLAGS     = -specs=$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/stratosphere.specs -specs=$(DEVKITPRO)/libnx/switch.specs $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-Map,$(notdir $*.map)
-else ifeq ($(ATMOSPHERE_COMPILER_NAME),clang)
+else ifeq ($(ATMOSPHERE_OS_NAME),macos)
 export LDFLAGS     = $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-map,$(notdir $@.map)
 else
 export LDFLAGS     = $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-Map,$(notdir $@.map)
