@@ -89,6 +89,13 @@ namespace ams::ldr {
                 R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ldr::ResultInvalidMeta());
             }
 
+            /* Validate that the acid version is correct. */
+            constexpr u8 MinimumValueForAcid209 = 14; /* TODO: What is the actual meaning of this value? */
+            if (acid->unknown_209 < MinimumValueForAcid209) {
+                R_UNLESS(acid->version == 0,     ldr::ResultInvalidMeta());
+                R_UNLESS(acid->unknown_209 == 0, ldr::ResultInvalidMeta());
+            }
+
             /* Validate Fac, Sac, Kac. */
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->fac_offset, acid->fac_size));
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->sac_offset, acid->sac_size));

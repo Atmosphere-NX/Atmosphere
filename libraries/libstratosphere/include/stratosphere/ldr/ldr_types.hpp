@@ -176,7 +176,7 @@ namespace ams::ldr {
             AcidFlag_DeprecatedUseSecureMemory = (1 << 2),
 
             AcidFlag_PoolPartitionShift = 2,
-            AcidFlag_PoolPartitionMask = (3 << AcidFlag_PoolPartitionShift),
+            AcidFlag_PoolPartitionMask = (0xF << AcidFlag_PoolPartitionShift),
         };
 
         enum PoolPartition {
@@ -198,7 +198,8 @@ namespace ams::ldr {
         u32 magic;
         u32 size;
         u8  version;
-        u8  reserved_209[3];
+        u8  unknown_209;
+        u8  reserved_20A[2];
         u32 flags;
         ncm::ProgramId program_id_min;
         ncm::ProgramId program_id_max;

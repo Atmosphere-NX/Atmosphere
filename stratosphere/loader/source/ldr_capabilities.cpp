@@ -186,7 +186,7 @@ namespace ams::ldr {
         );
 
         enum class MemoryRegionType : u32 {
-            None              = 0,
+            NoMapping         = 0,
             KernelTraceBuffer = 1,
             OnMemoryBootImage = 2,
             DTB               = 3,
@@ -200,17 +200,31 @@ namespace ams::ldr {
             DEFINE_CAPABILITY_FIELD(Region2,   ReadOnly1, 6, MemoryRegionType);
             DEFINE_CAPABILITY_FIELD(ReadOnly2, Region2,   1, bool);
 
-            bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
-                for (size_t i = 0; i < kac_count; i++) {
-                    if (GetCapabilityId(kac[i]) == Id) {
-                        const auto restriction = Decode(kac[i]);
+            static bool IsValidRegionType(const util::BitPack32 *kac, size_t kac_count, MemoryRegionType region_type, bool is_read_only) {
+                if (region_type != MemoryRegionType::NoMapping) {
+                    for (size_t i = 0; i < kac_count; i++) {
+                        if (GetCapabilityId(kac[i]) == Id) {
+                            const auto restriction = Decode(kac[i]);
 
-                        if (this->GetValue() == restriction.GetValue()) {
-                            return true;
+                            if ((restriction.GetRegion0() == region_type && (is_read_only || !restriction.GetReadOnly0())) ||
+                                (restriction.GetRegion1() == region_type && (is_read_only || !restriction.GetReadOnly1())) ||
+                                (restriction.GetRegion2() == region_type && (is_read_only || !restriction.GetReadOnly2())))
+                            {
+                                return true;
+                            }
                         }
                     }
+
+                    return false;
+                } else {
+                    return true;
                 }
-                return false;
+            }
+
+            bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
+                return IsValidRegionType(kac, kac_count, this->GetRegion0(), this->GetReadOnly0()) &&
+                       IsValidRegionType(kac, kac_count, this->GetRegion1(), this->GetReadOnly1()) &&
+                       IsValidRegionType(kac, kac_count, this->GetRegion2(), this->GetReadOnly2());
             }
         );
 

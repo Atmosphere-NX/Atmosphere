@@ -81,9 +81,6 @@ namespace ams::ldr {
         bool g_has_nso[Nso_Count];
         NsoHeader g_nso_headers[Nso_Count];
 
-        /* Anti-downgrade. */
-        #include "ldr_anti_downgrade_tables.inc"
-
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             /* No version verification is done before 8.1.0. */
             R_SUCCEED_IF(hos::GetVersion() < hos::Version_8_1_0);
@@ -91,40 +88,9 @@ namespace ams::ldr {
             /* No verification is done if development. */
             R_SUCCEED_IF(IsDevelopmentForAntiDowngradeCheck());
 
-            /* Do version-dependent validation, if compiled to do so. */
-#ifdef LDR_VALIDATE_PROCESS_VERSION
-            const MinimumProgramVersion *entries = nullptr;
-            size_t num_entries = 0;
-
-            const auto hos_version = hos::GetVersion();
-            if (hos_version >= hos::Version_11_0_0) {
-                entries = g_MinimumProgramVersions1100;
-                num_entries = g_MinimumProgramVersionsCount1100;
-            } else if (hos_version >= hos::Version_10_1_0) {
-                entries = g_MinimumProgramVersions1010;
-                num_entries = g_MinimumProgramVersionsCount1010;
-            } else if (hos_version >= hos::Version_10_0_0) {
-                entries = g_MinimumProgramVersions1000;
-                num_entries = g_MinimumProgramVersionsCount1000;
-            } else if (hos_version >= hos::Version_9_1_0) {
-                entries = g_MinimumProgramVersions910;
-                num_entries = g_MinimumProgramVersionsCount910;
-            } else if (hos_version >= hos::Version_9_0_0) {
-                entries = g_MinimumProgramVersions900;
-                num_entries = g_MinimumProgramVersionsCount900;
-            } else if (hos_version >= hos::Version_8_1_0) {
-                entries = g_MinimumProgramVersions810;
-                num_entries = g_MinimumProgramVersionsCount810;
-            }
-
-            for (size_t i = 0; i < num_entries; i++) {
-                if (entries[i].program_id == program_id) {
-                    R_UNLESS(entries[i].version <= version, ldr::ResultInvalidVersion());
-                }
-            }
-#else
+            /* TODO: Anti-downgrade checking does not make very much sense for us. Should we do anything? */
             AMS_UNUSED(program_id, version);
-#endif
+
             R_SUCCEED();
         }
 
@@ -216,6 +182,60 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
+        constexpr const ncm::ProgramId UnqualifiedApprovalProgramIds[] = {
+            { 0x010003F003A34000 }, /* Pokemon: Let's Go, Pikachu! */
+            { 0x0100152000022000 }, /* Mario Kart 8 Deluxe */
+            { 0x0100165003504000 }, /* Nintendo Labo Toy-Con 04: VR Kit */
+            { 0x0100187003A36000 }, /* Pokemon: Let's Go, Eevee! */
+            { 0x01002E5008C56000 }, /* Pokemon Sword [Live Tournament] */
+            { 0x01002FF008C24000 }, /* Ring Fit Adventure */
+            { 0x010049900F546001 }, /* Super Mario 3D All-Stars: Super Mario 64 */
+            { 0x010057D00ECE4000 }, /* Nintendo Switch Online (Nintendo 64) [for Japan] */
+            { 0x01006F8002326000 }, /* Animal Crossing: New Horizons */
+            { 0x01006FB00F50E000 }, /* [???] */
+            { 0x010070300F50C000 }, /* [???] */
+            { 0x010075100E8EC000 }, /* 马力欧卡丁车8 豪华版 [Mario Kart 8 Deluxe for China] */
+            { 0x01008DB008C2C000 }, /* Pokemon Shield */
+            { 0x01009AD008C4C000 }, /* Pokemon: Let's Go, Pikachu! [Kiosk] */
+            { 0x0100A66003384000 }, /* Hulu */
+            { 0x0100ABF008968000 }, /* Pokemon Sword */
+            { 0x0100C9A00ECE6000 }, /* Nintendo Switch Online (Nintendo 64) [for America] */
+            { 0x0100ED100BA3A000 }, /* Mario Kart Live: Home Circuit */
+            { 0x0100F38011CFE000 }, /* Animal Crossing: New Horizons Island Transfer Tool */
+            { 0x0100F6B011028000 }, /* 健身环大冒险 [Ring Fit Adventure for China] */
+        };
+
+        /* Check that the unqualified approval programs are sorted. */
+        static_assert([]() -> bool {
+            for (size_t i = 0; i < util::size(UnqualifiedApprovalProgramIds) - 1; ++i) {
+                if (UnqualifiedApprovalProgramIds[i].value >= UnqualifiedApprovalProgramIds[i + 1].value) {
+                    return false;
+                }
+            }
+
+            return true;
+        }());
+
+        bool IsUnqualifiedApprovalProgramId(ncm::ProgramId program_id) {
+            /* Check if the program id is one with unqualified approval. */
+            return std::binary_search(std::begin(UnqualifiedApprovalProgramIds), std::end(UnqualifiedApprovalProgramIds), program_id);
+        }
+
+        bool IsUnqualifiedApproval(const Meta *meta) {
+            /* If the meta has unqualified approval flag, it's unqualified approval. */
+            if (meta->acid->flags & ldr::Acid::AcidFlag_UnqualifiedApproval) {
+                return true;
+            }
+
+            /* If the unqualified approval flag is not set, the program must be an application. */
+            if (!IsApplication(meta)) {
+                return false;
+            }
+
+            /* The program id must be a force unqualified approval program id. */
+            return IsUnqualifiedApprovalProgramId(meta->acid->program_id_min) && meta->acid->program_id_min == meta->acid->program_id_max;
+        }
+
         Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeVerificationData &code_verification_data) {
             /* Validate version. */
             R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
@@ -228,7 +248,7 @@ namespace ams::ldr {
             R_TRY(TestCapability(static_cast<const util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32), static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)));
 
             /* If we have data to validate, validate it. */
-            if (code_verification_data.has_data && meta->check_verification_data) {
+            if (meta->check_verification_data) {
                 const u8 *sig         = code_verification_data.signature;
                 const size_t sig_size = sizeof(code_verification_data.signature);
                 const u8 *mod         = static_cast<u8 *>(meta->modulus);
@@ -239,7 +259,15 @@ namespace ams::ldr {
                 const size_t hsh_size = sizeof(code_verification_data.target_hash);
                 const bool is_signature_valid = crypto::VerifyRsa2048PssSha256WithHash(sig, sig_size, mod, mod_size, exp, exp_size, hsh, hsh_size);
 
-                R_UNLESS(is_signature_valid, ldr::ResultInvalidNcaSignature());
+                /* If the signature check fails, we need to check if this is allowable. */
+                if (!is_signature_valid) {
+                    /* We have to enforce signature checks on prod and when we have a signature to check on dev. */
+                    R_UNLESS(IsDevelopmentForAcidProductionCheck(), ldr::ResultInvalidNcaSignature());
+                    R_UNLESS(!code_verification_data.has_data,      ldr::ResultInvalidNcaSignature());
+
+                    /* There was no signature to check on dev. Check if this is acceptable. */
+                    R_UNLESS(IsUnqualifiedApproval(meta), ldr::ResultInvalidNcaSignature());
+                }
             }
 
             /* All good. */
@@ -298,6 +326,8 @@ namespace ams::ldr {
 
             /* 5.0.0+ Set Pool Partition. */
             if (hos::GetVersion() >= hos::Version_5_0_0) {
+                /* TODO: Nintendo no longer accepts Applet when pool partition == application. Would this break hbl/anything else in the hb ecosystem? */
+                /* TODO: Nintendo uses a helper bool MakeSvcPoolPartitionFlag(u32 *out, Acid::PoolPartition partition); */
                 switch (GetPoolPartition(meta)) {
                     case Acid::PoolPartition_Application:
                         if (IsApplet(meta)) {
