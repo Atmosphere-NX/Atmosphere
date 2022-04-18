@@ -58,7 +58,7 @@ namespace ams::os::impl {
 
         /* Map at a random address. */
         uintptr_t mapped_address;
-        R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddress(std::addressof(mapped_address), size,
+        R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddress(std::addressof(mapped_address),
             [handle, svc_owner_perm](uintptr_t map_address, size_t map_size) -> Result {
                 R_TRY_CATCH(svc::MapTransferMemory(handle, map_address, map_size, svc_owner_perm)) {
                     R_CONVERT(svc::ResultInvalidHandle,        os::ResultInvalidHandle())
@@ -71,7 +71,9 @@ namespace ams::os::impl {
             },
             [handle](uintptr_t map_address, size_t map_size) -> void {
                 return TransferMemoryImpl::Unmap(handle, reinterpret_cast<void *>(map_address), map_size);
-            }
+            },
+            size,
+            0
         ));
 
         /* Return the address we mapped at. */

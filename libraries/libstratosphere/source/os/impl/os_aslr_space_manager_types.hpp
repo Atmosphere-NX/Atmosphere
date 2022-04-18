@@ -46,10 +46,10 @@ namespace ams::os::impl {
                 /* ... */
             }
 
-            uintptr_t AllocateSpace(size_t size) {
+            uintptr_t AllocateSpace(size_t size, size_t align_offset) {
                 /* Try to allocate a large-aligned space, if we can. */
-                if (size >= AslrSpaceLargeAlign) {
-                    if (auto large_align = m_allocator.AllocateSpace(size, AslrSpaceLargeAlign, 0); large_align != 0) {
+                if (align_offset || size >= AslrSpaceLargeAlign) {
+                    if (auto large_align = m_allocator.AllocateSpace(size, AslrSpaceLargeAlign, align_offset & (AslrSpaceLargeAlign - 1)); large_align != 0) {
                         return large_align;
                     }
                 }
@@ -63,11 +63,11 @@ namespace ams::os::impl {
             }
 
             template<typename MapFunction, typename UnmapFunction>
-            Result MapAtRandomAddress(uintptr_t *out, size_t size, MapFunction map_function, UnmapFunction unmap_function) {
+            Result MapAtRandomAddress(uintptr_t *out, MapFunction map_function, UnmapFunction unmap_function, size_t size, size_t align_offset) {
                 /* Try to map up to 64 times. */
                 for (int i = 0; i < 64; ++i) {
                     /* Reserve space to map the memory. */
-                    const uintptr_t map_address = this->AllocateSpace(size);
+                    const uintptr_t map_address = this->AllocateSpace(size, align_offset);
                     if (map_address == 0) {
                         break;
                     }
