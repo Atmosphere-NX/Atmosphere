@@ -25,10 +25,13 @@ namespace ams::os::impl {
         AddressAllocationResult_OutOfSpace,
     };
 
-    template<std::unsigned_integral AddressType, std::unsigned_integral SizeType>
+    template<std::unsigned_integral AddressType_, std::unsigned_integral SizeType_>
     class AddressSpaceAllocatorBase {
         NON_COPYABLE(AddressSpaceAllocatorBase);
         NON_MOVEABLE(AddressSpaceAllocatorBase);
+        public:
+            using AddressType = AddressType_;
+            using SizeType    = SizeType_;
         private:
             static constexpr size_t MaxForbiddenRegions = 2;
         private:

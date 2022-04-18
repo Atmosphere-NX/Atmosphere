@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "ro_map_utils.hpp"
 #include "ro_nrr_utils.hpp"
 #include "ro_nro_utils.hpp"
 #include "ro_patcher.hpp"
@@ -248,16 +247,17 @@ namespace ams::ro::impl {
                 }
 
                 Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
-                    /* Find space to map the NRO. */
-                    uintptr_t map_address;
-                    R_UNLESS(R_SUCCEEDED(SearchFreeRegion(std::addressof(map_address), expected_nro_size)), ro::ResultOutOfAddressSpace());
+                    /* Map the NRO. */
+                    void *mapped_memory = nullptr;
+                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size)) {
+                        R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
+                    } R_END_TRY_CATCH;
 
-                    /* Actually map the NRO. */
-                    AutoCloseMap nro_map(map_address, m_process_handle, base_address, expected_nro_size);
-                    R_TRY(nro_map.GetResult());
+                    /* When we're done, unmap the memory. */
+                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, expected_nro_size); };
 
                     /* Validate header. */
-                    const NroHeader *header = reinterpret_cast<const NroHeader *>(map_address);
+                    const NroHeader *header = static_cast<const NroHeader *>(mapped_memory);
                     R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
 
                     /* Read sizes from header. */
@@ -298,7 +298,7 @@ namespace ams::ro::impl {
                     R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ro::ResultAlreadyLoaded());
 
                     /* Apply patches to NRO. */
-                    LocateAndApplyIpsPatchesToModule(module_id, reinterpret_cast<u8 *>(map_address), nro_size);
+                    LocateAndApplyIpsPatchesToModule(module_id, static_cast<u8 *>(mapped_memory), nro_size);
 
                     /* Copy to output. */
                     *out_module_id = *module_id;
@@ -552,21 +552,14 @@ namespace ams::ro::impl {
 
         /* Map the NRO. */
         R_TRY(MapNro(std::addressof(nro_info->base_address), context->GetProcessHandle(), nro_address, nro_size, bss_address, bss_size));
+        ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size); };
 
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
-        {
-            ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
-
-            R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
-        }
+        R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
 
         /* Set NRO perms. */
-        {
-            ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
-
-            R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
-        }
+        R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
 
         context->SetNroInfoInUse(nro_info, true);
         nro_info->code_size = rx_size + ro_size;
@@ -594,7 +587,7 @@ namespace ams::ro::impl {
             context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
-        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size));
+        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.code_size + nro_backup.rw_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
     }
 
     /* Debug service implementations. */

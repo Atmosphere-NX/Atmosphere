@@ -24,7 +24,7 @@ namespace ams::os::impl {
         public:
             using Base::Base;
         public:
-            virtual bool CheckFreeSpace(uintptr_t address, size_t size) override {
+            virtual bool CheckFreeSpace(AddressType address, SizeType size) override {
                 /* Query the memory. */
                 svc::MemoryInfo memory_info;
                 svc::PageInfo page_info;

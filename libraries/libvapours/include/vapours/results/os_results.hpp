@@ -41,6 +41,7 @@ namespace ams::os {
     R_DEFINE_ERROR_RESULT(SessionClosedForReceive,    510);
     R_DEFINE_ERROR_RESULT(SessionClosedForReply,      511);
     R_DEFINE_ERROR_RESULT(ReceiveListBroken,          512);
+    R_DEFINE_ERROR_RESULT(InvalidProcessMemory,       513);
 
     R_DEFINE_ERROR_RESULT(NotImplemented, 1000);
     R_DEFINE_ERROR_RESULT(NotSupported,   1001);

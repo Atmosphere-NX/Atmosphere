@@ -13,9 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <stratosphere.hpp>
 
-namespace ams::ro::impl {
+#pragma once
+#include <stratosphere/os/os_native_handle.hpp>
+#include <stratosphere/os/os_memory_common.hpp>
+
+namespace ams::os {
+
+    struct ProcessMemoryRegion {
+        u64 address;
+        u64 size;
+    };
+
+    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions);
+    Result UnmapProcessCodeMemory(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions);
 
 }

@@ -26,6 +26,7 @@
 #include <stratosphere/os/os_native_handle.hpp>
 #include <stratosphere/os/os_process_handle_api.hpp>
 #include <stratosphere/os/os_process_memory_api.hpp>
+#include <stratosphere/os/os_process_code_memory_api.hpp>
 #include <stratosphere/os/os_random.hpp>
 #include <stratosphere/os/os_mutex.hpp>
 #include <stratosphere/os/os_condition_variable.hpp>

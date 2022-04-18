@@ -39,16 +39,20 @@ namespace ams::os::impl {
         NON_COPYABLE(AslrSpaceManagerTemplate);
         NON_MOVEABLE(AslrSpaceManagerTemplate);
         private:
+            using AddressType = typename Allocator::AddressType;
+            using SizeType    = typename Allocator::SizeType;
+        private:
             Impl m_impl;
             Allocator m_allocator;
         public:
-            AslrSpaceManagerTemplate() : m_impl(), m_allocator(m_impl.GetAslrSpaceBeginAddress(), m_impl.GetAslrSpaceEndAddress(), AslrSpaceGuardSize, m_impl.GetForbiddenRegions(), m_impl.GetForbiddenRegionCount()) {
+            template<typename... Args>
+            AslrSpaceManagerTemplate(Args &&... args) : m_impl(), m_allocator(m_impl.GetAslrSpaceBeginAddress(), m_impl.GetAslrSpaceEndAddress(), AslrSpaceGuardSize, m_impl.GetForbiddenRegions(), m_impl.GetForbiddenRegionCount(), std::forward<Args>(args)...) {
                 /* ... */
             }
 
-            uintptr_t AllocateSpace(size_t size, size_t align_offset) {
+            AddressType AllocateSpace(SizeType size, SizeType align_offset) {
                 /* Try to allocate a large-aligned space, if we can. */
-                if (align_offset || size >= AslrSpaceLargeAlign) {
+                if (align_offset || (size / AslrSpaceLargeAlign) != 0) {
                     if (auto large_align = m_allocator.AllocateSpace(size, AslrSpaceLargeAlign, align_offset & (AslrSpaceLargeAlign - 1)); large_align != 0) {
                         return large_align;
                     }
@@ -58,14 +62,14 @@ namespace ams::os::impl {
                 return m_allocator.AllocateSpace(size, MemoryPageSize, 0);
             }
 
-            bool CheckGuardSpace(uintptr_t address, size_t size) {
+            bool CheckGuardSpace(AddressType address, SizeType size) {
                 return m_allocator.CheckGuardSpace(address, size, AslrSpaceGuardSize);
             }
 
             template<typename MapFunction, typename UnmapFunction>
-            Result MapAtRandomAddress(uintptr_t *out, MapFunction map_function, UnmapFunction unmap_function, size_t size, size_t align_offset) {
+            Result MapAtRandomAddress(AddressType *out, MapFunction map_function, UnmapFunction unmap_function, SizeType size, SizeType align_offset) {
                 /* Try to map up to 64 times. */
-                for (int i = 0; i < 64; ++i) {
+                for (auto i = 0; i < 64; ++i) {
                     /* Reserve space to map the memory. */
                     const uintptr_t map_address = this->AllocateSpace(size, align_offset);
                     if (map_address == 0) {
@@ -82,6 +86,9 @@ namespace ams::os::impl {
                     if (!this->CheckGuardSpace(map_address, size)) {
                         /* We don't have guard space, so unmap. */
                         unmap_function(map_address, size);
+
+                        /* NOTE: Nintendo is missing this continue; this is almost certainly a bug. */
+                        /* This will cause them to incorrectly return success after unmapping if guard space is not present. */
                         continue;
                     }
 

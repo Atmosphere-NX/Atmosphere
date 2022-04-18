@@ -13,15 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::ro::impl {
+namespace ams::os::impl {
 
-    /* Utilities for working with NROs. */
-    Result MapNro(u64 *out_base_address, os::NativeHandle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size);
-    Result SetNroPerms(os::NativeHandle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size);
-    Result UnmapNro(os::NativeHandle process_handle, u64 base_address, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size);
+    class ProcessCodeMemoryImpl {
+        public:
+            static Result Map(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions);
+            static Result Unmap(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions);
+    };
 
 }
