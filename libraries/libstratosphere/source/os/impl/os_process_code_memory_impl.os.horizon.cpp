@@ -81,7 +81,7 @@ namespace ams::os::impl {
                             /* Check if the process memory is invalid. */
                             const u64 last_address = regions[i].address + regions[i].size - 1;
                             u64 cur_address = regions[i].address;
-                            while (true) {
+                            while (cur_address <= last_address) {
                                 svc::MemoryInfo memory_info;
                                 svc::PageInfo page_info;
                                 R_ABORT_UNLESS(svc::QueryProcessMemory(std::addressof(memory_info), std::addressof(page_info), handle, cur_address));
@@ -91,9 +91,6 @@ namespace ams::os::impl {
                                 R_UNLESS(memory_info.attribute == static_cast<svc::MemoryAttribute>(0), os::ResultInvalidProcessMemory());
 
                                 cur_address = memory_info.base_address + memory_info.size;
-                                if (cur_address > last_address) {
-                                    break;
-                                }
                             }
 
                             R_THROW(os::ResultInvalidCurrentMemoryState());
