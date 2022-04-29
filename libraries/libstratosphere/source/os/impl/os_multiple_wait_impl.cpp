@@ -29,6 +29,18 @@ namespace ams::os::impl {
         /* Add each holder to the object list, and try to find one that's signaled. */
         MultiWaitHolderBase *signaled_holder = this->AddToEachObjectListAndCheckObjectState();
 
+        /* When we're done, cleanup and set output. */
+        ON_SCOPE_EXIT {
+            /* Remove each holder from the current object list. */
+            this->RemoveFromEachObjectList();
+
+            /* Clear cancel wait. */
+            m_target_impl.ClearCurrentThreadHandleForCancelWait();
+
+            /* Set output holder. */
+            *out = signaled_holder;
+        };
+
         /* Check if we've been signaled. */
         {
             std::scoped_lock lk(m_cs_wait);
@@ -43,6 +55,8 @@ namespace ams::os::impl {
             if constexpr (AllowReply) {
                 /* Try to reply to the reply target. */
                 if (reply_target != os::InvalidNativeHandle) {
+                    ON_RESULT_FAILURE { signaled_holder = nullptr; };
+
                     s32 index;
                     R_TRY(m_target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0)));
                 }
@@ -52,14 +66,6 @@ namespace ams::os::impl {
             R_TRY(this->InternalWaitAnyImpl<AllowReply>(std::addressof(signaled_holder), infinite, timeout, reply_target));
         }
 
-        /* Remove each holder from the current object list. */
-        this->RemoveFromEachObjectList();
-
-        /* Clear cancel wait. */
-        m_target_impl.ClearCurrentThreadHandleForCancelWait();
-
-        /* Set output holder. */
-        *out = signaled_holder;
         R_SUCCEED();
     }
 

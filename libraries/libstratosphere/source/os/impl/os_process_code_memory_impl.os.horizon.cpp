@@ -96,6 +96,8 @@ namespace ams::os::impl {
                             R_THROW(os::ResultInvalidCurrentMemoryState());
                         }
                     } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+                    mapped_size += regions[i].size;
                 }
 
                 R_SUCCEED();

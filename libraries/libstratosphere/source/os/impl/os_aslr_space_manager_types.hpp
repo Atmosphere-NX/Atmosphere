@@ -45,10 +45,15 @@ namespace ams::os::impl {
             Impl m_impl;
             Allocator m_allocator;
         public:
-            template<typename... Args>
-            AslrSpaceManagerTemplate(Args &&... args) : m_impl(), m_allocator(m_impl.GetAslrSpaceBeginAddress(), m_impl.GetAslrSpaceEndAddress(), AslrSpaceGuardSize, m_impl.GetForbiddenRegions(), m_impl.GetForbiddenRegionCount(), std::forward<Args>(args)...) {
+            AslrSpaceManagerTemplate() : m_impl(), m_allocator(m_impl.GetAslrSpaceBeginAddress(), m_impl.GetAslrSpaceEndAddress(), AslrSpaceGuardSize, m_impl.GetForbiddenRegions(), m_impl.GetForbiddenRegionCount()) {
                 /* ... */
             }
+
+            #if defined(ATMOSPHERE_OS_HORIZON)
+            AslrSpaceManagerTemplate(os::NativeHandle process_handle) : m_impl(process_handle), m_allocator(m_impl.GetAslrSpaceBeginAddress(process_handle), m_impl.GetAslrSpaceEndAddress(process_handle), AslrSpaceGuardSize, m_impl.GetForbiddenRegions(), m_impl.GetForbiddenRegionCount(), process_handle) {
+                /* ... */
+            }
+            #endif
 
             AddressType AllocateSpace(SizeType size, SizeType align_offset) {
                 /* Try to allocate a large-aligned space, if we can. */
