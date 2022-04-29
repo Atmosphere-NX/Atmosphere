@@ -52,7 +52,7 @@ namespace ams::fssystem {
             IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr), m_salt(util::nullopt) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks);
+            void Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
@@ -66,9 +66,8 @@ namespace ams::fssystem {
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
             using IStorage::OperateRange;
 
-            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const {
-                auto generator = m_hash_generator_factory->Create();
-                return this->CalcBlockHash(out, buffer, block_size, generator);
+            void CalcBlockHash(BlockHash *out, const void *buffer, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
+                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size), generator);
             }
 
             s64 GetBlockSize() const {
@@ -80,10 +79,6 @@ namespace ams::fssystem {
             Result VerifyHash(const void *buf, BlockHash *hash, std::unique_ptr<fssystem::IHash256Generator> &generator);
 
             void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const;
-
-            void CalcBlockHash(BlockHash *out, const void *buffer, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
-                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size), generator);
-            }
 
             Result IsCleared(bool *is_cleared, const BlockHash &hash);
         private:

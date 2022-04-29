@@ -42,8 +42,14 @@ namespace ams::fssystem {
             };
 
             struct Entry {
+                enum class Encryption : u8 {
+                    Encrypted    = 0,
+                    NotEncrypted = 1,
+                };
+
                 u8 offset[sizeof(s64)];
-                s32 reserved;
+                Encryption encryption_value;
+                u8 reserved[3];
                 s32 generation;
 
                 void SetOffset(s64 value) {

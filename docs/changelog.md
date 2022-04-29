@@ -1,4 +1,13 @@
 # Changelog
+## 1.3.2
++ Support was improved for 14.0.0+.
+  + `loader` was updated to reflect the latest official behaviors.
+  + `ro` was  updated to reflect the latest official behaviors.
++ A number of minor issues were fixed and improvements were made, including:
+  + A memory leak was fixed in filesystem path management; this could cause a crash when launching games ~100 times, or when deleting/re-downloading games.
+  + A bug was fixed that could cause threads to not see a newly signaled semaphore.
+  + A number of minor inaccuracies were fixed in the updated FileSystem APIs.
++ General system stability improvements to enhance the user's experience.
 ## 1.3.1
 + Support was added for 14.1.0.
 + A number of minor under the hood improvements to accuracy were made to better reflect latest official system module behavior, particularly around FS apis.

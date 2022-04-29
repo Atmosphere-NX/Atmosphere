@@ -87,7 +87,11 @@ namespace ams::fssystem {
         AMS_ASSERT(decryptor != nullptr);
 
         /* Initialize the bucket tree table. */
-        R_TRY(m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count));
+        if (entry_count > 0) {
+            R_TRY(m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count));
+        } else {
+            m_table.Initialize(NodeSize, 0);
+        }
 
         /* Set members. */
         m_data_storage   = data_storage;
@@ -174,15 +178,18 @@ namespace ams::fssystem {
             const auto cur_size       = static_cast<size_t>(std::min(remaining_size, data_size));
             AMS_ASSERT(cur_size <= size);
 
-            /* Make the CTR for the data we're decrypting. */
-            const auto counter_offset = m_counter_offset + cur_entry_offset + data_offset;
-            NcaAesCtrUpperIv upper_iv = { .part = { .generation = static_cast<u32>(cur_entry.generation), .secure_value = m_secure_value } };
+            /* If necessary, perform decryption. */
+            if (cur_entry.encryption_value == Entry::Encryption::Encrypted) {
+                /* Make the CTR for the data we're decrypting. */
+                const auto counter_offset = m_counter_offset + cur_entry_offset + data_offset;
+                NcaAesCtrUpperIv upper_iv = { .part = { .generation = static_cast<u32>(cur_entry.generation), .secure_value = m_secure_value } };
 
-            u8 iv[IvSize];
-            AesCtrStorageByPointer::MakeIv(iv, IvSize, upper_iv.value, counter_offset);
+                u8 iv[IvSize];
+                AesCtrStorageByPointer::MakeIv(iv, IvSize, upper_iv.value, counter_offset);
 
-            /* Decrypt. */
-            m_decryptor->Decrypt(cur_data, cur_size, m_key, KeySize, iv, IvSize);
+                /* Decrypt. */
+                m_decryptor->Decrypt(cur_data, cur_size, m_key, KeySize, iv, IvSize);
+            }
 
             /* Advance. */
             cur_data   += cur_size;

@@ -56,8 +56,12 @@ namespace ams::fssystem {
             public:
                 constexpr ShaHashGeneratorFactory() = default;
             protected:
-                virtual std::unique_ptr<IHash256Generator> DoCreate() override {
-                    return std::unique_ptr<IHash256Generator>(new ShaHashGenerator<Traits>());
+                virtual Result DoCreate(std::unique_ptr<IHash256Generator> *out) override {
+                    auto generator = std::unique_ptr<IHash256Generator>(new ShaHashGenerator<Traits>());
+                    R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedNew());
+
+                    *out = std::move(generator);
+                    R_SUCCEED();
                 }
 
                 virtual void DoGenerateHash(void *dst, size_t dst_size, const void *src, size_t src_size) override {

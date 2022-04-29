@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks) {
+    void IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks) {
         /* Validate preconditions. */
         AMS_ASSERT(verif_block_size >= HashSize);
         AMS_ASSERT(bm != nullptr);
@@ -61,7 +61,6 @@ namespace ams::fssystem {
         m_is_real_data         = is_real_data;
         m_is_writable          = is_writable;
         m_allow_cleared_blocks = allow_cleared_blocks;
-        R_SUCCEED();
     }
 
     void IntegrityVerificationStorage::Finalize() {
@@ -120,7 +119,8 @@ namespace ams::fssystem {
         Result verify_hash_result = ResultSuccess();
 
         /* Create hash generator. */
-        auto generator = m_hash_generator_factory->Create();
+        std::unique_ptr<IHash256Generator> generator = nullptr;
+        R_TRY(m_hash_generator_factory->Create(std::addressof(generator)));
 
         /* Prepare to validate the signatures. */
         const auto signature_count = size >> m_verification_block_order;
@@ -221,7 +221,9 @@ namespace ams::fssystem {
             PooledBuffer signature_buffer(signature_count * sizeof(BlockHash), sizeof(BlockHash));
             const auto buffer_count = std::min(signature_count, signature_buffer.GetSize() / sizeof(BlockHash));
 
-            auto generator = m_hash_generator_factory->Create();
+            /* Create hash generator. */
+            std::unique_ptr<IHash256Generator> generator = nullptr;
+            R_TRY(m_hash_generator_factory->Create(std::addressof(generator)));
 
             while (updated_count < signature_count) {
                 const auto cur_count = std::min(buffer_count, signature_count - updated_count);
@@ -326,7 +328,7 @@ namespace ams::fssystem {
                     R_TRY(m_hash_storage.Read(sign_offset, buf.get(), sign_size));
 
                     /* Clear the signature. */
-                    /* This sets all bytes to FF, with the verification bit cleared. */
+                    /* This flips all bits other than the verification bit. */
                     for (auto i = 0; i < sign_size; ++i) {
                         buf[i] ^= ((i + 1) % HashSize == 0 ? 0x7F : 0xFF);
                     }

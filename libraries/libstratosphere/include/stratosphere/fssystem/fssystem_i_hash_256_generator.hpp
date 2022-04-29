@@ -60,8 +60,8 @@ namespace ams::fssystem {
             constexpr IHash256GeneratorFactory() = default;
             virtual constexpr ~IHash256GeneratorFactory() { /* ... */ }
 
-            std::unique_ptr<IHash256Generator> Create() {
-                return this->DoCreate();
+            Result Create(std::unique_ptr<IHash256Generator> *out) {
+                return this->DoCreate(out);
             }
 
             void GenerateHash(void *dst, size_t dst_size, const void *src, size_t src_size) {
@@ -73,11 +73,11 @@ namespace ams::fssystem {
                 return this->DoGenerateHash(dst, dst_size, src, src_size);
             }
         protected:
-            virtual std::unique_ptr<IHash256Generator> DoCreate() = 0;
+            virtual Result DoCreate(std::unique_ptr<IHash256Generator> *out) = 0;
             virtual void DoGenerateHash(void *dst, size_t dst_size, const void *src, size_t src_size) = 0;
     };
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     class IHash256GeneratorFactorySelector {
         public:
             constexpr IHash256GeneratorFactorySelector() = default;
