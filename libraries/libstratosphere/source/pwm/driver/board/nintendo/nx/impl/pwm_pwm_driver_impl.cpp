@@ -79,7 +79,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         /* Configure initial settings. */
         /* NOTE: None of these results are checked. */
         this->SetEnabled(device, false);
-        this->SetDuty(device, 0);
+        this->SetScale(device, 0.0);
         this->SetPeriod(device, DefaultChannelPeriod);
         R_SUCCEED();
     }
@@ -169,8 +169,16 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         /* Convert the scale to a duty. */
         const int duty = static_cast<int>(((scale * 256.0) / 100.0) + 0.5);
 
-        /* Set the duty. */
-        R_RETURN(this->SetDuty(device, duty));
+        /* Validate the duty. */
+        R_UNLESS(0 <= duty && duty <= MaxDuty, pwm::ResultInvalidArgument());
+
+        /* Acquire exclusive access to the device registers. */
+        std::scoped_lock lk(device->SafeCastTo<PwmDeviceImpl>());
+
+        /* Update the duty. */
+        reg::ReadWrite(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_VALUE(PWM_CSR_PWM, static_cast<u32>(duty)));
+
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::GetScale(double *out, IPwmDevice *device) {
