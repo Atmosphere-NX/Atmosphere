@@ -47,9 +47,9 @@ namespace ams::crypto {
             };
             static constexpr size_t Asn1IdentifierSize = util::size(Asn1Identifier);
         private:
-            Impl m_impl;
+            Impl m_impl{};
         public:
-            Sha256Generator() { /* ... */ }
+            Sha256Generator() = default;
 
             void Initialize() {
                 m_impl.Initialize();

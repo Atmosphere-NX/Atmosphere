@@ -148,6 +148,8 @@ init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
 
 result_get_name.o: CXXFLAGS += -fno-lto
 
+crypto_sha256_generator.o: CXXFLAGS += -fno-lto
+
 spl_secure_monitor_api.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 fs_id_string_impl.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 
