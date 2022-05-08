@@ -843,7 +843,7 @@ namespace ams::ncm {
                 R_SUCCEED_IF(m_header.has_value());
 
                 /* Get our header. */
-                PatchMetaExtendedDataHeader header;
+                PatchMetaExtendedDataHeader header{};
                 R_TRY(this->GetHeader(std::addressof(header)));
 
                 /* Set our header. */
