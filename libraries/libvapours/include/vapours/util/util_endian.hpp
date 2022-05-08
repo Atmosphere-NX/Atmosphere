@@ -144,12 +144,12 @@ namespace ams::util {
 
     template<std::integral T>
     constexpr ALWAYS_INLINE void StoreBigEndian(T *ptr, T val) {
-        *ptr = ConvertToBigEndian<T>(val);
+        *static_cast<volatile T *>(ptr) = ConvertToBigEndian<T>(val);
     }
 
     template<std::integral T>
     constexpr ALWAYS_INLINE void StoreLittleEndian(T *ptr, T val) {
-        *ptr = ConvertToLittleEndian<T>(val);
+        *static_cast<volatile T *>(ptr) = ConvertToLittleEndian<T>(val);
     }
 
 }
