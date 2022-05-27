@@ -25,8 +25,19 @@ namespace ams::lr {
         private:
             /* Storage for RegisteredData entries by data id. */
             RegisteredStorages<ncm::DataId, 0x800> m_registered_storages;
+        private:
+            static ALWAYS_INLINE size_t GetStorageCapacity() {
+                const auto version = hos::GetVersion();
+                if (version >= hos::Version_12_0_0) {
+                    return 0x8;
+                } else if (version >= hos::Version_9_0_0) {
+                    return 0x2;
+                } else {
+                    return 0x800;
+                }
+            }
         public:
-            AddOnContentLocationResolverImpl() : m_registered_storages(hos::GetVersion() < hos::Version_9_0_0 ? 0x800 : 0x2) { /* ... */ }
+            AddOnContentLocationResolverImpl() : m_registered_storages(GetStorageCapacity()) { /* ... */ }
 
             /* Actual commands. */
             Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id);
