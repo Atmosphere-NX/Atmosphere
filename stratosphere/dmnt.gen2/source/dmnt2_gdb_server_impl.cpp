@@ -2365,15 +2365,15 @@ namespace ams::dmnt {
                                 *(cur++) = ';';
                             } else if (name[i] == '>') {
                                 *(cur++) = '&';
-                                *(cur++) = 'r';
+                                *(cur++) = 'g';
                                 *(cur++) = 't';
                                 *(cur++) = ';';
                             } else {
                                 *(cur++) = name[i];
-                            }
 
-                            if (name[i] == '\x00') {
-                                break;
+                                if (name[i] == '\x00') {
+                                    break;
+                                }
                             }
                         }
                     }
