@@ -123,7 +123,7 @@ namespace ams::kern {
             s32 new_value;
             if (count <= 0) {
                 if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
-                    new_value = value - 2;
+                    new_value = value - 1;
                 } else {
                     new_value = value + 1;
                 }
