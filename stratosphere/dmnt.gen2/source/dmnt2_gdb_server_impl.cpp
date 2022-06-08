@@ -2353,8 +2353,33 @@ namespace ams::dmnt {
                     m_debug_process.GetThreadName(name, thread_ids[i]);
                     name[sizeof(name) - 1] = '\x00';
 
+                    /* Sanitize the thread name. */
+                    char sanitized[os::ThreadNameLengthMax * 4 + 1];
+                    {
+                        char *cur = sanitized;
+                        for (size_t i = 0; i < util::size(name); ++i) {
+                            if (name[i] == '<') {
+                                *(cur++) = '&';
+                                *(cur++) = 'l';
+                                *(cur++) = 't';
+                                *(cur++) = ';';
+                            } else if (name[i] == '>') {
+                                *(cur++) = '&';
+                                *(cur++) = 'r';
+                                *(cur++) = 't';
+                                *(cur++) = ';';
+                            } else {
+                                *(cur++) = name[i];
+                            }
+
+                            if (name[i] == '\x00') {
+                                break;
+                            }
+                        }
+                    }
+
                     /* Set the thread entry */
-                    AppendReplyFormat(dst_cur, dst_end, "<thread id=\"p%lx.%lx\" core=\"%u\" name=\"%s\" />", m_process_id.value, thread_ids[i], core, name);
+                    AppendReplyFormat(dst_cur, dst_end, "<thread id=\"p%lx.%lx\" core=\"%u\" name=\"%s\" />", m_process_id.value, thread_ids[i], core, sanitized);
                 }
             }
 
