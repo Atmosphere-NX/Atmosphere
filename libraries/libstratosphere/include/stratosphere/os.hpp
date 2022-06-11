@@ -21,7 +21,8 @@
 #include <stratosphere/os/os_memory_common.hpp>
 #include <stratosphere/os/os_memory_fence.hpp>
 #include <stratosphere/os/os_memory_permission.hpp>
-#include <stratosphere/os/os_memory_heap_api.hpp>
+#include <stratosphere/os/os_memory_attribute.hpp>
+#include <stratosphere/os/os_memory_heap.hpp>
 #include <stratosphere/os/os_virtual_address_memory.hpp>
 #include <stratosphere/os/os_native_handle.hpp>
 #include <stratosphere/os/os_process_handle_api.hpp>

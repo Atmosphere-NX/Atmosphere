@@ -13,19 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <stratosphere/os/os_common_types.hpp>
-#include <stratosphere/os/os_memory_heap_common.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::os {
+namespace ams::os::impl {
 
-    Result SetMemoryHeapSize(size_t size);
-
-    uintptr_t GetMemoryHeapAddress();
-    size_t GetMemoryHeapSize();
-
-    Result AllocateMemoryBlock(uintptr_t *out_address, size_t size);
-    void FreeMemoryBlock(uintptr_t address, size_t size);
+    void SetMemoryAttributeImpl(uintptr_t address, size_t size, MemoryAttribute attr) {
+        /* TODO: Should this do anything? */
+        AMS_UNUSED(address, size, attr);
+    }
 
 }

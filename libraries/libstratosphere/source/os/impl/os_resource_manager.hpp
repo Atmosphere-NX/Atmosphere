@@ -22,6 +22,7 @@
 #include "os_aslr_space_manager_types.hpp"
 #include "os_tls_manager_types.hpp"
 #include "os_giant_lock_types.hpp"
+#include "os_memory_heap_manager_types.hpp"
 #include "os_vamm_manager_types.hpp"
 
 namespace ams::os::impl {
@@ -34,7 +35,7 @@ namespace ams::os::impl {
             ThreadManager m_thread_manager{};
             //TlsManager m_tls_manager{};
             TickManager m_tick_manager{};
-            /* TODO */
+            MemoryHeapManager m_memory_heap_manager;
             VammManager m_vamm_manager;
             GiantLock m_giant_lock{};
         public:
@@ -46,6 +47,7 @@ namespace ams::os::impl {
             constexpr ALWAYS_INLINE StackGuardManager &GetStackGuardManager() { return m_stack_guard_manager; }
             //constexpr ALWAYS_INLINE TlsManager &GetTlsManager() { return m_tls_manager; }
             constexpr ALWAYS_INLINE TickManager &GetTickManager() { return m_tick_manager; }
+            constexpr ALWAYS_INLINE MemoryHeapManager &GetMemoryHeapManager() { return m_memory_heap_manager; }
             constexpr ALWAYS_INLINE VammManager &GetVammManager() { return m_vamm_manager; }
             constexpr ALWAYS_INLINE GiantLock &GetGiantLock() { return m_giant_lock; }
     };

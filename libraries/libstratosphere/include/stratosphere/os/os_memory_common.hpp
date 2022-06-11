@@ -18,10 +18,6 @@
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
-
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
     enum MemoryPermission {
         MemoryPermission_None        = (0 << 0),
         MemoryPermission_ReadOnly    = (1 << 0),

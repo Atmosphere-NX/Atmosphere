@@ -14,18 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/os/os_common_types.hpp>
-#include <stratosphere/os/os_memory_heap_common.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::os {
+namespace ams::os::impl {
 
-    Result SetMemoryHeapSize(size_t size);
+    class MemoryHeapManagerHorizonImpl {
+        public:
+            Result SetHeapSize(uintptr_t *out, size_t size) {
+                R_TRY_CATCH(svc::SetHeapSize(out, size)) {
+                    R_CONVERT(svc::ResultOutOfMemory,   os::ResultOutOfMemory())
+                    R_CONVERT(svc::ResultLimitReached,  os::ResultOutOfMemory())
+                    R_CONVERT(svc::ResultOutOfResource, os::ResultOutOfMemory())
+                } R_END_TRY_CATCH;
 
-    uintptr_t GetMemoryHeapAddress();
-    size_t GetMemoryHeapSize();
+                R_SUCCEED();
+            }
+    };
 
-    Result AllocateMemoryBlock(uintptr_t *out_address, size_t size);
-    void FreeMemoryBlock(uintptr_t address, size_t size);
+    using MemoryHeapManagerImpl = MemoryHeapManagerHorizonImpl;
 
 }

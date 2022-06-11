@@ -15,17 +15,5 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/os/os_common_types.hpp>
 #include <stratosphere/os/os_memory_heap_common.hpp>
-
-namespace ams::os {
-
-    Result SetMemoryHeapSize(size_t size);
-
-    uintptr_t GetMemoryHeapAddress();
-    size_t GetMemoryHeapSize();
-
-    Result AllocateMemoryBlock(uintptr_t *out_address, size_t size);
-    void FreeMemoryBlock(uintptr_t address, size_t size);
-
-}
+#include <stratosphere/os/os_memory_heap_api.hpp>

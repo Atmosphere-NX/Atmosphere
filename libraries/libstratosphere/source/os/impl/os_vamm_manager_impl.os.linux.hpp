@@ -37,7 +37,8 @@ namespace ams::os::impl {
             }
 
             static Result FreePhysicalMemoryImpl(uintptr_t address, size_t size) {
-                R_UNLESS(::mprotect(reinterpret_cast<void *>(address), size, PROT_NONE) == 0, os::ResultBusy());
+                const auto reserved = ::mmap(reinterpret_cast<void *>(address), size, PROT_NONE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                R_UNLESS(reserved != MAP_FAILED, os::ResultBusy());
                 R_SUCCEED();
             }
 

@@ -13,19 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <stratosphere/os/os_common_types.hpp>
-#include <stratosphere/os/os_memory_heap_common.hpp>
+#include <stratosphere.hpp>
+#include "impl/os_memory_attribute_impl.hpp"
 
 namespace ams::os {
 
-    Result SetMemoryHeapSize(size_t size);
+    void SetMemoryAttribute(uintptr_t address, size_t size, MemoryAttribute attr) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(util::IsAligned(address, MemoryPageSize));
+        AMS_ASSERT(util::IsAligned(size, MemoryPageSize));
 
-    uintptr_t GetMemoryHeapAddress();
-    size_t GetMemoryHeapSize();
-
-    Result AllocateMemoryBlock(uintptr_t *out_address, size_t size);
-    void FreeMemoryBlock(uintptr_t address, size_t size);
+        return impl::SetMemoryAttributeImpl(address, size, attr);
+    }
 
 }
