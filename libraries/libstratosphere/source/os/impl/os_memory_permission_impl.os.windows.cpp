@@ -28,21 +28,21 @@ namespace ams::os::impl {
             switch (perm) {
                 case MemoryPermission_None:
                     {
-                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(address), static_cast<DWORD>(cur_size), PAGE_NOACCESS, std::addressof(old));
+                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(cur_address), static_cast<DWORD>(cur_size), PAGE_NOACCESS, std::addressof(old));
                         AMS_ABORT_UNLESS(res);
                         AMS_UNUSED(res);
                     }
                     break;
                 case MemoryPermission_ReadOnly:
                     {
-                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(address), static_cast<DWORD>(cur_size), PAGE_READONLY, std::addressof(old));
+                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(cur_address), static_cast<DWORD>(cur_size), PAGE_READONLY, std::addressof(old));
                         AMS_ABORT_UNLESS(res);
                         AMS_UNUSED(res);
                     }
                     break;
                 case MemoryPermission_ReadWrite:
                     {
-                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(address), static_cast<DWORD>(cur_size), PAGE_READWRITE, std::addressof(old));
+                        auto res = ::VirtualProtect(reinterpret_cast<LPVOID>(cur_address), static_cast<DWORD>(cur_size), PAGE_READWRITE, std::addressof(old));
                         AMS_ABORT_UNLESS(res);
                         AMS_UNUSED(res);
                     }
