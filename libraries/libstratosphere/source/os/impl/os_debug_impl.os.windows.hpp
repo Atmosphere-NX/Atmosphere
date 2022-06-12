@@ -27,7 +27,10 @@ namespace ams::os::impl {
                 AMS_ASSERT(out_size != nullptr);
 
                 /* Get the current stack by NT_TIB */
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Warray-bounds"
                 auto *tib = reinterpret_cast<NT_TIB *>(::NtCurrentTeb());
+                #pragma GCC diagnostic pop
 
                 *out_stack = reinterpret_cast<uintptr_t>(tib->StackLimit);
                 *out_size  = reinterpret_cast<uintptr_t>(tib->StackBase) - reinterpret_cast<uintptr_t>(tib->StackLimit);
