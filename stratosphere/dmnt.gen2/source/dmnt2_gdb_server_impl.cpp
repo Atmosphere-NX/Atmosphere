@@ -2368,6 +2368,9 @@ namespace ams::dmnt {
                                 *(cur++) = 'g';
                                 *(cur++) = 't';
                                 *(cur++) = ';';
+                            } else if (name[i] == '*' || name[i] == '#' || name[i] == '$' || name[i] == '}') {
+                                *(cur++) = '}';
+                                *(cur++) = name[i] ^ 0x20;
                             } else {
                                 *(cur++) = name[i];
 
