@@ -117,7 +117,6 @@ namespace ams::diag::impl {
                             if (is_64) {
                                 this->ParseSymbolTable<struct nlist_64>(exe_start, reinterpret_cast<const struct symtab_command *>(lc));
                             } else {
-
                                 this->ParseSymbolTable<struct nlist>(exe_start, reinterpret_cast<const struct symtab_command *>(lc));
                             }
                             break;

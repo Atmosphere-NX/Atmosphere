@@ -202,13 +202,10 @@ namespace ams::os::impl {
     }
 
     void ThreadManagerPthreadImpl::YieldThread() {
-        #if defined(ATMOSPHERE_OS_MACOS)
-        sched_yield();
-        #else
-        const auto ret = pthread_yield();
+        /* NOTE: pthread_yield() is deprecated. */
+        const auto ret = sched_yield();
         AMS_ASSERT(ret == 0);
         AMS_UNUSED(ret);
-        #endif
     }
 
     bool ThreadManagerPthreadImpl::ChangePriority(ThreadType *thread, s32 priority) {
