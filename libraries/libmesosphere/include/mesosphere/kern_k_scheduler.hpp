@@ -152,7 +152,7 @@ namespace ams::kern {
             static NOINLINE void OnThreadPriorityChanged(KThread *thread, s32 old_priority);
             static NOINLINE void OnThreadAffinityMaskChanged(KThread *thread, const KAffinityMask &old_affinity, s32 old_core);
 
-            static NOINLINE void RotateScheduledQueue(s32 priority, s32 core_id);
+            static NOINLINE void RotateScheduledQueue(s32 core_id, s32 priority);
 
             static NOINLINE void YieldWithoutCoreMigration();
             static NOINLINE void YieldWithCoreMigration();

@@ -219,7 +219,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     /* Call ams::kern::KScheduler::SwitchThread(ams::kern::KThread *) */
     bl     _ZN3ams4kern10KScheduler12SwitchThreadEPNS0_7KThreadE
 
-    /* Check if we need scheduling. If we don't, then we can't complete the switch and should retry. */
+    /* Check if we need scheduling. If we do, then we can't complete the switch and should retry. */
     ldarb  w1, [x20] // ldarb w1, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
     cbnz   w1, 15f
 
