@@ -199,6 +199,7 @@ namespace ams::dmnt {
             "l<?xml version=\"1.0\"?>"
             "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">"
             "<target>"
+            "<architecture>arm</architecture>"
             "<xi:include href=\"arm-core.xml\"/>"
             "<xi:include href=\"arm-vfp.xml\"/>"
             "</target>";
