@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 /* Forwarding shims. */
+Result setsysSetBluetoothDevicesSettingsFwd(Service *s, const SetSysBluetoothDevicesSettings *settings, s32 count);
 Result setsysGetBluetoothDevicesSettingsFwd(Service *s, s32 *total_out, SetSysBluetoothDevicesSettings *settings, s32 count);
 
 #ifdef __cplusplus

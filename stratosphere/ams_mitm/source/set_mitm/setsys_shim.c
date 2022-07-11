@@ -15,9 +15,16 @@
  */
 #include "setsys_shim.h"
 
+Result setsysSetBluetoothDevicesSettingsFwd(Service *s, const SetSysBluetoothDevicesSettings *settings, s32 count) {
+    return serviceDispatch(s, 11,
+        .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_In },
+        .buffers = { { settings, count * sizeof(SetSysBluetoothDevicesSettings) } },
+    );
+}
+
 Result setsysGetBluetoothDevicesSettingsFwd(Service *s, s32 *total_out, SetSysBluetoothDevicesSettings *settings, s32 count) {
     return serviceDispatchOut(s, 12, *total_out,
         .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
-        .buffers = { { settings, count*sizeof(SetSysBluetoothDevicesSettings) } },
+        .buffers = { { settings, count * sizeof(SetSysBluetoothDevicesSettings) } },
     );
 }
