@@ -137,7 +137,7 @@ namespace ams::mitm::settings {
 
             *entries_read = total_entries;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result StoreExternalBluetoothDatabase(const SetSysBluetoothDevicesSettings *db, size_t total_entries) {
@@ -178,7 +178,7 @@ namespace ams::mitm::settings {
                 R_TRY(fs::WriteFile(file, db_offset, db, total_entries * sizeof(SetSysBluetoothDevicesSettings), fs::WriteOption::Flush));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -211,7 +211,7 @@ namespace ams::mitm::settings {
         /* Also allow the updated database to be stored to system save as usual. */
         R_TRY(setsysSetBluetoothDevicesSettingsFwd(m_forward_service.get(), settings.GetPointer(), settings.GetSize()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetSysMitmService::GetBluetoothDevicesSettings(sf::Out<s32> out_count, const sf::OutMapAliasArray<SetSysBluetoothDevicesSettings> &out) {
@@ -232,7 +232,7 @@ namespace ams::mitm::settings {
             R_TRY(ReadExternalBluetoothDatabase(out_count.GetPointer(), out.GetPointer(), out.GetSize()));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
