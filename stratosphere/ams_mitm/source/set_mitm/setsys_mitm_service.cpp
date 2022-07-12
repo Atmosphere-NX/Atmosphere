@@ -114,11 +114,11 @@ namespace ams::mitm::settings {
 
             u64 db_offset = sizeof(total_entries);
             if (total_entries > db_max_size) {
-                /* Cap number of database entries read to size of database on this firmware. */
-                total_entries = db_max_size;
-
                 /* Pairings are stored from least to most recent. Add offset to skip the older entries that won't fit. */
                 db_offset += (total_entries - db_max_size) * sizeof(settings::BluetoothDevicesSettings);
+
+                /* Cap number of database entries read to size of database on this firmware. */
+                total_entries = db_max_size;
             }
 
             /* Read database entries. */
