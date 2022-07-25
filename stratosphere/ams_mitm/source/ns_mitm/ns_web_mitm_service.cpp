@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "../amsmitm_fs_utils.hpp"
 #include "ns_web_mitm_service.hpp"
 
 namespace ams::mitm::ns {
@@ -23,6 +24,18 @@ namespace ams::mitm::ns {
     }
 
     Result NsDocumentService::ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type) {
+        /* Always succeed if a `contents/<application_id>/manual_html` directory exists and is not empty. */
+        /* This allows displaying HTML in applications without a manual NCA. */
+        FsDir web_content_dir;
+        if (R_SUCCEEDED(mitm::fs::OpenAtmosphereSdDirectory(std::addressof(web_content_dir), application_id, "manual_html", ams::fs::OpenDirectoryMode_All))) {
+            ON_SCOPE_EXIT { fsDirClose(std::addressof(web_content_dir)); };
+            s64 num_entries = 0;
+            if (R_SUCCEEDED(fsDirGetEntryCount(std::addressof(web_content_dir), std::addressof(num_entries))) && num_entries > 0) {
+                nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+                R_SUCCEED();
+            }
+        }
+
         /* Always succeed for web applets asking about HBL. */
         /* This enables hbl html. */
         bool is_hbl;
