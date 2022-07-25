@@ -52,4 +52,7 @@ namespace ams::mitm::fs {
     Result SaveAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, void *data, size_t size);
     Result CreateAndOpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, size_t size);
 
+    /* NOTE: Implemented in fs.mitm logic. */
+    bool HasSdManualHtmlContent(ncm::ProgramId program_id);
+
 }

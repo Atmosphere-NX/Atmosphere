@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "../amsmitm_fs_utils.hpp"
 #include "ns_web_mitm_service.hpp"
 
 namespace ams::mitm::ns {
@@ -23,10 +24,9 @@ namespace ams::mitm::ns {
     }
 
     Result NsDocumentService::ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type) {
-        /* Always succeed for web applets asking about HBL. */
-        /* This enables hbl html. */
-        bool is_hbl;
-        if (R_SUCCEEDED(pm::info::IsHblProgramId(std::addressof(is_hbl), application_id)) && is_hbl) {
+        /* Always succeed for web applets asking about HBL to enable hbl_html, and applications with manual_html to allow custom manual data. */
+        bool is_hbl = false;
+        if ((R_SUCCEEDED(pm::info::IsHblProgramId(std::addressof(is_hbl), application_id)) && is_hbl) || (static_cast<ncm::ContentType>(content_type) == ncm::ContentType::HtmlDocument && mitm::fs::HasSdManualHtmlContent(application_id))) {
             nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
             R_SUCCEED();
         }

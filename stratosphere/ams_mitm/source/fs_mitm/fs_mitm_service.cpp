@@ -96,11 +96,7 @@ namespace ams::mitm::fs {
 
         Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
             /* Directory must exist. */
-            {
-                FsDir d;
-                R_UNLESS(R_SUCCEEDED(mitm::fs::OpenAtmosphereSdDirectory(std::addressof(d), program_id, ProgramWebContentDir, fs::OpenDirectoryMode_Directory)), sm::mitm::ResultShouldForwardToSession());
-                fsDirClose(std::addressof(d));
-            }
+            R_UNLESS(HasSdManualHtmlContent(program_id), sm::mitm::ResultShouldForwardToSession());
 
             /* Open the SD card using fs.mitm's session. */
             FsFileSystem sd_fs;
@@ -160,6 +156,17 @@ namespace ams::mitm::fs {
             R_RETURN(OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id));
         }
 
+    }
+
+    bool HasSdManualHtmlContent(ncm::ProgramId program_id) {
+        /* Directory must exist. */
+        FsDir d;
+        if (R_SUCCEEDED(OpenAtmosphereSdDirectory(std::addressof(d), program_id, ProgramWebContentDir, fs::OpenDirectoryMode_Directory))) {
+            ::fsDirClose(std::addressof(d));
+            return true;
+        } else {
+            return false;
+        }
     }
 
     Result FsMitmService::OpenFileSystemWithPatch(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type) {

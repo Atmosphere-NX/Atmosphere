@@ -196,7 +196,7 @@ namespace ams::mitm::fs {
 
         /* Check for romfs folder with content. */
         FsDir romfs_dir;
-        if (R_FAILED(OpenAtmosphereSdRomfsDirectory(std::addressof(romfs_dir), program_id, "", OpenDirectoryMode_All))) {
+        if (R_FAILED(OpenAtmosphereSdRomfsDirectory(std::addressof(romfs_dir), program_id, "", fs::OpenDirectoryMode_All))) {
             return false;
         }
         ON_SCOPE_EXIT { fsDirClose(std::addressof(romfs_dir)); };
