@@ -169,6 +169,43 @@ namespace ams::mitm {
                     util::SNPrintf(emummc_path, sizeof(emummc_path), "%s/eMMC", emummc_file_path);
                     mitm::fs::OpenSdFile(std::addressof(g_emummc_file), emummc_path, ams::fs::OpenMode_Read);
                 }
+
+                /* NOTE: due to an Atmosphere bug, NS accesses to the Nintendo dir accessed /Nintendo/Nintendo */
+                /* instead of /Nintendo. This logic is potentially temporary, and fixes the case where this would have happened. */
+                {
+                    auto HasDir  = [](const char *p) -> bool { bool res{}; R_ABORT_UNLESS(ams::fs::HasDirectory(std::addressof(res), p)); return res; };
+                    auto HasFile = [](const char *p) -> bool { bool res{}; R_ABORT_UNLESS(ams::fs::HasFile(std::addressof(res), p)); return res; };
+
+                    char emummc_path[ams::fs::EntryNameLengthMax + 1];
+                    char emummc_bug_path[ams::fs::EntryNameLengthMax + 1];
+                    util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                    util::SNPrintf(emummc_bug_path, sizeof(emummc_bug_path), "%s:/%s/Nintendo", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+
+                    if (HasDir(emummc_bug_path)) {
+                        /* Ensure Contents directory exists for normal emummc. */
+                        /* NOTE: Allowed to fail on already-exists. */
+                        util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s/Contents", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        ams::fs::CreateDirectory(emummc_path);
+
+                        /* Fix Contents/private */
+                        util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s/Contents/private", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        util::SNPrintf(emummc_bug_path, sizeof(emummc_bug_path), "%s:/%s/Nintendo/Contents/private", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        if (HasFile(emummc_bug_path) && !HasFile(emummc_path)) {
+                            R_ABORT_UNLESS(ams::fs::RenameFile(emummc_bug_path, emummc_path));
+                        }
+
+                        /* Fix Contents/private1 */
+                        util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s/Contents/private1", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        util::SNPrintf(emummc_bug_path, sizeof(emummc_bug_path), "%s:/%s/Nintendo/Contents/private1", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        if (HasFile(emummc_bug_path) && !HasFile(emummc_path)) {
+                            R_ABORT_UNLESS(ams::fs::RenameFile(emummc_bug_path, emummc_path));
+                        }
+
+                        /* Delete bug directory. */
+                        util::SNPrintf(emummc_bug_path, sizeof(emummc_bug_path), "%s:/%s/Nintendo", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
+                        R_ABORT_UNLESS(ams::fs::DeleteDirectoryRecursively(emummc_bug_path));
+                    }
+                }
             }
 
             /* Connect to set:sys. */

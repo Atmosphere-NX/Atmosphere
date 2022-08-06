@@ -42,7 +42,7 @@ namespace ams::fssystem {
             Result ResolveFullPath(fs::Path *out, const fs::Path &path) {
                 if (path.IsMatchHead(m_before_dir.GetString(), m_before_dir.GetLength())) {
                     R_TRY(out->Initialize(m_after_dir));
-                    R_TRY(out->AppendChild(path));
+                    R_TRY(out->AppendChild(path.GetString() + m_before_dir.GetLength()));
                 } else {
                     R_TRY(out->Initialize(path));
                 }
