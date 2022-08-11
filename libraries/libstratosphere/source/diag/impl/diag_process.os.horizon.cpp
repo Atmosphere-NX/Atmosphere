@@ -82,6 +82,8 @@ namespace ams::diag::impl {
                         g_process_name = "";
                         g_process_name_size = 0;
                     }
+
+                    g_got_process_name = true;
                 }
             }
         }
