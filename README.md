@@ -38,4 +38,4 @@ lakka：lakka模拟器，需要自行添加
 
 （3）硬破机直接点击电源键开机，之后与软破机操作一样。
 
-<img src="https://github.com/Yuanbanba/Atmosphere/blob/main/launchmore.jpg" align="center" width="90%" />
+<img src="https://github.com/Yuanbanba/Atmosphere/blob/master/launchmore.jpg" align="center" width="90%" />
