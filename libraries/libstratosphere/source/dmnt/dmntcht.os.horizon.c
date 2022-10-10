@@ -182,6 +182,13 @@ Result dmntchtSetMasterCheat(DmntCheatDefinition *cheat_def)  {
     );
 }
 
+Result dmntchtMemoryBreakpoint(DmntBreakpointSetting in, DmntBreakpointResult *out) {
+    u64 address = 0x12345;
+    size_t size = (size_t) in.address;
+    return dmntchtReadCheatProcessMemory(address, out, size);
+    //serviceDispatchInOut(&g_dmntchtSrv, 65210, in, *out); 
+}
+
 Result dmntchtGetFrozenAddressCount(u64 *out_count) {
     return _dmntchtGetCount(out_count, 65300);
 }

@@ -58,6 +58,15 @@ typedef struct {
     DmntFrozenAddressValue value;
 } DmntFrozenAddressEntry;
 
+typedef struct {
+    u64 address;
+} DmntBreakpointSetting;
+
+typedef struct {
+    u64 address;
+} DmntBreakpointResult;
+
+
 Result dmntchtInitialize(void);
 void dmntchtExit(void);
 Service* dmntchtGetServiceSession(void);
@@ -86,6 +95,7 @@ Result dmntchtReadStaticRegister(u64 *out, u8 which);
 Result dmntchtWriteStaticRegister(u8 which, u64 value);
 Result dmntchtResetStaticRegisters();
 Result dmntchtSetMasterCheat(DmntCheatDefinition *cheat);
+Result dmntchtMemoryBreakpoint(DmntBreakpointSetting in, DmntBreakpointResult *out);
 
 Result dmntchtGetFrozenAddressCount(u64 *out_count);
 Result dmntchtGetFrozenAddresses(DmntFrozenAddressEntry *buffer, u64 max_count, u64 offset, u64 *out_count);

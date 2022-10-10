@@ -47,6 +47,7 @@ namespace ams::dmnt::cheat::impl {
     Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled);
     Result RemoveCheat(u32 cheat_id);
     Result SetMasterCheat(const CheatDefinition &def);
+    Result SetMemoryBreakpoint(u64 address);
     Result ReadStaticRegister(u64 *out, size_t which);
     Result WriteStaticRegister(size_t which, u64 value);
     Result ResetStaticRegisters();

@@ -124,6 +124,10 @@ namespace ams::dmnt::cheat {
         R_RETURN(dmnt::cheat::impl::SetMasterCheat(cheat));
     }
 
+    Result CheatService::SetMemoryBreakpoint(u64 address) {
+        R_RETURN(dmnt::cheat::impl::SetMemoryBreakpoint(address));
+    }
+
     /* ========================================================================================= */
     /* ===================================  Address Commands  ================================== */
     /* ========================================================================================= */

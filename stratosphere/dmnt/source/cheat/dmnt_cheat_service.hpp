@@ -44,7 +44,8 @@
     AMS_SF_METHOD_INFO(C, H, 65301, Result, GetFrozenAddresses,          (const sf::OutArray<dmnt::cheat::FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset), (addresses, out_count, offset)) \
     AMS_SF_METHOD_INFO(C, H, 65302, Result, GetFrozenAddress,            (sf::Out<dmnt::cheat::FrozenAddressEntry> entry, u64 address),                                        (entry, address))               \
     AMS_SF_METHOD_INFO(C, H, 65303, Result, EnableFrozenAddress,         (sf::Out<u64> out_value, u64 address, u64 width),                                                     (out_value, address, width))    \
-    AMS_SF_METHOD_INFO(C, H, 65304, Result, DisableFrozenAddress,        (u64 address),                                                                                        (address))
+    AMS_SF_METHOD_INFO(C, H, 65304, Result, DisableFrozenAddress,        (u64 address),                                                                                        (address)) \
+    AMS_SF_METHOD_INFO(C, H, 65210, Result, SetMemoryBreakpoint,        (u64 address),                                                                                        (address))
 
 AMS_SF_DEFINE_INTERFACE(ams::dmnt::cheat::impl, ICheatInterface, AMS_DMNT_I_CHEAT_INTERFACE_INTERFACE_INFO, 0x00000000)
 
@@ -76,6 +77,7 @@ namespace ams::dmnt::cheat {
             Result WriteStaticRegister(u8 which, u64 value);
             Result ResetStaticRegisters();
             Result SetMasterCheat(const CheatDefinition &cheat);
+            Result SetMemoryBreakpoint(u64 address);
 
             Result GetFrozenAddressCount(sf::Out<u64> out_count);
             Result GetFrozenAddresses(const sf::OutArray<FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset);
