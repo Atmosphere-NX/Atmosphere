@@ -115,7 +115,7 @@ namespace ams::mitm::sysupdater {
                     *done = true;
                     found_system_update = true;
 
-                    *out = ncm::ContentInfo::Make(*content_id, entry.file_size, ncm::ContentType::Meta);
+                    *out = ncm::ContentInfo::Make(*content_id, entry.file_size, ncm::ContentInfo::DefaultContentAttributes, ncm::ContentType::Meta);
                 }
 
                 R_SUCCEED();
