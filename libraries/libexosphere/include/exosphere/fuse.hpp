@@ -77,6 +77,12 @@ namespace ams::fuse {
         DramId_HoagMicron1y4GB    = 26,
         DramId_AulaMicron1y4GB    = 27,
         DramId_AulaSamsung1y8GBX  = 28,
+        DramId_IowaX1X2Samsung4GB = 29,
+        DramId_HoagX1X2Samsung4GB = 30,
+        DramId_AulaX1X2Samsung4GB = 31,
+        DramId_IowaSamsung4GBY    = 32,
+        DramId_HoagSamsung4GBY    = 33,
+        DramId_AulaSamsung4GBY    = 34,    
 
         DramId_Count,
     };
