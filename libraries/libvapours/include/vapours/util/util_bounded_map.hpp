@@ -134,6 +134,15 @@ namespace ams::util {
                     }
                 }
             }
+
+            template<typename F>
+            void RemoveIf(F f) {
+                for (size_t i = 0; i < N; ++i) {
+                    if (m_keys[i] && f(m_keys[i].value(), GetReference(m_values[i]))) {
+                        this->FreeEntry(i);
+                    }
+                }
+            }
     };
 
 }

@@ -21,7 +21,6 @@
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/ncm/ncm_auto_buffer.hpp>
 #include <stratosphere/ncm/ncm_make_path.hpp>
-#include <stratosphere/ncm/ncm_content_attributes.hpp>
 #include <stratosphere/ncm/ncm_content_id_utils.hpp>
 #include <stratosphere/ncm/ncm_content_info_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta.hpp>

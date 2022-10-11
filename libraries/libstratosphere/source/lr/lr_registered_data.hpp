@@ -16,6 +16,7 @@
 
 #pragma once
 #include <stratosphere/lr/lr_types.hpp>
+#include "lr_location_redirector.hpp"
 
 namespace ams::lr {
 
@@ -137,7 +138,7 @@ namespace ams::lr {
     };
 
     template<typename Key, size_t NumEntries>
-    using RegisteredLocations = RegisteredData<Key, lr::Path, NumEntries>;
+    using RegisteredLocations = RegisteredData<Key, RedirectionPath, NumEntries>;
 
     template<typename Key, size_t NumEntries>
     using RegisteredStorages = RegisteredData<Key, ncm::StorageId, NumEntries>;

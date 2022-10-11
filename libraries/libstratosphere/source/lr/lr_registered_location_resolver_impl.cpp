@@ -23,25 +23,33 @@ namespace ams::lr {
         template<size_t N>
         bool ResolvePath(Path *out, const LocationRedirector &redirector, const RegisteredLocations<ncm::ProgramId, N> &locations, ncm::ProgramId id) {
             /* Attempt to use a redirection if present. */
-            if (!redirector.FindRedirection(out, id)) {
+            RedirectionAttributes attr;
+            if (!redirector.FindRedirection(out, std::addressof(attr), id)) {
                 /* Otherwise try and use a registered location. */
-                if (!locations.Find(out, id)) {
+                RedirectionPath redir_path;
+                if (!locations.Find(std::addressof(redir_path), id)) {
                     return false;
                 }
+
+                /* Set the output path. */
+                *out = redir_path.path;
             }
             return true;
         }
 
         template<size_t N>
         void RegisterPath(RegisteredLocations<ncm::ProgramId, N> &locations, ncm::ProgramId id, const Path& path, ncm::ProgramId owner_id) {
+            /* Create a redirection path. */
+            const RedirectionPath redir_path = { path, DefaultRedirectionAttributes };
+
             /* If we register successfully, we're good. */
-            if (locations.Register(id, path, owner_id)) {
+            if (locations.Register(id, redir_path, owner_id)) {
                 return;
             }
 
             /* Otherwise, clear and register (this should always succeed). */
             locations.Clear();
-            locations.Register(id, path, owner_id);
+            locations.Register(id, redir_path, owner_id);
         }
 
     }
@@ -100,12 +108,12 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverImpl::RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
-        m_program_redirector.SetRedirection(id, path);
+        m_program_redirector.SetRedirection(id, path, DefaultRedirectionAttributes);
         R_SUCCEED();
     }
 
     Result RegisteredLocationResolverImpl::RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        m_program_redirector.SetRedirection(id, owner_id, path);
+        m_program_redirector.SetRedirection(id, owner_id, path, DefaultRedirectionAttributes);
         R_SUCCEED();
     }
 
@@ -130,12 +138,12 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverImpl::RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-        m_html_docs_redirector.SetRedirection(id, path);
+        m_html_docs_redirector.SetRedirection(id, path, DefaultRedirectionAttributes);
         R_SUCCEED();
     }
 
     Result RegisteredLocationResolverImpl::RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        m_html_docs_redirector.SetRedirection(id, owner_id, path);
+        m_html_docs_redirector.SetRedirection(id, owner_id, path, DefaultRedirectionAttributes);
         R_SUCCEED();
     }
 

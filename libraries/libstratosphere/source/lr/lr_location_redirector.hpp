@@ -24,6 +24,27 @@ namespace ams::lr {
         RedirectionFlags_Application    = (1 << 0),
     };
 
+    /* TODO: Do any of these unknown fields exist? */
+    struct RedirectionAttributes {
+        fs::ContentAttributes content_attributes;
+        u8 unknown[0xF];
+
+        static constexpr ALWAYS_INLINE RedirectionAttributes Make(fs::ContentAttributes attr) {
+            return { attr, };
+        }
+    };
+    static_assert(util::is_pod<RedirectionAttributes>::value);
+    static_assert(sizeof(RedirectionAttributes) == 0x10);
+
+    constexpr inline const RedirectionAttributes DefaultRedirectionAttributes = RedirectionAttributes::Make(fs::ContentAttributes_None);
+
+    struct RedirectionPath {
+        Path path;
+        RedirectionAttributes attributes;
+    };
+    static_assert(util::is_pod<RedirectionPath>::value);
+    static_assert(sizeof(RedirectionPath) == 0x310);
+
     class LocationRedirector {
         NON_COPYABLE(LocationRedirector);
         NON_MOVEABLE(LocationRedirector);
@@ -38,10 +59,9 @@ namespace ams::lr {
             ~LocationRedirector() { this->ClearRedirections(); }
 
             /* API. */
-            bool FindRedirection(Path *out, ncm::ProgramId program_id) const;
-            void SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirectionFlags(ncm::ProgramId program_id, u32 flags);
+            bool FindRedirection(Path *out, RedirectionAttributes *out_attr, ncm::ProgramId program_id) const;
+            void SetRedirection(ncm::ProgramId program_id, const Path &path, const RedirectionAttributes &attr, u32 flags = RedirectionFlags_None);
+            void SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, const RedirectionAttributes &attr, u32 flags = RedirectionFlags_None);
             void EraseRedirection(ncm::ProgramId program_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
             void ClearRedirectionsExcludingOwners(const ncm::ProgramId *excluding_ids, size_t num_ids);
