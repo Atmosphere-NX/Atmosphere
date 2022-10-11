@@ -50,6 +50,7 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Wlan,        /* wlan */
             ncm::SystemProgramId::Bluetooth,   /* bluetooth */
             ncm::SystemProgramId::BsdSockets,  /* bsdsockets */
+            ncm::SystemProgramId::Eth,         /* eth */
             ncm::SystemProgramId::Nifm,        /* nifm */
             ncm::SystemProgramId::Ldn,         /* ldn */
             ncm::SystemProgramId::Account,     /* account */
@@ -94,6 +95,7 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Wlan,        /* wlan */
             ncm::SystemProgramId::Bluetooth,   /* bluetooth */
             ncm::SystemProgramId::BsdSockets,  /* bsdsockets */
+            ncm::SystemProgramId::Eth,         /* eth */
             ncm::SystemProgramId::Nifm,        /* nifm */
             ncm::SystemProgramId::Ldn,         /* ldn */
             ncm::SystemProgramId::Account,     /* account */
