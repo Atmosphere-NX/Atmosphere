@@ -39,12 +39,13 @@ namespace ams::fuse {
         struct OdmWord4 {
             using HardwareState1                = util::BitPack32::Field<0,                                   2, int>;
             using HardwareType1                 = util::BitPack32::Field<HardwareState1::Next,                1, int>;
-            using DramId                        = util::BitPack32::Field<HardwareType1::Next,                 5, int>;
-            using HardwareType2                 = util::BitPack32::Field<DramId::Next,                        1, int>;
+            using DramId1                       = util::BitPack32::Field<HardwareType1::Next,                 5, int>;
+            using HardwareType2                 = util::BitPack32::Field<DramId1::Next,                       1, int>;
             using HardwareState2                = util::BitPack32::Field<HardwareType2::Next,                 1, int>;
             using RetailInteractiveDisplayState = util::BitPack32::Field<HardwareState2::Next,                1, int>;
             using FormatVersion                 = util::BitPack32::Field<RetailInteractiveDisplayState::Next, 1, int>;
-            using Reserved                      = util::BitPack32::Field<FormatVersion::Next,                 4, int>;
+            using DramId2                       = util::BitPack32::Field<FormatVersion::Next,                 3, int>;
+            using Reserved                      = util::BitPack32::Field<DramId2::Next,                       1, int>;
             using HardwareType3                 = util::BitPack32::Field<Reserved::Next,                      4, int>;
         };
 
@@ -69,6 +70,15 @@ namespace ams::fuse {
             return (odm_word4.Get<OdmWord4::HardwareType1>() << HardwareType1Shift) |
                    (odm_word4.Get<OdmWord4::HardwareType2>() << HardwareType2Shift) |
                    (odm_word4.Get<OdmWord4::HardwareType3>() << HardwareType3Shift);
+        }
+
+        constexpr ALWAYS_INLINE int GetDramIdValue(const util::BitPack32 odm_word4) {
+            constexpr auto DramId1Shift = 0;
+            constexpr auto DramId2Shift = OdmWord4::DramId1::Count + DramId1Shift;
+
+
+            return (odm_word4.Get<OdmWord4::DramId1>() << DramId1Shift) |
+                   (odm_word4.Get<OdmWord4::DramId2>() << DramId2Shift);
         }
 
         constinit uintptr_t g_register_address = secmon::MemoryRegionPhysicalDeviceFuses.GetAddress();
@@ -167,6 +177,7 @@ namespace ams::fuse {
         }
 
         constexpr const TargetFirmware FuseVersionIncrementFirmwares[] = {
+            TargetFirmware_15_0_0,
             TargetFirmware_13_2_1,
             TargetFirmware_12_0_2,
             TargetFirmware_11_0_0,
@@ -305,7 +316,8 @@ namespace ams::fuse {
     }
 
     DramId GetDramId() {
-        return static_cast<DramId>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::DramId>());
+        /* Get the value. */
+        return static_cast<DramId>(GetDramIdValue(util::BitPack32{GetCommonOdmWord(4)}));
     }
 
     HardwareType GetHardwareType() {
