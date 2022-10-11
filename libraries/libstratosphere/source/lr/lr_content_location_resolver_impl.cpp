@@ -32,6 +32,9 @@ namespace ams::lr {
         /* Use a redirection if present. */
         R_SUCCEED_IF(m_program_redirector.FindRedirection(out.GetPointer(), id));
 
+        /* If we're not enabled, we can't resolve a program. */
+        R_UNLESS(m_enabled, lr::ResultProgramNotFound())
+
         /* Find the latest program content for the program id. */
         ncm::ContentId program_content_id;
         R_TRY_CATCH(m_content_meta_database.GetLatestProgram(std::addressof(program_content_id), id)) {
@@ -60,6 +63,9 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
+        /* If we're not enabled, we can't resolve data. */
+        R_UNLESS(m_enabled, lr::ResultDataNotFound())
+
         /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
         R_TRY(m_content_meta_database.GetLatestData(std::addressof(data_content_id), id));
@@ -166,9 +172,12 @@ namespace ams::lr {
         /* Use a redirection if present. */
         R_SUCCEED_IF(m_debug_program_redirector.FindRedirection(out.GetPointer(), id));
 
+        /* If we're not enabled, we can't resolve a program. */
+        R_UNLESS(m_enabled, lr::ResultDebugProgramNotFound())
+
         /* Otherwise find the path for the program id. */
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
-            R_CONVERT(ResultProgramNotFound, lr::ResultDebugProgramNotFound())
+            R_CONVERT(lr::ResultProgramNotFound, lr::ResultDebugProgramNotFound())
         } R_END_TRY_CATCH;
 
         R_SUCCEED();
@@ -191,6 +200,11 @@ namespace ams::lr {
 
     Result ContentLocationResolverImpl::EraseProgramRedirectionForDebug(ncm::ProgramId id) {
         m_debug_program_redirector.EraseRedirection(id);
+        R_SUCCEED();
+    }
+
+    Result ContentLocationResolverImpl::Disable() {
+        m_enabled = false;
         R_SUCCEED();
     }
 

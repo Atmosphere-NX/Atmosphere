@@ -50,6 +50,7 @@ namespace ams::lr {
             Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id);
             Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
             Result EraseProgramRedirectionForDebug(ncm::ProgramId id);
+            Result Disable();
     };
     static_assert(lr::IsILocationResolver<RedirectOnlyLocationResolverImpl>);
 

@@ -158,4 +158,8 @@ namespace ams::lr {
         R_SUCCEED();
     }
 
+    Result RedirectOnlyLocationResolverImpl::Disable() {
+        R_SUCCEED();
+    }
+
 }

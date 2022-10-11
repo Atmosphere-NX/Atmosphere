@@ -154,6 +154,11 @@ namespace ams::lr {
                 AMS_UNUSED(id);
                 AMS_ABORT();
             }
+
+            Result Disable() {
+                /* TODO: libnx bindings */
+                AMS_ABORT();
+            }
     };
     static_assert(lr::IsILocationResolver<RemoteLocationResolverImpl>);
     #endif
