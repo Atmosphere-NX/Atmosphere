@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, util::optional<u8> id_offset) const {
+    Result ContentMetaDatabaseImpl::GetContentInfoImpl(ContentInfo *out, const ContentMetaKey &key, ContentType type, util::optional<u8> id_offset) const {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */
@@ -45,7 +45,7 @@ namespace ams::ncm {
         R_UNLESS(content_info != nullptr, ncm::ResultContentNotFound());
 
         /* Save output. */
-        *out = content_info->content_id;
+        *out = *content_info;
         R_SUCCEED();
     }
 
@@ -479,6 +479,33 @@ namespace ams::ncm {
         /* Set the output value. */
         out_id.SetValue(owner_application_id);
         R_SUCCEED();
+    }
+
+    Result ContentMetaDatabaseImpl::GetContentAccessibilities(sf::Out<u8> out_accessibilities, const ContentMetaKey &key) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Ensure this type of key is for an add-on content. */
+        R_UNLESS(key.type == ContentMetaType::AddOnContent, ncm::ResultInvalidContentMetaKey());
+
+        /* Obtain the content meta for the key. */
+        const void *meta;
+        size_t meta_size;
+        R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
+
+        /* Create a reader. */
+        ContentMetaReader reader(meta, meta_size);
+
+        /* Set the ouput value. */
+        out_accessibilities.SetValue(reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->content_accessibilities);
+        R_SUCCEED();
+    }
+
+    Result ContentMetaDatabaseImpl::GetContentInfoByType(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type) {
+        R_RETURN(this->GetContentInfoImpl(out_content_info.GetPointer(), key, type, util::nullopt));
+    }
+
+    Result ContentMetaDatabaseImpl::GetContentInfoByTypeAndIdOffset(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type, u8 id_offset) {
+        R_RETURN(this->GetContentInfoImpl(out_content_info.GetPointer(), key, type, util::make_optional(id_offset)));
     }
 
 }

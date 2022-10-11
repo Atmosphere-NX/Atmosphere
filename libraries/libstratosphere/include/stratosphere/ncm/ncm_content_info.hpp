@@ -14,15 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere/fs/fs_content_attributes.hpp>
 #include <stratosphere/ncm/ncm_content_id.hpp>
 #include <stratosphere/ncm/ncm_content_type.hpp>
 
 namespace ams::ncm {
 
     struct ContentInfo {
+        static constexpr fs::ContentAttributes DefaultContentAttributes = fs::ContentAttributes_None;
+
         ContentId content_id;
         u32 size_low;
-        u16 size_high;
+        u8 size_high;
+        u8 content_attributes;
         ContentType content_type;
         u8 id_offset;
 
@@ -34,6 +38,10 @@ namespace ams::ncm {
             return (static_cast<u64>(this->size_high) << 32) | static_cast<u64>(this->size_low);
         }
 
+        constexpr fs::ContentAttributes GetContentAttributes() const {
+            return static_cast<fs::ContentAttributes>(this->content_attributes & 0xF);
+        }
+
         constexpr ContentType GetType() const {
             return this->content_type;
         }
@@ -42,15 +50,16 @@ namespace ams::ncm {
             return this->id_offset;
         }
 
-        static constexpr ContentInfo Make(ContentId id, u64 size, ContentType type, u8 id_ofs = 0) {
-            const u32 size_low  = size & 0xFFFFFFFFu;
-            const u16 size_high = static_cast<u16>(size >> 32);
+        static constexpr ContentInfo Make(ContentId id, u64 size, fs::ContentAttributes attr, ContentType type, u8 id_ofs = 0) {
+            const u32 size_low = size & 0xFFFFFFFFu;
+            const u8 size_high = static_cast<u8>(size >> 32);
             return {
-                .content_id   = id,
-                .size_low     = size_low,
-                .size_high    = size_high,
-                .content_type = type,
-                .id_offset    = id_ofs,
+                .content_id         = id,
+                .size_low           = size_low,
+                .size_high          = size_high,
+                .content_attributes = attr,
+                .content_type       = type,
+                .id_offset          = id_ofs,
             };
         }
     };
