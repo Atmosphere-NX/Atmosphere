@@ -170,6 +170,11 @@ namespace ams::lr {
                 AMS_ASSERT(m_interface != nullptr);
                 R_RETURN(m_interface->EraseProgramRedirectionForDebug(id));
             }
+
+            Result Disable() {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->Disable());
+            }
     };
 
 }

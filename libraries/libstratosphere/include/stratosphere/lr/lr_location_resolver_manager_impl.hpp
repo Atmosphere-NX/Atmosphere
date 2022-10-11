@@ -23,8 +23,12 @@ namespace ams::lr {
 
     class LocationResolverManagerImpl {
         private:
+            static constexpr size_t ResolverCountMax = 5;
+        private:
             /* Resolver storage. */
-            ncm::BoundedMap<ncm::StorageId, sf::SharedPointer<ILocationResolver>, 5> m_location_resolvers{};
+            ncm::BoundedMap<ncm::StorageId, sf::SharedPointer<ILocationResolver>, ResolverCountMax> m_location_resolvers{};
+            ncm::BoundedMap<ncm::StorageId, bool, ResolverCountMax> m_location_resolvers_enabled{};
+            bool m_default_enabled = true;
             sf::SharedPointer<IRegisteredLocationResolver> m_registered_location_resolver = nullptr;
             sf::SharedPointer<IAddOnContentLocationResolver> m_add_on_content_location_resolver = nullptr;
 
@@ -35,6 +39,7 @@ namespace ams::lr {
             Result OpenRegisteredLocationResolver(sf::Out<sf::SharedPointer<IRegisteredLocationResolver>> out);
             Result RefreshLocationResolver(ncm::StorageId storage_id);
             Result OpenAddOnContentLocationResolver(sf::Out<sf::SharedPointer<IAddOnContentLocationResolver>> out);
+            Result SetEnabled(const sf::InMapAliasArray<ncm::StorageId> &storages);
     };
     static_assert(IsILocationResolverManager<LocationResolverManagerImpl>);
 

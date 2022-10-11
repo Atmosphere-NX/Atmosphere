@@ -43,7 +43,8 @@
     AMS_SF_METHOD_INFO(C, H, 17, Result, RedirectProgramPathForDebug,                       (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_7_0_0)                     \
     AMS_SF_METHOD_INFO(C, H, 18, Result, RedirectApplicationProgramPathForDebugDeprecated,  (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_7_0_0, hos::Version_8_1_1) \
     AMS_SF_METHOD_INFO(C, H, 18, Result, RedirectApplicationProgramPathForDebug,            (const lr::Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), (path, id, owner_id), hos::Version_9_0_0)                     \
-    AMS_SF_METHOD_INFO(C, H, 19, Result, EraseProgramRedirectionForDebug,                   (ncm::ProgramId id),                                                (id),                 hos::Version_7_0_0)
+    AMS_SF_METHOD_INFO(C, H, 19, Result, EraseProgramRedirectionForDebug,                   (ncm::ProgramId id),                                                (id),                 hos::Version_7_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 20, Result, Disable,                                           (),                                                                 (),                   hos::Version_15_0_0)
 
 
 AMS_SF_DEFINE_INTERFACE(ams::lr, ILocationResolver, AMS_LR_I_LOCATION_RESOLVER_INTERFACE_INFO, 0xB36C8B0E)
