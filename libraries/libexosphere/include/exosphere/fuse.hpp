@@ -55,7 +55,7 @@ namespace ams::fuse {
         DramId_IcosaSamsung6GB    =  4,
         DramId_HoagHynix1y4GB     =  5,
         DramId_AulaHynix1y4GB     =  6,
-        DramId_IowaX1X2Samsung4GB =  7,
+        DramId_Deprecated7        =  7,
         DramId_IowaSansung4GB     =  8,
         DramId_IowaSamsung8GB     =  9,
         DramId_IowaHynix4GB       = 10,
@@ -64,7 +64,7 @@ namespace ams::fuse {
         DramId_HoagSamsung8GB     = 13,
         DramId_HoagHynix4GB       = 14,
         DramId_HoagMicron4GB      = 15,
-        DramId_IowaSamsung4GBY    = 16,
+        DramId_Deprecated16       = 16,
         DramId_IowaSamsung1y4GBX  = 17,
         DramId_IowaSamsung1y8GBX  = 18,
         DramId_HoagSamsung1y4GBX  = 19,
@@ -82,7 +82,7 @@ namespace ams::fuse {
         DramId_AulaX1X2Samsung4GB = 31,
         DramId_IowaSamsung4GBY    = 32,
         DramId_HoagSamsung4GBY    = 33,
-        DramId_AulaSamsung4GBY    = 34,    
+        DramId_AulaSamsung4GBY    = 34,
 
         DramId_Count,
     };
