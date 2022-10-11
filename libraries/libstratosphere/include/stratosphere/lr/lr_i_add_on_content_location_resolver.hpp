@@ -17,12 +17,16 @@
 #pragma once
 #include <stratosphere/lr/lr_types.hpp>
 
-#define AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO(C, H)                                                                                                                                                                       \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, ResolveAddOnContentPath,               (sf::Out<lr::Path> out, ncm::DataId id),                                            (out, id),                        hos::Version_2_0_0)                     \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorageDeprecated, (ncm::DataId id, ncm::StorageId storage_id),                                        (id, storage_id),                 hos::Version_2_0_0, hos::Version_8_1_1) \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorage,           (ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id),     (id, application_id, storage_id), hos::Version_9_0_0)                     \
-    AMS_SF_METHOD_INFO(C, H, 2, Result, UnregisterAllAddOnContentPath,         (),                                                                                 (),                               hos::Version_2_0_0)                     \
-    AMS_SF_METHOD_INFO(C, H, 3, Result, RefreshApplicationAddOnContent,        (const sf::InArray<ncm::ApplicationId> &ids),                                       (ids),                            hos::Version_9_0_0)                     \
-    AMS_SF_METHOD_INFO(C, H, 4, Result, UnregisterApplicationAddOnContent,     (ncm::ApplicationId id),                                                            (id),                             hos::Version_9_0_0)
+#define AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO(C, H)                                                                                                                                                                                      \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, ResolveAddOnContentPath,               (sf::Out<lr::Path> out, ncm::DataId id),                                                          (out, id),                         hos::Version_2_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorageDeprecated, (ncm::DataId id, ncm::StorageId storage_id),                                                      (id, storage_id),                  hos::Version_2_0_0, hos::Version_8_1_1) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorage,           (ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id),                   (id, application_id, storage_id),  hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 2, Result, UnregisterAllAddOnContentPath,         (),                                                                                               (),                                hos::Version_2_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 3, Result, RefreshApplicationAddOnContent,        (const sf::InArray<ncm::ApplicationId> &ids),                                                     (ids),                             hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, UnregisterApplicationAddOnContent,     (ncm::ApplicationId id),                                                                          (id),                              hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 5, Result, GetRegisteredAddOnContentPaths,        (sf::Out<lr::Path> out, sf::Out<lr::Path> out2, ncm::DataId id),                                  (out, out2, id),                   hos::Version_15_0_0)                    \
+    AMS_SF_METHOD_INFO(C, H, 6, Result, RegisterAddOnContentPath,              (ncm::DataId id, ncm::ApplicationId application_id, const lr::Path &path),                        (id, application_id, path),        hos::Version_15_0_0)                    \
+    AMS_SF_METHOD_INFO(C, H, 7, Result, RegisterAddOnContentPaths,             (ncm::DataId id, ncm::ApplicationId application_id, const lr::Path &path, const lr::Path &path2), (id, application_id, path, path2), hos::Version_15_0_0)
+
 
 AMS_SF_DEFINE_INTERFACE(ams::lr, IAddOnContentLocationResolver, AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO, 0x77617E39)

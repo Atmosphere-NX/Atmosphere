@@ -32,4 +32,6 @@ namespace ams::lr {
 
     R_DEFINE_ERROR_RESULT(TooManyRegisteredPaths,   90);
 
+    R_DEFINE_ERROR_RESULT(InvalidPath,             140);
+
 }

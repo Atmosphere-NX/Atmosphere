@@ -16,6 +16,7 @@
 
 #pragma once
 #include "lr_location_resolver_impl_base.hpp"
+#include "lr_location_redirector.hpp"
 
 namespace ams::lr {
 
@@ -34,6 +35,7 @@ namespace ams::lr {
         private:
             /* Helper functions. */
             void GetContentStoragePath(Path *out, ncm::ContentId content_id);
+            Result ResolveProgramPath(Path *out, RedirectionAttributes *out_attr, ncm::ProgramId id);
         public:
             /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id);
