@@ -790,7 +790,7 @@ namespace ams::ncm {
         R_TRY(tmp_buffer.Initialize(reader.CalculateConvertInstallContentMetaSize()));
 
         /* Convert packaged content meta to install content meta. */
-        reader.ConvertToInstallContentMeta(tmp_buffer.Get(), tmp_buffer.GetSize(), InstallContentInfo::Make(ContentInfo::Make(content_id, size, ContentType::Meta), meta_type));
+        reader.ConvertToInstallContentMeta(tmp_buffer.Get(), tmp_buffer.GetSize(), InstallContentInfo::Make(ContentInfo::Make(content_id, size, ContentInfo::DefaultContentAttributes, ContentType::Meta), meta_type));
 
         /* Push the content meta. */
         m_data->Push(tmp_buffer.Get(), tmp_buffer.GetSize());
@@ -1028,7 +1028,7 @@ namespace ams::ncm {
     InstallContentInfo InstallTaskBase::MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, util::optional<bool> is_tmp) {
         return {
             .digest         = info.digest,
-            .info           = ContentInfo::Make(info.content_id, info.content_size, ContentType::Meta, 0),
+            .info           = ContentInfo::Make(info.content_id, info.content_size, ContentInfo::DefaultContentAttributes, ContentType::Meta, 0),
             .placeholder_id = placeholder_id,
             .meta_type      = info.key.type,
             .install_state  = InstallState::Prepared,

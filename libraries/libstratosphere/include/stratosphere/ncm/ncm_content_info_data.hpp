@@ -40,6 +40,10 @@ namespace ams::ncm {
             return this->info.GetId();
         }
 
+        constexpr fs::ContentAttributes GetContentAttributes() const {
+            return this->info.GetContentAttributes();
+        }
+
         constexpr ContentType GetType() const {
             return this->info.GetType();
         }
@@ -70,6 +74,10 @@ namespace ams::ncm {
 
         constexpr u64 GetSize() const {
             return this->info.GetSize();
+        }
+
+        constexpr fs::ContentAttributes GetContentAttributes() const {
+            return this->info.GetContentAttributes();
         }
 
         constexpr ContentType GetType() const {

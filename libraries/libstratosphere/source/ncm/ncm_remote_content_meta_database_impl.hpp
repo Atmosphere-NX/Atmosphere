@@ -168,6 +168,24 @@ namespace ams::ncm {
                 AMS_UNUSED(out_id, key);
                 AMS_ABORT();
             }
+
+            Result GetContentAccessibilities(sf::Out<u8> out_accessibilities, const ContentMetaKey &key) {
+                /* TODO: libnx bindings */
+                AMS_UNUSED(out_accessibilities, key);
+                AMS_ABORT();
+            }
+
+            Result GetContentInfoByType(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type) {
+                /* TODO: libnx bindings */
+                AMS_UNUSED(out_content_info, key, type);
+                AMS_ABORT();
+            }
+
+            Result GetContentInfoByTypeAndIdOffset(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type, u8 id_offset) {
+                /* TODO: libnx bindings */
+                AMS_UNUSED(out_content_info, key, type, id_offset);
+                AMS_ABORT();
+            }
     };
     static_assert(ncm::IsIContentMetaDatabase<RemoteContentMetaDatabaseImpl>);
     #endif

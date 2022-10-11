@@ -58,15 +58,25 @@ namespace ams::ncm {
                 R_SUCCEED();
             }
 
-            #define AMS_NCM_DEFINE_GETTERS(Kind, IdType)                                                                               \
-            Result Get##Kind(ContentId *out, IdType##Id id, u32 version) {                                                             \
-                R_RETURN(m_interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind)); \
-            }                                                                                                                          \
-                                                                                                                                       \
-            Result GetLatest##Kind(ContentId *out, IdType##Id id) {                                                                    \
-                ContentMetaKey latest_key;                                                                                             \
-                R_TRY(m_interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                     \
-                R_RETURN(m_interface->GetContentIdByType(out, latest_key, ContentType::Kind));                                         \
+            #define AMS_NCM_DEFINE_GETTERS(Kind, IdType)                                                                                 \
+            Result Get##Kind(ContentId *out, IdType##Id id, u32 version) {                                                               \
+                R_RETURN(m_interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind));   \
+            }                                                                                                                            \
+                                                                                                                                         \
+            Result Get##Kind(ContentInfo *out, IdType##Id id, u32 version) {                                                             \
+                R_RETURN(m_interface->GetContentInfoByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind)); \
+            }                                                                                                                            \
+                                                                                                                                         \
+            Result GetLatest##Kind(ContentId *out, IdType##Id id) {                                                                      \
+                ContentMetaKey latest_key;                                                                                               \
+                R_TRY(m_interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                       \
+                R_RETURN(m_interface->GetContentIdByType(out, latest_key, ContentType::Kind));                                           \
+            }                                                                                                                            \
+                                                                                                                                         \
+            Result GetLatest##Kind(ContentInfo *out, IdType##Id id) {                                                                    \
+                ContentMetaKey latest_key;                                                                                               \
+                R_TRY(m_interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                       \
+                R_RETURN(m_interface->GetContentInfoByType(out, latest_key, ContentType::Kind));                                         \
             }
 
             AMS_NCM_DEFINE_GETTERS(Program,          Program)
@@ -188,6 +198,21 @@ namespace ams::ncm {
             Result GetRequiredApplicationVersion(u32 *out_version, const ContentMetaKey &key) {
                 AMS_ASSERT(m_interface != nullptr);
                 R_RETURN(m_interface->GetRequiredApplicationVersion(out_version, key));
+            }
+
+            Result GetContentAccessibilities(u8 *out_accessibilities, const ContentMetaKey &key) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->GetContentAccessibilities(out_accessibilities, key));
+            }
+
+            Result GetContentInfoByType(ContentInfo *out_content_info, const ContentMetaKey &key, ContentType type) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->GetContentInfoByType(out_content_info, key, type));
+            }
+
+            Result GetContentInfoByTypeAndIdOffset(ContentInfo *out_content_info, const ContentMetaKey &key, ContentType type, u8 id_offset) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->GetContentInfoByTypeAndIdOffset(out_content_info, key, type, id_offset));
             }
     };
 
