@@ -832,4 +832,12 @@
     HANDLER(FatFsBisUserDirectoryPeakOpenCount,                       653, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsSdCardFilePeakOpenCount,                             654, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsSdCardDirectoryPeakOpenCount,                        655, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(SslAlertInfo,                                             656, NetworkSecurityCertificateInfo,      FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(SslVersionInfo,                                           657, NetworkSecurityCertificateInfo,      FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(FatFsBisSystemUniqueFileEntryPeakOpenCount,               658, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisSystemUniqueDirectoryEntryPeakOpenCount,          659, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisUserUniqueFileEntryPeakOpenCount,                 660, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisUserUniqueDirectoryEntryPeakOpenCount,            661, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsSdCardUniqueFileEntryPeakOpenCount,                  662, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsSdCardUniqueDirectoryEntryPeakOpenCount,             663, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
 
