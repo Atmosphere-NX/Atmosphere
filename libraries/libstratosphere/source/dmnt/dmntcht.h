@@ -64,6 +64,7 @@ typedef struct {
 
 typedef struct {
     u64 address;
+    char name[200];
 } DmntBreakpointResult;
 
 

@@ -401,12 +401,27 @@ namespace ams::dmnt::cheat::impl {
                     R_SUCCEED();
                 }
 
-                Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
+                Result ReadCheatProcessMemory(u64 proc_addr, void* out_data, size_t size) {
                     std::scoped_lock lk(m_cheat_lock);
+                    typedef struct {
+                        u64 address;
+                        char name[200];
+                    } DmntBreakpointResult;
+#define BP_Result (*(DmntBreakpointResult*) out_data)
+#define BP_address proc_addr & 0xFFFFFFFFFF
+#define BP_Token proc_addr >> 56  
 
-                    R_TRY(this->EnsureCheatProcess());
+                    if (BP_Token!=0) {
+                        BP_Result.address = BP_address;
+                        sprintf(BP_Result.name, "Good Work Token=%lx",BP_Token);
+                        R_SUCCEED();
+                    }
+                    else {
 
-                    R_RETURN(this->ReadCheatProcessMemoryUnsafe(proc_addr, out_data, size));
+                        R_TRY(this->EnsureCheatProcess());
+
+                        R_RETURN(this->ReadCheatProcessMemoryUnsafe(proc_addr, out_data, size));
+                    };
                 }
 
                 Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size) {
@@ -649,7 +664,7 @@ namespace ams::dmnt::cheat::impl {
                     std::scoped_lock lk(m_cheat_lock);
                     
                     if (address == 0x12345) {
-                        frz_addr->address = 0x54321;
+                        frz_addr->address = 0x195432122;
                     } else {
                     R_TRY(this->EnsureCheatProcess());
 
