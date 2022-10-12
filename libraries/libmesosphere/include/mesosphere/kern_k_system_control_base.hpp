@@ -26,6 +26,9 @@ namespace ams::kern {
 namespace ams::kern {
 
     class KSystemControlBase {
+        public:
+            /* This can be overridden as needed. */
+            static constexpr size_t SecureAppletMemorySize = 0;
         protected:
             /* Nintendo uses std::mt19937_t for randomness. */
             /* To save space (and because mt19337_t isn't secure anyway), */

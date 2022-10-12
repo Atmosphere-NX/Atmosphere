@@ -75,7 +75,10 @@ namespace ams::kern {
         size -= rc_size;
 
         /* Initialize the resource managers' shared page manager. */
-        g_resource_manager_page_manager.Initialize(address, size);
+        g_resource_manager_page_manager.Initialize(address, size, std::max<size_t>(PageSize, KPageBufferSlabHeap::BufferSize));
+
+        /* Initialize the KPageBuffer slab heap. */
+        KPageBuffer::InitializeSlabHeap(g_resource_manager_page_manager);
 
         /* Initialize the fixed-size slabheaps. */
         s_app_memory_block_heap.Initialize(std::addressof(g_resource_manager_page_manager), ApplicationMemoryBlockSlabHeapSize);
@@ -143,6 +146,9 @@ namespace ams::kern {
         PrintMemoryRegion("    KernelRegion",       KMemoryLayout::GetKernelRegionPhysicalExtents());
         PrintMemoryRegion("        Code",           KMemoryLayout::GetKernelCodeRegionPhysicalExtents());
         PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionPhysicalExtents());
+        if constexpr (KSystemControl::SecureAppletMemorySize > 0) {
+            PrintMemoryRegion("        SecureApplet", KMemoryLayout::GetKernelSecureAppletMemoryRegionPhysicalExtents());
+        }
         PrintMemoryRegion("        PageTableHeap",  KMemoryLayout::GetKernelPageTableHeapRegionPhysicalExtents());
         PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
         if constexpr (IsKTraceEnabled) {

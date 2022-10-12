@@ -24,7 +24,7 @@ namespace ams::kern {
         m_owner = process;
 
         /* Allocate a new page. */
-        KPageBuffer *page_buf = KPageBuffer::Allocate();
+        KPageBuffer *page_buf = KPageBuffer::AllocateChecked<PageSize>();
         R_UNLESS(page_buf != nullptr, svc::ResultOutOfMemory());
         ON_RESULT_FAILURE { KPageBuffer::Free(page_buf); };
 
@@ -43,7 +43,7 @@ namespace ams::kern {
         R_TRY(m_owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
 
         /* Free the page. */
-        KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(phys_addr));
+        KPageBuffer::FreeChecked<PageSize>(KPageBuffer::FromPhysicalAddress(phys_addr));
         R_SUCCEED();
     }
 

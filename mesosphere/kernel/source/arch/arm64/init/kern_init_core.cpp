@@ -418,12 +418,18 @@ namespace ams::kern::init {
         /* NOTE: Nintendo does this only on 10.0.0+ */
         init_pt.PhysicallyRandomize(slab_region_start, slab_region_size, false);
 
+        /* Insert a physical region for the secure applet memory. */
+        const auto secure_applet_end_phys_addr = slab_end_phys_addr + KSystemControl::SecureAppletMemorySize;
+        if constexpr (KSystemControl::SecureAppletMemorySize > 0) {
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), KSystemControl::SecureAppletMemorySize, KMemoryRegionType_DramKernelSecureAppletMemory));
+        }
+
         /* Determine size available for kernel page table heaps. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
-        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(slab_end_phys_addr);
+        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_applet_end_phys_addr);
 
         /* Insert a physical region for the kernel page table heap region */
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_applet_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {

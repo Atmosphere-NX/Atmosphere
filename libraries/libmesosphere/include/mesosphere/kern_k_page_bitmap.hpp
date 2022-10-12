@@ -113,11 +113,12 @@ namespace ams::kern {
             static constexpr size_t MaxDepth = 4;
         private:
             u64 *m_bit_storages[MaxDepth];
+            u64 *m_end_storages[MaxDepth];
             RandomBitGenerator m_rng;
             size_t m_num_bits;
             size_t m_used_depths;
         public:
-            KPageBitmap() : m_bit_storages(), m_rng(), m_num_bits(), m_used_depths() { /* ... */ }
+            KPageBitmap() : m_bit_storages(), m_end_storages(), m_rng(), m_num_bits(), m_used_depths() { /* ... */ }
 
             constexpr size_t GetNumBits() const { return m_num_bits; }
             constexpr s32 GetHighestDepthIndex() const { return static_cast<s32>(m_used_depths) - 1; }
@@ -135,6 +136,7 @@ namespace ams::kern {
                     m_bit_storages[depth] = storage;
                     size = util::AlignUp(size, BITSIZEOF(u64)) / BITSIZEOF(u64);
                     storage += size;
+                    m_end_storages[depth] = storage;
                 }
 
                 return storage;
@@ -169,6 +171,45 @@ namespace ams::kern {
                 }
 
                 return static_cast<ssize_t>(offset);
+            }
+
+            ssize_t FindFreeRange(size_t count) {
+                /* Check that it is possible to find a range. */
+                const u64 * const storage_start = m_bit_storages[m_used_depths - 1];
+                const u64 * const storage_end   = m_end_storages[m_used_depths - 1];
+
+                /* If we don't have a storage to iterate (or want more blocks than fit in a single storage), we can't find a free range. */
+                if (!(storage_start < storage_end && count <= BITSIZEOF(u64))) {
+                    return -1;
+                }
+
+                /* Walk the storages to select a random free range. */
+                const size_t options_per_storage = std::max<size_t>(BITSIZEOF(u64) / count, 1);
+                const size_t num_entries         = std::max<size_t>(storage_end - storage_start, 1);
+
+                const u64 free_mask = (static_cast<u64>(1) << count) - 1;
+
+                size_t num_valid_options = 0;
+                ssize_t chosen_offset = -1;
+                for (size_t storage_index = 0; storage_index < num_entries; ++storage_index) {
+                    u64 storage = storage_start[storage_index];
+                    for (size_t option = 0; option < options_per_storage; ++option) {
+                        if ((storage & free_mask) == free_mask) {
+                            /* We've found a new valid option. */
+                            ++num_valid_options;
+
+                            /* Select the Kth valid option with probability 1/K. This leads to an overall uniform distribution. */
+                            if (num_valid_options == 1 || m_rng.GenerateRandom(num_valid_options) == 0) {
+                                /* This is our first option, so select it. */
+                                chosen_offset = storage_index * BITSIZEOF(u64) + option * count;
+                            }
+                        }
+                        storage >>= count;
+                    }
+                }
+
+                /* Return the random offset we chose.*/
+                return chosen_offset;
             }
 
             void SetBit(size_t offset) {

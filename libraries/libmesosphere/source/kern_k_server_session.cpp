@@ -88,6 +88,10 @@ namespace ams::kern {
                     return m_recv_list_count > ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset;
                 }
 
+                constexpr ALWAYS_INLINE bool IsToMessageBuffer() const {
+                    return m_recv_list_count == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer;
+                }
+
                 void GetBuffer(uintptr_t &out, size_t size, int &key) const {
                     switch (m_recv_list_count) {
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_None:
@@ -264,12 +268,12 @@ namespace ams::kern {
                                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
                                                                                          KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked,
                                                                                          src_pointer,
-                                                                                         KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                                         KMemoryState_FlagLinearMapped, KMemoryState_FlagLinearMapped,
                                                                                          KMemoryPermission_UserRead,
                                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None));
                 } else {
                     R_TRY(src_page_table.CopyMemoryFromLinearToUser(recv_pointer, recv_size, src_pointer,
-                                                                    KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                    KMemoryState_FlagLinearMapped, KMemoryState_FlagLinearMapped,
                                                                     KMemoryPermission_UserRead,
                                                                     KMemoryAttribute_Uncached, KMemoryAttribute_None));
                 }
@@ -642,12 +646,15 @@ namespace ams::kern {
                     const size_t max_fast_size = std::min<size_t>(offset_words + raw_size, PageSize);
                     const size_t fast_size     = max_fast_size - offset_words;
 
+                    /* Determine source state; if user buffer, we require heap, and otherwise only linear mapped (to enable tls use). */
+                    const auto src_state = src_user ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
+
                     /* Determine the source permission. User buffer should be unmapped + read, TLS should be user readable. */
                     const KMemoryPermission src_perm = static_cast<KMemoryPermission>(src_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelRead : KMemoryPermission_UserRead);
 
                     /* Perform the fast part of the copy. */
                     R_TRY(src_page_table.CopyMemoryFromLinearToKernel(reinterpret_cast<uintptr_t>(dst_msg_ptr) + offset_words, fast_size, src_message_buffer + offset_words,
-                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      src_state, src_state,
                                                                       src_perm,
                                                                       KMemoryAttribute_Uncached, KMemoryAttribute_None));
 
@@ -658,7 +665,7 @@ namespace ams::kern {
                                                                       static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
                                                                       KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked,
                                                                       src_message_buffer + max_fast_size,
-                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      src_state, src_state,
                                                                       src_perm,
                                                                       KMemoryAttribute_Uncached, KMemoryAttribute_None));
                     }
@@ -744,9 +751,11 @@ namespace ams::kern {
                 R_UNLESS(recv_pointer != 0, svc::ResultOutOfResource());
 
                 /* Perform the pointer data copy. */
-                const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
+                const bool dst_heap  = dst_user && dst_recv_list.IsToMessageBuffer();
+                const auto dst_state = dst_heap ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
+                const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_heap ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
                 R_TRY(dst_page_table.CopyMemoryFromUserToLinear(recv_pointer, recv_size,
-                                                                KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                dst_state, dst_state,
                                                                 dst_perm,
                                                                 KMemoryAttribute_Uncached, KMemoryAttribute_None,
                                                                 src_pointer));
@@ -898,12 +907,15 @@ namespace ams::kern {
                         const size_t max_fast_size = std::min<size_t>(offset_words + raw_size, PageSize);
                         const size_t fast_size     = max_fast_size - offset_words;
 
+                        /* Determine dst state; if user buffer, we require heap, and otherwise only linear mapped (to enable tls use). */
+                        const auto dst_state = dst_user ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
+
                         /* Determine the dst permission. User buffer should be unmapped + read, TLS should be user readable. */
                         const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
 
                         /* Perform the fast part of the copy. */
                         R_TRY(dst_page_table.CopyMemoryFromKernelToLinear(dst_message_buffer + offset_words, fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          dst_state, dst_state,
                                                                           dst_perm,
                                                                           KMemoryAttribute_Uncached, KMemoryAttribute_None,
                                                                           reinterpret_cast<uintptr_t>(src_msg_ptr) + offset_words));
@@ -911,7 +923,7 @@ namespace ams::kern {
                         /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
                         if (fast_size < raw_size) {
                             R_TRY(dst_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          dst_state, dst_state,
                                                                           dst_perm,
                                                                           KMemoryAttribute_Uncached, KMemoryAttribute_None,
                                                                           src_message_buffer + max_fast_size,

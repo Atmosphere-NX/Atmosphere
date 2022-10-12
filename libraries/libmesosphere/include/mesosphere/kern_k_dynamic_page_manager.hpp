@@ -38,30 +38,37 @@ namespace ams::kern {
             size_t m_peak;
             size_t m_count;
             KVirtualAddress m_address;
+            KVirtualAddress m_aligned_address;
             size_t m_size;
         public:
-            KDynamicPageManager() : m_lock(), m_page_bitmap(), m_used(), m_peak(), m_count(), m_address(Null<KVirtualAddress>), m_size() { /* ... */ }
+            KDynamicPageManager() : m_lock(), m_page_bitmap(), m_used(), m_peak(), m_count(), m_address(Null<KVirtualAddress>), m_aligned_address(Null<KVirtualAddress>), m_size() { /* ... */ }
 
-            Result Initialize(KVirtualAddress memory, size_t sz) {
+            Result Initialize(KVirtualAddress memory, size_t size, size_t align) {
                 /* We need to have positive size. */
-                R_UNLESS(sz > 0, svc::ResultOutOfMemory());
+                R_UNLESS(size > 0, svc::ResultOutOfMemory());
 
-                /* Calculate management overhead. */
-                const size_t management_size  = KPageBitmap::CalculateManagementOverheadSize(sz / sizeof(PageBuffer));
-                const size_t allocatable_size = sz - management_size;
+                /* Set addresses. */
+                m_address         = memory;
+                m_aligned_address = util::AlignDown(GetInteger(memory), align);
+
+                /* Calculate extents. */
+                const size_t managed_size  = m_address + size - m_aligned_address;
+                const size_t overhead_size = util::AlignUp(KPageBitmap::CalculateManagementOverheadSize(managed_size / sizeof(PageBuffer)), sizeof(PageBuffer));
+                R_UNLESS(overhead_size < size, svc::ResultOutOfMemory());
 
                 /* Set tracking fields. */
-                m_address = memory;
-                m_size    = util::AlignDown(allocatable_size, sizeof(PageBuffer));
-                m_count   = allocatable_size / sizeof(PageBuffer);
-                R_UNLESS(m_count > 0, svc::ResultOutOfMemory());
+                m_size  = util::AlignDown(size - overhead_size, sizeof(PageBuffer));
+                m_count = m_size / sizeof(PageBuffer);
 
                 /* Clear the management region. */
-                u64 *management_ptr = GetPointer<u64>(m_address + allocatable_size);
-                std::memset(management_ptr, 0, management_size);
+                u64 *management_ptr = GetPointer<u64>(m_address + size - overhead_size);
+                std::memset(management_ptr, 0, overhead_size);
 
                 /* Initialize the bitmap. */
-                m_page_bitmap.Initialize(management_ptr, m_count);
+                const size_t allocatable_region_size = (GetInteger(m_address) + size - overhead_size) - GetInteger(m_aligned_address);
+                MESOSPHERE_ABORT_UNLESS(allocatable_region_size >= sizeof(PageBuffer));
+
+                m_page_bitmap.Initialize(management_ptr, allocatable_region_size / sizeof(PageBuffer));
 
                 /* Free the pages to the bitmap. */
                 for (size_t i = 0; i < m_count; i++) {
@@ -69,7 +76,7 @@ namespace ams::kern {
                     cpu::ClearPageToZero(GetPointer<PageBuffer>(m_address) + i);
 
                     /* Set the bit for the free page. */
-                    m_page_bitmap.SetBit(i);
+                    m_page_bitmap.SetBit((GetInteger(m_address) + (i * sizeof(PageBuffer)) - GetInteger(m_aligned_address)) / sizeof(PageBuffer));
                 }
 
                 R_SUCCEED();
@@ -98,7 +105,28 @@ namespace ams::kern {
                 m_page_bitmap.ClearBit(offset);
                 m_peak = std::max(m_peak, (++m_used));
 
-                return GetPointer<PageBuffer>(m_address) + offset;
+                return GetPointer<PageBuffer>(m_aligned_address) + offset;
+            }
+
+            PageBuffer *Allocate(size_t count) {
+                /* Take the lock. */
+                KScopedInterruptDisable di;
+                KScopedSpinLock lk(m_lock);
+
+                /* Find a random free block. */
+                ssize_t soffset = m_page_bitmap.FindFreeRange(count);
+                if (AMS_UNLIKELY(soffset < 0)) {
+                    return nullptr;
+                }
+
+                const size_t offset = static_cast<size_t>(soffset);
+
+                /* Update our tracking. */
+                m_page_bitmap.ClearRange(offset, count);
+                m_used += count;
+                m_peak = std::max(m_peak, m_used);
+
+                return GetPointer<PageBuffer>(m_aligned_address) + offset;
             }
 
             void Free(PageBuffer *pb) {
@@ -110,7 +138,7 @@ namespace ams::kern {
                 KScopedSpinLock lk(m_lock);
 
                 /* Set the bit for the free page. */
-                size_t offset = (reinterpret_cast<uintptr_t>(pb) - GetInteger(m_address)) / sizeof(PageBuffer);
+                size_t offset = (reinterpret_cast<uintptr_t>(pb) - GetInteger(m_aligned_address)) / sizeof(PageBuffer);
                 m_page_bitmap.SetBit(offset);
 
                 /* Decrement our used count. */

@@ -50,9 +50,11 @@ namespace ams::kern {
     constexpr size_t KernelSlabHeapSize               = KernelSlabHeapDataSize + KernelSlabHeapGapsSizeMax;
 
     /* NOTE: This is calculated from KThread slab counts, assuming KThread size <= 0x800. */
+    constexpr size_t KernelPageBufferHeapSize         = 0x3E0000;
     constexpr size_t KernelSlabHeapAdditionalSize     = 0x148000;
+    constexpr size_t KernelPageBufferAdditionalSize   = 0x33C000;
 
-    constexpr size_t KernelResourceSize               = KernelPageTableHeapSize + KernelInitialPageHeapSize + KernelSlabHeapSize;
+    constexpr size_t KernelResourceSize               = KernelPageTableHeapSize + KernelInitialPageHeapSize + KernelSlabHeapSize + KernelPageBufferHeapSize;
 
     class KMemoryLayout {
         private:
@@ -150,6 +152,8 @@ namespace ams::kern {
 
             static MESOSPHERE_NOINLINE_IF_DEBUG const KMemoryRegion &GetKernelTraceBufferRegion() { return Dereference(GetVirtualLinearMemoryRegionTree().FindByType(KMemoryRegionType_VirtualDramKernelTraceBuffer)); }
 
+            static MESOSPHERE_NOINLINE_IF_DEBUG const KMemoryRegion &GetSecureAppletMemoryRegion() { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_VirtualDramKernelSecureAppletMemory)); }
+
             static MESOSPHERE_NOINLINE_IF_DEBUG const KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) { return Dereference(FindLinear(address)); }
             static MESOSPHERE_NOINLINE_IF_DEBUG const KMemoryRegion &GetPhysicalLinearRegion(KPhysicalAddress address) { return Dereference(FindLinear(address)); }
 
@@ -209,6 +213,7 @@ namespace ams::kern {
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelBase); }
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelCodeRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelCode); }
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelSlabRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelSlab); }
+            static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelSecureAppletMemoryRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelSecureAppletMemory); }
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelPageTableHeapRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelPtHeap); }
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelInitPageTableRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelInitPt); }
 
