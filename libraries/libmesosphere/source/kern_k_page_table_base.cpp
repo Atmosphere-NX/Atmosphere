@@ -1384,11 +1384,8 @@ namespace ams::kern {
         TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
         R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address), svc::ResultInvalidCurrentMemory());
 
-        /* The region we're traversing has to be heap. */
-        const KPhysicalAddress phys_address = cur_entry.phys_addr;
-        R_UNLESS(this->IsHeapPhysicalAddress(phys_address), svc::ResultInvalidCurrentMemory());
-
         /* Traverse until we have enough size or we aren't contiguous any more. */
+        const KPhysicalAddress phys_address = cur_entry.phys_addr;
         size_t contig_size;
         for (contig_size = cur_entry.block_size - (GetInteger(phys_address) & (cur_entry.block_size - 1)); contig_size < size; contig_size += cur_entry.block_size) {
             if (!impl.ContinueTraversal(std::addressof(cur_entry), std::addressof(context))) {
@@ -1402,11 +1399,11 @@ namespace ams::kern {
         /* Take the minimum size for our region. */
         size = std::min(size, contig_size);
 
-        /* Check that the memory is contiguous. */
-        R_TRY(this->CheckMemoryStateContiguous(address, size,
-                                               state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted,
-                                               perm_mask, perm,
-                                               attr_mask, attr));
+        /* Check that the memory is contiguous (modulo the reference count bit). */
+        const u32 test_state_mask = state_mask | KMemoryState_FlagReferenceCounted;
+        if (R_FAILED(this->CheckMemoryStateContiguous(address, size, test_state_mask, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr))) {
+            R_TRY(this->CheckMemoryStateContiguous(address, size, test_state_mask, state, perm_mask, perm, attr_mask, attr));
+        }
 
         /* The memory is contiguous, so set the output range. */
         *out = {
@@ -1913,7 +1910,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, phys_addr, true, properties, OperationType_Map, false));
 
         /* Update the blocks. */
-        m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Io, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
+        m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Io, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         R_SUCCEED();
@@ -1927,7 +1924,7 @@ namespace ams::kern {
 
         /* Validate the memory state. */
         size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Io, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Io, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_Locked));
 
         /* Validate that the region being unmapped corresponds to the physical range described. */
         {
@@ -2687,7 +2684,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+    Result KPageTableBase::LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
@@ -2696,9 +2693,10 @@ namespace ams::kern {
         KScopedLightLock lk(m_general_lock);
 
         /* Check the memory state. */
-        const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
+        const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap) | (check_heap ? KMemoryState_FlagReferenceCounted : KMemoryState_None);
         size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
+        KMemoryState old_state;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), nullptr, nullptr, std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
 
         /* Create an update allocator. */
         Result allocator_result;
@@ -2708,10 +2706,13 @@ namespace ams::kern {
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
 
+        /* Set whether the locked memory was io. */
+        *out_is_io = old_state == KMemoryState_Io;
+
         R_SUCCEED();
     }
 
-    Result KPageTableBase::LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
+    Result KPageTableBase::LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size, bool check_heap) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
@@ -2720,10 +2721,11 @@ namespace ams::kern {
         KScopedLightLock lk(m_general_lock);
 
         /* Check the memory state. */
+        const u32 test_state = KMemoryState_FlagCanDeviceMap | (check_heap ? KMemoryState_FlagReferenceCounted : KMemoryState_None);
         size_t num_allocator_blocks;
         R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_allocator_blocks),
                                                address, size,
-                                               KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap, KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap,
+                                               test_state, test_state,
                                                KMemoryPermission_None, KMemoryPermission_None,
                                                KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
@@ -2798,7 +2800,7 @@ namespace ams::kern {
         KScopedLightLock lk(m_general_lock);
 
         /* Get the range. */
-        const u32 test_state = KMemoryState_FlagReferenceCounted | (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
+        const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
         R_TRY(this->GetContiguousMemoryRangeWithState(out,
                                                       address, size,
                                                       test_state, test_state,

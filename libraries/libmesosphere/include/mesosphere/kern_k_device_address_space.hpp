@@ -41,17 +41,17 @@ namespace ams::kern {
             Result Attach(ams::svc::DeviceName device_name);
             Result Detach(ams::svc::DeviceName device_name);
 
-            Result MapByForce(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
-                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, false));
+            Result MapByForce(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, u32 option) {
+                R_RETURN(this->Map(page_table, process_address, size, device_address, option, false));
             }
 
-            Result MapAligned(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
-                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, true));
+            Result MapAligned(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, u32 option) {
+                R_RETURN(this->Map(page_table, process_address, size, device_address, option, true));
             }
 
             Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address);
         private:
-            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
+            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, u32 option, bool is_aligned);
         public:
             static void Initialize();
     };
