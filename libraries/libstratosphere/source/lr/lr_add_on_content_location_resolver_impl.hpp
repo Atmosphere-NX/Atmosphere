@@ -53,9 +53,9 @@ namespace ams::lr {
             Result UnregisterAllAddOnContentPath();
             Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids);
             Result UnregisterApplicationAddOnContent(ncm::ApplicationId id);
-            Result GetRegisteredAddOnContentPaths(sf::Out<Path> out, sf::Out<Path> out2, ncm::DataId id);
-            Result RegisterAddOnContentPath(ncm::DataId id, ncm::ApplicationId application_id, const Path &path);
-            Result RegisterAddOnContentPaths(ncm::DataId id, ncm::ApplicationId application_id, const Path &path, const Path &path2);
+            Result GetRegisteredAddOnContentPaths(sf::Out<PathByMapAlias> out, sf::Out<PathByMapAlias> out2, ncm::DataId id);
+            Result RegisterAddOnContentPath(ncm::DataId id, ncm::ApplicationId application_id, const PathByMapAlias &path);
+            Result RegisterAddOnContentPaths(ncm::DataId id, ncm::ApplicationId application_id, const PathByMapAlias &path, const PathByMapAlias &path2);
         private:
             Result ResolveAddOnContentPath(Path *out, RedirectionAttributes *out_attr, ncm::DataId id);
             Result GetRegisteredAddOnContentPaths(Path *out, RedirectionAttributes *out_attr, Path *out2, RedirectionAttributes *out_attr2, ncm::DataId id);

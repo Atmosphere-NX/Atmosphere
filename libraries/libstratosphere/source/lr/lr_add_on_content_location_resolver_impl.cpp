@@ -156,16 +156,16 @@ namespace ams::lr {
         R_SUCCEED();
     }
 
-    Result AddOnContentLocationResolverImpl::GetRegisteredAddOnContentPaths(sf::Out<Path> out, sf::Out<Path> out2, ncm::DataId id) {
+    Result AddOnContentLocationResolverImpl::GetRegisteredAddOnContentPaths(sf::Out<PathByMapAlias> out, sf::Out<PathByMapAlias> out2, ncm::DataId id) {
         RedirectionAttributes attr, attr2;
         R_RETURN(this->GetRegisteredAddOnContentPaths(out.GetPointer(), std::addressof(attr), out2.GetPointer(), std::addressof(attr2), id));
     }
 
-    Result AddOnContentLocationResolverImpl::RegisterAddOnContentPath(ncm::DataId id, ncm::ApplicationId application_id, const lr::Path &path) {
+    Result AddOnContentLocationResolverImpl::RegisterAddOnContentPath(ncm::DataId id, ncm::ApplicationId application_id, const lr::PathByMapAlias &path) {
         R_RETURN(this->RegisterAddOnContentPaths(id, application_id, path, DefaultRedirectionAttributes, EmptyPath, DefaultRedirectionAttributes));
     }
 
-    Result AddOnContentLocationResolverImpl::RegisterAddOnContentPaths(ncm::DataId id, ncm::ApplicationId application_id, const lr::Path &path, const lr::Path &path2) {
+    Result AddOnContentLocationResolverImpl::RegisterAddOnContentPaths(ncm::DataId id, ncm::ApplicationId application_id, const lr::PathByMapAlias &path, const lr::PathByMapAlias &path2) {
         R_RETURN(this->RegisterAddOnContentPaths(id, application_id, path, DefaultRedirectionAttributes, path2, DefaultRedirectionAttributes));
     }
 
