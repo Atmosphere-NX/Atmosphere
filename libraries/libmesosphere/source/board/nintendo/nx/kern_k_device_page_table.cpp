@@ -1118,6 +1118,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     Result KDevicePageTable::MapImpl(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
+
         /* Ensure that the region we're mapping to is free. */
         R_UNLESS(this->IsFree(device_address, size), svc::ResultInvalidCurrentMemory());
 
@@ -1416,10 +1417,14 @@ namespace ams::kern::board::nintendo::nx {
         return true;
     }
 
-    Result KDevicePageTable::Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
+    Result KDevicePageTable::Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool is_io) {
         /* Validate address/size. */
         MESOSPHERE_ASSERT((device_address & ~DeviceVirtualAddressMask) == 0);
         MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* IO is not supported on NX board. */
+        MESOSPHERE_ASSERT(!is_io);
+        MESOSPHERE_UNUSED(is_io);
 
         /* Map the pages. */
         R_RETURN(this->MapImpl(page_table, process_address, size, device_address, device_perm, is_aligned));

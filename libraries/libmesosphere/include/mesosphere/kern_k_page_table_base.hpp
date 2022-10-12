@@ -393,8 +393,8 @@ namespace ams::kern {
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);
             Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size);
 
-            Result LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
-            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size);
+            Result LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap);
+            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size, bool check_heap);
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
             Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size);

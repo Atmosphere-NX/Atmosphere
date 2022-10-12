@@ -158,12 +158,12 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.WriteDebugIoMemory(address, buffer, size));
             }
 
-            Result LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
-                R_RETURN(m_page_table.LockForMapDeviceAddressSpace(address, size, perm, is_aligned));
+            Result LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap) {
+                R_RETURN(m_page_table.LockForMapDeviceAddressSpace(out_is_io, address, size, perm, is_aligned, check_heap));
             }
 
-            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
-                R_RETURN(m_page_table.LockForUnmapDeviceAddressSpace(address, size));
+            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size, bool check_heap) {
+                R_RETURN(m_page_table.LockForUnmapDeviceAddressSpace(address, size, check_heap));
             }
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {

@@ -63,7 +63,7 @@ namespace ams::kern {
 
 
         KMemoryState_Free               = ams::svc::MemoryState_Free,
-        KMemoryState_Io                 = ams::svc::MemoryState_Io                  | KMemoryState_FlagMapped,
+        KMemoryState_Io                 = ams::svc::MemoryState_Io                  | KMemoryState_FlagMapped | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap,
         KMemoryState_Static             = ams::svc::MemoryState_Static              | KMemoryState_FlagMapped | KMemoryState_FlagCanQueryPhysical,
         KMemoryState_Code               = ams::svc::MemoryState_Code                | KMemoryState_FlagsCode  | KMemoryState_FlagCanMapProcess,
         KMemoryState_CodeData           = ams::svc::MemoryState_CodeData            | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeMemory,
@@ -111,7 +111,7 @@ namespace ams::kern {
 
 #if 1
     static_assert(KMemoryState_Free             == 0x00000000);
-    static_assert(KMemoryState_Io               == 0x00002001);
+    static_assert(KMemoryState_Io               == 0x00182001);
     static_assert(KMemoryState_Static           == 0x00042002);
     static_assert(KMemoryState_Code             == 0x00DC7E03);
     static_assert(KMemoryState_CodeData         == 0x03FEBD04);
