@@ -24,7 +24,6 @@ namespace ams::kern::init {
         HANDLER(KThread,               (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
         HANDLER(KEvent,                (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
         HANDLER(KInterruptEvent,       (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
-        HANDLER(KInterruptEventTask,   (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
         HANDLER(KPort,                 (SLAB_COUNT(KPort)),                                                       ## __VA_ARGS__) \
         HANDLER(KSharedMemory,         (SLAB_COUNT(KSharedMemory)),                                               ## __VA_ARGS__) \
         HANDLER(KSharedMemoryInfo,     (SLAB_COUNT(KSharedMemory) * 8),                                           ## __VA_ARGS__) \

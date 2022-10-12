@@ -22,9 +22,7 @@
 
 namespace ams::kern {
 
-    class KInterruptEventTask;
-
-    class KInterruptEvent final : public KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent> {
+    class KInterruptEvent final : public KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>, public KInterruptTask {
         MESOSPHERE_AUTOOBJECT_TRAITS(KInterruptEvent, KReadableEvent);
         private:
             s32 m_interrupt_id;
@@ -54,21 +52,9 @@ namespace ams::kern {
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr s32 GetInterruptId() const { return m_interrupt_id; }
-    };
-
-    class KInterruptEventTask : public KSlabAllocated<KInterruptEventTask>, public KInterruptTask {
-        private:
-            KInterruptEvent *m_event;
-        public:
-            constexpr KInterruptEventTask() : m_event(nullptr) { /* ... */ }
-            ~KInterruptEventTask() { /* ... */ }
 
             virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
             virtual void DoTask() override;
-
-            void Unregister(s32 interrupt_id, s32 core_id);
-        public:
-            static Result Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event);
     };
 
 }
