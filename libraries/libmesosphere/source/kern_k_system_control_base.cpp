@@ -292,4 +292,13 @@ namespace ams::kern {
         Kernel::GetMemoryManager().Close(KPageTable::GetHeapPhysicalAddress(address), size / PageSize);
     }
 
+    /* Insecure Memory. */
+    KResourceLimit *KSystemControlBase::GetInsecureMemoryResourceLimit() {
+        return std::addressof(Kernel::GetSystemResourceLimit());
+    }
+
+    u32 KSystemControlBase::GetInsecureMemoryPool() {
+        return KMemoryManager::Pool_SystemNonSecure;
+    }
+
 }
