@@ -110,6 +110,10 @@ namespace ams::kern {
         KMemoryState_CodeOut            = ams::svc::MemoryState_CodeOut             | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped,
 
         KMemoryState_Coverage           = ams::svc::MemoryState_Coverage            | KMemoryState_FlagMapped,
+
+        KMemoryState_Insecure           = ams::svc::MemoryState_Insecure            | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped       | KMemoryState_FlagCanChangeAttribute
+                                                                                                              | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap
+                                                                                                              | KMemoryState_FlagCanUseNonSecureIpc  | KMemoryState_FlagCanUseNonDeviceIpc,
     };
 
 #if 1
@@ -136,6 +140,7 @@ namespace ams::kern {
     static_assert(KMemoryState_GeneratedCode    == 0x04402214);
     static_assert(KMemoryState_CodeOut          == 0x04402015);
     static_assert(KMemoryState_Coverage         == 0x00002016);
+    static_assert(KMemoryState_Insecure         == 0x05583817);
 #endif
 
     enum KMemoryPermission : u8 {

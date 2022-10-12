@@ -103,6 +103,7 @@ namespace ams::kern {
         m_max_heap_size                     = 0;
         m_mapped_physical_memory_size       = 0;
         m_mapped_unsafe_physical_memory     = 0;
+        m_mapped_insecure_memory            = 0;
         m_mapped_ipc_server_memory          = 0;
 
         m_memory_block_slab_manager         = Kernel::GetSystemSystemResource().GetMemoryBlockSlabManagerPointer();
@@ -287,6 +288,7 @@ namespace ams::kern {
         m_max_heap_size                 = 0;
         m_mapped_physical_memory_size   = 0;
         m_mapped_unsafe_physical_memory = 0;
+        m_mapped_insecure_memory        = 0;
         m_mapped_ipc_server_memory      = 0;
 
         const bool fill_memory = KTargetSystem::IsDebugMemoryFillEnabled();
@@ -340,6 +342,13 @@ namespace ams::kern {
             Kernel::GetUnsafeMemory().Release(m_mapped_unsafe_physical_memory);
         }
 
+        /* Release any insecure mapped memory. */
+        if (m_mapped_insecure_memory) {
+            if (auto * const insecure_resource_limit = KSystemControl::GetInsecureMemoryResourceLimit(); insecure_resource_limit != nullptr) {
+                insecure_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, m_mapped_insecure_memory);
+            }
+        }
+
         /* Release any ipc server memory. */
         if (m_mapped_ipc_server_memory) {
             m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, m_mapped_ipc_server_memory);
@@ -375,6 +384,7 @@ namespace ams::kern {
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
             case KMemoryState_Coverage:
+            case KMemoryState_Insecure:
                 return m_alias_code_region_start;
             case KMemoryState_Code:
             case KMemoryState_CodeData:
@@ -409,6 +419,7 @@ namespace ams::kern {
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
             case KMemoryState_Coverage:
+            case KMemoryState_Insecure:
                 return m_alias_code_region_end - m_alias_code_region_start;
             case KMemoryState_Code:
             case KMemoryState_CodeData:
@@ -446,6 +457,7 @@ namespace ams::kern {
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
             case KMemoryState_Coverage:
+            case KMemoryState_Insecure:
                 return is_in_region && !is_in_heap && !is_in_alias;
             case KMemoryState_Normal:
                 MESOSPHERE_ASSERT(is_in_heap);
@@ -1033,6 +1045,97 @@ namespace ams::kern {
 
             /* Note that we reprotected pages. */
             reprotected_pages = true;
+        }
+
+        R_SUCCEED();
+    }
+
+    Result KPageTableBase::MapInsecureMemory(KProcessAddress address, size_t size) {
+        /* Get the insecure memory resource limit and pool. */
+        auto * const insecure_resource_limit = KSystemControl::GetInsecureMemoryResourceLimit();
+        const auto insecure_pool             = static_cast<KMemoryManager::Pool>(KSystemControl::GetInsecureMemoryPool());
+
+        /* Reserve the insecure memory. */
+        /* NOTE: ResultOutOfMemory is returned here instead of the usual LimitReached. */
+        KScopedResourceReservation memory_reservation(insecure_resource_limit, ams::svc::LimitableResource_PhysicalMemoryMax, size);
+        R_UNLESS(memory_reservation.Succeeded(), svc::ResultOutOfMemory());
+
+        /* Allocate pages for the insecure memory. */
+        KPageGroup pg(m_block_info_manager);
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), size / PageSize, KMemoryManager::EncodeOption(insecure_pool, KMemoryManager::Direction_FromFront)));
+
+        /* Close the opened pages when we're done with them. */
+        /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
+        ON_SCOPE_EXIT { pg.Close(); };
+
+        /* Clear all the newly allocated pages. */
+        for (const auto &it : pg) {
+            std::memset(GetVoidPointer(GetHeapVirtualAddress(it.GetAddress())), m_heap_fill_value, it.GetSize());
+        }
+
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Validate that the address's state is valid. */
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        Result allocator_result;
+        KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
+        R_TRY(allocator_result);
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Map the pages. */
+        const size_t num_pages = size / PageSize;
+        const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_DisableHead };
+        R_TRY(this->Operate(updater.GetPageList(), address, num_pages, pg, map_properties, OperationType_MapGroup, false));
+
+        /* Apply the memory block update. */
+        m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Insecure, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
+
+        /* Update our mapped insecure size. */
+        m_mapped_insecure_memory += size;
+
+        /* Commit the memory reservation. */
+        memory_reservation.Commit();
+
+        /* We succeeded. */
+        R_SUCCEED();
+    }
+
+    Result KPageTableBase::UnmapInsecureMemory(KProcessAddress address, size_t size) {
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Check the memory state. */
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, KMemoryState_Insecure, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        Result allocator_result;
+        KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
+        R_TRY(allocator_result);
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Unmap the memory. */
+        const size_t num_pages = size / PageSize;
+        const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
+        R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+        /* Apply the memory block update. */
+        m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
+
+        /* Update our mapped insecure size. */
+        m_mapped_insecure_memory -= size;
+
+        /* Release the insecure memory from the insecure limit. */
+        if (auto * const insecure_resource_limit = KSystemControl::GetInsecureMemoryResourceLimit(); insecure_resource_limit != nullptr) {
+            insecure_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, size);
         }
 
         R_SUCCEED();

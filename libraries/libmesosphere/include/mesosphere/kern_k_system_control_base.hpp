@@ -25,6 +25,8 @@ namespace ams::kern {
 
 namespace ams::kern {
 
+    class KResourceLimit;
+
     class KSystemControlBase {
         public:
             /* This can be overridden as needed. */
@@ -86,6 +88,10 @@ namespace ams::kern {
             static size_t CalculateRequiredSecureMemorySize(size_t size, u32 pool);
             static Result AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool);
             static void FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool);
+
+            /* Insecure Memory. */
+            static KResourceLimit *GetInsecureMemoryResourceLimit();
+            static u32 GetInsecureMemoryPool();
         protected:
             template<typename F>
             static ALWAYS_INLINE u64 GenerateUniformRange(u64 min, u64 max, F f) {

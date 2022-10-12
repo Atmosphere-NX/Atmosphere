@@ -95,6 +95,7 @@ namespace ams::svc {
         MemoryState_GeneratedCode    = 0x14,
         MemoryState_CodeOut          = 0x15,
         MemoryState_Coverage         = 0x16,
+        MemoryState_Insecure         = 0x17,
     };
 
     enum MemoryPermission : u32 {

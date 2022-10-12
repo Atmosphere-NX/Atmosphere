@@ -110,6 +110,14 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.MapRegion(region_type, perm));
             }
 
+            Result MapInsecureMemory(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.MapInsecureMemory(address, size));
+            }
+
+            Result UnmapInsecureMemory(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.UnmapInsecureMemory(address, size));
+            }
+
             Result MapPageGroup(KProcessAddress addr, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm) {
                 R_RETURN(m_page_table.MapPageGroup(addr, pg, state, perm));
             }
