@@ -192,7 +192,7 @@ namespace ams::kern::arch::arm64 {
     Result KPageTable::InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize basic fields. */
         m_asid = 0;
-        m_manager = std::addressof(Kernel::GetSystemPageTableManager());
+        m_manager = Kernel::GetSystemSystemResource().GetPageTableManagerPointer();
 
         /* Allocate a page for ttbr. */
         /* NOTE: It is a postcondition of page table manager allocation that the page is all-zero. */
@@ -207,7 +207,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
+    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* The input ID isn't actually used. */
         MESOSPHERE_UNUSED(id);
 
@@ -216,7 +216,7 @@ namespace ams::kern::arch::arm64 {
         ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
 
         /* Set our manager. */
-        m_manager = pt_manager;
+        m_manager = system_resource->GetPageTableManagerPointer();
 
         /* Allocate a new table, and set our ttbr value. */
         const KVirtualAddress new_table = m_manager->Allocate();
@@ -228,7 +228,7 @@ namespace ams::kern::arch::arm64 {
         const size_t as_width = GetAddressSpaceWidth(as_type);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager, resource_limit));
+        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, system_resource, resource_limit));
 
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();

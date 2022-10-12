@@ -64,11 +64,13 @@ namespace ams::kern {
             static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
-    template<typename Derived, typename Base, bool SupportDynamicExpansion = false> requires std::derived_from<Base, KAutoObjectWithList>
-    class KAutoObjectWithSlabHeapAndContainer : public Base {
+    template<typename Derived, typename Base, bool SupportDynamicExpansion> requires std::derived_from<Base, KAutoObject>
+    class KAutoObjectWithSlabHeapBase : public Base {
+        private:
+            template<typename, typename, bool> friend class KAutoObjectWithSlabHeap;
+            template<typename, typename, bool> friend class KAutoObjectWithSlabHeapAndContainer;
         private:
             static constinit inline KSlabHeap<Derived, SupportDynamicExpansion> s_slab_heap;
-            static constinit inline KAutoObjectWithListContainer<Derived> s_container;
         private:
             static ALWAYS_INLINE Derived *Allocate() {
                 return s_slab_heap.Allocate();
@@ -77,12 +79,6 @@ namespace ams::kern {
             static ALWAYS_INLINE void Free(Derived *obj) {
                 s_slab_heap.Free(obj);
             }
-        public:
-            class ListAccessor : public KAutoObjectWithListContainer<Derived>::ListAccessor {
-                public:
-                    ALWAYS_INLINE ListAccessor() : KAutoObjectWithListContainer<Derived>::ListAccessor(s_container) { /* ... */ }
-                    ALWAYS_INLINE ~ListAccessor() { /* ... */ }
-            };
         private:
             static ALWAYS_INLINE bool IsInitialized(const Derived *obj) {
                 if constexpr (requires { { obj->IsInitialized() } -> std::same_as<bool>; }) {
@@ -100,9 +96,9 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr explicit KAutoObjectWithSlabHeapAndContainer(util::ConstantInitializeTag) : Base(util::ConstantInitialize) { /* ... */ }
+            constexpr explicit KAutoObjectWithSlabHeapBase(util::ConstantInitializeTag) : Base(util::ConstantInitialize) { /* ... */ }
 
-            explicit KAutoObjectWithSlabHeapAndContainer() { /* ... */ }
+            explicit KAutoObjectWithSlabHeapBase() { /* ... */ }
 
             /* NOTE: IsInitialized() and GetPostDestroyArgument() are virtual functions declared in this class, */
             /* in Nintendo's kernel. We fully devirtualize them, as Destroy() is the only user of them. */
@@ -110,14 +106,14 @@ namespace ams::kern {
             virtual void Destroy() override final {
                 Derived * const derived = static_cast<Derived *>(this);
 
-                if (IsInitialized(derived)) {
-                    s_container.Unregister(derived);
-                    const uintptr_t arg = GetPostDestroyArgument(derived);
+                if (KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>::IsInitialized(derived)) {
+                    Derived::PreFinalize(derived);
+                    const uintptr_t arg = KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>::GetPostDestroyArgument(derived);
                     derived->Finalize();
-                    Free(derived);
+                    KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>::Free(derived);
                     Derived::PostDestroy(arg);
                 } else {
-                    Free(derived);
+                    KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>::Free(derived);
                 }
             }
 
@@ -127,7 +123,6 @@ namespace ams::kern {
         public:
             static void InitializeSlabHeap(void *memory, size_t memory_size) {
                 s_slab_heap.Initialize(memory, memory_size);
-                s_container.Initialize();
             }
 
             static Derived *Create() {
@@ -150,16 +145,50 @@ namespace ams::kern {
                 return obj;
             }
 
-            static void Register(Derived *obj) {
-                return s_container.Register(obj);
-            }
-
             static size_t GetObjectSize() { return s_slab_heap.GetObjectSize(); }
             static size_t GetSlabHeapSize() { return s_slab_heap.GetSlabHeapSize(); }
             static size_t GetPeakIndex() { return s_slab_heap.GetPeakIndex(); }
             static uintptr_t GetSlabHeapAddress() { return s_slab_heap.GetSlabHeapAddress(); }
 
             static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
+    };
+
+    template<typename Derived, typename Base, bool SupportDynamicExpansion = false>
+    class KAutoObjectWithSlabHeap : public KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion> {
+        public:
+            constexpr explicit KAutoObjectWithSlabHeap(util::ConstantInitializeTag) : KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>(util::ConstantInitialize) { /* ... */ }
+
+            explicit KAutoObjectWithSlabHeap() { /* ... */ }
+
+            static ALWAYS_INLINE void PreFinalize(Derived *) { /* ... */ }
+    };
+
+
+    template<typename Derived, typename Base, bool SupportDynamicExpansion = false> requires std::derived_from<Base, KAutoObjectWithList>
+    class KAutoObjectWithSlabHeapAndContainer : public KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion> {
+        private:
+            static constinit inline KAutoObjectWithListContainer<Derived> s_container;
+        public:
+            class ListAccessor : public KAutoObjectWithListContainer<Derived>::ListAccessor {
+                public:
+                    ALWAYS_INLINE ListAccessor() : KAutoObjectWithListContainer<Derived>::ListAccessor(s_container) { /* ... */ }
+                    ALWAYS_INLINE ~ListAccessor() { /* ... */ }
+            };
+        public:
+            constexpr explicit KAutoObjectWithSlabHeapAndContainer(util::ConstantInitializeTag) : KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>(util::ConstantInitialize) { /* ... */ }
+
+            explicit KAutoObjectWithSlabHeapAndContainer() { /* ... */ }
+        public:
+            static void InitializeSlabHeap(void *memory, size_t memory_size) {
+                KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion>::InitializeSlabHeap(memory, memory_size);
+                s_container.Initialize();
+            }
+
+            static void Register(Derived *obj) {
+                return s_container.Register(obj);
+            }
+
+            static ALWAYS_INLINE void PreFinalize(Derived *obj) { s_container.Unregister(obj); }
     };
 
 }
