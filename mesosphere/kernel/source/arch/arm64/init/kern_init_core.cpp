@@ -34,12 +34,12 @@ namespace ams::kern::init {
     namespace {
 
         /* Global Allocator. */
-        KInitialPageAllocator g_initial_page_allocator;
+        constinit KInitialPageAllocator g_initial_page_allocator;
 
         /* Global initial arguments array. */
-        KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
+        constinit KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
 
-        KInitArguments g_init_arguments[cpu::NumCores];
+        constinit KInitArguments g_init_arguments[cpu::NumCores];
 
         /* Page table attributes. */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
@@ -263,14 +263,17 @@ namespace ams::kern::init {
         const KVirtualAddress misc_region_start = GetRandomAlignedRegion(misc_region_size, MiscRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_region_start), misc_region_size, KMemoryRegionType_KernelMisc));
 
+        /* Determine if we'll use extra thread resources. */
+        const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
+
         /* Setup the stack region. */
-        constexpr size_t StackRegionSize  = 14_MB;
+        const size_t stack_region_size = use_extra_resources ? 24_MB : 14_MB;
         constexpr size_t StackRegionAlign = KernelAslrAlignment;
-        const KVirtualAddress stack_region_start = GetRandomAlignedRegion(StackRegionSize, StackRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), StackRegionSize, KMemoryRegionType_KernelStack));
+        const KVirtualAddress stack_region_start = GetRandomAlignedRegion(stack_region_size, StackRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), stack_region_size, KMemoryRegionType_KernelStack));
 
         /* Determine the size of the resource region. */
-        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
+        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit(use_extra_resources);
 
         /* Determine the size of the slab region. */
         const size_t slab_region_size = util::AlignUp(CalculateTotalSlabHeapSize(), PageSize);

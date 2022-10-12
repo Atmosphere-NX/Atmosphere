@@ -187,7 +187,7 @@ namespace ams::kern {
 
             static void InitializeLinearMemoryRegionTrees();
 
-            static size_t GetResourceRegionSizeForInit();
+            static size_t GetResourceRegionSizeForInit(bool use_extra_resource);
 
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelRegionExtents()      { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel); }
             static MESOSPHERE_NOINLINE_IF_DEBUG auto GetKernelCodeRegionExtents()  { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelCode); }
