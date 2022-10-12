@@ -348,7 +348,7 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
         MESOSPHERE_ASSERT(this->ContainsPages(virt_addr, num_pages));
 
-        if (operation == OperationType_Map) {
+        if (operation == OperationType_Map || operation == OperationType_MapFirst) {
             MESOSPHERE_ABORT_UNLESS(is_pa_valid);
             MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
         } else {
@@ -357,12 +357,26 @@ namespace ams::kern::arch::arm64 {
 
         if (operation == OperationType_Unmap) {
             R_RETURN(this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll));
+        } else if (operation == OperationType_Separate) {
+            const size_t size = num_pages * PageSize;
+            R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
+            ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
+
+            if (num_pages > 1) {
+                const auto end_page  = virt_addr + size;
+                const auto last_page = end_page - PageSize;
+
+                R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
+            }
+
+            R_SUCCEED();
         } else {
             auto entry_template = this->GetEntryTemplate(properties);
 
             switch (operation) {
                 case OperationType_Map:
-                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
+                case OperationType_MapFirst:
+                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, operation != OperationType_MapFirst, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
                     R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, page_list, reuse_ll));
                 case OperationType_ChangePermissionsAndRefresh:
@@ -740,7 +754,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, bool not_first, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Cache initial addresses for use on cleanup. */
@@ -811,7 +825,11 @@ namespace ams::kern::arch::arm64 {
 
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
-            Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
+            if (not_first) {
+                Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
+            } else {
+                Kernel::GetMemoryManager().OpenFirst(orig_phys_addr, num_pages);
+            }
         }
 
         R_SUCCEED();
