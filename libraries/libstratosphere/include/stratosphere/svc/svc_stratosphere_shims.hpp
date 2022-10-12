@@ -503,6 +503,14 @@
                     ::svcCallSecureMonitor(reinterpret_cast<::SecmonArgs *>(args));
                 }
 
+                ALWAYS_INLINE Result MapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcMapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
+                }
+
+                ALWAYS_INLINE Result UnmapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcUnmapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
+                }
+
             }
 
         #endif

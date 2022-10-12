@@ -43,7 +43,7 @@ namespace ams::os::impl {
             }
 
             void *AllocateStackGuardSpace(size_t size) {
-                return reinterpret_cast<void *>(m_allocator.AllocateSpace(size, os::MemoryPageSize, 0));
+                return reinterpret_cast<void *>(m_allocator.AllocateSpace(size, os::MemoryPageSize, 0, os::impl::AddressSpaceAllocatorDefaultGenerateRandom));
             }
 
             bool CheckGuardSpace(uintptr_t address, size_t size) {

@@ -20,7 +20,7 @@ namespace ams::os::impl {
 
     class ProcessCodeMemoryImpl {
         public:
-            static Result Map(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions);
+            static Result Map(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random);
             static Result Unmap(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions);
     };
 

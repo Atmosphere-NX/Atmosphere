@@ -18,6 +18,8 @@
 
 namespace ams::os {
 
+    using AddressSpaceGenerateRandomFunction = u64 (*)(u64);
+
     enum MemoryPermission {
         MemoryPermission_None        = (0 << 0),
         MemoryPermission_ReadOnly    = (1 << 0),

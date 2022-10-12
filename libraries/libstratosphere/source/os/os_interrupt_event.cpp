@@ -62,6 +62,11 @@ namespace ams::os {
         return GetReference(event->impl).Clear();
     }
 
+    NativeHandle GetInterruptEventHandle(const InterruptEventType *event) {
+        AMS_ASSERT(event->state == InterruptEventType::State_Initialized);
+        return GetReference(event->impl).GetHandle();
+    }
+
     void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterruptEventType *event) {
         AMS_ASSERT(event->state == InterruptEventType::State_Initialized);
 

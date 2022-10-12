@@ -20,7 +20,7 @@ namespace ams::os::impl {
 
     class ProcessMemoryImpl {
         public:
-            static Result Map(void **out, NativeHandle handle, u64 process_address, size_t size);
+            static Result Map(void **out, NativeHandle handle, u64 process_address, size_t size, AddressSpaceGenerateRandomFunction generate_random);
             static void Unmap(void *mapped_memory, NativeHandle handle, u64 process_address, size_t size);
 
             static Result SetMemoryPermission(NativeHandle handle, u64 process_address, u64 size, MemoryPermission perm);

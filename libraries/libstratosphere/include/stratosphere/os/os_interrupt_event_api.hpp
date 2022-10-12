@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_interrupt_event_common.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -30,6 +31,8 @@ namespace ams::os {
     bool TryWaitInterruptEvent(InterruptEventType *event);
     bool TimedWaitInterruptEvent(InterruptEventType *event, TimeSpan timeout);
     void ClearInterruptEvent(InterruptEventType *event);
+
+    NativeHandle GetInterruptEventHandle(const InterruptEventType *event);
 
     void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterruptEventType *event);
 

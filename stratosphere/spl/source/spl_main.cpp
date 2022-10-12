@@ -51,26 +51,26 @@ namespace ams {
             };
 
             constexpr sm::ServiceName RandomServiceName = sm::ServiceName::Encode("csrng");
-            constexpr size_t          RandomMaxSessions = 3;
+            constexpr size_t          RandomMaxSessions = 10; /* NOTE: Official is 9. */
 
             constexpr sm::ServiceName GeneralServiceName = sm::ServiceName::Encode("spl:");
             constexpr size_t          DeprecatedMaxSessions = 13;
-            constexpr size_t          GeneralMaxSessions = 7;
+            constexpr size_t          GeneralMaxSessions = 9; /* NOTE: Official is 8. */
 
             constexpr sm::ServiceName CryptoServiceName = sm::ServiceName::Encode("spl:mig");
-            constexpr size_t          CryptoMaxSessions = 7;
+            constexpr size_t          CryptoMaxSessions = 7; /* NOTE: Official is 6. */
 
             constexpr sm::ServiceName SslServiceName = sm::ServiceName::Encode("spl:ssl");
-            constexpr size_t          SslMaxSessions = 2;
+            constexpr size_t          SslMaxSessions = 2; /* NOTE: Official is 2. */
 
             constexpr sm::ServiceName EsServiceName = sm::ServiceName::Encode("spl:es");
-            constexpr size_t          EsMaxSessions = 2;
+            constexpr size_t          EsMaxSessions = 2; /* NOTE: Official is 2. */
 
             constexpr sm::ServiceName FsServiceName = sm::ServiceName::Encode("spl:fs");
-            constexpr size_t          FsMaxSessions = 3;
+            constexpr size_t          FsMaxSessions = 3; /* NOTE: Official is 1. */
 
             constexpr sm::ServiceName ManuServiceName = sm::ServiceName::Encode("spl:manu");
-            constexpr size_t          ManuMaxSessions = 1;
+            constexpr size_t          ManuMaxSessions = 1; /* NOTE: Official is 1. */
 
             /* csrng, spl:, spl:mig, spl:ssl, spl:es, spl:fs, spl:manu. */
             /* TODO: Consider max sessions enforcement? */
