@@ -509,7 +509,8 @@ namespace ams::kern {
 
     void KThread::OnLeaveUsermodeException() {
         this->ClearUsermodeExceptionSvcPermissions();
-        this->ClearInUsermodeExceptionHandler();
+
+        /* NOTE: InUsermodeExceptionHandler will be cleared by RestoreContext. */
     }
 
     void KThread::Pin() {

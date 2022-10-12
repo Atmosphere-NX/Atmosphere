@@ -38,6 +38,25 @@ namespace ams::kern::arch::arm64::cpu {
                 ALWAYS_INLINE ~KScopedCoreMigrationDisable() { GetCurrentThread().EnableCoreMigration(); }
         };
 
+        class KScopedCacheMaintenance {
+            private:
+                bool m_active;
+            public:
+                ALWAYS_INLINE KScopedCacheMaintenance() {
+                    __asm__ __volatile__("" ::: "memory");
+                    if (m_active = !GetCurrentThread().IsInCacheMaintenanceOperation(); m_active) {
+                        GetCurrentThread().SetInCacheMaintenanceOperation();
+                    }
+                }
+
+                ALWAYS_INLINE ~KScopedCacheMaintenance() {
+                    if (m_active) {
+                        GetCurrentThread().ClearInCacheMaintenanceOperation();
+                    }
+                    __asm__ __volatile__("" ::: "memory");
+                }
+        };
+
         /* Nintendo registers a handler for a SGI on thread termination, but does not handle anything. */
         /* This is sufficient, because post-interrupt scheduling is all they really intend to occur. */
         class KThreadTerminationInterruptHandler : public KInterruptHandler {
@@ -432,9 +451,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     Result InvalidateDataCache(void *addr, size_t size) {
         /* Mark ourselves as in a cache maintenance operation, and prevent re-ordering. */
-        __asm__ __volatile__("" ::: "memory");
-        GetCurrentThread().SetInCacheMaintenanceOperation();
-        ON_SCOPE_EXIT { GetCurrentThread().ClearInCacheMaintenanceOperation(); __asm__ __volatile__("" ::: "memory"); };
+        KScopedCacheMaintenance cm;
 
         const uintptr_t start = reinterpret_cast<uintptr_t>(addr);
         const uintptr_t end   = start + size;
@@ -460,9 +477,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     Result StoreDataCache(const void *addr, size_t size) {
         /* Mark ourselves as in a cache maintenance operation, and prevent re-ordering. */
-        __asm__ __volatile__("" ::: "memory");
-        GetCurrentThread().SetInCacheMaintenanceOperation();
-        ON_SCOPE_EXIT { GetCurrentThread().ClearInCacheMaintenanceOperation(); __asm__ __volatile__("" ::: "memory"); };
+        KScopedCacheMaintenance cm;
 
         const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
         const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
@@ -472,9 +487,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     Result FlushDataCache(const void *addr, size_t size) {
         /* Mark ourselves as in a cache maintenance operation, and prevent re-ordering. */
-        __asm__ __volatile__("" ::: "memory");
-        GetCurrentThread().SetInCacheMaintenanceOperation();
-        ON_SCOPE_EXIT { GetCurrentThread().ClearInCacheMaintenanceOperation(); __asm__ __volatile__("" ::: "memory"); };
+        KScopedCacheMaintenance cm;
 
         const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
         const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
