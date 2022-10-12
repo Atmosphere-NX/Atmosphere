@@ -20,27 +20,28 @@ namespace ams::kern::init {
     #define SLAB_COUNT(CLASS) g_slab_resource_counts.num_##CLASS
 
     #define FOREACH_SLAB_TYPE(HANDLER, ...)                                                                                     \
-        HANDLER(KProcess,            (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
-        HANDLER(KThread,             (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
-        HANDLER(KEvent,              (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
-        HANDLER(KInterruptEvent,     (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
-        HANDLER(KInterruptEventTask, (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
-        HANDLER(KPort,               (SLAB_COUNT(KPort)),                                                       ## __VA_ARGS__) \
-        HANDLER(KSharedMemory,       (SLAB_COUNT(KSharedMemory)),                                               ## __VA_ARGS__) \
-        HANDLER(KSharedMemoryInfo,   (SLAB_COUNT(KSharedMemory) * 8),                                           ## __VA_ARGS__) \
-        HANDLER(KTransferMemory,     (SLAB_COUNT(KTransferMemory)),                                             ## __VA_ARGS__) \
-        HANDLER(KCodeMemory,         (SLAB_COUNT(KCodeMemory)),                                                 ## __VA_ARGS__) \
-        HANDLER(KDeviceAddressSpace, (SLAB_COUNT(KDeviceAddressSpace)),                                         ## __VA_ARGS__) \
-        HANDLER(KSession,            (SLAB_COUNT(KSession)),                                                    ## __VA_ARGS__) \
-        HANDLER(KSessionRequest,     (SLAB_COUNT(KSession) * 2),                                                ## __VA_ARGS__) \
-        HANDLER(KLightSession,       (SLAB_COUNT(KLightSession)),                                               ## __VA_ARGS__) \
-        HANDLER(KThreadLocalPage,    (SLAB_COUNT(KProcess) + (SLAB_COUNT(KProcess) + SLAB_COUNT(KThread)) / 8), ## __VA_ARGS__) \
-        HANDLER(KObjectName,         (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
-        HANDLER(KResourceLimit,      (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
-        HANDLER(KEventInfo,          (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
-        HANDLER(KDebug,              (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
-        HANDLER(KIoPool,             (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
-        HANDLER(KIoRegion,           (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__)
+        HANDLER(KProcess,              (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
+        HANDLER(KThread,               (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
+        HANDLER(KEvent,                (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
+        HANDLER(KInterruptEvent,       (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
+        HANDLER(KInterruptEventTask,   (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
+        HANDLER(KPort,                 (SLAB_COUNT(KPort)),                                                       ## __VA_ARGS__) \
+        HANDLER(KSharedMemory,         (SLAB_COUNT(KSharedMemory)),                                               ## __VA_ARGS__) \
+        HANDLER(KSharedMemoryInfo,     (SLAB_COUNT(KSharedMemory) * 8),                                           ## __VA_ARGS__) \
+        HANDLER(KTransferMemory,       (SLAB_COUNT(KTransferMemory)),                                             ## __VA_ARGS__) \
+        HANDLER(KCodeMemory,           (SLAB_COUNT(KCodeMemory)),                                                 ## __VA_ARGS__) \
+        HANDLER(KDeviceAddressSpace,   (SLAB_COUNT(KDeviceAddressSpace)),                                         ## __VA_ARGS__) \
+        HANDLER(KSession,              (SLAB_COUNT(KSession)),                                                    ## __VA_ARGS__) \
+        HANDLER(KSessionRequest,       (SLAB_COUNT(KSession) * 2),                                                ## __VA_ARGS__) \
+        HANDLER(KLightSession,         (SLAB_COUNT(KLightSession)),                                               ## __VA_ARGS__) \
+        HANDLER(KThreadLocalPage,      (SLAB_COUNT(KProcess) + (SLAB_COUNT(KProcess) + SLAB_COUNT(KThread)) / 8), ## __VA_ARGS__) \
+        HANDLER(KObjectName,           (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
+        HANDLER(KResourceLimit,        (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
+        HANDLER(KEventInfo,            (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
+        HANDLER(KDebug,                (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
+        HANDLER(KIoPool,               (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
+        HANDLER(KIoRegion,             (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__) \
+        HANDLER(KSecureSystemResource, (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__)
 
     namespace {
 

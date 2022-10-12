@@ -40,6 +40,9 @@ namespace ams::kern {
     constinit KBlockInfoManager       Kernel::s_app_block_info_manager;
     constinit KBlockInfoManager       Kernel::s_sys_block_info_manager;
 
+    constinit KSystemResource         Kernel::s_app_system_resource{util::ConstantInitialize};
+    constinit KSystemResource         Kernel::s_sys_system_resource{util::ConstantInitialize};
+
     namespace {
 
         template<size_t N> requires (N > 0)

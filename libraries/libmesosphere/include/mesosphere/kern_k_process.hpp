@@ -31,6 +31,7 @@
 #include <mesosphere/kern_k_wait_object.hpp>
 #include <mesosphere/kern_k_dynamic_resource_manager.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
+#include <mesosphere/kern_k_system_resource.hpp>
 
 namespace ams::kern {
 
@@ -64,8 +65,7 @@ namespace ams::kern {
             s32                         m_ideal_core_id;
             void                       *m_attached_object;
             KResourceLimit             *m_resource_limit;
-            KVirtualAddress             m_system_resource_address;
-            size_t                      m_system_resource_num_pages;
+            KSystemResource            *m_system_resource;
             size_t                      m_memory_release_hint;
             State                       m_state;
             KLightLock                  m_state_lock;
@@ -117,13 +117,6 @@ namespace ams::kern {
             util::Atomic<s64>           m_num_ipc_messages;
             util::Atomic<s64>           m_num_ipc_replies;
             util::Atomic<s64>           m_num_ipc_receives;
-            KDynamicPageManager         m_dynamic_page_manager;
-            KMemoryBlockSlabManager     m_memory_block_slab_manager;
-            KBlockInfoManager           m_block_info_manager;
-            KPageTableManager           m_page_table_manager;
-            KMemoryBlockSlabHeap        m_memory_block_heap;
-            KBlockInfoSlabHeap          m_block_info_heap;
-            KPageTableSlabHeap          m_page_table_heap;
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
 
@@ -284,12 +277,12 @@ namespace ams::kern {
             void IncrementRunningThreadCount();
             void DecrementRunningThreadCount();
 
-            size_t GetTotalSystemResourceSize() const { return m_system_resource_num_pages * PageSize; }
+            size_t GetTotalSystemResourceSize() const {
+                return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->GetSize() : 0;
+            }
+
             size_t GetUsedSystemResourceSize() const {
-                if (m_system_resource_num_pages == 0) {
-                    return 0;
-                }
-                return m_dynamic_page_manager.GetUsed() * PageSize;
+                return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->GetUsedSize() : 0;
             }
 
             void SetRunningThread(s32 core, KThread *thread, u64 idle_count) {
@@ -305,10 +298,11 @@ namespace ams::kern {
                 }
             }
 
-            const KDynamicPageManager &GetDynamicPageManager() const { return m_dynamic_page_manager; }
-            const KMemoryBlockSlabManager &GetMemoryBlockSlabManager() const { return m_memory_block_slab_manager; }
-            const KBlockInfoManager &GetBlockInfoManager() const { return m_block_info_manager; }
-            const KPageTableManager &GetPageTableManager() const { return m_page_table_manager; }
+            const KSystemResource &GetSystemResource() const { return *m_system_resource; }
+
+            const KMemoryBlockSlabManager &GetMemoryBlockSlabManager() const { return m_system_resource->GetMemoryBlockSlabManager(); }
+            const KBlockInfoManager &GetBlockInfoManager() const { return m_system_resource->GetBlockInfoManager(); }
+            const KPageTableManager &GetPageTableManager() const { return m_system_resource->GetPageTableManager(); }
 
             constexpr KThread *GetRunningThread(s32 core) const { return m_running_threads[core]; }
             constexpr u64 GetRunningThreadIdleCount(s32 core) const { return m_running_thread_idle_counts[core]; }

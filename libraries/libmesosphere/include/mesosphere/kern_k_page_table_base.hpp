@@ -48,6 +48,7 @@ namespace ams::kern {
     static_assert(sizeof(KPageProperties) == sizeof(u32));
 
     class KResourceLimit;
+    class KSystemResource;
 
     class KPageTableBase {
         NON_COPYABLE(KPageTableBase);
@@ -200,7 +201,7 @@ namespace ams::kern {
             explicit KPageTableBase() { /* ... */ }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
 
             void Finalize();
 

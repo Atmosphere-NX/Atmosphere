@@ -362,24 +362,24 @@ namespace ams::kern::KDumpObject {
                 /* Memory block slabs. */
                 {
                     MESOSPHERE_RELEASE_LOG("App Memory Block\n");
-                    auto &app = Kernel::GetApplicationMemoryBlockManager();
+                    auto &app = Kernel::GetApplicationSystemResource().GetMemoryBlockSlabManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", app.GetUsed(), app.GetPeak(), app.GetCount());
                     MESOSPHERE_RELEASE_LOG("Sys Memory Block\n");
-                    auto &sys = Kernel::GetSystemMemoryBlockManager();
+                    auto &sys = Kernel::GetSystemSystemResource().GetMemoryBlockSlabManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", sys.GetUsed(), sys.GetPeak(), sys.GetCount());
                 }
 
                 /* KBlockInfo slab. */
                 {
                     MESOSPHERE_RELEASE_LOG("KBlockInfo\n");
-                    auto &manager = Kernel::GetSystemBlockInfoManager();
+                    auto &manager = Kernel::GetSystemSystemResource().GetBlockInfoManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
                 }
 
                 /* Page Table slab. */
                 {
                     MESOSPHERE_RELEASE_LOG("Page Table\n");
-                    auto &manager = Kernel::GetSystemPageTableManager();
+                    auto &manager = Kernel::GetSystemSystemResource().GetPageTableManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
                 }
             }
@@ -425,15 +425,17 @@ namespace ams::kern::KDumpObject {
                     process_pts += pts;
 
                     MESOSPHERE_RELEASE_LOG("%-12s: PID=%3lu Thread %4d / Event %4d / PageTable %5zu\n", process->GetName(), process->GetId(), threads, events, pts);
-                    if (process->GetTotalSystemResourceSize() != 0) {
+                    if (const auto &system_resource = process->GetSystemResource(); system_resource.IsSecureResource()) {
+                        const auto &secure_resource = static_cast<const KSecureSystemResource &>(system_resource);
+
                         MESOSPHERE_RELEASE_LOG("    System Resource\n");
-                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetDynamicPageManager().GetUsed(), process->GetDynamicPageManager().GetPeak(), process->GetDynamicPageManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", secure_resource.GetDynamicPageManager().GetUsed(), secure_resource.GetDynamicPageManager().GetPeak(), secure_resource.GetDynamicPageManager().GetCount());
                         MESOSPHERE_RELEASE_LOG("    Memory Block\n");
-                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetMemoryBlockSlabManager().GetUsed(), process->GetMemoryBlockSlabManager().GetPeak(), process->GetMemoryBlockSlabManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", secure_resource.GetMemoryBlockSlabManager().GetUsed(), secure_resource.GetMemoryBlockSlabManager().GetPeak(), secure_resource.GetMemoryBlockSlabManager().GetCount());
                         MESOSPHERE_RELEASE_LOG("    Page Table\n");
-                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetPageTableManager().GetUsed(), process->GetPageTableManager().GetPeak(), process->GetPageTableManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", secure_resource.GetPageTableManager().GetUsed(), secure_resource.GetPageTableManager().GetPeak(), secure_resource.GetPageTableManager().GetCount());
                         MESOSPHERE_RELEASE_LOG("    Block Info\n");
-                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetBlockInfoManager().GetUsed(), process->GetBlockInfoManager().GetPeak(), process->GetBlockInfoManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", secure_resource.GetBlockInfoManager().GetUsed(), secure_resource.GetBlockInfoManager().GetPeak(), secure_resource.GetBlockInfoManager().GetCount());
                     }
                 }
 

@@ -21,6 +21,8 @@ namespace ams::kern {
 
     class KAutoObject;
 
+    class KSystemResource;
+
     #define FOR_EACH_K_CLASS_TOKEN_OBJECT_TYPE(HANDLER) \
                 HANDLER(KAutoObject)                    \
                                                         \
@@ -48,7 +50,8 @@ namespace ams::kern {
                 HANDLER(KSessionRequest)                \
                 HANDLER(KCodeMemory)                    \
                 HANDLER(KIoPool)                        \
-                HANDLER(KIoRegion)
+                HANDLER(KIoRegion)                      \
+                HANDLER(KSystemResource)
 
     class KClassTokenGenerator {
         public:
@@ -95,7 +98,7 @@ namespace ams::kern {
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     static_assert(T::ObjectType == ObjectType::KAutoObject);
                     return 0;
-                } else if constexpr (!std::is_final<T>::value) {
+                } else if constexpr (!std::is_final<T>::value && !std::same_as<T, KSystemResource>) {
                     static_assert(ObjectType::BaseClassesStart <= T::ObjectType && T::ObjectType < ObjectType::BaseClassesEnd);
                     constexpr auto ClassIndex = static_cast<TokenBaseType>(T::ObjectType) - static_cast<TokenBaseType>(ObjectType::BaseClassesStart);
                     return BaseClassToken<ClassIndex> | GetClassToken<typename T::BaseClass>();
@@ -142,6 +145,12 @@ namespace ams::kern {
                 KIoPool,
                 KIoRegion,
 
+                /* NOTE: What occupies these gaps? They can be inferred, but they don't make sense. */
+                KAlpha,
+                KBeta,
+
+                KSystemResource,
+
                 FinalClassesLast,
 
                 FinalClassesEnd = FinalClassesStart + NumFinalClasses,
@@ -178,8 +187,10 @@ namespace ams::kern {
             }
 
             for (auto fin = util::ToUnderlying(KClassTokenGenerator::ObjectType::FinalClassesStart); fin < util::ToUnderlying(KClassTokenGenerator::ObjectType::FinalClassesLast); ++fin) {
-                if (!IsObjectTypeIncludedByMacro(static_cast<KClassTokenGenerator::ObjectType>(fin))) {
-                    return false;
+                if (const auto o = static_cast<KClassTokenGenerator::ObjectType>(fin); !IsObjectTypeIncludedByMacro(o)) {
+                    if (o != KClassTokenGenerator::ObjectType::KAlpha && o != KClassTokenGenerator::ObjectType::KBeta) {
+                        return false;
+                    }
                 }
             }
 

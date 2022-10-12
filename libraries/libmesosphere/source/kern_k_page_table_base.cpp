@@ -105,8 +105,8 @@ namespace ams::kern {
         m_mapped_unsafe_physical_memory     = 0;
         m_mapped_ipc_server_memory          = 0;
 
-        m_memory_block_slab_manager         = std::addressof(Kernel::GetSystemMemoryBlockManager());
-        m_block_info_manager                = std::addressof(Kernel::GetSystemBlockInfoManager());
+        m_memory_block_slab_manager         = Kernel::GetSystemSystemResource().GetMemoryBlockSlabManagerPointer();
+        m_block_info_manager                = Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer();
         m_resource_limit                    = std::addressof(Kernel::GetSystemResourceLimit());
 
         m_allocate_option                   = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
@@ -124,7 +124,7 @@ namespace ams::kern {
         R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -186,8 +186,8 @@ namespace ams::kern {
         m_address_space_start               = start;
         m_address_space_end                 = end;
         m_is_kernel                         = false;
-        m_memory_block_slab_manager         = mem_block_slab_manager;
-        m_block_info_manager                = block_info_manager;
+        m_memory_block_slab_manager         = system_resource->GetMemoryBlockSlabManagerPointer();
+        m_block_info_manager                = system_resource->GetBlockInfoManagerPointer();
         m_resource_limit                    = resource_limit;
 
         /* Determine the region we can place our undetermineds in. */

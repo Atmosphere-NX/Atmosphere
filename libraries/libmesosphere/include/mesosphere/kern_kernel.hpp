@@ -78,6 +78,8 @@ namespace ams::kern {
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
             static KBlockInfoManager s_app_block_info_manager;
             static KBlockInfoManager s_sys_block_info_manager;
+            static KSystemResource s_app_system_resource;
+            static KSystemResource s_sys_system_resource;
             static KSupervisorPageTable s_supervisor_page_table;
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
@@ -129,28 +131,12 @@ namespace ams::kern {
                 return s_memory_manager;
             }
 
-            static ALWAYS_INLINE KMemoryBlockSlabManager &GetApplicationMemoryBlockManager() {
-                return s_app_memory_block_manager;
+            static ALWAYS_INLINE KSystemResource &GetApplicationSystemResource() {
+                return s_app_system_resource;
             }
 
-            static ALWAYS_INLINE KMemoryBlockSlabManager &GetSystemMemoryBlockManager() {
-                return s_sys_memory_block_manager;
-            }
-
-            static ALWAYS_INLINE KBlockInfoManager &GetApplicationBlockInfoManager() {
-                return s_app_block_info_manager;
-            }
-
-            static ALWAYS_INLINE KBlockInfoManager &GetSystemBlockInfoManager() {
-                return s_sys_block_info_manager;
-            }
-
-            static ALWAYS_INLINE KPageTableManager &GetApplicationPageTableManager() {
-                return s_app_page_table_manager;
-            }
-
-            static ALWAYS_INLINE KPageTableManager &GetSystemPageTableManager() {
-                return s_sys_page_table_manager;
+            static ALWAYS_INLINE KSystemResource &GetSystemSystemResource() {
+                return s_sys_system_resource;
             }
 
             static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {

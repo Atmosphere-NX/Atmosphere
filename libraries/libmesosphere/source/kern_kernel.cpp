@@ -100,6 +100,14 @@ namespace ams::kern {
 
         /* Check that we have the correct number of dynamic pages available. */
         MESOSPHERE_ABORT_UNLESS(g_resource_manager_page_manager.GetCount() - g_resource_manager_page_manager.GetUsed() == ReservedDynamicPageCount);
+
+        /* Create the system page table managers. */
+        KAutoObject::Create<KSystemResource>(std::addressof(s_app_system_resource));
+        KAutoObject::Create<KSystemResource>(std::addressof(s_sys_system_resource));
+
+        /* Set the managers for the system resources. */
+        s_app_system_resource.SetManagers(s_app_memory_block_manager, s_app_block_info_manager, s_app_page_table_manager);
+        s_sys_system_resource.SetManagers(s_sys_memory_block_manager, s_sys_block_info_manager, s_sys_page_table_manager);
     }
 
     void Kernel::PrintLayout() {

@@ -128,13 +128,13 @@ namespace ams::kern {
                 KProcess *new_process = nullptr;
                 {
                     /* Make page groups to represent the data. */
-                    KPageGroup pg(std::addressof(Kernel::GetSystemBlockInfoManager()));
-                    KPageGroup workaround_pg(std::addressof(Kernel::GetSystemBlockInfoManager()));
+                    KPageGroup pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
+                    KPageGroup workaround_pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
 
                     /* Populate the page group to represent the data. */
                     {
                         /* Allocate the previously unreserved pages. */
-                        KPageGroup unreserve_pg(std::addressof(Kernel::GetSystemBlockInfoManager()));
+                        KPageGroup unreserve_pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
                         MESOSPHERE_R_ABORT_UNLESS(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(unreserve_pg), unreserved_size / PageSize, KMemoryManager::EncodeOption(dst_pool, KMemoryManager::Direction_FromFront)));
 
                         /* Add the previously reserved pages. */
