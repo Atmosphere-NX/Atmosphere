@@ -36,6 +36,7 @@ namespace ams::kern::init {
         size_t num_KDebug;
         size_t num_KIoPool;
         size_t num_KIoRegion;
+        size_t num_KSessionRequestMappings;
     };
 
     NOINLINE void InitializeSlabResourceCounts();

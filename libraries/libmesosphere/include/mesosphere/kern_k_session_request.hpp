@@ -29,7 +29,10 @@ namespace ams::kern {
         public:
             class SessionMappings {
                 private:
-                    static constexpr size_t NumStaticMappings = 8;
+                    /* At most 15 buffers of each type (4-bit descriptor counts), for 45 total. */
+                    static constexpr size_t NumMappings        = ((1ul << 4) - 1) * 3;
+                    static constexpr size_t NumStaticMappings  = 8;
+                    static constexpr size_t NumDynamicMappings = NumMappings - NumStaticMappings;
 
                     class Mapping {
                         private:
@@ -50,16 +53,27 @@ namespace ams::kern {
                             constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
                             constexpr ALWAYS_INLINE KMemoryState GetMemoryState() const { return m_state; }
                     };
+                public:
+                    class DynamicMappings : public KSlabAllocated<DynamicMappings, true> {
+                        private:
+                            Mapping m_mappings[NumDynamicMappings];
+                        public:
+                            constexpr explicit DynamicMappings() : m_mappings() { /* ... */ }
+
+                            constexpr ALWAYS_INLINE       Mapping &Get(size_t idx)       { return m_mappings[idx]; }
+                            constexpr ALWAYS_INLINE const Mapping &Get(size_t idx) const { return m_mappings[idx]; }
+                    };
+                    static_assert(sizeof(DynamicMappings) == sizeof(Mapping) * NumDynamicMappings);
                 private:
                     Mapping m_static_mappings[NumStaticMappings];
-                    Mapping *m_mappings;
+                    DynamicMappings *m_dynamic_mappings;
                     u8 m_num_send;
                     u8 m_num_recv;
                     u8 m_num_exch;
                 public:
-                    constexpr explicit SessionMappings(util::ConstantInitializeTag) : m_static_mappings(), m_mappings(), m_num_send(), m_num_recv(), m_num_exch() { /* ... */ }
+                    constexpr explicit SessionMappings(util::ConstantInitializeTag) : m_static_mappings(), m_dynamic_mappings(), m_num_send(), m_num_recv(), m_num_exch() { /* ... */ }
 
-                    explicit SessionMappings() : m_mappings(nullptr), m_num_send(), m_num_recv(), m_num_exch() { /* ... */ }
+                    explicit SessionMappings() : m_dynamic_mappings(nullptr), m_num_send(), m_num_recv(), m_num_exch() { /* ... */ }
 
                     void Initialize() { /* ... */ }
                     void Finalize();
@@ -96,7 +110,7 @@ namespace ams::kern {
                         if (index < NumStaticMappings) {
                             return m_static_mappings[index];
                         } else {
-                            return m_mappings[index - NumStaticMappings];
+                            return m_dynamic_mappings->Get(index - NumStaticMappings);
                         }
                     }
 
@@ -107,7 +121,7 @@ namespace ams::kern {
                         if (index < NumStaticMappings) {
                             return m_static_mappings[index];
                         } else {
-                            return m_mappings[index - NumStaticMappings];
+                            return m_dynamic_mappings->Get(index - NumStaticMappings);
                         }
                     }
 
@@ -118,7 +132,7 @@ namespace ams::kern {
                         if (index < NumStaticMappings) {
                             return m_static_mappings[index];
                         } else {
-                            return m_mappings[index - NumStaticMappings];
+                            return m_dynamic_mappings->Get(index - NumStaticMappings);
                         }
                     }
             };
