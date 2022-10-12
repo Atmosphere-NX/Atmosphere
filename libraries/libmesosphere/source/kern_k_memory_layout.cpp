@@ -126,11 +126,8 @@ namespace ams::kern {
         }
     }
 
-    size_t KMemoryLayout::GetResourceRegionSizeForInit() {
-        /* Calculate resource region size based on whether we allow extra threads. */
-        const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-
-        return KernelResourceSize + (use_extra_resources ? KernelSlabHeapAdditionalSize : 0);
+    size_t KMemoryLayout::GetResourceRegionSizeForInit(bool use_extra_resource) {
+        return KernelResourceSize + (use_extra_resource ? KernelSlabHeapAdditionalSize : 0);
     }
 
 }
