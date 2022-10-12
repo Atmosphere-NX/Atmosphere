@@ -13,19 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "ro_random.hpp"
 
-#pragma once
-#include <stratosphere/os/os_native_handle.hpp>
-#include <stratosphere/os/os_memory_common.hpp>
+namespace ams::ro::impl {
 
-namespace ams::os {
+    u64 GenerateSecureRandom(u64 max) {
+        /* Generate a cryptographically random number. */
+        u64 rand;
+        crypto::GenerateCryptographicallyRandomBytes(std::addressof(rand), sizeof(rand));
 
-    struct ProcessMemoryRegion {
-        u64 address;
-        u64 size;
-    };
-
-    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random);
-    Result UnmapProcessCodeMemory(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions);
+        /* Coerce into range. */
+        return rand % (max + 1);
+    }
 
 }

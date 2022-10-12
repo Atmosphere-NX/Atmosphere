@@ -20,7 +20,7 @@
 
 namespace ams::os {
 
-    Result MapProcessMemory(void **out, NativeHandle handle, u64 process_address, size_t process_size);
+    Result MapProcessMemory(void **out, NativeHandle handle, u64 process_address, size_t process_size, AddressSpaceGenerateRandomFunction generate_random);
     void UnmapProcessMemory(void *mapped_memory, NativeHandle handle, u64 process_address, size_t process_size);
 
     Result SetProcessMemoryPermission(NativeHandle handle, u64 process_address, u64 process_size, MemoryPermission perm);

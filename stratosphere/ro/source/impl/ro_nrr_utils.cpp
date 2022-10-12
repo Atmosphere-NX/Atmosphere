@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "ro_nrr_utils.hpp"
+#include "ro_random.hpp"
 #include "ro_service_impl.hpp"
 
 namespace ams::ro::impl {
@@ -198,7 +199,7 @@ namespace ams::ro::impl {
         /* Re-map the nrr as code memory in the destination process. */
         u64 code_address = 0;
         const os::ProcessMemoryRegion region = { nrr_heap_address, nrr_heap_size };
-        R_TRY_CATCH(os::MapProcessCodeMemory(std::addressof(code_address), process_handle, std::addressof(region), 1)) {
+        R_TRY_CATCH(os::MapProcessCodeMemory(std::addressof(code_address), process_handle, std::addressof(region), 1, ro::impl::GenerateSecureRandom)) {
             R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
         } R_END_TRY_CATCH;
 
@@ -207,7 +208,7 @@ namespace ams::ro::impl {
 
         /* Map the nrr in our process. */
         void *mapped_memory = nullptr;
-        R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), process_handle, code_address, region.size)) {
+        R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), process_handle, code_address, region.size, ro::impl::GenerateSecureRandom)) {
             R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
         } R_END_TRY_CATCH;
 

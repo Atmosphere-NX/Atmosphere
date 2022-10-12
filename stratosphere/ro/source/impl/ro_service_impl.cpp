@@ -17,6 +17,7 @@
 #include "ro_nrr_utils.hpp"
 #include "ro_nro_utils.hpp"
 #include "ro_patcher.hpp"
+#include "ro_random.hpp"
 #include "ro_service_impl.hpp"
 
 namespace ams::ro::impl {
@@ -249,7 +250,7 @@ namespace ams::ro::impl {
                 Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
                     /* Map the NRO. */
                     void *mapped_memory = nullptr;
-                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size)) {
+                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
                         R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
                     } R_END_TRY_CATCH;
 

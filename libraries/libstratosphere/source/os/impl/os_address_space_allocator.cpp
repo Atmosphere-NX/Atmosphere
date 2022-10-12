@@ -19,6 +19,24 @@
 
 namespace ams::os::impl {
 
+    namespace {
+
+        constexpr inline u64 MaxProbabilityVariationInverseShift = 4;
+
+    }
+
+    u64 AddressSpaceAllocatorDefaultGenerateRandom(u64 max) {
+        /* Check that max is in range. */
+        AMS_ASSERT(max + 1 <= (UINT64_C(1) << (BITSIZEOF(u64) - MaxProbabilityVariationInverseShift)));
+
+        /* Generate random u64. */
+        const u64 rand = GetRngManager().GenerateRandomU64();
+
+        /* Coerce into range. */
+        AMS_ASSERT(max < std::numeric_limits<u64>::max());
+        return rand % (max + 1);
+    }
+
     template<std::unsigned_integral AddressType, std::unsigned_integral SizeType>
     AddressSpaceAllocatorBase<AddressType, SizeType>::AddressSpaceAllocatorBase(u64 start_address, u64 end_address, SizeType guard_size, const AddressSpaceAllocatorForbiddenRegion *forbidden_regions, size_t num_forbidden_regions) : m_critical_section(), m_forbidden_region_count(0) {
         /* Check pre-conditions. */
@@ -64,7 +82,7 @@ namespace ams::os::impl {
     }
 
     template<std::unsigned_integral AddressType, std::unsigned_integral SizeType>
-    AddressType AddressSpaceAllocatorBase<AddressType, SizeType>::AllocateSpace(SizeType size, SizeType align, SizeType align_offset) {
+    AddressType AddressSpaceAllocatorBase<AddressType, SizeType>::AllocateSpace(SizeType size, SizeType align, SizeType align_offset, AddressSpaceGenerateRandomFunction generate_random) {
         /* Check pre-conditions. */
         AMS_ASSERT(align > 0);
         AMS_ASSERT((align_offset & ~(align - 1)) == 0);
@@ -98,7 +116,9 @@ namespace ams::os::impl {
             std::scoped_lock lk(m_critical_section);
 
             /* Determine a random page. */
-            const AddressType target = (((GetRngManager().GenerateRandomU64() % (rand_end - rand_start + 1)) + rand_start) * align_page_count) + align_offset_page_count;
+            const u64 random = generate_random(rand_end - rand_start);
+
+            const AddressType target = ((random + rand_start) * align_page_count) + align_offset_page_count;
             AMS_ASSERT(m_start_page <= target - m_guard_page_count && target + page_count + m_guard_page_count <= m_end_page);
 
             /* Check that the page is not forbidden. */

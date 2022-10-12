@@ -14,16 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_process_code_memory_impl.hpp"
+#include "impl/os_insecure_memory_impl.hpp"
 
 namespace ams::os {
 
-    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random) {
-        R_RETURN(::ams::os::impl::ProcessCodeMemoryImpl::Map(out, handle, regions, num_regions, generate_random));
+    Result AllocateInsecureMemory(uintptr_t *out_address, size_t size) {
+        /* Check arguments. */
+        AMS_ASSERT(size > 0);
+        AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
+
+        /* Allocate memory. */
+        R_RETURN(impl::InsecureMemoryImpl::AllocateInsecureMemoryImpl(out_address, size));
     }
 
-    Result UnmapProcessCodeMemory(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions) {
-        R_RETURN(::ams::os::impl::ProcessCodeMemoryImpl::Unmap(handle, process_code_address, regions, num_regions));
+    void FreeInsecureMemory(uintptr_t address, size_t size) {
+        /* Check arguments. */
+        AMS_ASSERT(util::IsAligned(address, os::MemoryPageSize));
+        AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
+
+        /* Free memory. */
+        impl::InsecureMemoryImpl::FreeInsecureMemoryImpl(address, size);
     }
 
 }

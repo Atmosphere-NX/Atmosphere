@@ -399,6 +399,15 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
+        u64 GenerateSecureRandom(u64 max) {
+            /* Generate a cryptographically random number. */
+            u64 rand;
+            crypto::GenerateCryptographicallyRandomBytes(std::addressof(rand), sizeof(rand));
+
+            /* Coerce into range. */
+            return rand % (max + 1);
+        }
+
         Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
             /* Clear output. */
             out->args_address = 0;
@@ -468,8 +477,7 @@ namespace ams::ldr {
             uintptr_t aslr_slide = 0;
             size_t free_size     = (aslr_size - total_size);
             if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
-                /* Nintendo uses MT19937 (not os::GenerateRandomBytes), but we'll just use TinyMT for now. */
-                aslr_slide = os::GenerateRandomU64(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
+                aslr_slide = GenerateSecureRandom(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
 
             /* Set out. */
@@ -527,7 +535,7 @@ namespace ams::ldr {
             {
                 /* Map the process memory. */
                 void *mapped_memory = nullptr;
-                R_TRY(os::MapProcessMemory(std::addressof(mapped_memory), process_handle, nso_address, nso_size));
+                R_TRY(os::MapProcessMemory(std::addressof(mapped_memory), process_handle, nso_address, nso_size, GenerateSecureRandom));
                 ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, process_handle, nso_address, nso_size); };
 
                 const uintptr_t map_address = reinterpret_cast<uintptr_t>(mapped_memory);
@@ -590,7 +598,7 @@ namespace ams::ldr {
                 /* Write argument data into memory. */
                 {
                     void *map_address = nullptr;
-                    R_TRY(os::MapProcessMemory(std::addressof(map_address), process_info->process_handle, process_info->args_address, process_info->args_size));
+                    R_TRY(os::MapProcessMemory(std::addressof(map_address), process_info->process_handle, process_info->args_address, process_info->args_size, GenerateSecureRandom));
                     ON_SCOPE_EXIT { os::UnmapProcessMemory(map_address, process_info->process_handle, process_info->args_address, process_info->args_size); };
 
                     ProgramArguments *args = static_cast<ProgramArguments *>(map_address);

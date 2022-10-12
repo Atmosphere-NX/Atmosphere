@@ -15,17 +15,11 @@
  */
 
 #pragma once
-#include <stratosphere/os/os_native_handle.hpp>
 #include <stratosphere/os/os_memory_common.hpp>
 
 namespace ams::os {
 
-    struct ProcessMemoryRegion {
-        u64 address;
-        u64 size;
-    };
-
-    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random);
-    Result UnmapProcessCodeMemory(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions);
+    Result AllocateInsecureMemory(uintptr_t *out_address, size_t size);
+    void FreeInsecureMemory(uintptr_t address, size_t size);
 
 }
