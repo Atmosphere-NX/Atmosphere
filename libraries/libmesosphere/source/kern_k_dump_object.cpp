@@ -332,7 +332,6 @@ namespace ams::kern::KDumpObject {
                     MESOSPHERE_RELEASE_LOG(#__OBJECT__ "\n");                                                                                                                                             \
                     MESOSPHERE_RELEASE_LOG("    Cur=%3zu Peak=%3zu Max=%3zu\n", __OBJECT__::GetSlabHeapSize() - __OBJECT__::GetNumRemaining(), __OBJECT__::GetPeakIndex(), __OBJECT__::GetSlabHeapSize())
 
-                DUMP_KSLABOBJ(KPageBuffer);
                 DUMP_KSLABOBJ(KEvent);
                 DUMP_KSLABOBJ(KInterruptEvent);
                 DUMP_KSLABOBJ(KProcess);

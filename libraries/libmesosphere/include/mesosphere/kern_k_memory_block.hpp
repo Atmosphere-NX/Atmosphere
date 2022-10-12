@@ -43,6 +43,7 @@ namespace ams::kern {
         KMemoryState_FlagCanMapProcess          = (1 << 23),
         KMemoryState_FlagCanChangeAttribute     = (1 << 24),
         KMemoryState_FlagCanCodeMemory          = (1 << 25),
+        KMemoryState_FlagLinearMapped           = (1 << 26),
 
         KMemoryState_FlagsData = KMemoryState_FlagCanReprotect          | KMemoryState_FlagCanUseIpc            |
                                  KMemoryState_FlagCanUseNonDeviceIpc    | KMemoryState_FlagCanUseNonSecureIpc   |
@@ -50,16 +51,18 @@ namespace ams::kern {
                                  KMemoryState_FlagCanTransfer           | KMemoryState_FlagCanQueryPhysical     |
                                  KMemoryState_FlagCanDeviceMap          | KMemoryState_FlagCanAlignedDeviceMap  |
                                  KMemoryState_FlagCanIpcUserBuffer      | KMemoryState_FlagReferenceCounted     |
-                                 KMemoryState_FlagCanChangeAttribute,
+                                 KMemoryState_FlagCanChangeAttribute    | KMemoryState_FlagLinearMapped,
 
         KMemoryState_FlagsCode = KMemoryState_FlagCanDebug              | KMemoryState_FlagCanUseIpc            |
                                  KMemoryState_FlagCanUseNonDeviceIpc    | KMemoryState_FlagCanUseNonSecureIpc   |
                                  KMemoryState_FlagMapped                | KMemoryState_FlagCode                 |
                                  KMemoryState_FlagCanQueryPhysical      | KMemoryState_FlagCanDeviceMap         |
-                                 KMemoryState_FlagCanAlignedDeviceMap   | KMemoryState_FlagReferenceCounted,
+                                 KMemoryState_FlagCanAlignedDeviceMap   | KMemoryState_FlagReferenceCounted     |
+                                 KMemoryState_FlagLinearMapped,
 
         KMemoryState_FlagsMisc = KMemoryState_FlagMapped                | KMemoryState_FlagReferenceCounted     |
-                                 KMemoryState_FlagCanQueryPhysical      | KMemoryState_FlagCanDeviceMap,
+                                 KMemoryState_FlagCanQueryPhysical      | KMemoryState_FlagCanDeviceMap         |
+                                 KMemoryState_FlagLinearMapped,
 
 
         KMemoryState_Free               = ams::svc::MemoryState_Free,
@@ -68,7 +71,7 @@ namespace ams::kern {
         KMemoryState_Code               = ams::svc::MemoryState_Code                | KMemoryState_FlagsCode  | KMemoryState_FlagCanMapProcess,
         KMemoryState_CodeData           = ams::svc::MemoryState_CodeData            | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeMemory,
         KMemoryState_Normal             = ams::svc::MemoryState_Normal              | KMemoryState_FlagsData  | KMemoryState_FlagCanCodeMemory,
-        KMemoryState_Shared             = ams::svc::MemoryState_Shared              | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted,
+        KMemoryState_Shared             = ams::svc::MemoryState_Shared              | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped,
 
         /* KMemoryState_Alias was removed after 1.0.0. */
 
@@ -82,7 +85,7 @@ namespace ams::kern {
         KMemoryState_Stack              = ams::svc::MemoryState_Stack               | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap
                                                                                                               | KMemoryState_FlagCanUseIpc           | KMemoryState_FlagCanUseNonSecureIpc | KMemoryState_FlagCanUseNonDeviceIpc,
 
-        KMemoryState_ThreadLocal        = ams::svc::MemoryState_ThreadLocal         | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted,
+        KMemoryState_ThreadLocal        = ams::svc::MemoryState_ThreadLocal         | KMemoryState_FlagMapped | KMemoryState_FlagLinearMapped,
 
         KMemoryState_Transfered         = ams::svc::MemoryState_Transfered          | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap | KMemoryState_FlagCanChangeAttribute
                                                                                                               | KMemoryState_FlagCanUseIpc           | KMemoryState_FlagCanUseNonSecureIpc | KMemoryState_FlagCanUseNonDeviceIpc,
@@ -90,7 +93,7 @@ namespace ams::kern {
         KMemoryState_SharedTransfered   = ams::svc::MemoryState_SharedTransfered    | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap
                                                                                                               | KMemoryState_FlagCanUseNonSecureIpc  | KMemoryState_FlagCanUseNonDeviceIpc,
 
-        KMemoryState_SharedCode         = ams::svc::MemoryState_SharedCode          | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted
+        KMemoryState_SharedCode         = ams::svc::MemoryState_SharedCode          | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped
                                                                                                               | KMemoryState_FlagCanUseNonSecureIpc  | KMemoryState_FlagCanUseNonDeviceIpc,
 
         KMemoryState_Inaccessible       = ams::svc::MemoryState_Inaccessible,
@@ -103,8 +106,8 @@ namespace ams::kern {
 
         KMemoryState_Kernel             = ams::svc::MemoryState_Kernel              | KMemoryState_FlagMapped,
 
-        KMemoryState_GeneratedCode      = ams::svc::MemoryState_GeneratedCode       | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagCanDebug,
-        KMemoryState_CodeOut            = ams::svc::MemoryState_CodeOut             | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted,
+        KMemoryState_GeneratedCode      = ams::svc::MemoryState_GeneratedCode       | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagCanDebug           | KMemoryState_FlagLinearMapped,
+        KMemoryState_CodeOut            = ams::svc::MemoryState_CodeOut             | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped,
 
         KMemoryState_Coverage           = ams::svc::MemoryState_Coverage            | KMemoryState_FlagMapped,
     };
@@ -113,25 +116,25 @@ namespace ams::kern {
     static_assert(KMemoryState_Free             == 0x00000000);
     static_assert(KMemoryState_Io               == 0x00182001);
     static_assert(KMemoryState_Static           == 0x00042002);
-    static_assert(KMemoryState_Code             == 0x00DC7E03);
-    static_assert(KMemoryState_CodeData         == 0x03FEBD04);
-    static_assert(KMemoryState_Normal           == 0x037EBD05);
-    static_assert(KMemoryState_Shared           == 0x00402006);
+    static_assert(KMemoryState_Code             == 0x04DC7E03);
+    static_assert(KMemoryState_CodeData         == 0x07FEBD04);
+    static_assert(KMemoryState_Normal           == 0x077EBD05);
+    static_assert(KMemoryState_Shared           == 0x04402006);
 
-    static_assert(KMemoryState_AliasCode        == 0x00DD7E08);
-    static_assert(KMemoryState_AliasCodeData    == 0x03FFBD09);
-    static_assert(KMemoryState_Ipc              == 0x005C3C0A);
-    static_assert(KMemoryState_Stack            == 0x005C3C0B);
-    static_assert(KMemoryState_ThreadLocal      == 0x0040200C);
-    static_assert(KMemoryState_Transfered       == 0x015C3C0D);
-    static_assert(KMemoryState_SharedTransfered == 0x005C380E);
-    static_assert(KMemoryState_SharedCode       == 0x0040380F);
+    static_assert(KMemoryState_AliasCode        == 0x04DD7E08);
+    static_assert(KMemoryState_AliasCodeData    == 0x07FFBD09);
+    static_assert(KMemoryState_Ipc              == 0x045C3C0A);
+    static_assert(KMemoryState_Stack            == 0x045C3C0B);
+    static_assert(KMemoryState_ThreadLocal      == 0x0400200C);
+    static_assert(KMemoryState_Transfered       == 0x055C3C0D);
+    static_assert(KMemoryState_SharedTransfered == 0x045C380E);
+    static_assert(KMemoryState_SharedCode       == 0x0440380F);
     static_assert(KMemoryState_Inaccessible     == 0x00000010);
-    static_assert(KMemoryState_NonSecureIpc     == 0x005C3811);
-    static_assert(KMemoryState_NonDeviceIpc     == 0x004C2812);
+    static_assert(KMemoryState_NonSecureIpc     == 0x045C3811);
+    static_assert(KMemoryState_NonDeviceIpc     == 0x044C2812);
     static_assert(KMemoryState_Kernel           == 0x00002013);
-    static_assert(KMemoryState_GeneratedCode    == 0x00402214);
-    static_assert(KMemoryState_CodeOut          == 0x00402015);
+    static_assert(KMemoryState_GeneratedCode    == 0x04402214);
+    static_assert(KMemoryState_CodeOut          == 0x04402015);
     static_assert(KMemoryState_Coverage         == 0x00002016);
 #endif
 

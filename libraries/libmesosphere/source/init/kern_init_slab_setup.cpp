@@ -79,6 +79,9 @@ namespace ams::kern::init {
             constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
             static_assert(RequiredSizeForExtraThreadCount <= KernelSlabHeapAdditionalSize);
 
+            static_assert(KernelPageBufferHeapSize == 2 * PageSize + (SlabCountKProcess + SlabCountKThread + (SlabCountKProcess + SlabCountKThread) / 8) * PageSize);
+            static_assert(KernelPageBufferAdditionalSize == (SlabCountExtraKThread + (SlabCountExtraKThread / 8)) * PageSize);
+
         }
 
         /* Global to hold our resource counts. */
@@ -131,7 +134,7 @@ namespace ams::kern::init {
     }
 
     size_t CalculateSlabHeapGapSize() {
-        constexpr size_t KernelSlabHeapGapSize = 2_MB - 296_KB;
+        constexpr size_t KernelSlabHeapGapSize = 2_MB - 320_KB;
         static_assert(KernelSlabHeapGapSize <= KernelSlabHeapGapsSizeMax);
         return KernelSlabHeapGapSize;
     }
@@ -153,23 +156,6 @@ namespace ams::kern::init {
         size += CalculateSlabHeapGapSize();
 
         return size;
-    }
-
-    void InitializeKPageBufferSlabHeap() {
-        const auto &counts = GetSlabResourceCounts();
-        const size_t num_pages = counts.num_KProcess + counts.num_KThread + (counts.num_KProcess + counts.num_KThread) / 8;
-        const size_t slab_size = num_pages * PageSize;
-
-        /* Reserve memory from the system resource limit. */
-        MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, slab_size));
-
-        /* Allocate memory for the slab. */
-        constexpr auto AllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-        const KPhysicalAddress slab_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, 1, AllocateOption);
-        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KPhysicalAddress>);
-
-        /* Initialize the slabheap. */
-        KPageBuffer::InitializeSlabHeap(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(slab_address)), slab_size);
     }
 
     void InitializeSlabHeaps() {
@@ -238,6 +224,36 @@ namespace ams::kern::init {
 
         /* Free the end of the slab region. */
         FreeUnusedSlabMemory(gap_start, gap_size + (slab_region.GetEndAddress() - GetInteger(address)));
+    }
+
+}
+
+namespace ams::kern {
+
+    void KPageBufferSlabHeap::Initialize(KDynamicPageManager &allocator) {
+        /* Get slab resource counts. */
+        const auto &counts = init::GetSlabResourceCounts();
+
+        /* If size is correct, account for thread local pages. */
+        if (BufferSize == PageSize) {
+            s_buffer_count += counts.num_KProcess + counts.num_KThread + (counts.num_KProcess + counts.num_KThread) / 8;
+        }
+
+        /* Set our object size. */
+        m_obj_size = BufferSize;
+
+        /* Initialize the base allocator. */
+        KSlabHeapImpl::Initialize();
+
+        /* Allocate the desired page count. */
+        for (size_t i = 0; i < s_buffer_count; ++i) {
+            /* Allocate an appropriate buffer. */
+            auto * const pb = (BufferSize <= PageSize) ? allocator.Allocate() : allocator.Allocate(BufferSize / PageSize);
+            MESOSPHERE_ABORT_UNLESS(pb != nullptr);
+
+            /* Free to our slab. */
+            KSlabHeapImpl::Free(pb);
+        }
     }
 
 }

@@ -58,7 +58,6 @@ namespace ams::kern {
                 MESOSPHERE_ABORT_UNLESS(management_region.GetEndAddress() != 0);
 
                 Kernel::GetMemoryManager().Initialize(management_region.GetAddress(), management_region.GetSize());
-                init::InitializeKPageBufferSlabHeap();
             }
 
             /* Copy the Initial Process Binary to safe memory. */

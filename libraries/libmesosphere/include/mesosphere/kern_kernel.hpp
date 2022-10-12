@@ -63,7 +63,7 @@ namespace ams::kern {
             static constexpr size_t ApplicationMemoryBlockSlabHeapSize = 20000;
             static constexpr size_t SystemMemoryBlockSlabHeapSize      = 10000;
             static constexpr size_t BlockInfoSlabHeapSize              = 4000;
-            static constexpr size_t ReservedDynamicPageCount           = 70;
+            static constexpr size_t ReservedDynamicPageCount           = 64;
         private:
             static State s_state;
             static KResourceLimit s_system_resource_limit;

@@ -29,7 +29,6 @@ namespace ams::kern::board::nintendo::nx {
         constinit bool g_call_smc_on_panic;
 
         /* Global variables for secure memory. */
-        constexpr size_t SecureAppletMemorySize = 4_MB;
         constinit KSpinLock g_secure_applet_lock;
         constinit bool g_secure_applet_memory_used = false;
         constinit KVirtualAddress g_secure_applet_memory_address = Null<KVirtualAddress>;
@@ -246,8 +245,8 @@ namespace ams::kern::board::nintendo::nx {
 
         Result AllocateSecureMemoryForApplet(KVirtualAddress *out, size_t size) {
             /* Verify that the size is valid. */
-            R_UNLESS(util::IsAligned(size, PageSize), svc::ResultInvalidSize());
-            R_UNLESS(size <= SecureAppletMemorySize,  svc::ResultOutOfMemory());
+            R_UNLESS(util::IsAligned(size, PageSize),                svc::ResultInvalidSize());
+            R_UNLESS(size <= KSystemControl::SecureAppletMemorySize, svc::ResultOutOfMemory());
 
             /* Disable interrupts and acquire the secure applet lock. */
             KScopedInterruptDisable di;
@@ -273,7 +272,7 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Verify that the memory being freed is correct. */
             MESOSPHERE_ABORT_UNLESS(address == g_secure_applet_memory_address);
-            MESOSPHERE_ABORT_UNLESS(size <= SecureAppletMemorySize);
+            MESOSPHERE_ABORT_UNLESS(size <= KSystemControl::SecureAppletMemorySize);
             MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, PageSize));
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_used);
 
@@ -451,17 +450,11 @@ namespace ams::kern::board::nintendo::nx {
         /* Initialize the sleep manager. */
         KSleepManager::Initialize();
 
-        /* Reserve secure applet memory. */
-        if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
-            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address == Null<KVirtualAddress>);
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
+        /* Get the secure applet memory. */
+        const auto &secure_applet_memory = KMemoryLayout::GetSecureAppletMemoryRegion();
+        MESOSPHERE_INIT_ABORT_UNLESS(secure_applet_memory.GetSize() == SecureAppletMemorySize);
 
-            constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-            const KPhysicalAddress secure_applet_memory_phys_addr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
-            MESOSPHERE_ABORT_UNLESS(secure_applet_memory_phys_addr != Null<KPhysicalAddress>);
-
-            g_secure_applet_memory_address = KMemoryLayout::GetLinearVirtualAddress(secure_applet_memory_phys_addr);
-        }
+        g_secure_applet_memory_address = secure_applet_memory.GetAddress();
 
         /* Initialize KTrace (and potentially other init). */
         KSystemControlBase::InitializePhase2();

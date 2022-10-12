@@ -127,7 +127,7 @@ namespace ams::kern {
     }
 
     size_t KMemoryLayout::GetResourceRegionSizeForInit(bool use_extra_resource) {
-        return KernelResourceSize + (use_extra_resource ? KernelSlabHeapAdditionalSize : 0);
+        return KernelResourceSize + KSystemControl::SecureAppletMemorySize + (use_extra_resource ? KernelSlabHeapAdditionalSize + KernelPageBufferAdditionalSize : 0);
     }
 
 }

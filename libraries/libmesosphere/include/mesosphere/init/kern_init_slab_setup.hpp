@@ -42,7 +42,6 @@ namespace ams::kern::init {
     const KSlabResourceCounts &GetSlabResourceCounts();
 
     size_t CalculateTotalSlabHeapSize();
-    NOINLINE void InitializeKPageBufferSlabHeap();
     NOINLINE void InitializeSlabHeaps();
 
 }

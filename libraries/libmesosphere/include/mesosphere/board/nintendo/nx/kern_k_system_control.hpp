@@ -21,6 +21,9 @@ namespace ams::kern::board::nintendo::nx {
 
     class KSystemControl : public KSystemControlBase {
         public:
+            /* This can be overridden as needed. */
+            static constexpr size_t SecureAppletMemorySize = 4_MB;
+        public:
             class Init : public KSystemControlBase::Init {
                 public:
                     /* Initialization. */
