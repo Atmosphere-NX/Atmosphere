@@ -17,13 +17,6 @@
 
 namespace ams::kern {
 
-    namespace {
-
-        constinit KLightLock g_interrupt_event_lock;
-        constinit KInterruptEventTask *g_interrupt_event_task_table[KInterruptController::NumInterrupts] = {};
-
-    }
-
     Result KInterruptEvent::Initialize(int32_t interrupt_name, ams::svc::InterruptType type) {
         MESOSPHERE_ASSERT_THIS();
 
@@ -40,8 +33,8 @@ namespace ams::kern {
         /* Initialize readable event base. */
         KReadableEvent::Initialize(nullptr);
 
-        /* Try to register the task. */
-        R_TRY(KInterruptEventTask::Register(m_interrupt_id, m_core_id, type == ams::svc::InterruptType_Level, this));
+        /* Bind ourselves as the handler for our interrupt id. */
+        R_TRY(Kernel::GetInterruptManager().BindHandler(this, m_interrupt_id, m_core_id, KInterruptController::PriorityLevel_High, true, type == ams::svc::InterruptType_Level));
 
         /* Mark initialized. */
         m_is_initialized = true;
@@ -51,7 +44,11 @@ namespace ams::kern {
     void KInterruptEvent::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
-        g_interrupt_event_task_table[m_interrupt_id]->Unregister(m_interrupt_id, m_core_id);
+        /* Unbind ourselves as the handler for our interrupt id. */
+        Kernel::GetInterruptManager().UnbindHandler(m_interrupt_id, m_core_id);
+
+        /* Synchronize the unbind on all cores, before proceeding. */
+        KDpcManager::Sync();
 
         /* Perform inherited finalization. */
         KReadableEvent::Finalize();
@@ -72,79 +69,19 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KInterruptEventTask::Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event) {
-        /* Lock the task table. */
-        KScopedLightLock lk(g_interrupt_event_lock);
-
-        /* Get a task for the id. */
-        bool allocated = false;
-        KInterruptEventTask *task = g_interrupt_event_task_table[interrupt_id];
-        if (task != nullptr) {
-            /* Check that there's not already an event for this task. */
-            R_UNLESS(task->m_event == nullptr, svc::ResultBusy());
-        } else {
-            /* Allocate a new task. */
-            task = KInterruptEventTask::Allocate();
-            R_UNLESS(task != nullptr, svc::ResultOutOfResource());
-
-            allocated = true;
-        }
-
-        /* Ensure that the task is cleaned up if anything goes wrong. */
-        ON_RESULT_FAILURE { if (allocated) { KInterruptEventTask::Free(task); } };
-
-        /* Register/bind the interrupt task. */
-        {
-            /* Lock the scheduler. */
-            KScopedSchedulerLock sl;
-
-            /* Bind the interrupt handler. */
-            R_TRY(Kernel::GetInterruptManager().BindHandler(task, interrupt_id, core_id, KInterruptController::PriorityLevel_High, true, level));
-
-            /* Set the event. */
-            task->m_event = event;
-        }
-
-        /* If we allocated, set the event in the table. */
-        if (allocated) {
-            g_interrupt_event_task_table[interrupt_id] = task;
-        }
-
-        R_SUCCEED();
-    }
-
-    void KInterruptEventTask::Unregister(s32 interrupt_id, s32 core_id) {
-        MESOSPHERE_ASSERT_THIS();
-
-        /* Lock the task table. */
-        KScopedLightLock lk(g_interrupt_event_lock);
-
-        /* Lock the scheduler. */
-        KScopedSchedulerLock sl;
-
-        /* Ensure we can unregister. */
-        MESOSPHERE_ABORT_UNLESS(g_interrupt_event_task_table[interrupt_id] == this);
-        MESOSPHERE_ABORT_UNLESS(m_event != nullptr);
-
-        /* Unbind the interrupt. */
-        m_event = nullptr;
-        Kernel::GetInterruptManager().UnbindHandler(interrupt_id, core_id);
-    }
-
-    KInterruptTask *KInterruptEventTask::OnInterrupt(s32 interrupt_id) {
+    KInterruptTask *KInterruptEvent::OnInterrupt(s32 interrupt_id) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_UNUSED(interrupt_id);
         return this;
     }
 
-    void KInterruptEventTask::DoTask() {
+    void KInterruptEvent::DoTask() {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the scheduler. */
         KScopedSchedulerLock sl;
 
-        if (m_event != nullptr) {
-            m_event->Signal();
-        }
+        /* Signal. */
+        this->Signal();
     }
 }
