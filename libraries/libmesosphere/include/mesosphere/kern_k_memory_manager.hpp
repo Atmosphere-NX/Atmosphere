@@ -200,7 +200,7 @@ namespace ams::kern {
 
             NOINLINE KPhysicalAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
-            NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
+            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             Pool GetPool(KPhysicalAddress address) const {
                 return this->GetManager(address).GetPool();
@@ -215,6 +215,22 @@ namespace ams::kern {
                     {
                         KScopedLightLock lk(m_pool_locks[manager.GetPool()]);
                         manager.Open(address, cur_pages);
+                    }
+
+                    num_pages -= cur_pages;
+                    address += cur_pages * PageSize;
+                }
+            }
+
+            void OpenFirst(KPhysicalAddress address, size_t num_pages) {
+                /* Repeatedly open references until we've done so for all pages. */
+                while (num_pages) {
+                    auto &manager = this->GetManager(address);
+                    const size_t cur_pages = std::min(num_pages, manager.GetPageOffsetToEnd(address));
+
+                    {
+                        KScopedLightLock lk(m_pool_locks[manager.GetPool()]);
+                        manager.OpenFirst(address, cur_pages);
                     }
 
                     num_pages -= cur_pages;

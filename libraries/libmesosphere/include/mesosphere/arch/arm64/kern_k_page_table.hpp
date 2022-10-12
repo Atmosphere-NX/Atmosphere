@@ -208,7 +208,7 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
+            Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, bool not_first, PageLinkedList *page_list, bool reuse_ll);
             Result MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
 
             bool MergePages(KProcessAddress virt_addr, PageLinkedList *page_list);

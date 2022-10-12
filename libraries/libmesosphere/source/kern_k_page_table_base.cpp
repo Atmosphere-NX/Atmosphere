@@ -4138,10 +4138,13 @@ namespace ams::kern {
 
                 /* Allocate pages for the new memory. */
                 KPageGroup pg(m_block_info_manager);
-                R_TRY(Kernel::GetMemoryManager().AllocateAndOpenForProcess(std::addressof(pg), (size - mapped_size) / PageSize, m_allocate_option, GetCurrentProcess().GetId(), m_heap_fill_value));
+                R_TRY(Kernel::GetMemoryManager().AllocateForProcess(std::addressof(pg), (size - mapped_size) / PageSize, m_allocate_option, GetCurrentProcess().GetId(), m_heap_fill_value));
 
-                /* Close our reference when we're done. */
-                ON_SCOPE_EXIT { pg.Close(); };
+                /* If we fail in the next bit (or retry), we need to cleanup the pages. */
+                auto pg_guard = SCOPE_GUARD {
+                    pg.OpenFirst();
+                    pg.Close();
+                };
 
                 /* Map the memory. */
                 {
@@ -4208,7 +4211,13 @@ namespace ams::kern {
                     /* We're going to perform an update, so create a helper. */
                     KScopedPageTableUpdater updater(this);
 
+                    /* Prepare to iterate over the memory. */
+                    auto pg_it = pg.begin();
+                    KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
+                    size_t pg_pages = pg_it->GetNumPages();
+
                     /* Reset the current tracking address, and make sure we clean up on failure. */
+                    pg_guard.Cancel();
                     cur_address = address;
                     ON_RESULT_FAILURE {
                         if (cur_address > address) {
@@ -4245,12 +4254,15 @@ namespace ams::kern {
                                 ++it;
                             }
                         }
-                    };
 
-                    /* Iterate over the memory. */
-                    auto pg_it = pg.begin();
-                    KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
-                    size_t pg_pages = pg_it->GetNumPages();
+                        /* Release any remaining unmapped memory. */
+                        Kernel::GetMemoryManager().OpenFirst(pg_phys_addr, pg_pages);
+                        Kernel::GetMemoryManager().Close(pg_phys_addr, pg_pages);
+                        for (++pg_it; pg_it != pg.end(); ++pg_it) {
+                            Kernel::GetMemoryManager().OpenFirst(pg_it->GetAddress(), pg_it->GetNumPages());
+                            Kernel::GetMemoryManager().Close(pg_it->GetAddress(), pg_it->GetNumPages());
+                        }
+                    };
 
                     auto it = m_memory_block_manager.FindIterator(cur_address);
                     while (true) {
@@ -4281,7 +4293,7 @@ namespace ams::kern {
 
                                 /* Map whatever we can. */
                                 const size_t cur_pages = std::min(pg_pages, map_pages);
-                                R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_pages, pg_phys_addr, true, map_properties, OperationType_Map, false));
+                                R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_pages, pg_phys_addr, true, map_properties, OperationType_MapFirst, false));
 
                                 /* Advance. */
                                 cur_address += cur_pages * PageSize;
@@ -4330,6 +4342,9 @@ namespace ams::kern {
         const KProcessAddress last_address = address + size - 1;
 
         /* Define iteration variables. */
+        KProcessAddress map_start_address = Null<KProcessAddress>;
+        KProcessAddress map_last_address  = Null<KProcessAddress>;
+
         KProcessAddress cur_address;
         size_t mapped_size;
         size_t num_allocator_blocks = 0;
@@ -4356,25 +4371,24 @@ namespace ams::kern {
                 if (is_normal) {
                     R_UNLESS(info.GetAttribute() == KMemoryAttribute_None, svc::ResultInvalidCurrentMemory());
 
+                    if (map_start_address == Null<KProcessAddress>) {
+                        map_start_address = cur_address;
+                    }
+                    map_last_address = (last_address >= info.GetLastAddress()) ? info.GetLastAddress() : last_address;
+
                     if (info.GetAddress() < GetInteger(address)) {
                         ++num_allocator_blocks;
                     }
                     if (last_address < info.GetLastAddress()) {
                         ++num_allocator_blocks;
                     }
+
+                    mapped_size += (map_last_address + 1 - cur_address);
                 }
 
                 /* Check if we're done. */
                 if (last_address <= info.GetLastAddress()) {
-                    if (is_normal) {
-                        mapped_size += (last_address + 1 - cur_address);
-                    }
                     break;
-                }
-
-                /* Track the memory if it's mapped. */
-                if (is_normal) {
-                    mapped_size += KProcessAddress(info.GetEndAddress()) - cur_address;
                 }
 
                 /* Advance. */
@@ -4386,54 +4400,6 @@ namespace ams::kern {
             R_SUCCEED_IF(mapped_size == 0);
         }
 
-        /* Make a page group for the unmap region. */
-        KPageGroup pg(m_block_info_manager);
-        {
-            auto &impl = this->GetImpl();
-
-            /* Begin traversal. */
-            TraversalContext context;
-            TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
-            bool             cur_valid  = false;
-            TraversalEntry   next_entry;
-            bool             next_valid;
-            size_t           tot_size   = 0;
-
-            cur_address = address;
-            next_valid  = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_address);
-            next_entry.block_size = (next_entry.block_size - (GetInteger(next_entry.phys_addr) & (next_entry.block_size - 1)));
-
-            /* Iterate, building the group. */
-            while (true) {
-                if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
-                    cur_entry.block_size += next_entry.block_size;
-                } else {
-                    if (cur_valid) {
-                        MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
-                        R_TRY(pg.AddBlock(cur_entry.phys_addr, cur_entry.block_size / PageSize));
-                    }
-
-                    /* Update tracking variables. */
-                    tot_size += cur_entry.block_size;
-                    cur_entry = next_entry;
-                    cur_valid = next_valid;
-                }
-
-                if (cur_entry.block_size + tot_size >= size) {
-                    break;
-                }
-
-                next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
-            }
-
-            /* Add the last block. */
-            if (cur_valid) {
-                MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
-                R_TRY(pg.AddBlock(cur_entry.phys_addr, (size - tot_size) / PageSize));
-            }
-        }
-        MESOSPHERE_ASSERT(pg.GetNumPages() == mapped_size / PageSize);
-
         /* Create an update allocator. */
         MESOSPHERE_ASSERT(num_allocator_blocks <= KMemoryBlockManagerUpdateAllocator::MaxBlocks);
         Result allocator_result;
@@ -4443,69 +4409,12 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
-        /* Open a reference to the pages, we're unmapping, and close the reference when we're done. */
-        pg.Open();
-        ON_SCOPE_EXIT { pg.Close(); };
+        /* Separate the mapping. */
+        const KPageProperties sep_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
+        R_TRY(this->Operate(updater.GetPageList(), map_start_address, (map_last_address + 1 - map_start_address) / PageSize, Null<KPhysicalAddress>, false, sep_properties, OperationType_Separate, false));
 
         /* Reset the current tracking address, and make sure we clean up on failure. */
         cur_address = address;
-        ON_RESULT_FAILURE {
-            if (cur_address > address) {
-                const KProcessAddress last_map_address = cur_address - 1;
-                cur_address = address;
-
-                /* Iterate over the memory we unmapped. */
-                auto it = m_memory_block_manager.FindIterator(cur_address);
-                auto pg_it = pg.begin();
-                KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
-                size_t pg_pages = pg_it->GetNumPages();
-
-                while (true) {
-                    /* Get the memory info for the pages we unmapped, convert to property. */
-                    const KMemoryInfo info = it->GetMemoryInfo();
-                    const KPageProperties prev_properties = { info.GetPermission(), false, false, DisableMergeAttribute_None };
-
-                    /* If the memory is normal, we unmapped it and need to re-map it. */
-                    if (info.GetState() == KMemoryState_Normal) {
-                        /* Determine the range to map. */
-                        size_t map_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_map_address + 1 - cur_address) / PageSize;
-
-                        /* While we have pages to map, map them. */
-                        while (map_pages > 0) {
-                            /* Check if we're at the end of the physical block. */
-                            if (pg_pages == 0) {
-                                /* Ensure there are more pages to map. */
-                                MESOSPHERE_ABORT_UNLESS(pg_it != pg.end());
-
-                                /* Advance our physical block. */
-                                ++pg_it;
-                                pg_phys_addr = pg_it->GetAddress();
-                                pg_pages     = pg_it->GetNumPages();
-                            }
-
-                            /* Map whatever we can. */
-                            const size_t cur_pages = std::min(pg_pages, map_pages);
-                            MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_pages, pg_phys_addr, true, prev_properties, OperationType_Map, true));
-
-                            /* Advance. */
-                            cur_address += cur_pages * PageSize;
-                            map_pages   -= cur_pages;
-
-                            pg_phys_addr += cur_pages * PageSize;
-                            pg_pages     -= cur_pages;
-                        }
-                    }
-
-                    /* Check if we're done. */
-                    if (last_map_address <= info.GetLastAddress()) {
-                        break;
-                    }
-
-                    /* Advance. */
-                    ++it;
-                }
-            }
-        };
 
         /* Iterate over the memory, unmapping as we go. */
         auto it = m_memory_block_manager.FindIterator(cur_address);
@@ -4523,7 +4432,7 @@ namespace ams::kern {
                 const size_t cur_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_address + 1 - cur_address) / PageSize;
 
                 /* Unmap. */
-                R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+                MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
             }
 
             /* Check if we're done. */
