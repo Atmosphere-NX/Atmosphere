@@ -17,30 +17,34 @@
 
 namespace ams::kern::init {
 
+    /* For macro convenience. */
+    using KSessionRequestMappings = KSessionRequest::SessionMappings::DynamicMappings;
+
     #define SLAB_COUNT(CLASS) g_slab_resource_counts.num_##CLASS
 
     #define FOREACH_SLAB_TYPE(HANDLER, ...)                                                                                     \
-        HANDLER(KProcess,              (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
-        HANDLER(KThread,               (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
-        HANDLER(KEvent,                (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
-        HANDLER(KInterruptEvent,       (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
-        HANDLER(KPort,                 (SLAB_COUNT(KPort)),                                                       ## __VA_ARGS__) \
-        HANDLER(KSharedMemory,         (SLAB_COUNT(KSharedMemory)),                                               ## __VA_ARGS__) \
-        HANDLER(KSharedMemoryInfo,     (SLAB_COUNT(KSharedMemory) * 8),                                           ## __VA_ARGS__) \
-        HANDLER(KTransferMemory,       (SLAB_COUNT(KTransferMemory)),                                             ## __VA_ARGS__) \
-        HANDLER(KCodeMemory,           (SLAB_COUNT(KCodeMemory)),                                                 ## __VA_ARGS__) \
-        HANDLER(KDeviceAddressSpace,   (SLAB_COUNT(KDeviceAddressSpace)),                                         ## __VA_ARGS__) \
-        HANDLER(KSession,              (SLAB_COUNT(KSession)),                                                    ## __VA_ARGS__) \
-        HANDLER(KSessionRequest,       (SLAB_COUNT(KSession) * 2),                                                ## __VA_ARGS__) \
-        HANDLER(KLightSession,         (SLAB_COUNT(KLightSession)),                                               ## __VA_ARGS__) \
-        HANDLER(KThreadLocalPage,      (SLAB_COUNT(KProcess) + (SLAB_COUNT(KProcess) + SLAB_COUNT(KThread)) / 8), ## __VA_ARGS__) \
-        HANDLER(KObjectName,           (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
-        HANDLER(KResourceLimit,        (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
-        HANDLER(KEventInfo,            (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
-        HANDLER(KDebug,                (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
-        HANDLER(KIoPool,               (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
-        HANDLER(KIoRegion,             (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__) \
-        HANDLER(KSecureSystemResource, (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__)
+        HANDLER(KProcess,                (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
+        HANDLER(KThread,                 (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
+        HANDLER(KEvent,                  (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
+        HANDLER(KInterruptEvent,         (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
+        HANDLER(KPort,                   (SLAB_COUNT(KPort)),                                                       ## __VA_ARGS__) \
+        HANDLER(KSharedMemory,           (SLAB_COUNT(KSharedMemory)),                                               ## __VA_ARGS__) \
+        HANDLER(KSharedMemoryInfo,       (SLAB_COUNT(KSharedMemory) * 8),                                           ## __VA_ARGS__) \
+        HANDLER(KTransferMemory,         (SLAB_COUNT(KTransferMemory)),                                             ## __VA_ARGS__) \
+        HANDLER(KCodeMemory,             (SLAB_COUNT(KCodeMemory)),                                                 ## __VA_ARGS__) \
+        HANDLER(KDeviceAddressSpace,     (SLAB_COUNT(KDeviceAddressSpace)),                                         ## __VA_ARGS__) \
+        HANDLER(KSession,                (SLAB_COUNT(KSession)),                                                    ## __VA_ARGS__) \
+        HANDLER(KSessionRequest,         (SLAB_COUNT(KSession) * 2),                                                ## __VA_ARGS__) \
+        HANDLER(KLightSession,           (SLAB_COUNT(KLightSession)),                                               ## __VA_ARGS__) \
+        HANDLER(KThreadLocalPage,        (SLAB_COUNT(KProcess) + (SLAB_COUNT(KProcess) + SLAB_COUNT(KThread)) / 8), ## __VA_ARGS__) \
+        HANDLER(KObjectName,             (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
+        HANDLER(KResourceLimit,          (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
+        HANDLER(KEventInfo,              (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
+        HANDLER(KDebug,                  (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
+        HANDLER(KIoPool,                 (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
+        HANDLER(KIoRegion,               (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__) \
+        HANDLER(KSecureSystemResource,   (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
+        HANDLER(KSessionRequestMappings, (SLAB_COUNT(KSessionRequestMappings)),                                     ## __VA_ARGS__)
 
     namespace {
 
@@ -55,24 +59,25 @@ namespace ams::kern::init {
         #undef DEFINE_SLAB_TYPE_ENUM_MEMBER
 
         /* Constexpr counts. */
-        constexpr size_t SlabCountKProcess              = 80;
-        constexpr size_t SlabCountKThread               = 800;
-        constexpr size_t SlabCountKEvent                = 900;
-        constexpr size_t SlabCountKInterruptEvent       = 100;
-        constexpr size_t SlabCountKPort                 = 384;
-        constexpr size_t SlabCountKSharedMemory         = 80;
-        constexpr size_t SlabCountKTransferMemory       = 200;
-        constexpr size_t SlabCountKCodeMemory           = 10;
-        constexpr size_t SlabCountKDeviceAddressSpace   = 300;
-        constexpr size_t SlabCountKSession              = 1133;
-        constexpr size_t SlabCountKLightSession         = 100;
-        constexpr size_t SlabCountKObjectName           = 7;
-        constexpr size_t SlabCountKResourceLimit        = 5;
-        constexpr size_t SlabCountKDebug                = cpu::NumCores;
-        constexpr size_t SlabCountKIoPool               = 1;
-        constexpr size_t SlabCountKIoRegion             = 6;
+        constexpr size_t SlabCountKProcess                = 80;
+        constexpr size_t SlabCountKThread                 = 800;
+        constexpr size_t SlabCountKEvent                  = 900;
+        constexpr size_t SlabCountKInterruptEvent         = 100;
+        constexpr size_t SlabCountKPort                   = 384;
+        constexpr size_t SlabCountKSharedMemory           = 80;
+        constexpr size_t SlabCountKTransferMemory         = 200;
+        constexpr size_t SlabCountKCodeMemory             = 10;
+        constexpr size_t SlabCountKDeviceAddressSpace     = 300;
+        constexpr size_t SlabCountKSession                = 1133;
+        constexpr size_t SlabCountKLightSession           = 100;
+        constexpr size_t SlabCountKObjectName             = 7;
+        constexpr size_t SlabCountKResourceLimit          = 5;
+        constexpr size_t SlabCountKDebug                  = cpu::NumCores;
+        constexpr size_t SlabCountKIoPool                 = 1;
+        constexpr size_t SlabCountKIoRegion               = 6;
+        constexpr size_t SlabcountKSessionRequestMappings = 40;
 
-        constexpr size_t SlabCountExtraKThread          = (1024 + 256 + 256) - SlabCountKThread;
+        constexpr size_t SlabCountExtraKThread            = (1024 + 256 + 256) - SlabCountKThread;
 
         namespace test {
 
@@ -86,22 +91,23 @@ namespace ams::kern::init {
 
         /* Global to hold our resource counts. */
         constinit KSlabResourceCounts g_slab_resource_counts = {
-            .num_KProcess               = SlabCountKProcess,
-            .num_KThread                = SlabCountKThread,
-            .num_KEvent                 = SlabCountKEvent,
-            .num_KInterruptEvent        = SlabCountKInterruptEvent,
-            .num_KPort                  = SlabCountKPort,
-            .num_KSharedMemory          = SlabCountKSharedMemory,
-            .num_KTransferMemory        = SlabCountKTransferMemory,
-            .num_KCodeMemory            = SlabCountKCodeMemory,
-            .num_KDeviceAddressSpace    = SlabCountKDeviceAddressSpace,
-            .num_KSession               = SlabCountKSession,
-            .num_KLightSession          = SlabCountKLightSession,
-            .num_KObjectName            = SlabCountKObjectName,
-            .num_KResourceLimit         = SlabCountKResourceLimit,
-            .num_KDebug                 = SlabCountKDebug,
-            .num_KIoPool                = SlabCountKIoPool,
-            .num_KIoRegion              = SlabCountKIoRegion,
+            .num_KProcess                = SlabCountKProcess,
+            .num_KThread                 = SlabCountKThread,
+            .num_KEvent                  = SlabCountKEvent,
+            .num_KInterruptEvent         = SlabCountKInterruptEvent,
+            .num_KPort                   = SlabCountKPort,
+            .num_KSharedMemory           = SlabCountKSharedMemory,
+            .num_KTransferMemory         = SlabCountKTransferMemory,
+            .num_KCodeMemory             = SlabCountKCodeMemory,
+            .num_KDeviceAddressSpace     = SlabCountKDeviceAddressSpace,
+            .num_KSession                = SlabCountKSession,
+            .num_KLightSession           = SlabCountKLightSession,
+            .num_KObjectName             = SlabCountKObjectName,
+            .num_KResourceLimit          = SlabCountKResourceLimit,
+            .num_KDebug                  = SlabCountKDebug,
+            .num_KIoPool                 = SlabCountKIoPool,
+            .num_KIoRegion               = SlabCountKIoRegion,
+            .num_KSessionRequestMappings = SlabcountKSessionRequestMappings,
         };
 
         template<typename T>
