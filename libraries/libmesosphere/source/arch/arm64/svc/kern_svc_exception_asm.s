@@ -86,9 +86,10 @@ _ZN3ams4kern3svc14RestoreContextEm:
     /* Get our exception flags. */
     ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
 
-    /* Clear in-svc and needs-fpu-restore flags. */
+    /* Clear in-svc, in-user-exception, and needs-fpu-restore flags. */
     and     w10, w9,  #(~(THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED))
     and     w10, w10, #(~(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC))
+    and     w10, w10, #(~(THREAD_EXCEPTION_FLAG_IS_IN_USERMODE_EXCEPTION_HANDLER))
     strb    w10, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
 
     /* If we don't need to restore the fpu, skip restoring it. */
