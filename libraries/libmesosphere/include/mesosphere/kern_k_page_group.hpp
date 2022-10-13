@@ -138,6 +138,7 @@ namespace ams::kern {
 
             Result AddBlock(KPhysicalAddress addr, size_t num_pages);
             void Open() const;
+            void OpenFirst() const;
             void Close() const;
 
             size_t GetNumPages() const;

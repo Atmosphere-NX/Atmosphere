@@ -85,7 +85,6 @@ namespace ams::nxboot {
                     HANDLE_DRAM_CASE( 3, 12)
                     HANDLE_DRAM_CASE( 5, 12)
                     HANDLE_DRAM_CASE( 6, 12)
-                    HANDLE_DRAM_CASE( 7,  0)
                     HANDLE_DRAM_CASE( 8,  1)
                     HANDLE_DRAM_CASE( 9,  2)
                     HANDLE_DRAM_CASE(10,  3)
@@ -94,7 +93,6 @@ namespace ams::nxboot {
                     HANDLE_DRAM_CASE(13,  2)
                     HANDLE_DRAM_CASE(14,  3)
                     HANDLE_DRAM_CASE(15,  4)
-                    HANDLE_DRAM_CASE(16,  5)
                     HANDLE_DRAM_CASE(17,  6)
                     HANDLE_DRAM_CASE(18,  7)
                     HANDLE_DRAM_CASE(19,  6)
@@ -107,6 +105,12 @@ namespace ams::nxboot {
                     HANDLE_DRAM_CASE(26, 11)
                     HANDLE_DRAM_CASE(27, 11)
                     HANDLE_DRAM_CASE(28,  7)
+                    HANDLE_DRAM_CASE(29,  0)
+                    HANDLE_DRAM_CASE(30,  0)
+                    HANDLE_DRAM_CASE(31,  0)
+                    HANDLE_DRAM_CASE(32,  5)
+                    HANDLE_DRAM_CASE(33,  5)
+                    HANDLE_DRAM_CASE(34,  5)
                     default:
                         AMS_ABORT("Invalid DRAM id");
                 }

@@ -18,8 +18,8 @@
 
 namespace ams::os {
 
-    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions) {
-        R_RETURN(::ams::os::impl::ProcessCodeMemoryImpl::Map(out, handle, regions, num_regions));
+    Result MapProcessCodeMemory(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random) {
+        R_RETURN(::ams::os::impl::ProcessCodeMemoryImpl::Map(out, handle, regions, num_regions, generate_random));
     }
 
     Result UnmapProcessCodeMemory(NativeHandle handle, u64 process_code_address, const ProcessMemoryRegion *regions, size_t num_regions) {

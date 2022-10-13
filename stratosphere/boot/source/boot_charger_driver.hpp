@@ -49,8 +49,8 @@ namespace ams::boot {
                     R_TRY(powctl::SetChargerInputCurrentLimit(m_charger_session, 500));
                 }
 
-                /* Set input voltage limit to 500 mv. */
-                R_TRY(powctl::SetChargerInputVoltageLimit(m_charger_session, 500));
+                /* Set boost mode current limit to 500 ma. */
+                R_TRY(powctl::SetChargerBoostModeCurrentLimit(m_charger_session, 500));
 
                 /* Disable hi-z mode. */
                 R_TRY(powctl::SetChargerHiZEnabled(m_charger_session, false));

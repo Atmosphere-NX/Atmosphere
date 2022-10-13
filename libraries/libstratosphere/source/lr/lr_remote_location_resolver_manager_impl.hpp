@@ -54,6 +54,11 @@ namespace ams::lr {
                 AMS_UNUSED(out);
                 AMS_ABORT("TODO: libnx binding");
             }
+
+            Result SetEnabled(const sf::InMapAliasArray<ncm::StorageId> &storages) {
+                AMS_UNUSED(storages);
+                AMS_ABORT("TODO: libnx binding");
+            }
     };
     static_assert(lr::IsILocationResolverManager<RemoteLocationResolverManagerImpl>);
     #endif

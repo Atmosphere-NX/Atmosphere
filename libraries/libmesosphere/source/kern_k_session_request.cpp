@@ -19,22 +19,20 @@ namespace ams::kern {
 
     Result KSessionRequest::SessionMappings::PushMap(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state, size_t index) {
         /* At most 15 buffers of each type (4-bit descriptor counts). */
-        MESOSPHERE_ASSERT(index < ((1ul << 4) - 1) * 3);
+        MESOSPHERE_ASSERT(index < NumMappings);
 
         /* Get the mapping. */
         Mapping *mapping;
         if (index < NumStaticMappings) {
             mapping = std::addressof(m_static_mappings[index]);
         } else {
-            /* Allocate a page for the extra mappings. */
-            if (m_mappings == nullptr) {
-                KPageBuffer *page_buffer = KPageBuffer::Allocate();
-                R_UNLESS(page_buffer != nullptr, svc::ResultOutOfMemory());
-
-                m_mappings = reinterpret_cast<Mapping *>(page_buffer);
+            /* Allocate dynamic mappings as necessary. */
+            if (m_dynamic_mappings == nullptr) {
+                m_dynamic_mappings = DynamicMappings::Allocate();
+                R_UNLESS(m_dynamic_mappings != nullptr, svc::ResultOutOfMemory());
             }
 
-            mapping = std::addressof(m_mappings[index - NumStaticMappings]);
+            mapping = std::addressof(m_dynamic_mappings->Get(index - NumStaticMappings));
         }
 
         /* Set the mapping. */
@@ -59,9 +57,9 @@ namespace ams::kern {
     }
 
     void KSessionRequest::SessionMappings::Finalize() {
-        if (m_mappings) {
-            KPageBuffer::Free(reinterpret_cast<KPageBuffer *>(m_mappings));
-            m_mappings = nullptr;
+        if (m_dynamic_mappings) {
+            DynamicMappings::Free(m_dynamic_mappings);
+            m_dynamic_mappings = nullptr;
         }
     }
 

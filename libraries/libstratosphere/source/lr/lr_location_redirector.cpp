@@ -25,10 +25,11 @@ namespace ams::lr {
             ncm::ProgramId m_program_id;
             ncm::ProgramId m_owner_id;
             Path m_path;
+            RedirectionAttributes m_attr;
             u32 m_flags;
         public:
-            Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) :
-                m_program_id(program_id), m_owner_id(owner_id), m_path(path), m_flags(flags) { /* ... */ }
+            Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, const RedirectionAttributes &attr, u32 flags) :
+                m_program_id(program_id), m_owner_id(owner_id), m_path(path), m_attr(attr), m_flags(flags) { /* ... */ }
 
             ncm::ProgramId GetProgramId() const {
                 return m_program_id;
@@ -42,6 +43,10 @@ namespace ams::lr {
                 *out = m_path;
             }
 
+            void GetAttributes(RedirectionAttributes *out) const {
+                *out = m_attr;
+            }
+
             u32 GetFlags() const {
                 return m_flags;
             }
@@ -51,37 +56,28 @@ namespace ams::lr {
             }
     };
 
-    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) const {
+    bool LocationRedirector::FindRedirection(Path *out, RedirectionAttributes *out_attr, ncm::ProgramId program_id) const {
         /* Obtain the path of a matching redirection. */
         for (const auto &redirection : m_redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);
+                redirection.GetAttributes(out_attr);
                 return true;
             }
         }
         return false;
     }
 
-    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags) {
-        this->SetRedirection(program_id, ncm::InvalidProgramId, path, flags);
+    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, const Path &path, const RedirectionAttributes &attr, u32 flags) {
+        this->SetRedirection(program_id, ncm::InvalidProgramId, path, attr, flags);
     }
 
-    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
+    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, const RedirectionAttributes &attr, u32 flags) {
         /* Remove any existing redirections for this program id. */
         this->EraseRedirection(program_id);
 
         /* Insert a new redirection into the list. */
-        m_redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
-    }
-
-    void LocationRedirector::SetRedirectionFlags(ncm::ProgramId program_id, u32 flags) {
-        /* Set the flags of a redirection with a matching program id. */
-        for (auto &redirection : m_redirection_list) {
-            if (redirection.GetProgramId() == program_id) {
-                redirection.SetFlags(flags);
-                break;
-            }
-        }
+        m_redirection_list.push_back(*(new Redirection(program_id, owner_id, path, attr, flags)));
     }
 
     void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {

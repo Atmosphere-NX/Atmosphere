@@ -46,7 +46,7 @@ namespace ams::kern {
             MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPages(stack_bottom, 1, KMemoryState_Kernel));
 
             /* Free the stack page. */
-            KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(stack_paddr));
+            KPageBuffer::FreeChecked<PageSize>(KPageBuffer::FromPhysicalAddress(stack_paddr));
         }
 
         class ThreadQueueImplForKThreadSleep final : public KThreadQueueWithoutEndWait { /* ... */ };
@@ -334,7 +334,7 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(stack_region.GetEndAddress() != 0);
 
         /* Allocate a page to use as the thread. */
-        KPageBuffer *page = KPageBuffer::Allocate();
+        KPageBuffer *page = KPageBuffer::AllocateChecked<PageSize>();
         R_UNLESS(page != nullptr, svc::ResultOutOfResource());
 
         /* Map the stack page. */
@@ -509,7 +509,8 @@ namespace ams::kern {
 
     void KThread::OnLeaveUsermodeException() {
         this->ClearUsermodeExceptionSvcPermissions();
-        this->ClearInUsermodeExceptionHandler();
+
+        /* NOTE: InUsermodeExceptionHandler will be cleared by RestoreContext. */
     }
 
     void KThread::Pin() {

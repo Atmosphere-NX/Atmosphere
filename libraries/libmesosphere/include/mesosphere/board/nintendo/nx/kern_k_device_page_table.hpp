@@ -74,7 +74,7 @@ namespace ams::kern::board::nintendo::nx {
             Result Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size);
             Result Detach(ams::svc::DeviceName device_name);
 
-            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
+            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool is_io);
             Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address);
 
             void Unmap(KDeviceVirtualAddress device_address, size_t size) {

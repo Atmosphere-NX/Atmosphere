@@ -308,7 +308,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KMemoryManager::AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
+    Result KMemoryManager::AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
         MESOSPHERE_ASSERT(out != nullptr);
         MESOSPHERE_ASSERT(out->GetNumPages() == 0);
 
@@ -330,24 +330,6 @@ namespace ams::kern {
 
             /* Set whether we should optimize. */
             optimized = has_optimized && is_optimized;
-
-            /* Open the first reference to the pages. */
-            for (const auto &block : *out) {
-                KPhysicalAddress cur_address = block.GetAddress();
-                size_t remaining_pages       = block.GetNumPages();
-                while (remaining_pages > 0) {
-                    /* Get the manager for the current address. */
-                    auto &manager = this->GetManager(cur_address);
-
-                    /* Process part or all of the block. */
-                    const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
-                    manager.OpenFirst(cur_address, cur_pages);
-
-                    /* Advance. */
-                    cur_address     += cur_pages * PageSize;
-                    remaining_pages -= cur_pages;
-                }
-            }
         }
 
         /* Perform optimized memory tracking, if we should. */

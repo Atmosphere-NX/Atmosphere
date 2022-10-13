@@ -44,8 +44,8 @@ namespace ams::kern::board::generic {
                 R_THROW(ams::kern::svc::ResultNotImplemented());
             }
 
-            Result ALWAYS_INLINE Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
-                MESOSPHERE_UNUSED(page_table, process_address, size, device_address, device_perm, is_aligned);
+            Result ALWAYS_INLINE Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool is_io) {
+                MESOSPHERE_UNUSED(page_table, process_address, size, device_address, device_perm, is_aligned, is_io);
                 R_THROW(ams::kern::svc::ResultNotImplemented());
             }
 

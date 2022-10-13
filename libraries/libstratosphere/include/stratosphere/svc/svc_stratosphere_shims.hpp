@@ -351,12 +351,12 @@
                     R_RETURN(::svcDetachDeviceAddressSpace(static_cast<u64>(device_name), das_handle));
                 }
 
-                ALWAYS_INLINE Result MapDeviceAddressSpaceByForce(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, ::ams::svc::MemoryPermission device_perm) {
-                    R_RETURN(::svcMapDeviceAddressSpaceByForce(das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm)));
+                ALWAYS_INLINE Result MapDeviceAddressSpaceByForce(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, u32 option) {
+                    R_RETURN(::svcMapDeviceAddressSpaceByForce(das_handle, process_handle, process_address, size, device_address, option));
                 }
 
-                ALWAYS_INLINE Result MapDeviceAddressSpaceAligned(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, ::ams::svc::MemoryPermission device_perm) {
-                    R_RETURN(::svcMapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm)));
+                ALWAYS_INLINE Result MapDeviceAddressSpaceAligned(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, u32 option) {
+                    R_RETURN(::svcMapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, option));
                 }
 
                 ALWAYS_INLINE Result UnmapDeviceAddressSpace(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address) {
@@ -501,6 +501,14 @@
 
                 ALWAYS_INLINE void CallSecureMonitor(::ams::svc::lp64::SecureMonitorArguments *args) {
                     ::svcCallSecureMonitor(reinterpret_cast<::SecmonArgs *>(args));
+                }
+
+                ALWAYS_INLINE Result MapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcMapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
+                }
+
+                ALWAYS_INLINE Result UnmapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcUnmapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
                 }
 
             }

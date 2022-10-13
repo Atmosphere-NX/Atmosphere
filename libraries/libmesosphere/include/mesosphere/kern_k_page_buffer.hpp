@@ -16,12 +16,33 @@
 #pragma once
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
+#include <mesosphere/kern_k_dynamic_page_manager.hpp>
 
 namespace ams::kern {
 
-    class KPageBuffer : public KSlabAllocated<KPageBuffer> {
+    class KDynamicPageManager;
+
+    class KPageBuffer;
+
+    class KPageBufferSlabHeap : protected impl::KSlabHeapImpl {
+        public:
+            static constexpr size_t BufferSize            = PageSize;
+            static constinit inline size_t s_buffer_count = 0;
         private:
-            alignas(PageSize) u8 m_buffer[PageSize];
+            size_t m_obj_size{};
+        public:
+            constexpr KPageBufferSlabHeap() = default;
+
+            /* See kern_init_slab_setup.cpp for definition. */
+            void Initialize(KDynamicPageManager &allocator);
+
+            KPageBuffer *Allocate();
+            void Free(KPageBuffer *pb);
+    };
+
+    class KPageBuffer {
+        private:
+            u8 m_buffer[KPageBufferSlabHeap::BufferSize];
         public:
             KPageBuffer() {
                 std::memset(m_buffer, 0, sizeof(m_buffer));
@@ -39,8 +60,49 @@ namespace ams::kern {
 
                 return GetPointer<KPageBuffer>(virt_addr);
             }
+        private:
+            static constinit inline KPageBufferSlabHeap s_slab_heap;
+        public:
+            static void InitializeSlabHeap(KDynamicPageManager &allocator) {
+                s_slab_heap.Initialize(allocator);
+            }
+
+            static KPageBuffer *Allocate() {
+                return s_slab_heap.Allocate();
+            }
+
+            static void Free(KPageBuffer *obj) {
+                s_slab_heap.Free(obj);
+            }
+
+            template<size_t ExpectedSize>
+            static ALWAYS_INLINE KPageBuffer *AllocateChecked() {
+                /* Check that the allocation is valid. */
+                MESOSPHERE_ABORT_UNLESS(sizeof(KPageBuffer) == ExpectedSize);
+
+                return Allocate();
+            }
+
+            template<size_t ExpectedSize>
+            static ALWAYS_INLINE void FreeChecked(KPageBuffer *obj) {
+                /* Check that the free is valid. */
+                MESOSPHERE_ABORT_UNLESS(sizeof(KPageBuffer) == ExpectedSize);
+
+                return Free(obj);
+            }
     };
-    static_assert(sizeof(KPageBuffer)  == PageSize);
-    static_assert(alignof(KPageBuffer) == PageSize);
+    static_assert(sizeof(KPageBuffer) == KPageBufferSlabHeap::BufferSize);
+
+    ALWAYS_INLINE KPageBuffer *KPageBufferSlabHeap::Allocate() {
+        KPageBuffer *pb = static_cast<KPageBuffer *>(KSlabHeapImpl::Allocate());
+        if (AMS_LIKELY(pb != nullptr)) {
+            std::construct_at(pb);
+        }
+        return pb;
+    }
+
+    ALWAYS_INLINE void KPageBufferSlabHeap::Free(KPageBuffer *pb) {
+        KSlabHeapImpl::Free(pb);
+    }
 
 }

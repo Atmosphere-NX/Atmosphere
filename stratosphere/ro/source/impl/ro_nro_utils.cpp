@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "ro_nro_utils.hpp"
+#include "ro_random.hpp"
 
 namespace ams::ro::impl {
 
@@ -43,7 +44,7 @@ namespace ams::ro::impl {
         const size_t num_regions = SetupNroProcessMemoryRegions(regions, nro_heap_address, nro_heap_size, bss_heap_address, bss_heap_size);
 
         /* Re-map the nro/bss as code memory in the destination process. */
-        R_TRY_CATCH(os::MapProcessCodeMemory(out_base_address, process_handle, regions, num_regions)) {
+        R_TRY_CATCH(os::MapProcessCodeMemory(out_base_address, process_handle, regions, num_regions, ro::impl::GenerateSecureRandom)) {
             R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
         } R_END_TRY_CATCH;
 

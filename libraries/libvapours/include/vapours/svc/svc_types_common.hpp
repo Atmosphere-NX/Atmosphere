@@ -95,6 +95,7 @@ namespace ams::svc {
         MemoryState_GeneratedCode    = 0x14,
         MemoryState_CodeOut          = 0x15,
         MemoryState_Coverage         = 0x16,
+        MemoryState_Insecure         = 0x17,
     };
 
     enum MemoryPermission : u32 {
@@ -135,6 +136,27 @@ namespace ams::svc {
         MemoryRegionType_OnMemoryBootImage = 2,
         MemoryRegionType_DTB               = 3,
         MemoryRegionType_Count,
+    };
+
+    enum MapDeviceAddressSpaceFlag : u32 {
+        MapDeviceAddressSpaceFlag_None          = (0 << 0),
+        MapDeviceAddressSpaceFlag_NotIoRegister = (1 << 0),
+    };
+
+    struct MapDeviceAddressSpaceOption {
+        using Permission = util::BitPack32::Field<0,                16, MemoryPermission>;
+        using Flags      = util::BitPack32::Field<Permission::Next,  1, MapDeviceAddressSpaceFlag>;
+        using Reserved   = util::BitPack32::Field<Flags::Next,      15, u32>;
+
+        static constexpr ALWAYS_INLINE u32 Encode(MemoryPermission perm, u32 flags) {
+            util::BitPack32 pack{};
+
+            pack.Set<Permission>(perm);
+            pack.Set<Flags>(static_cast<svc::MapDeviceAddressSpaceFlag>(flags));
+            pack.Set<Reserved>(0);
+
+            return pack.value;
+        }
     };
 
     /* Info Types. */

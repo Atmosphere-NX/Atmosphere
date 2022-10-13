@@ -70,14 +70,19 @@ namespace ams::kern {
             u16 m_next_linear_id;
             u16 m_count;
         public:
-            constexpr explicit KHandleTable(util::ConstantInitializeTag) : m_entry_infos(), m_objects(), m_lock(), m_free_head_index(-1), m_table_size(), m_max_count(), m_next_linear_id(MinLinearId), m_count() { /* ... */ }
+            constexpr explicit KHandleTable(util::ConstantInitializeTag) : m_entry_infos(), m_objects(), m_lock(), m_free_head_index(-1), m_table_size(), m_max_count(), m_next_linear_id(), m_count() { /* ... */ }
 
-            explicit KHandleTable() : m_lock(), m_free_head_index(-1), m_count() { MESOSPHERE_ASSERT_THIS(); }
+            explicit KHandleTable() : m_lock(), m_free_head_index(-1), m_table_size(), m_max_count(), m_next_linear_id(), m_count() { MESOSPHERE_ASSERT_THIS(); }
 
-            constexpr MESOSPHERE_NOINLINE_IF_DEBUG Result Initialize(s32 size) {
+            MESOSPHERE_NOINLINE_IF_DEBUG Result Initialize(s32 size) {
                 MESOSPHERE_ASSERT_THIS();
 
+                /* Check that the table size is valid. */
                 R_UNLESS(size <= static_cast<s32>(MaxTableSize), svc::ResultOutOfMemory());
+
+                /* Lock. */
+                KScopedDisableDispatch dd;
+                KScopedSpinLock lk(m_lock);
 
                 /* Initialize all fields. */
                 m_max_count       = 0;

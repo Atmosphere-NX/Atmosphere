@@ -28,8 +28,8 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
-                R_RETURN(m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager, resource_limit));
+            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+                R_RETURN(m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
             }
 
             void Finalize() { m_page_table.Finalize(); }
@@ -110,6 +110,14 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.MapRegion(region_type, perm));
             }
 
+            Result MapInsecureMemory(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.MapInsecureMemory(address, size));
+            }
+
+            Result UnmapInsecureMemory(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.UnmapInsecureMemory(address, size));
+            }
+
             Result MapPageGroup(KProcessAddress addr, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm) {
                 R_RETURN(m_page_table.MapPageGroup(addr, pg, state, perm));
             }
@@ -158,12 +166,12 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.WriteDebugIoMemory(address, buffer, size));
             }
 
-            Result LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
-                R_RETURN(m_page_table.LockForMapDeviceAddressSpace(address, size, perm, is_aligned));
+            Result LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap) {
+                R_RETURN(m_page_table.LockForMapDeviceAddressSpace(out_is_io, address, size, perm, is_aligned, check_heap));
             }
 
-            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
-                R_RETURN(m_page_table.LockForUnmapDeviceAddressSpace(address, size));
+            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size, bool check_heap) {
+                R_RETURN(m_page_table.LockForUnmapDeviceAddressSpace(address, size, check_heap));
             }
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {

@@ -33,10 +33,10 @@ namespace ams::os::impl {
 
     }
 
-    Result ProcessMemoryImpl::Map(void **out, NativeHandle handle, u64 process_address, size_t size) {
+    Result ProcessMemoryImpl::Map(void **out, NativeHandle handle, u64 process_address, size_t size, AddressSpaceGenerateRandomFunction generate_random) {
         /* Map at a random address. */
         uintptr_t mapped_address;
-        R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddress(std::addressof(mapped_address),
+        R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddressWithCustomRandomGenerator(std::addressof(mapped_address),
             [handle, process_address](uintptr_t map_address, size_t map_size) -> Result {
                 R_TRY_CATCH(svc::MapProcessMemory(map_address, handle, process_address, map_size)) {
                     R_CONVERT(svc::ResultOutOfResource,        os::ResultOutOfResource())
@@ -49,7 +49,8 @@ namespace ams::os::impl {
                 return ProcessMemoryImpl::Unmap(reinterpret_cast<void *>(map_address), handle, process_address, map_size);
             },
             size,
-            process_address
+            process_address,
+            generate_random
         ));
 
         /* Return the address we mapped at. */

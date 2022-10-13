@@ -43,6 +43,12 @@ namespace ams::kern {
     static_assert(ClassToken<KDeviceAddressSpace>      == 0b10010001'00000000);
     static_assert(ClassToken<KSessionRequest>          == 0b01100001'00000000);
     static_assert(ClassToken<KCodeMemory>              == 0b10100001'00000000);
+    static_assert(ClassToken<KIoPool>                  == 0b11000001'00000000);
+    static_assert(ClassToken<KIoRegion>                == 0b00001110'00000000);
+    /*                                                    0b00010110'00000000 */
+    /*                                                    0b00100110'00000000 */
+    static_assert(ClassToken<KSystemResource>          == 0b01000110'00000000);
+
 
     /* Ensure that the token hierarchy is correct. */
 
@@ -72,6 +78,10 @@ namespace ams::kern {
     static_assert(ClassToken<KDeviceAddressSpace>      == ((0b10010001 << 8) | ClassToken<KAutoObject>));
     static_assert(ClassToken<KSessionRequest>          == ((0b01100001 << 8) | ClassToken<KAutoObject>));
     static_assert(ClassToken<KCodeMemory>              == ((0b10100001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KIoPool>                  == ((0b11000001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KIoRegion>                == ((0b00001110 << 8) | ClassToken<KAutoObject>));
+
+    static_assert(ClassToken<KSystemResource>          == ((0b01000110 << 8) | ClassToken<KAutoObject>));
 
     /* Ensure that the token hierarchy reflects the class hierarchy. */
 
@@ -100,6 +110,10 @@ namespace ams::kern {
     static_assert(std::is_final<KDeviceAddressSpace>::value       && std::is_base_of<KAutoObject, KDeviceAddressSpace>::value);
     static_assert(std::is_final<KSessionRequest>::value           && std::is_base_of<KAutoObject, KSessionRequest>::value);
     static_assert(std::is_final<KCodeMemory>::value               && std::is_base_of<KAutoObject, KCodeMemory>::value);
+    static_assert(std::is_final<KIoPool>::value                   && std::is_base_of<KAutoObject, KIoPool>::value);
+    static_assert(std::is_final<KIoRegion>::value                 && std::is_base_of<KAutoObject, KIoRegion>::value);
+
+    static_assert(std::is_base_of<KAutoObject, KSystemResource>::value);
 
 
 }

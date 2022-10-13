@@ -161,7 +161,7 @@ namespace ams::kern::init::loader {
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
 
         /* Determine the size of the resource region. */
-        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
+        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit(KSystemControl::Init::ShouldIncreaseThreadResourceLimit());
         const uintptr_t resource_end_address  = base_address + resource_offset + resource_region_size;
 
         /* Setup the INI1 header in memory for the kernel. */

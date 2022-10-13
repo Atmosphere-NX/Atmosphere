@@ -58,4 +58,8 @@ namespace ams::lr {
 
     static_assert(util::is_pod<Path>::value && sizeof(Path) == fs::EntryNameLengthMax);
 
+    struct PathByMapAlias : public Path, ams::sf::PrefersMapAliasTransferMode{};
+    static_assert(util::is_pod<PathByMapAlias>::value);
+    static_assert(sizeof(PathByMapAlias) == sizeof(Path));
+
 }

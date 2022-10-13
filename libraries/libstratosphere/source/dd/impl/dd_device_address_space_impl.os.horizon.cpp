@@ -48,7 +48,7 @@ namespace ams::dd::impl {
         /* Check alignment. */
         AMS_ABORT_UNLESS((process_address & (4_MB - 1)) == (device_address & (4_MB - 1)));
 
-        R_TRY_CATCH(svc::MapDeviceAddressSpaceAligned(svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address, static_cast<svc::MemoryPermission>(device_perm))) {
+        R_TRY_CATCH(svc::MapDeviceAddressSpaceAligned(svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address, svc::MapDeviceAddressSpaceOption::Encode(static_cast<svc::MemoryPermission>(device_perm), svc::MapDeviceAddressSpaceFlag_None))) {
             R_CONVERT(svc::ResultInvalidHandle,        dd::ResultInvalidHandle())
             R_CONVERT(svc::ResultOutOfMemory,          dd::ResultOutOfMemory())
             R_CONVERT(svc::ResultOutOfResource,        dd::ResultOutOfResource())
@@ -59,7 +59,7 @@ namespace ams::dd::impl {
     }
 
     Result DeviceAddressSpaceImplByHorizon::MapNotAligned(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm) {
-        R_TRY_CATCH(svc::MapDeviceAddressSpaceByForce(svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address, static_cast<svc::MemoryPermission>(device_perm))) {
+        R_TRY_CATCH(svc::MapDeviceAddressSpaceByForce(svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address, svc::MapDeviceAddressSpaceOption::Encode(static_cast<svc::MemoryPermission>(device_perm), svc::MapDeviceAddressSpaceFlag_None))) {
             R_CONVERT(svc::ResultInvalidHandle,        dd::ResultInvalidHandle())
             R_CONVERT(svc::ResultOutOfMemory,          dd::ResultOutOfMemory())
             R_CONVERT(svc::ResultOutOfResource,        dd::ResultOutOfResource())

@@ -156,6 +156,9 @@ namespace ams::nxboot {
             FsVersion_14_0_0,
             FsVersion_14_0_0_Exfat,
 
+            FsVersion_15_0_0,
+            FsVersion_15_0_0_Exfat,
+
             FsVersion_Count,
         };
 
@@ -227,6 +230,10 @@ namespace ams::nxboot {
 
             { 0x88, 0x7A, 0xC1, 0x50, 0x80, 0x6C, 0x75, 0xCC }, /* FsVersion_14_0_0 */
             { 0xD4, 0x88, 0xD1, 0xF2, 0x92, 0x17, 0x35, 0x5C }, /* FsVersion_14_0_0_Exfat */
+
+
+            { 0xD0, 0xD4, 0x49, 0x18, 0x14, 0xB5, 0x62, 0xAF }, /* FsVersion_15_0_0 */
+            { 0x34, 0xC0, 0xD9, 0xED, 0x6A, 0xD1, 0x87, 0x3D }, /* FsVersion_15_0_0_Exfat */
         };
 
         const InitialProcessBinaryHeader *FindInitialProcessBinary(const pkg2::Package2Header *header, const u8 *data, ams::TargetFirmware target_firmware) {
@@ -627,6 +634,14 @@ namespace ams::nxboot {
                 case FsVersion_14_0_0_Exfat:
                     AddPatch(fs_meta, 0x195769, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x16F6B0, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_15_0_0:
+                    AddPatch(fs_meta, 0x184259, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x15EDE4, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_15_0_0_Exfat:
+                    AddPatch(fs_meta, 0x18F1E8, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x169D74, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 default:
                     break;

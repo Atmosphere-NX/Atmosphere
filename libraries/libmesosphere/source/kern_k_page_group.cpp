@@ -92,6 +92,14 @@ namespace ams::kern {
         }
     }
 
+    void KPageGroup::OpenFirst() const {
+        auto &mm = Kernel::GetMemoryManager();
+
+        for (const auto &it : *this) {
+            mm.OpenFirst(it.GetAddress(), it.GetNumPages());
+        }
+    }
+
     void KPageGroup::Close() const {
         auto &mm = Kernel::GetMemoryManager();
 

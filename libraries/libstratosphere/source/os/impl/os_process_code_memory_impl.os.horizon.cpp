@@ -55,7 +55,7 @@ namespace ams::os::impl {
 
     }
 
-    Result ProcessCodeMemoryImpl::Map(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions) {
+    Result ProcessCodeMemoryImpl::Map(u64 *out, NativeHandle handle, const ProcessMemoryRegion *regions, size_t num_regions, AddressSpaceGenerateRandomFunction generate_random) {
         /* Get the total process memory region size. */
         const size_t total_size = GetTotalProcessMemoryRegionSize(regions, num_regions);
 
@@ -64,7 +64,7 @@ namespace ams::os::impl {
 
         /* Map at a random address. */
         u64 mapped_address;
-        R_TRY(process_aslr_space_manager.MapAtRandomAddress(std::addressof(mapped_address),
+        R_TRY(process_aslr_space_manager.MapAtRandomAddressWithCustomRandomGenerator(std::addressof(mapped_address),
             [handle, regions, num_regions](u64 map_address, u64 map_size) -> Result {
                 AMS_UNUSED(map_size);
 
@@ -107,7 +107,8 @@ namespace ams::os::impl {
                 R_ABORT_UNLESS(ProcessCodeMemoryImpl::Unmap(handle, map_address, regions, num_regions));
             },
             total_size,
-            regions[0].address /* NOTE: This seems like a Nintendo bug, if the caller passed no regions. */
+            regions[0].address, /* NOTE: This seems like a Nintendo bug, if the caller passed no regions. */
+            generate_random
         ));
 
         /* Set the output address. */
