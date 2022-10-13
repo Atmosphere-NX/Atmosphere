@@ -17,6 +17,7 @@
 #include "dmnt2_debug_log.hpp"
 #include "dmnt2_gdb_server.hpp"
 #include "dmnt2_transport_layer.hpp"
+#include "dmnt2_cheat_service.hpp"
 
 namespace ams {
 
@@ -54,6 +55,67 @@ namespace ams {
         void Startup() { /* ... */ }
 
     }
+    using ServerOptions = sf::hipc::DefaultServerManagerOptions;
+
+    constexpr sm::ServiceName DebugMonitorServiceName = sm::ServiceName::Encode("dmnt:-");
+    constexpr size_t          DebugMonitorMaxSessions = 4;
+
+    constexpr sm::ServiceName CheatServiceName = sm::ServiceName::Encode("dmnt:cht2");
+    constexpr size_t          CheatMaxSessions = 2;
+
+    /* dmnt:-, dmnt:cht. */
+    constexpr size_t NumServers = 2;
+    constexpr size_t NumSessions = DebugMonitorMaxSessions + CheatMaxSessions;
+
+    sf::hipc::ServerManager<NumServers, ServerOptions, NumSessions> g_server_manager;
+
+    constinit sf::UnmanagedServiceObject<dmnt::cheat::impl::ICheatInterface, dmnt::cheat::CheatService> g_cheat_service;
+
+    void LoopServerThread(void*) {
+        g_server_manager.LoopProcess();
+    }
+
+    /* NOTE: Nintendo loops four threads processing on the manager -- we'll loop an extra fifth for our cheat service. */
+    constexpr size_t TotalThreads = DebugMonitorMaxSessions + 1;
+    static_assert(TotalThreads >= 1, "TotalThreads");
+    constexpr size_t NumExtraThreads = TotalThreads - 1;
+    constexpr size_t ThreadStackSize = 0x4000;
+    alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
+
+    os::ThreadType g_extra_threads[NumExtraThreads];
+
+    void InitializeIpcServer() {
+        /* Create services. */
+        R_ABORT_UNLESS(g_server_manager.RegisterObjectForServer(g_cheat_service.GetShared(), CheatServiceName, CheatMaxSessions));
+    }
+
+    void LoopProcessIpcServer() {
+        /* Initialize threads. */
+        if constexpr (NumExtraThreads > 0) {
+            static_assert(AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, Main) == AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, Ipc));
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                R_ABORT_UNLESS(os::CreateThread(std::addressof(g_extra_threads[i]), LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, Ipc)));
+                os::SetThreadNamePointer(std::addressof(g_extra_threads[i]), AMS_GET_SYSTEM_THREAD_NAME(dmnt, Ipc));
+            }
+        }
+
+        /* Start extra threads. */
+        if constexpr (NumExtraThreads > 0) {
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                os::StartThread(std::addressof(g_extra_threads[i]));
+            }
+        }
+
+        /* Loop this thread. */
+        LoopServerThread(nullptr);
+
+        /* Wait for extra threads to finish. */
+        if constexpr (NumExtraThreads > 0) {
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                os::WaitThread(std::addressof(g_extra_threads[i]));
+            }
+        }
+    }
 
     void Main() {
         /* Set thread name. */
@@ -83,6 +145,8 @@ namespace ams {
 
         /* Start GdbServer. */
         dmnt::InitializeGdbServer();
+
+        // InitializeIpcServer();
 
         /* TODO */
         while (true) {

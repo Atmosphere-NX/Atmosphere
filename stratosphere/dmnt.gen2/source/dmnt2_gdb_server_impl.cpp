@@ -1983,7 +1983,8 @@ namespace ams::dmnt {
                 return;
             }
 
-            AppendReplyFormat(reply_cur, reply_end, "Process:     0x%lx (%s)\n"
+            AppendReplyFormat(reply_cur, reply_end, "Hello, it's Mario\n"
+                                                    "Process:     0x%lx (%s)\n"
                                                     "Program Id:  0x%016lx\n"
                                                     "Application: %d\n"
                                                     "Hbl:         %d\n"
