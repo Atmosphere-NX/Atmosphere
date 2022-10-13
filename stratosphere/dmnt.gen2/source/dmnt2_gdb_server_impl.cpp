@@ -19,8 +19,17 @@
 
 namespace ams::dmnt {
 
+        typedef struct {
+            int max_count = 10;
+            int count = 0;
+            u64 address;
+            bool read, write;
+            u64 next_pc;
+            u64 from;
+            int failed = 0;
+        } m_watch_data_t;
+        m_watch_data_t m_watch_data;
     namespace {
-
         constexpr const u32 SdkBreakPoint     = 0xE7FFFFFF;
         constexpr const u32 SdkBreakPointMask = 0xFFFFFFFF;
 
@@ -1016,6 +1025,36 @@ namespace ams::dmnt {
 
                                         AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;%s:%lx;", static_cast<u32>(signal), m_process_id.value, thread_id, type, address);
                                     }
+
+                                    if (address == m_watch_data.address) {
+                                        /* Clear the watch point */
+                                        if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
+                                            /* save the info*/
+                                            dmnt::m_watch_data.count++;
+                                            svc::ThreadContext thread_context;
+                                            if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
+                                                m_watch_data.from = thread_context.pc;
+                                                m_watch_data.next_pc = thread_context.pc + 4;
+                                                // if (m_watch_data.count < m_watch_data.max_count) {
+                                                //     m_watch_data.from.push_back(thread_context.pc);
+                                                //     m_watch_data.next_pc = thread_context.pc + 4;
+                                                    if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
+                                                        m_watch_data.failed = 2;
+                                                    };
+                                                // };
+                                                GdbServerImpl::vCont();
+                                            } else
+                                                m_watch_data.failed = 1;
+                                        } else {
+                                            m_watch_data.failed = 3;
+                                        };
+                                    } else if (address == m_watch_data.next_pc) {
+                                        if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.next_pc, 4))) {
+                                            m_watch_data.failed = 5;
+                                        } else if (R_FAILED(m_debug_process.SetWatchPoint(m_watch_data.address, 4, m_watch_data.read, m_watch_data.write))) {
+                                            m_watch_data.failed = 4;
+                                        };
+                                    }
                                 }
                                 break;
                             case svc::DebugException_UserBreak:
@@ -1560,7 +1599,7 @@ namespace ams::dmnt {
         }
     }
 
-    void GdbServerImpl::Z() {
+    void GdbServerImpl::Z() { // insert_breakpoint
         /* Increment past the 'Z'. */
         ++m_receive_packet;
 
@@ -1667,7 +1706,7 @@ namespace ams::dmnt {
         }
     }
 
-    bool GdbServerImpl::g() {
+    bool GdbServerImpl::g() { // Read registers
         /* Get thread id. */
         u64 thread_id = m_debug_process.GetThreadIdOverride();
         if (thread_id == 0 || thread_id == static_cast<u64>(-1)) {
@@ -1976,7 +2015,10 @@ namespace ams::dmnt {
                                                "get mapping {address}\n"
                                                "wait application\n"
                                                "wait {program id}\n"
-                                               "wait homebrew\n");
+                                               "wait homebrew\n"
+                                               "setwatch {r for read, w for write, blank for instruction}{address}\n"
+                                               "getwatch {address}\n"
+                                               "cont\n");
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2056,6 +2098,97 @@ namespace ams::dmnt {
                 }
 
                 cur_addr = next_address;
+            }
+        } else if (ParsePrefix(command, "cont")) {
+            /* Get thread id. */
+            GdbServerImpl::vCont();
+            // u64 thread_id = m_debug_process.GetThreadIdOverride();
+            // if (thread_id == 0 || thread_id == static_cast<u64>(-1)) {
+            //     thread_id = m_debug_process.GetLastThreadId();
+            // }
+
+            // /* Continue the thread. */
+            // Result result;
+            // if (thread_id == m_debug_process.GetLastThreadId()) {
+            //     result = m_debug_process.Continue(thread_id);
+            // } else {
+            //     result = m_debug_process.Continue();
+            // }
+
+            // if (R_SUCCEEDED(result)) {
+            //     AppendReplyFormat(reply_cur, reply_end, "Continuing\n");
+            // } else {
+            //     AppendReplyFormat(reply_cur, reply_end, "Cannot Continue\n");
+            // }
+        } else if (ParsePrefix(command, "getwatch ")) {
+            if (!this->HasDebugProcess()) {
+                AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
+                return;
+            }
+
+            /* Allow optional "0x" prefix. */
+            ParsePrefix(command, "0x");
+
+            /* Decode address. */
+            const u64 address = DecodeHex(command);
+
+            AppendReplyFormat(reply_cur, reply_end, "m_watch_count = 0x%d \n", m_watch_data.count);
+            AppendReplyFormat(reply_cur, reply_end, "address = %10lx \n", m_watch_data.address);
+            AppendReplyFormat(reply_cur, reply_end, "fail code = 0x%d \n", m_watch_data.failed);
+            AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
+            AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%10lx\n", m_watch_data.next_pc); 
+            // for (auto entry: m_watch_data.from) {
+            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", entry);
+            // }
+
+            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
+                AppendReplyFormat(reply_cur, reply_end, "Fetching what access Watchpoint 0x%010lx \n", address);
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to clear Watchpoint 0x%010lx \n", address);
+            }
+
+            if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(address, 4))) {
+                AppendReplyFormat(reply_cur, reply_end, "Fetching what BreakPoint access 0x%010lx \n", address);
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", address);
+            }
+
+        } else if (ParsePrefix(command, "setwatch ")) {
+            if (!this->HasDebugProcess()) {
+                AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
+                return;
+            }
+            bool read = false;
+            bool write = false;
+            if (ParsePrefix(command, "r") || ParsePrefix(command, "R")) read = true;
+            if (ParsePrefix(command, "w") || ParsePrefix(command, "W")) write = true;
+
+            /* Allow optional "0x" prefix. */
+            ParsePrefix(command, "0x");
+
+            /* Decode address. */
+            const u64 address = DecodeHex(command);
+
+            if ((read || write) && m_debug_process.IsValidWatchPoint(address, 4)) {
+                if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, 4, read, write))) {
+                    AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", address, read, write);
+                    m_watch_data.address = address;
+                    m_watch_data.read = read;
+                    m_watch_data.write = write;
+                    m_watch_data.count = 0;
+                    m_watch_data.max_count = 10;
+                } else {
+                    AppendReplyFormat(reply_cur, reply_end, "Unable to set Watchpoint 0x%010lx read=%d write=%d\n", address, read, write);
+                }
+            }
+
+            if (!(read || write)) {
+                if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(address, 4, false))) {
+                    AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx \n", address);
+                    // AppendReplyOk(m_reply_cur, m_reply_end);
+                } else {
+                    AppendReplyFormat(reply_cur, reply_end, "Unable to set Watchpoint 0x%010lx \n", address);
+                }
             }
         } else if (ParsePrefix(command, "get mapping ")) {
             if (!this->HasDebugProcess()) {
@@ -2398,8 +2531,7 @@ namespace ams::dmnt {
 
         return true;
     }
-
-    void GdbServerImpl::z() {
+    void GdbServerImpl::z() { // remove_breakpoint
         /* Increment past the 'z'. */
         ++m_receive_packet;
 
