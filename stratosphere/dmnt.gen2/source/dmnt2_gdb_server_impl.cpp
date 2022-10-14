@@ -18,14 +18,18 @@
 #include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
-
+#define max_watch_buffer 10
+        typedef struct {
+            u64 address;
+            u32 count;
+        } PACKED m_from_t;
         typedef struct {
             int max_count = 10;
             int count = 0;
             u64 address;
             bool read, write, intercepted = 0;
             u64 next_pc;
-            u64 from;
+            m_from_t from[max_watch_buffer];
             int failed = 0;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
@@ -1039,10 +1043,21 @@ namespace ams::dmnt {
                                             /* Clear the watch point */
                                             if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
                                                 /* save the info*/
-                                                dmnt::m_watch_data.count++;
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                    m_watch_data.from = thread_context.pc;
+                                                    bool found = false;
+                                                    for (int i = 0; i < m_watch_data.count; i++) {
+                                                        if (m_watch_data.from[i].address == thread_context.pc) {
+                                                            (m_watch_data.from[i].count)++;
+                                                            found = true;
+                                                        }
+                                                    };
+                                                    if (!found && m_watch_data.count < max_watch_buffer) {
+                                                        m_watch_data.from[m_watch_data.count].address = thread_context.pc;
+                                                        m_watch_data.from[m_watch_data.count].count = 1;
+                                                        m_watch_data.count++;
+                                                    };
+                                                    // m_watch_data.from[thread_context.pc]++;
                                                     m_watch_data.next_pc = thread_context.pc + 4;
                                                     // if (m_watch_data.count < m_watch_data.max_count) {
                                                     //     m_watch_data.from.push_back(thread_context.pc);
@@ -1216,8 +1231,11 @@ namespace ams::dmnt {
                                         AMS_DMNT2_GDB_LOG_DEBUG("Non-SDK BreakPoint %lx, address=%p, insn=%08x\n", thread_id, reinterpret_cast<void *>(address), insn);
                                     }
 
-                                    if (signal == GdbSignal_BreakpointTrap && !is_new_hb_nro && !m_watch_data.intercepted) {
-                                        AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;swbreak:;", static_cast<u32>(signal), m_process_id.value, thread_id);
+                                    if (signal == GdbSignal_BreakpointTrap && !is_new_hb_nro) {
+                                        if (m_watch_data.intercepted)
+                                            m_watch_data.intercepted = false;
+                                        else
+                                            AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;swbreak:;", static_cast<u32>(signal), m_process_id.value, thread_id);
                                     }
 
                                     m_debug_process.ClearStep();
@@ -1229,8 +1247,11 @@ namespace ams::dmnt {
                                 break;
                         }
 
-                        if (reply_cur == send_buffer && !m_watch_data.intercepted) {
-                            AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;", static_cast<u32>(signal), m_process_id.value, thread_id);
+                        if (reply_cur == send_buffer) {
+                            if (m_watch_data.intercepted)
+                                m_watch_data.intercepted = false;
+                            else
+                                AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;", static_cast<u32>(signal), m_process_id.value, thread_id);
                         }
 
                         m_debug_process.SetLastThreadId(thread_id);
@@ -2134,11 +2155,16 @@ namespace ams::dmnt {
             AppendReplyFormat(reply_cur, reply_end, "m_watch_count = %d \n", m_watch_data.count);
             AppendReplyFormat(reply_cur, reply_end, "address = %10lx \n", m_watch_data.address);
             AppendReplyFormat(reply_cur, reply_end, "fail code = 0x%d \n", m_watch_data.failed);
-            AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
+            // AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
             AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%10lx\n", m_watch_data.next_pc); 
-            // for (auto entry: m_watch_data.from) {
-            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", entry);
+            // auto entry = m_watch_data.from.begin();
+            // while (entry != m_watch_data.from.end()) {
+            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx Count = %d\n", entry->first, entry->second);
             // }
+            for (auto i = 0; i < m_watch_data.count; i++) {
+                AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx Count = %d\n", m_watch_data.from[i].address, m_watch_data.from[i].count);
+            }
+            m_watch_data.intercepted = false;
         } else if (ParsePrefix(command, "clearw ")) {
             // if (!this->HasDebugProcess()) {
             //     AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
