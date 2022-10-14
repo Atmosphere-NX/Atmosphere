@@ -19,8 +19,21 @@
 
 namespace ams::dmnt {
 
+        typedef struct {
+            int max_count = 10;
+            int count = 0;
+            u64 address;
+<<<<<<< HEAD
+            bool read, write, intercepted = 0;
+=======
+            bool read, write;
+>>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
+            u64 next_pc;
+            u64 from;
+            int failed = 0;
+        } m_watch_data_t;
+        m_watch_data_t m_watch_data;
     namespace {
-
         constexpr const u32 SdkBreakPoint     = 0xE7FFFFFF;
         constexpr const u32 SdkBreakPointMask = 0xFFFFFFFF;
 
