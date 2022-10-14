@@ -23,11 +23,7 @@ namespace ams::dmnt {
             int max_count = 10;
             int count = 0;
             u64 address;
-<<<<<<< HEAD
             bool read, write, intercepted = 0;
-=======
-            bool read, write;
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
             u64 next_pc;
             u64 from;
             int failed = 0;
@@ -1068,38 +1064,6 @@ namespace ams::dmnt {
                                         }
                                     }
 
-<<<<<<< HEAD
-=======
-                                    if (address == m_watch_data.address) {
-                                        /* Clear the watch point */
-                                        if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
-                                            /* save the info*/
-                                            dmnt::m_watch_data.count++;
-                                            svc::ThreadContext thread_context;
-                                            if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                m_watch_data.from = thread_context.pc;
-                                                m_watch_data.next_pc = thread_context.pc + 4;
-                                                // if (m_watch_data.count < m_watch_data.max_count) {
-                                                //     m_watch_data.from.push_back(thread_context.pc);
-                                                //     m_watch_data.next_pc = thread_context.pc + 4;
-                                                    if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
-                                                        m_watch_data.failed = 2;
-                                                    };
-                                                // };
-                                                GdbServerImpl::vCont();
-                                            } else
-                                                m_watch_data.failed = 1;
-                                        } else {
-                                            m_watch_data.failed = 3;
-                                        };
-                                    } else if (address == m_watch_data.next_pc) {
-                                        if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.next_pc, 4))) {
-                                            m_watch_data.failed = 5;
-                                        } else if (R_FAILED(m_debug_process.SetWatchPoint(m_watch_data.address, 4, m_watch_data.read, m_watch_data.write))) {
-                                            m_watch_data.failed = 4;
-                                        };
-                                    }
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
                                 }
                                 break;
                             case svc::DebugException_UserBreak:
@@ -2061,14 +2025,9 @@ namespace ams::dmnt {
                                                "wait application\n"
                                                "wait {program id}\n"
                                                "wait homebrew\n"
-<<<<<<< HEAD
                                                "setw {r for read, w for write, blank for instruction}{address}\n"
                                                "getw\n"
                                                "clearw {address}\n"
-=======
-                                               "setwatch {r for read, w for write, blank for instruction}{address}\n"
-                                               "getwatch {address}\n"
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
                                                "cont\n");
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
@@ -2171,7 +2130,6 @@ namespace ams::dmnt {
             // } else {
             //     AppendReplyFormat(reply_cur, reply_end, "Cannot Continue\n");
             // }
-<<<<<<< HEAD
         } else if (ParsePrefix(command, "getw")) {
             AppendReplyFormat(reply_cur, reply_end, "m_watch_count = %d \n", m_watch_data.count);
             AppendReplyFormat(reply_cur, reply_end, "address = %10lx \n", m_watch_data.address);
@@ -2186,13 +2144,6 @@ namespace ams::dmnt {
             //     AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
             //     return;
             // }
-=======
-        } else if (ParsePrefix(command, "getwatch ")) {
-            if (!this->HasDebugProcess()) {
-                AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
-                return;
-            }
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
 
             /* Allow optional "0x" prefix. */
             ParsePrefix(command, "0x");
@@ -2200,17 +2151,6 @@ namespace ams::dmnt {
             /* Decode address. */
             const u64 address = DecodeHex(command);
 
-<<<<<<< HEAD
-=======
-            AppendReplyFormat(reply_cur, reply_end, "m_watch_count = 0x%d \n", m_watch_data.count);
-            AppendReplyFormat(reply_cur, reply_end, "address = %10lx \n", m_watch_data.address);
-            AppendReplyFormat(reply_cur, reply_end, "fail code = 0x%d \n", m_watch_data.failed);
-            AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
-            AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%10lx\n", m_watch_data.next_pc); 
-            // for (auto entry: m_watch_data.from) {
-            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", entry);
-            // }
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
 
             if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
                 AppendReplyFormat(reply_cur, reply_end, "Fetching what access Watchpoint 0x%010lx \n", address);
@@ -2224,11 +2164,7 @@ namespace ams::dmnt {
                 AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", address);
             }
 
-<<<<<<< HEAD
         } else if (ParsePrefix(command, "setw ")) {
-=======
-        } else if (ParsePrefix(command, "setwatch ")) {
->>>>>>> 9ae527114e5ec23dbfec1d03b86928e39faf603d
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
                 return;
