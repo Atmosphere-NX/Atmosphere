@@ -1507,12 +1507,12 @@ namespace ams::dmnt {
         }
     }
 
-    void GdbServerImpl::D() {
+    void GdbServerImpl::D() { // Detach
         m_debug_process.Detach();
         AppendReplyOk(m_reply_cur, m_reply_end);
     }
 
-    void GdbServerImpl::G() {
+    void GdbServerImpl::G() { // Write Register
         /* Get thread id. */
         u32 thread_id = m_debug_process.GetThreadIdOverride();
         if (thread_id == 0 || thread_id == static_cast<u32>(-1)) {
@@ -2099,7 +2099,6 @@ namespace ams::dmnt {
                                                "wait application\n"
                                                "wait {program id}\n"
                                                "wait homebrew\n"
-                                               "Hello, it's Mario\n"
                                                "setw {r for read, w for write, blank for instruction}{address}\n"
                                                "seti\n"
                                                "getw\n"
