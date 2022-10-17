@@ -107,6 +107,7 @@ namespace ams::dmnt {
             void qXferLibrariesRead();
             void qXferOsdataRead();
             bool qXferThreadsRead();
+            void get_region(u64 address);
 
             void z();
 

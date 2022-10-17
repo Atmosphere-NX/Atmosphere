@@ -18,15 +18,18 @@
 #include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
-#define max_watch_buffer 30
+#define max_watch_buffer 300
         typedef struct {
             u64 address;
             u32 count;
         } PACKED m_from_t;
         typedef struct {
+            bool execute = false, done = false, clear = false;
             int count = 0;
             int i = 8;
-            u64 address;
+            u64 address, base = 0, offset = 0;
+            const char *module_name = name;
+            char name[10] = "undefine";
             bool read, write, intercepted = 0;
             u64 next_pc;
             m_from_t from[max_watch_buffer];
@@ -2074,6 +2077,45 @@ namespace ams::dmnt {
         }
     }
 
+    void GdbServerImpl::get_region(u64 address) {
+        m_watch_data.module_name = m_watch_data.name;
+        sprintf(m_watch_data.name, "undefine");
+        m_watch_data.base = 0;
+        m_watch_data.offset = m_watch_data.address;
+        for (size_t i = 0; i < m_debug_process.GetModuleCount(); ++i) {
+            if (m_debug_process.GetModuleBaseAddress(i) <= address && address < m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i)) {
+                m_watch_data.base = m_debug_process.GetModuleBaseAddress(i);
+                m_watch_data.offset = address - m_debug_process.GetModuleBaseAddress(i);
+                m_watch_data.module_name = m_debug_process.GetModuleName(i);
+                break;
+            }
+        }
+        if (m_debug_process.GetAliasRegionAddress() <= address && address < m_debug_process.GetAliasRegionAddress() + m_debug_process.GetAliasRegionSize()) {
+            m_watch_data.base = m_debug_process.GetAliasRegionAddress();
+            m_watch_data.offset = address - m_debug_process.GetAliasRegionAddress();
+            sprintf(m_watch_data.name, "Alias");
+            return;
+        }
+        if (m_debug_process.GetHeapRegionAddress() <= address && address < m_debug_process.GetHeapRegionAddress() + m_debug_process.GetHeapRegionSize()) {
+            m_watch_data.base = m_debug_process.GetHeapRegionAddress();
+            m_watch_data.offset = address - m_debug_process.GetHeapRegionAddress();
+            sprintf(m_watch_data.name, "Heap");
+            return;
+        }
+        if (m_debug_process.GetStackRegionAddress() <= address && address < m_debug_process.GetStackRegionAddress() + m_debug_process.GetStackRegionSize()) {
+            m_watch_data.base = m_debug_process.GetStackRegionAddress();
+            m_watch_data.offset = address - m_debug_process.GetStackRegionAddress();
+            sprintf(m_watch_data.name, "Stack");
+            return;
+        }
+        if (m_debug_process.GetAslrRegionAddress() <= address && address < m_debug_process.GetAslrRegionAddress() + m_debug_process.GetAslrRegionSize()) {
+            m_watch_data.base = m_debug_process.GetAslrRegionAddress();
+            m_watch_data.offset = address - m_debug_process.GetAslrRegionAddress();
+            sprintf(m_watch_data.name, "Aslr");
+            return;
+        }
+    }
+
     void GdbServerImpl::qRcmd() {
         /* Decode the command. */
         const auto packet_len = std::strlen(m_receive_packet);
@@ -2103,7 +2145,8 @@ namespace ams::dmnt {
                                                "seti\n"
                                                "getw\n"
                                                "clearw\n"
-                                               "cont\n");
+                                               "cont\n"
+                                               "address = %010lx\n",(long unsigned int)&(m_watch_data.count));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2206,7 +2249,8 @@ namespace ams::dmnt {
             // }
         } else if (ParsePrefix(command, "getw")) {
             AppendReplyFormat(reply_cur, reply_end, "Watch hit count = %d \n", m_watch_data.count);
-            AppendReplyFormat(reply_cur, reply_end, "address = %10lx \n", m_watch_data.address);
+            get_region(m_watch_data.address);
+            AppendReplyFormat(reply_cur, reply_end, "address = %010lx %s %010lx\n", m_watch_data.address, m_watch_data.module_name, m_watch_data.offset);
             AppendReplyFormat(reply_cur, reply_end, "fail code = %d \n", m_watch_data.failed);
             // AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
             AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%10lx\n", m_watch_data.next_pc); 
