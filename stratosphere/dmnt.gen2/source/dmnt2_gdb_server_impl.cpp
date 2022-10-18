@@ -2146,7 +2146,7 @@ namespace ams::dmnt {
                                                "getw\n"
                                                "clearw\n"
                                                "cont\n"
-                                               "address = %010lx\n",(long unsigned int)&(m_watch_data.count));
+                                               "address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
