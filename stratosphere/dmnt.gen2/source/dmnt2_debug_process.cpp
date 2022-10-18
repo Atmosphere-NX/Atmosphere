@@ -187,7 +187,7 @@ namespace ams::dmnt {
 
                     /* Get module name buffer. */
                     char *module_name = module.GetNameBuffer();
-                    module_name[0] = 0;
+                    std::memset(module_name, 0, ModuleDefinition::PathLengthMax);
 
                     /* Read module path. */
                     struct {
