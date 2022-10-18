@@ -20,18 +20,26 @@
 #include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
-
+bool gen2_loop(u32 count);
     namespace {
 
         constexpr size_t ServerThreadStackSize = util::AlignUp(4 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment);
+        constexpr size_t ServerThreadStackSize2 = util::AlignUp(os::MemoryPageSize, os::ThreadStackAlignment);
 
         alignas(os::ThreadStackAlignment) constinit u8 g_server_thread_stack[ServerThreadStackSize];
         alignas(os::ThreadStackAlignment) constinit u8 g_events_thread_stack[util::AlignUp(2 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment)];
+        alignas(os::ThreadStackAlignment) constinit u8 g_server_thread_stack2[ServerThreadStackSize2];
 
-        constinit os::ThreadType g_server_thread;
+        constinit os::ThreadType g_server_thread, g_server_thread2;
 
         constinit util::TypedStorage<GdbServerImpl> g_gdb_server;
-
+        void GdbServerThreadFunction2(void *) {
+            while (true){
+                gen2_loop(1);
+                svcSleepThread(50'000'000);
+                // os::SleepThread(TimeSpan::FromMilliSeconds(100));
+            };
+        }
         void GdbServerThreadFunction(void *) {
             /* Loop forever, servicing our gdb server. */
             while (true) {
@@ -86,4 +94,9 @@ namespace ams::dmnt {
         os::StartThread(std::addressof(g_server_thread));
     }
 
+    void InitializeGdbServer2() {
+        /* Create and start gdb server threads. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_server_thread2), GdbServerThreadFunction2, nullptr, g_server_thread_stack2, sizeof(g_server_thread_stack2), os::HighestThreadPriority - 1));
+        os::StartThread(std::addressof(g_server_thread2));
+    }
 }

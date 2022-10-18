@@ -34,8 +34,19 @@ namespace ams::dmnt {
             u64 next_pc;
             m_from_t from[max_watch_buffer];
             int failed = 0;
+            bool breakout = true;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
+        bool gen2_loop(u32 count) {
+            if (m_watch_data.execute) {
+                m_watch_data.execute = false;
+                m_watch_data.done = true;
+                m_watch_data.next_pc++;
+            };
+            if (count == 1) m_watch_data.read = true;
+            if (count == 2) m_watch_data.write = true;
+            return m_watch_data.breakout;
+        }
     namespace {
         constexpr const u32 SdkBreakPoint     = 0xE7FFFFFF;
         constexpr const u32 SdkBreakPointMask = 0xFFFFFFFF;

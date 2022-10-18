@@ -146,7 +146,7 @@ namespace ams {
         /* Start GdbServer. */
         dmnt::InitializeGdbServer();
 
-        // InitializeIpcServer();
+        dmnt::InitializeGdbServer2();
 
         /* TODO */
         while (true) {
