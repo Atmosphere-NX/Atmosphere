@@ -1041,7 +1041,7 @@ namespace ams::dmnt {
                                                     /* instructin case*/
                                                     if (address == m_watch_data.next_pc) {
                                                         if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, 4, false))) { 
-                                                            m_watch_data.failed = 4;
+                                                            m_watch_data.failed = 6;
                                                         } else
                                                             m_debug_process.Continue();
                                                     } else {
@@ -1064,7 +1064,7 @@ namespace ams::dmnt {
 
                                                         m_watch_data.next_pc = address + 4;
                                                         if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
-                                                            m_watch_data.failed = 4;
+                                                            m_watch_data.failed = 7;
                                                         } else
                                                             m_debug_process.Continue();
                                                     }
@@ -2331,7 +2331,7 @@ namespace ams::dmnt {
                 }
                 m_watch_data.address = 0;
             };
-
+            m_watch_data.failed = 0;
             if ((read || write) && m_debug_process.IsValidWatchPoint(address, 4)) {
                 if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, 4, read, write))) {
                     AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", address, read, write);
