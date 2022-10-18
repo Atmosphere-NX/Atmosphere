@@ -29,6 +29,7 @@ namespace ams::ncm {
         Patch                   = 0x81,
         AddOnContent            = 0x82,
         Delta                   = 0x83,
+        DataPatch               = 0x84,
     };
 
     const char *GetContentMetaTypeString(ContentMetaType type);
