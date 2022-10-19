@@ -27,7 +27,7 @@ namespace ams::pkg1 {
     enum MemoryArrange {
         MemoryArrange_Normal    = 1,
         MemoryArrange_AppletDev = 2,
-        MemoryArrange_SystemDev = 2,
+        MemoryArrange_SystemDev = 3,
     };
 
     enum MemoryMode {
