@@ -28,6 +28,8 @@ namespace ams::dmnt {
             CLEARW,
             DETACH,
             ATTACH,
+            ATTACH_CONT,
+            CONT,
             INCPC
         };
         typedef struct {
@@ -82,6 +84,36 @@ namespace ams::dmnt {
                             } else {
                                 m_watch_data.attach_success = false;
                             }
+                        }
+                        break;
+                    case ATTACH_CONT:
+                        if (!this->HasDebugProcess()) {
+                            /* Get the process id. */
+
+                            /* Set our process id. */
+                            m_process_id = {m_watch_data.next_pid};
+
+                            /* Wait for us to be attached. */
+                            Gen2Attach();
+
+                            m_debug_process.Continue();
+
+                            /* If we're attached, send a stop reply packet. */
+                            if (m_debug_process.IsValid()) {
+                                m_watch_data.attach_success = true;
+                            } else {
+                                m_watch_data.attach_success = false;
+                            }
+                        }
+                        break;
+                    case CONT:
+                        if (this->HasDebugProcess()) {
+                            // DebugProcess::Start();
+                            m_debug_process.Continue();
+                            // c();
+                            // R_ABORT_UNLESS(pm::dmnt::StartProcess(m_process_id));
+                            // vCont();
+                            // svcContinueDebugEvent(m_process_id.value, 7, NULL, 0u);
                         }
                         break;
                     case INCPC:
@@ -1479,7 +1511,7 @@ namespace ams::dmnt {
 
     void GdbServerImpl::LoopProcess() {
         /* Process packets. */
-        while (m_session.IsValid() || gen2_loop()) {  //|| gen2_loop()
+        while (m_session.IsValid()) {
             /* Receive a packet. */
             if (m_session.IsValid()) {
                 bool do_break = false;
@@ -2355,7 +2387,7 @@ namespace ams::dmnt {
             // }
 
             // if (R_SUCCEEDED(result)) {
-            //     AppendReplyFormat(reply_cur, reply_end, "Continuing\n");
+                // AppendReplyFormat(reply_cur, reply_end, "Continuing\n");
             // } else {
             //     AppendReplyFormat(reply_cur, reply_end, "Cannot Continue\n");
             // }

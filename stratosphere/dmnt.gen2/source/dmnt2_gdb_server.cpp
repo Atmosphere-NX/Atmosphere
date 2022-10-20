@@ -66,7 +66,7 @@ namespace ams::dmnt {
                     int client_fd;
                     while (true) {
                         /* Try to accept a client. */
-                        if (client_fd = transport::Accept(fd); client_fd < 0 && !util::GetReference(g_gdb_server).gen2_loop()) {
+                        if (client_fd = transport::Accept(fd); client_fd < 0) {
                             break;
                         }
 
