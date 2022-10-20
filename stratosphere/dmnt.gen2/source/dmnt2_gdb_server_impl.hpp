@@ -49,7 +49,10 @@ namespace ams::dmnt {
             ~GdbServerImpl();
 
             void LoopProcess();
-        private:
+            bool gen2_loop();
+            void Gen2Attach();
+
+           private:
             void ProcessPacket(char *receive, char *reply);
 
             void SendPacket(bool *out_break, const char *src) { return m_packet_io.SendPacket(out_break, src, std::addressof(m_session)); }
@@ -108,6 +111,8 @@ namespace ams::dmnt {
             void qXferOsdataRead();
             bool qXferThreadsRead();
             void get_region(u64 address);
+            void setw();
+            void clearw();
 
             void z();
 

@@ -20,7 +20,7 @@
 #include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
-bool gen2_loop(u32 count);
+// bool gen2_loop(u32 count);
     namespace {
 
         constexpr size_t ServerThreadStackSize = util::AlignUp(4 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment);
@@ -35,7 +35,7 @@ bool gen2_loop(u32 count);
         constinit util::TypedStorage<GdbServerImpl> g_gdb_server;
         void GdbServerThreadFunction2(void *) {
             while (true){
-                gen2_loop(1);
+                util::GetReference(g_gdb_server).gen2_loop();
                 svcSleepThread(50'000'000);
                 // os::SleepThread(TimeSpan::FromMilliSeconds(100));
             };
@@ -66,7 +66,7 @@ bool gen2_loop(u32 count);
                     int client_fd;
                     while (true) {
                         /* Try to accept a client. */
-                        if (client_fd = transport::Accept(fd); client_fd < 0) {
+                        if (client_fd = transport::Accept(fd); client_fd < 0 && !util::GetReference(g_gdb_server).gen2_loop()) {
                             break;
                         }
 

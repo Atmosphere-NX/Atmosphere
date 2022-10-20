@@ -23,29 +23,73 @@ namespace ams::dmnt {
             u64 address;
             u32 count;
         } PACKED m_from_t;
+        enum gen2_command {
+            SETW,
+            CLEARW,
+            DETACH,
+            ATTACH,
+            INCPC
+        };
         typedef struct {
-            bool execute = false, done = false, clear = false;
+            bool execute = false, done = false;
+            gen2_command command = SETW;
             int count = 0;
             int i = 8;
-            u64 address, base = 0, offset = 0;
+            u64 address=0xAA55AA55,next_address, base = 0, offset = 0;
             const char *module_name = name;
             char name[10] = "undefine";
-            bool read, write, intercepted = 0;
-            u64 next_pc;
+            bool read, next_read, write, next_write, intercepted = 0;
+            u64 next_pc=0x55AA55AA;
             m_from_t from[max_watch_buffer];
             int failed = 0;
-            bool breakout = true;
+            bool gen2loop_on = true;
+            u64 next_pid;
+            bool attach_success;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
-        bool gen2_loop(u32 count) {
+        bool GdbServerImpl::gen2_loop() {
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
                 m_watch_data.done = true;
-                m_watch_data.next_pc++;
+                switch (m_watch_data.command) {
+                    case SETW:
+                        clearw();
+                        m_watch_data.address = m_watch_data.next_address;
+                        m_watch_data.read = m_watch_data.next_read;
+                        m_watch_data.write = m_watch_data.next_write;
+                        setw();
+                        break;
+                    case CLEARW:
+                        clearw();
+                        break;
+                    case DETACH:
+                        m_debug_process.Detach();
+                        break;
+                    case ATTACH:
+                        if (!this->HasDebugProcess()) {
+                            /* Get the process id. */
+
+                            /* Set our process id. */
+                            m_process_id = {m_watch_data.next_pid};
+
+                            /* Wait for us to be attached. */
+                            Gen2Attach();
+
+
+                            /* If we're attached, send a stop reply packet. */
+                            if (m_debug_process.IsValid()) {
+                                m_watch_data.attach_success = true;
+                            } else {
+                                m_watch_data.attach_success = false;
+                            }
+                        }
+                        break;
+                    case INCPC:
+                        m_watch_data.next_pc++;
+                        break;
+                };
             };
-            if (count == 1) m_watch_data.read = true;
-            if (count == 2) m_watch_data.write = true;
-            return m_watch_data.breakout;
+            return m_watch_data.gen2loop_on;
         }
     namespace {
         constexpr const u32 SdkBreakPoint     = 0xE7FFFFFF;
@@ -897,7 +941,19 @@ namespace ams::dmnt {
         constinit os::SdkConditionVariable g_event_done_cv;
 
     }
+    void GdbServerImpl::Gen2Attach() {
+        /* Set our process id. */
+        m_process_id = {m_watch_data.next_pid};
 
+        /* Wait for us to be attached. */
+        {
+            std::scoped_lock lk(g_event_request_lock);
+            g_event_request_cv.Signal();
+            if (!g_event_done_cv.TimedWait(g_event_request_lock, TimeSpan::FromSeconds(2))) {
+                m_event.Signal();
+            }
+        }
+    }
     GdbServerImpl::GdbServerImpl(int socket, void *stack, size_t stack_size) : m_socket(socket), m_session(socket), m_packet_io(), m_state(State::Initial), m_debug_process(), m_event(os::EventClearMode_AutoClear) {
         /* Create and start the events thread. */
         R_ABORT_UNLESS(os::CreateThread(std::addressof(m_events_thread), DebugEventsThreadEntry, this, stack, stack_size, os::HighestThreadPriority - 1));
@@ -1423,24 +1479,28 @@ namespace ams::dmnt {
 
     void GdbServerImpl::LoopProcess() {
         /* Process packets. */
-        while (m_session.IsValid()) {
+        while (m_session.IsValid() || gen2_loop()) {  //|| gen2_loop()
             /* Receive a packet. */
-            bool do_break = false;
-            char recv_buf[GdbPacketBufferSize];
-            char *packet = this->ReceivePacket(std::addressof(do_break), recv_buf, sizeof(recv_buf));
+            if (m_session.IsValid()) {
+                bool do_break = false;
+                char recv_buf[GdbPacketBufferSize];
+                char *packet = this->ReceivePacket(std::addressof(do_break), recv_buf, sizeof(recv_buf));
 
-            if (!do_break && packet != nullptr) {
-                /* Process the packet. */
-                char reply_buffer[GdbPacketBufferSize];
-                this->ProcessPacket(packet, reply_buffer);
+                if (!do_break && packet != nullptr) {
+                    /* Process the packet. */
+                    char reply_buffer[GdbPacketBufferSize];
+                    this->ProcessPacket(packet, reply_buffer);
 
-                /* Send packet. */
-                this->SendPacket(std::addressof(do_break), reply_buffer);
-            }
+                    /* Send packet. */
+                    this->SendPacket(std::addressof(do_break), reply_buffer);
+                }
 
-            /* If we should, break the process. */
-            if (do_break) {
-                m_debug_process.Break();
+                /* If we should, break the process. */
+                if (do_break) {
+                    m_debug_process.Break();
+                }
+            } else {
+                os::SleepThread(TimeSpan::FromSeconds(1));
             }
         }
     }
@@ -2127,6 +2187,47 @@ namespace ams::dmnt {
         }
     }
 
+    void GdbServerImpl::setw() {
+        char *reply_cur = m_buffer;
+        char *reply_end = m_buffer + sizeof(m_buffer);
+        m_watch_data.failed = 0;
+        if ((m_watch_data.read || m_watch_data.write) && m_debug_process.IsValidWatchPoint(m_watch_data.address, 4)) {
+            if (R_SUCCEEDED(m_debug_process.SetWatchPoint(m_watch_data.address, 4, m_watch_data.read, m_watch_data.write))) {
+                AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", m_watch_data.address, m_watch_data.read, m_watch_data.write);
+                m_watch_data.count = 0;
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to set Watchpoint 0x%010lx read=%d write=%d\n", m_watch_data.address, m_watch_data.read, m_watch_data.write);
+            }
+        }
+        if (!(m_watch_data.read || m_watch_data.write)) {
+            if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, 4, false))) {
+                AppendReplyFormat(reply_cur, reply_end, "Watching Register X%d at 0x%010lx \n", m_watch_data.i, m_watch_data.address);
+                m_watch_data.count = 0;
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to set Breakpoint 0x%010lx \n", m_watch_data.address);
+            }
+        }
+    }
+
+    void GdbServerImpl::clearw() {
+        char *reply_cur = m_buffer;
+        char *reply_end = m_buffer + sizeof(m_buffer);
+        if (m_watch_data.read || m_watch_data.write) {
+            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(m_watch_data.address, 4))) {
+                AppendReplyFormat(reply_cur, reply_end, "Clearing Watchpoint 0x%010lx \n", m_watch_data.address);
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to clear Watchpoint 0x%010lx \n", m_watch_data.address);
+            }
+        } else {
+            if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.address, 4))) {
+                AppendReplyFormat(reply_cur, reply_end, "Clearing BreakPoint 0x%010lx \n", m_watch_data.address);
+            } else {
+                AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", m_watch_data.address);
+            }
+        }
+        m_watch_data.address = 0;
+    }
+
     void GdbServerImpl::qRcmd() {
         /* Decode the command. */
         const auto packet_len = std::strlen(m_receive_packet);
@@ -2263,46 +2364,21 @@ namespace ams::dmnt {
             get_region(m_watch_data.address);
             AppendReplyFormat(reply_cur, reply_end, "address = %010lx %s %010lx\n", m_watch_data.address, m_watch_data.module_name, m_watch_data.offset);
             AppendReplyFormat(reply_cur, reply_end, "fail code = %d \n", m_watch_data.failed);
-            // AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx\n", m_watch_data.from);
-            AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%10lx\n", m_watch_data.next_pc); 
+            // AppendReplyFormat(reply_cur, reply_end, "called from = 0x%010lx\n", m_watch_data.from);
+            AppendReplyFormat(reply_cur, reply_end, "next pc = 0x%010lx\n", m_watch_data.next_pc); 
             // auto entry = m_watch_data.from.begin();
             // while (entry != m_watch_data.from.end()) {
-            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%10lx Count = %d\n", entry->first, entry->second);
+            //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%010lx Count = %d\n", entry->first, entry->second);
             // }
             for (auto i = 0; i < m_watch_data.count; i++) {
                 if (m_watch_data.read || m_watch_data.write)
-                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%10lx Count = %d\n", m_watch_data.from[i].address, m_watch_data.from[i].count);
+                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d\n", m_watch_data.from[i].address, m_watch_data.from[i].count);
                 else
-                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%10lx Count = %d\n", m_watch_data.i, m_watch_data.from[i].address, m_watch_data.from[i].count);
+                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.from[i].address, m_watch_data.from[i].count);
             }
             m_watch_data.intercepted = false;
         } else if (ParsePrefix(command, "clearw")) {
-            // if (!this->HasDebugProcess()) {
-            //     AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
-            //     return;
-            // }
-
-            /* Allow optional "0x" prefix. */
-            // ParsePrefix(command, "0x");
-
-            /* Decode address. */
-            // const u64 address = DecodeHex(command);
-
-            if (m_watch_data.read || m_watch_data.write) {
-                if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(m_watch_data.address, 4))) {
-                    AppendReplyFormat(reply_cur, reply_end, "Clearing Watchpoint 0x%010lx \n", m_watch_data.address);
-                } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Unable to clear Watchpoint 0x%010lx \n", m_watch_data.address);
-                }
-            } else {
-                if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.address, 4))) {
-                    AppendReplyFormat(reply_cur, reply_end, "Clearing BreakPoint 0x%010lx \n", m_watch_data.address);
-                } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", m_watch_data.address);
-                }
-            }
-            m_watch_data.address = 0;
-
+            clearw();
         } else if (ParsePrefix(command, "seti ")) {
             /* Decode i. */
             m_watch_data.i = DecodeDec(command);
@@ -2316,56 +2392,22 @@ namespace ams::dmnt {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
                 return;
             }
-            bool read = false;
-            bool write = false;
-            if (ParsePrefix(command, "r") || ParsePrefix(command, "R")) read = true;
-            if (ParsePrefix(command, "w") || ParsePrefix(command, "W")) write = true;
+            m_watch_data.next_read = false;
+            m_watch_data.next_write = false;
+            if (ParsePrefix(command, "r") || ParsePrefix(command, "R")) m_watch_data.next_read = true;
+            if (ParsePrefix(command, "w") || ParsePrefix(command, "W")) m_watch_data.next_write = true;
 
             /* Allow optional "0x" prefix. */
             ParsePrefix(command, "0x");
 
             /* Decode address. */
-            const u64 address = DecodeHex(command);
-            if (m_watch_data.address != 0) {
-                if (m_watch_data.read || m_watch_data.write) {
-                    if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(m_watch_data.address, 4))) {
-                        AppendReplyFormat(reply_cur, reply_end, "Clearing Watchpoint 0x%010lx \n", m_watch_data.address);
-                    } else {
-                        AppendReplyFormat(reply_cur, reply_end, "Unable to clear Watchpoint 0x%010lx \n", m_watch_data.address);
-                    }
-                } else {
-                    if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.address, 4))) {
-                        AppendReplyFormat(reply_cur, reply_end, "Clearing BreakPoint 0x%010lx \n", m_watch_data.address);
-                    } else {
-                        AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", m_watch_data.address);
-                    }
-                }
-                m_watch_data.address = 0;
-            };
-            m_watch_data.failed = 0;
-            if ((read || write) && m_debug_process.IsValidWatchPoint(address, 4)) {
-                if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, 4, read, write))) {
-                    AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", address, read, write);
-                    m_watch_data.address = address;
-                    m_watch_data.read = read;
-                    m_watch_data.write = write;
-                    m_watch_data.count = 0;
-                } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Unable to set Watchpoint 0x%010lx read=%d write=%d\n", address, read, write);
-                }
-            }
-
-            if (!(read || write)) {
-                if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(address, 4, false))) {
-                    AppendReplyFormat(reply_cur, reply_end, "Watching Register X%d at 0x%010lx \n", m_watch_data.i, address);
-                    m_watch_data.address = address;
-                    m_watch_data.read = read;
-                    m_watch_data.write = write;
-                    m_watch_data.count = 0;
-                } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Unable to set Breakpoint 0x%010lx \n", address);
-                }
-            }
+            m_watch_data.next_address = DecodeHex(command);
+            clearw();
+            m_watch_data.address = m_watch_data.next_address;
+            m_watch_data.read = m_watch_data.next_read;
+            m_watch_data.write = m_watch_data.next_write;
+            setw();
+            
         } else if (ParsePrefix(command, "get mapping ")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
