@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "c:\GitHub\Atmosphere\libraries\libstratosphere\source\dmnt\dmntcht.h"
 #include "dmnt2_debug_log.hpp"
 #include "dmnt2_gdb_server_impl.hpp"
 
@@ -44,12 +45,13 @@ namespace ams::dmnt {
             u64 next_pc=0x55AA55AA;
             m_from_t from[max_watch_buffer];
             int failed = 0;
-            bool gen2loop_on = true;
+            bool gen2loop_on = false;
             u64 next_pid;
             bool attach_success;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
+            m_watch_data.gen2loop_on = m_session.IsValid();
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
                 m_watch_data.done = true;
@@ -2290,6 +2292,9 @@ namespace ams::dmnt {
                                                "getw\n"
                                                "clearw\n"
                                                "cont\n"
+                                               "gen2\n"
+                                               "attach\n"
+                                               "detach\n"
                                                "address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
@@ -2370,6 +2375,42 @@ namespace ams::dmnt {
 
                 cur_addr = next_address;
             }
+        } else if (ParsePrefix(command, "detach")) {
+            m_debug_process.Detach();
+            AppendReplyFormat(reply_cur, reply_end, "Game detached\n");
+        } else if (ParsePrefix(command, "gen2")) {
+            int rc;
+            if (R_FAILED(rc = dmntchtInitialize())) {
+                AppendReplyFormat(reply_cur, reply_end, "dmntchtInitialize rc=%x\n",rc);
+            } else {
+                dmntchtForceCloseCheatProcess();
+                dmntchtExit();
+                AppendReplyFormat(reply_cur, reply_end, "Game ready for Gen2\n");
+            };
+        } else if (ParsePrefix(command, "attach")) {
+            if (!this->HasDebugProcess()) {
+                /* Get the process id. */
+                int rc;
+                if (R_FAILED(rc = pmdmntInitialize())) {
+                    AppendReplyFormat(reply_cur, reply_end, "pmdmntInitialize rc=%x\n", rc);
+                };
+                pmdmntGetApplicationProcessId(&(m_watch_data.next_pid));
+
+                /* Set our process id. */
+                m_process_id = {m_watch_data.next_pid};
+
+                /* Wait for us to be attached. */
+                Gen2Attach();
+
+                /* If we're attached, send a stop reply packet. */
+                if (m_debug_process.IsValid()) {
+                    m_watch_data.attach_success = true;
+                    AppendReplyFormat(reply_cur, reply_end, "Attached to Game pid=%ld\n", m_watch_data.next_pid);
+                } else {
+                    m_watch_data.attach_success = false;
+                    AppendReplyFormat(reply_cur, reply_end, "Not able to attached to Game pid=%ld, maybe need to detach from dmnt, use command gen2\n", m_watch_data.next_pid);
+                }
+            }
         } else if (ParsePrefix(command, "cont")) {
             /* Get thread id. */
             GdbServerImpl::vCont();
@@ -2439,7 +2480,7 @@ namespace ams::dmnt {
             m_watch_data.read = m_watch_data.next_read;
             m_watch_data.write = m_watch_data.next_write;
             setw();
-            
+
         } else if (ParsePrefix(command, "get mapping ")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");

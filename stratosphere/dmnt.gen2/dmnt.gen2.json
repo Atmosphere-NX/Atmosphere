@@ -15,7 +15,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["pm:dmnt", "ldr:dmnt", "ro:dmnt", "ns:dev", "lr", "fsp-srv", "fatal:u", "pgl", "htcs", "bsd:s", "set:sys"],
+	"service_access":	["pm:dmnt", "ldr:dmnt", "ro:dmnt", "ns:dev", "lr", "fsp-srv", "fatal:u", "pgl", "htcs", "bsd:s", "set:sys","dmnt:cht"],
 	"service_host":	[],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
