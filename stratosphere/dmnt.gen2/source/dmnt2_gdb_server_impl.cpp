@@ -2395,6 +2395,7 @@ namespace ams::dmnt {
                     AppendReplyFormat(reply_cur, reply_end, "pmdmntInitialize rc=%x\n", rc);
                 };
                 pmdmntGetApplicationProcessId(&(m_watch_data.next_pid));
+                pmdmntExit();
 
                 /* Set our process id. */
                 m_process_id = {m_watch_data.next_pid};
