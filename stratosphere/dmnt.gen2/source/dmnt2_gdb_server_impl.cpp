@@ -67,6 +67,7 @@ namespace ams::dmnt {
                         clearw();
                         break;
                     case DETACH:
+                        m_watch_data.address = 0;
                         m_debug_process.Detach();
                         break;
                     case ATTACH:
