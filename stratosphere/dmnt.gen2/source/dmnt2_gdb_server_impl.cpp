@@ -48,9 +48,11 @@ namespace ams::dmnt {
             bool gen2loop_on = false;
             u64 next_pid;
             bool attach_success;
+            bool attached;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
+            m_watch_data.attached = this->HasDebugProcess();
             m_watch_data.gen2loop_on = m_session.IsValid();
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
@@ -2384,6 +2386,7 @@ namespace ams::dmnt {
             if (R_FAILED(rc = dmntchtInitialize())) {
                 AppendReplyFormat(reply_cur, reply_end, "dmntchtInitialize rc=%x\n",rc);
             } else {
+                dmntchtResumeCheatProcess();
                 dmntchtForceCloseCheatProcess();
                 dmntchtExit();
                 AppendReplyFormat(reply_cur, reply_end, "Game ready for Gen2\n");
