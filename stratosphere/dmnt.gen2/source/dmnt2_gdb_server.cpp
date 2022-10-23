@@ -65,11 +65,12 @@ namespace ams::dmnt {
                     /* Continue accepting clients, so long as we can. */
                     int client_fd;
                     while (true) {
+                        util::ConstructAt(g_gdb_server, 500, g_events_thread_stack, sizeof(g_events_thread_stack));
                         /* Try to accept a client. */
                         if (client_fd = transport::Accept(fd); client_fd < 0) {
                             break;
                         }
-
+                        util::DestroyAt(g_gdb_server);
                         {
                             /* Create gdb server for the socket. */
                             util::ConstructAt(g_gdb_server, client_fd, g_events_thread_stack, sizeof(g_events_thread_stack));
