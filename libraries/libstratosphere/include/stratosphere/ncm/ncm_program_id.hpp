@@ -27,31 +27,9 @@ namespace ams::ncm {
             return { this->value };
         }
         #endif
+
+        constexpr inline auto operator<=>(const ProgramId &) const = default;
     };
-
-    inline constexpr bool operator==(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value == rhs.value;
-    }
-
-    inline constexpr bool operator!=(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value != rhs.value;
-    }
-
-    inline constexpr bool operator<(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value < rhs.value;
-    }
-
-    inline constexpr bool operator<=(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value <= rhs.value;
-    }
-
-    inline constexpr bool operator>(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value > rhs.value;
-    }
-
-    inline constexpr bool operator>=(const ProgramId &lhs, const ProgramId &rhs) {
-        return lhs.value >= rhs.value;
-    }
 
     inline constexpr const ProgramId InvalidProgramId = {};
 

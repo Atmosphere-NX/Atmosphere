@@ -27,6 +27,7 @@ namespace ams::ncm {
         ContentMetaAttribute_None                   = (0 << 0),
         ContentMetaAttribute_IncludesExFatDriver    = (1 << 0),
         ContentMetaAttribute_Rebootless             = (1 << 1),
+        ContentMetaAttribute_Compacted              = (1 << 2),
     };
 
     struct ContentMetaInfo {
@@ -101,7 +102,7 @@ namespace ams::ncm {
         u32 required_application_version;
         u8 content_accessibilities;
         u8 padding[3];
-        u64 data_patch_id; /* TODO: DataPatchId? */
+        DataPatchId data_patch_id;
     };
 
     struct LegacyAddOnContentMetaExtendedHeader {

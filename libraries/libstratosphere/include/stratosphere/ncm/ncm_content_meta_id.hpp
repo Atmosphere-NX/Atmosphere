@@ -26,6 +26,9 @@ namespace ams::ncm {
             return { this->value };
         }
 
+        constexpr inline bool operator==(const ApplicationId &) const = default;
+        constexpr inline bool operator!=(const ApplicationId &) const = default;
+
         static const ApplicationId Start;
         static const ApplicationId End;
     };
@@ -53,6 +56,9 @@ namespace ams::ncm {
         constexpr operator ProgramId() const {
             return { this->value };
         }
+
+        constexpr inline bool operator==(const PatchId &) const = default;
+        constexpr inline bool operator!=(const PatchId &) const = default;
     };
 
     struct PatchGroupId {
@@ -65,6 +71,9 @@ namespace ams::ncm {
         constexpr operator DataId() const {
             return { this->value };
         }
+
+        constexpr inline bool operator==(const AddOnContentId &) const = default;
+        constexpr inline bool operator!=(const AddOnContentId &) const = default;
     };
 
     struct DeltaId {
@@ -73,6 +82,20 @@ namespace ams::ncm {
         constexpr operator ProgramId() const {
             return { this->value };
         }
+
+        constexpr inline bool operator==(const DeltaId &) const = default;
+        constexpr inline bool operator!=(const DeltaId &) const = default;
+    };
+
+    struct DataPatchId {
+        u64 value;
+
+        constexpr operator DataId() const {
+            return { this->value };
+        }
+
+        constexpr inline bool operator==(const DataPatchId &) const = default;
+        constexpr inline bool operator!=(const DataPatchId &) const = default;
     };
 
 }

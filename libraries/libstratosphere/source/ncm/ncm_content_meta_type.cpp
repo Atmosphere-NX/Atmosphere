@@ -22,6 +22,7 @@ namespace ams::ncm {
             case ContentMetaType::Application:  return "Application";
             case ContentMetaType::Patch:        return "Patch";
             case ContentMetaType::AddOnContent: return "AddOnContent";
+            case ContentMetaType::DataPatch:    return "DataPatch";
             default:                            return "(unknown)";
         }
     }
