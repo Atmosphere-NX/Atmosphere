@@ -45,7 +45,7 @@ namespace ams::dmnt {
             u64 next_pc=0x55AA55AA;
             m_from_t from[max_watch_buffer];
             int failed = 0;
-            bool gen2loop_on = false;
+            u8 gen2loop_on = false;
             u64 next_pid;
             bool attach_success;
             bool attached;
@@ -53,7 +53,7 @@ namespace ams::dmnt {
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
             m_watch_data.attached = this->HasDebugProcess();
-            m_watch_data.gen2loop_on = m_session.IsValid();
+            m_watch_data.gen2loop_on = m_session.IsValid() | gen2_server_on;
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
                 m_watch_data.done = true;
@@ -2298,7 +2298,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.02 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.03 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");

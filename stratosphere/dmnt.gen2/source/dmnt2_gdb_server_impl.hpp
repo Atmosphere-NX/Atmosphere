@@ -50,6 +50,7 @@ namespace ams::dmnt {
 
             void LoopProcess();
             bool gen2_loop();
+            u8 gen2_server_on = 0;
             void Gen2Attach();
 
            private:

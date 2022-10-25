@@ -67,7 +67,8 @@ namespace ams::dmnt {
                     while (true) {
                         {
                             util::ConstructAt(g_gdb_server, 500, g_events_thread_stack, sizeof(g_events_thread_stack));
-                            ON_SCOPE_EXIT { util::DestroyAt(g_gdb_server); };
+                            util::GetReference(g_gdb_server).gen2_server_on = 2;
+                            ON_SCOPE_EXIT { util::GetReference(g_gdb_server).gen2_server_on = 0; util::DestroyAt(g_gdb_server); };
                             /* Try to accept a client. */
                             if (client_fd = transport::Accept(fd); client_fd < 0) {
                                 break;
