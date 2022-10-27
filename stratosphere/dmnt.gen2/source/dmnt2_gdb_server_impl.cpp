@@ -2195,7 +2195,7 @@ namespace ams::dmnt {
                 m_watch_data.base = m_debug_process.GetModuleBaseAddress(i);
                 m_watch_data.offset = address - m_debug_process.GetModuleBaseAddress(i);
                 m_watch_data.module_name = m_debug_process.GetModuleName(i);
-                break;
+                return;
             }
         }
         if (m_debug_process.GetAliasRegionAddress() <= address && address < m_debug_process.GetAliasRegionAddress() + m_debug_process.GetAliasRegionSize()) {
@@ -2298,7 +2298,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.03 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.04 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2449,10 +2449,12 @@ namespace ams::dmnt {
             //     AppendReplyFormat(reply_cur, reply_end, "called from = 0x%010lx Count = %d\n", entry->first, entry->second);
             // }
             for (auto i = 0; i < m_watch_data.count; i++) {
-                if (m_watch_data.read || m_watch_data.write)
-                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d\n", m_watch_data.from[i].address, m_watch_data.from[i].count);
-                else
+                if (m_watch_data.read || m_watch_data.write) {
+                    get_region(m_watch_data.from[i].address);
+                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.from[i].address, m_watch_data.from[i].count, m_watch_data.module_name, m_watch_data.offset);
+                } else {
                     AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.from[i].address, m_watch_data.from[i].count);
+                }
             }
             m_watch_data.intercepted = false;
         } else if (ParsePrefix(command, "clearw")) {
