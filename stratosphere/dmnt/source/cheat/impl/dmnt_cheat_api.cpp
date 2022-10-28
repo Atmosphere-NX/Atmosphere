@@ -1025,13 +1025,16 @@ namespace ams::dmnt::cheat::impl {
                     /* Skip whitespace. */
                     while (std::isspace(static_cast<unsigned char>(s[i]))) {
                         i++;
+                        if (i >= len) {
+                            return false;
+                        }
                     }
 
                     /* Parse whether to toggle. */
                     j = i + 1;
-                    while (!std::isspace(static_cast<unsigned char>(s[j]))) {
+                    while (j < len && !std::isspace(static_cast<unsigned char>(s[j]))) {
                         j++;
-                        if (j >= len || (j - i) >= sizeof(toggle)) {
+                        if ((j - i) >= sizeof(toggle)) {
                             return false;
                         }
                     }
