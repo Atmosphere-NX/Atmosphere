@@ -1197,10 +1197,10 @@ namespace ams::dmnt {
                                             AMS_DMNT2_GDB_LOG_DEBUG("GetWatchPointInfo FAIL %lx, addr=%lx, type=%s\n", thread_id, address, is_instr ? "Instr" : "Data");
                                         }
 
-                                        if (address == m_watch_data.address) {
+                                        if (address == m_watch_data.address || address == (m_watch_data.address & -8)) {
                                             m_watch_data.intercepted = true;
                                             /* Clear the watch point */
-                                            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, 4))) {
+                                            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint( m_watch_data.address, 4))) {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
@@ -1231,8 +1231,7 @@ namespace ams::dmnt {
                                             } else {
                                                 m_watch_data.failed = 3;
                                             };
-                                        } 
-                                        else {
+                                        } else {
                                             m_watch_data.intercepted = false;
                                             AppendReplyFormat(reply_cur, reply_end, "T%02Xthread:p%lx.%lx;%s:%lx;", static_cast<u32>(signal), m_process_id.value, thread_id, type, address);
                                         }
@@ -2298,7 +2297,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.04 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.05 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
