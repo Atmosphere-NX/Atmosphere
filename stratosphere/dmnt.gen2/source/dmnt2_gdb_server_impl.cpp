@@ -37,7 +37,7 @@ namespace ams::dmnt {
             bool execute = false, done = false;
             gen2_command command = SETW;
             int count = 0;
-            int i = 8;
+            int i = 8, size = 4;
             u64 address=0xAA55AA55,next_address, base = 0, offset = 0;
             const char *module_name = name;
             char name[10] = "undefine";
@@ -49,6 +49,8 @@ namespace ams::dmnt {
             u64 next_pid;
             bool attach_success;
             bool attached;
+            bool range_check = false;
+            u64 v1,v2;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
@@ -1160,10 +1162,19 @@ namespace ams::dmnt {
                                                                 }
                                                             };
                                                             if (!found && m_watch_data.count < max_watch_buffer) {
-                                                                m_watch_data.from[m_watch_data.count].address = thread_context.r[m_watch_data.i];
-                                                                m_watch_data.from[m_watch_data.count].count = 1;
-                                                                m_watch_data.count++;
-                                                            };
+                                                                u64 value = 0;
+                                                                if (m_watch_data.range_check) {
+                                                                    u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
+                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.size))) {
+                                                                        m_watch_data.failed++;
+                                                                    };
+                                                                }
+                                                                if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
+                                                                    m_watch_data.from[m_watch_data.count].address = thread_context.r[m_watch_data.i];
+                                                                    m_watch_data.from[m_watch_data.count].count = 1;
+                                                                    m_watch_data.count++;
+                                                                };
+                                                            }
                                                         }
 
                                                         m_watch_data.next_pc = address + 4;
@@ -1197,7 +1208,7 @@ namespace ams::dmnt {
                                             AMS_DMNT2_GDB_LOG_DEBUG("GetWatchPointInfo FAIL %lx, addr=%lx, type=%s\n", thread_id, address, is_instr ? "Instr" : "Data");
                                         }
 
-                                        if (address == m_watch_data.address || address == (m_watch_data.address & -8)) {
+                                        if (address == m_watch_data.address || address == (m_watch_data.address & -8) || m_watch_data.gen2loop_on == 2) {
                                             m_watch_data.intercepted = true;
                                             /* Clear the watch point */
                                             if (R_SUCCEEDED(m_debug_process.ClearWatchPoint( m_watch_data.address, 4))) {
@@ -2297,7 +2308,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.05 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.05b address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
