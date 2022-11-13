@@ -37,7 +37,7 @@ namespace ams::dmnt {
             bool execute = false, done = false;
             gen2_command command = SETW;
             int count = 0;
-            int i = 8, size = 4;
+            int i = 8;
             u64 address=0xAA55AA55,next_address, base = 0, offset = 0;
             const char *module_name = name;
             char name[10] = "undefine";
@@ -51,6 +51,7 @@ namespace ams::dmnt {
             bool attached;
             bool range_check = false;
             u64 v1,v2;
+            int size = 4;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
@@ -1140,13 +1141,13 @@ namespace ams::dmnt {
                                     if (is_instr) {
                                         if (address == m_watch_data.next_pc || address == m_watch_data.address) {
                                             m_watch_data.intercepted = true;
-                                            if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(address, 4))) {
+                                            if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(address, m_watch_data.size))) {
                                                 m_watch_data.failed = 5;
                                             } else {
                                                 if (!m_watch_data.read && !m_watch_data.write) {
                                                     /* instructin case*/
                                                     if (address == m_watch_data.next_pc) {
-                                                        if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, 4, false))) { 
+                                                        if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, m_watch_data.size, false))) { 
                                                             m_watch_data.failed = 6;
                                                         } else
                                                             m_debug_process.Continue();
@@ -1185,7 +1186,7 @@ namespace ams::dmnt {
                                                     }
                                                 } else {
                                                     /* memory case*/
-                                                    if (R_FAILED(m_debug_process.SetWatchPoint(m_watch_data.address, 4, m_watch_data.read, m_watch_data.write))) {
+                                                    if (R_FAILED(m_debug_process.SetWatchPoint(m_watch_data.address, m_watch_data.size, m_watch_data.read, m_watch_data.write))) {
                                                         m_watch_data.failed = 4;
                                                     } else
                                                         m_debug_process.Continue();  // thread_id);
@@ -1211,7 +1212,7 @@ namespace ams::dmnt {
                                         if (address == m_watch_data.address || address == (m_watch_data.address & -8) || m_watch_data.gen2loop_on == 2) {
                                             m_watch_data.intercepted = true;
                                             /* Clear the watch point */
-                                            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint( m_watch_data.address, 4))) {
+                                            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint( m_watch_data.address, m_watch_data.size))) {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
@@ -2238,8 +2239,8 @@ namespace ams::dmnt {
         char *reply_cur = m_buffer;
         char *reply_end = m_buffer + sizeof(m_buffer);
         m_watch_data.failed = 0;
-        if ((m_watch_data.read || m_watch_data.write) && m_debug_process.IsValidWatchPoint(m_watch_data.address, 4)) {
-            if (R_SUCCEEDED(m_debug_process.SetWatchPoint(m_watch_data.address, 4, m_watch_data.read, m_watch_data.write))) {
+        if ((m_watch_data.read || m_watch_data.write) && m_debug_process.IsValidWatchPoint(m_watch_data.address, m_watch_data.size)) {
+            if (R_SUCCEEDED(m_debug_process.SetWatchPoint(m_watch_data.address, m_watch_data.size, m_watch_data.read, m_watch_data.write))) {
                 AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", m_watch_data.address, m_watch_data.read, m_watch_data.write);
                 m_watch_data.count = 0;
             } else {
@@ -2247,7 +2248,7 @@ namespace ams::dmnt {
             }
         }
         if (!(m_watch_data.read || m_watch_data.write)) {
-            if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, 4, false))) {
+            if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, m_watch_data.size, false))) {
                 AppendReplyFormat(reply_cur, reply_end, "Watching Register X%d at 0x%010lx \n", m_watch_data.i, m_watch_data.address);
                 m_watch_data.count = 0;
             } else {
@@ -2260,13 +2261,13 @@ namespace ams::dmnt {
         char *reply_cur = m_buffer;
         char *reply_end = m_buffer + sizeof(m_buffer);
         if (m_watch_data.read || m_watch_data.write) {
-            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(m_watch_data.address, 4))) {
+            if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(m_watch_data.address, m_watch_data.size))) {
                 AppendReplyFormat(reply_cur, reply_end, "Clearing Watchpoint 0x%010lx \n", m_watch_data.address);
             } else {
                 AppendReplyFormat(reply_cur, reply_end, "Unable to clear Watchpoint 0x%010lx \n", m_watch_data.address);
             }
         } else {
-            if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.address, 4))) {
+            if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(m_watch_data.address, m_watch_data.size))) {
                 AppendReplyFormat(reply_cur, reply_end, "Clearing BreakPoint 0x%010lx \n", m_watch_data.address);
             } else {
                 AppendReplyFormat(reply_cur, reply_end, "Unable to clear BreakPoint 0x%010lx \n", m_watch_data.address);
