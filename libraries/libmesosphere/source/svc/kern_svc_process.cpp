@@ -63,6 +63,8 @@ namespace ams::kern::svc {
 
                 /* Get the process id. */
                 *out_process_id = d->GetProcessUnsafe()->GetProcessId();
+            } else {
+                R_THROW(svc::ResultInvalidHandle());
             }
 
             R_SUCCEED();
