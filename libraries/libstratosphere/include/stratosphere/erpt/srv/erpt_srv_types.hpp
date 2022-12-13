@@ -21,6 +21,7 @@
 namespace ams::erpt::srv {
 
     constexpr inline const char ReportOnSdStoragePath[] = "ersd";
+    constexpr inline const char ReportOnSdStorageRootDirectoryPath[] = "ersd:/";
 
     constexpr inline const char ReportStoragePath[]             = "save";
     constexpr inline const char JournalFileName[]               = "save:/journal";

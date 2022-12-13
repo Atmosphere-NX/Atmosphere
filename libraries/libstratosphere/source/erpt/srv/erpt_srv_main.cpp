@@ -88,7 +88,7 @@ namespace ams::erpt::srv {
             s64 report_count = MinimumReportCountForCleanup;
 
             fs::DirectoryHandle dir;
-            if (R_SUCCEEDED(fs::OpenDirectory(std::addressof(dir), ReportOnSdStoragePath, fs::OpenDirectoryMode_All))) {
+            if (R_SUCCEEDED(fs::OpenDirectory(std::addressof(dir), ReportOnSdStorageRootDirectoryPath, fs::OpenDirectoryMode_All))) {
                 ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
 
                 if (R_FAILED(fs::GetDirectoryEntryCount(std::addressof(report_count), dir))) {
@@ -97,7 +97,7 @@ namespace ams::erpt::srv {
             }
 
             if (report_count >= MinimumReportCountForCleanup) {
-                fs::CleanDirectoryRecursively(ReportOnSdStoragePath);
+                fs::CleanDirectoryRecursively(ReportOnSdStorageRootDirectoryPath);
             }
         }
 
