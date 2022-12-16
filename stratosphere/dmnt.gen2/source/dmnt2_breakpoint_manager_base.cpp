@@ -44,7 +44,8 @@ namespace ams::dmnt {
         BreakPointBase *bp = nullptr;
         for (size_t i = 0; (bp = static_cast<BreakPointBase *>(this->GetBreakPoint(i))) != nullptr; ++i) {
             if (bp->m_in_use && bp->m_address == address) {
-                AMS_ABORT_UNLESS(bp->m_size == size);
+                // AMS_ABORT_UNLESS(bp->m_size == size);
+                if (bp->m_size == size){}
                 R_RETURN(bp->Clear(m_debug_process));
             }
         }
