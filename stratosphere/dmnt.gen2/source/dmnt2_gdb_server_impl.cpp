@@ -19,7 +19,7 @@
 #include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
-#define max_watch_buffer 300
+#define max_watch_buffer 0x100
         typedef struct {
             u64 address;
             u32 count;
@@ -52,6 +52,7 @@ namespace ams::dmnt {
             bool range_check = false;
             u64 v1,v2;
             int size = 4;
+            int vsize = 4;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
@@ -1166,7 +1167,7 @@ namespace ams::dmnt {
                                                                 u64 value = 0;
                                                                 if (m_watch_data.range_check) {
                                                                     u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
-                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.size))) {
+                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
                                                                         m_watch_data.failed++;
                                                                     };
                                                                 }
@@ -2309,7 +2310,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.05b address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.05d address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
