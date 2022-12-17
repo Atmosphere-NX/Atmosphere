@@ -900,6 +900,8 @@ namespace ams::dmnt::cheat::impl {
                             src_address = m_registers[cur_opcode.ldr_memory.reg_index] + cur_opcode.ldr_memory.rel_address;
                         } else if (cur_opcode.ldr_memory.load_from_reg == 2) {
                             src_address = m_registers[cur_opcode.ldr_memory.offset_register] + cur_opcode.ldr_memory.rel_address;
+                        } else if (cur_opcode.ldr_memory.load_from_reg == 3) {
+                            src_address = GetCheatProcessAddress(metadata, cur_opcode.ldr_memory.mem_type, m_registers[cur_opcode.ldr_memory.offset_register] + cur_opcode.ldr_memory.rel_address);
                         } else {
                             src_address = GetCheatProcessAddress(metadata, cur_opcode.ldr_memory.mem_type, cur_opcode.ldr_memory.rel_address);
                         }
