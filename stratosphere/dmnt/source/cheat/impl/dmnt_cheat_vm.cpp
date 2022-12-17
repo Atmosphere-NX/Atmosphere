@@ -984,7 +984,7 @@ namespace ams::dmnt::cheat::impl {
                         
                         if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kDown) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
                             /* Keys not pressed. Skip conditional block. */
-                            this->SkipConditionalBlock();
+                            this->SkipConditionalBlock(true);
                         }
                     } else if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
                         /* Keys not pressed. Skip conditional block. */
@@ -1031,6 +1031,30 @@ namespace ams::dmnt::cheat::impl {
                             case RegisterArithmeticType_None:
                                 res_val = operand_1_value;
                                 break;
+                            case RegisterArithmeticType_FloatAddition: {
+                                float v1, v2;
+                                memcpy(&v1, &operand_1_value, sizeof v1);
+                                memcpy(&v2, &operand_2_value, sizeof v2);
+                                res_val = v1 + v2;
+                            } break;
+                            case RegisterArithmeticType_FloatMultiplication: {
+                                float v1, v2;
+                                memcpy(&v1, &operand_1_value, sizeof v1);
+                                memcpy(&v2, &operand_2_value, sizeof v2);
+                                res_val = v1 * v2;
+                            } break;
+                            case RegisterArithmeticType_DoubleAddition: {
+                                double v1, v2;
+                                memcpy(&v1, &operand_1_value, sizeof v1);
+                                memcpy(&v2, &operand_2_value, sizeof v2);
+                                res_val = v1 + v2;
+                            } break;
+                            case RegisterArithmeticType_DoubleMultiplication: {
+                                double v1, v2;
+                                memcpy(&v1, &operand_1_value, sizeof v1);
+                                memcpy(&v2, &operand_2_value, sizeof v2);
+                                res_val = v1 * v2;
+                            } break;
                         }
 
 
