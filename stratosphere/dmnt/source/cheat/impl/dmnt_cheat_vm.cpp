@@ -423,7 +423,8 @@ namespace ams::dmnt::cheat::impl {
                     opcode.ldr_memory.bit_width = (first_dword >> 24) & 0xF;
                     opcode.ldr_memory.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
                     opcode.ldr_memory.reg_index = ((first_dword >> 16) & 0xF);
-                    opcode.ldr_memory.load_from_reg = ((first_dword >> 12) & 0xF) != 0;
+                    opcode.ldr_memory.load_from_reg = ((first_dword >> 12) & 0xF);
+                    opcode.ldr_memory.offset_register = ((first_dword >> 8) & 0xF);
                     opcode.ldr_memory.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
                 }
                 break;
@@ -894,8 +895,10 @@ namespace ams::dmnt::cheat::impl {
                     {
                         /* Choose source address. */
                         u64 src_address;
-                        if (cur_opcode.ldr_memory.load_from_reg) {
+                        if (cur_opcode.ldr_memory.load_from_reg == 1) {
                             src_address = m_registers[cur_opcode.ldr_memory.reg_index] + cur_opcode.ldr_memory.rel_address;
+                        } else if (cur_opcode.ldr_memory.load_from_reg == 2) {
+                            src_address = m_registers[cur_opcode.ldr_memory.offset_register] + cur_opcode.ldr_memory.rel_address;
                         } else {
                             src_address = GetCheatProcessAddress(metadata, cur_opcode.ldr_memory.mem_type, cur_opcode.ldr_memory.rel_address);
                         }

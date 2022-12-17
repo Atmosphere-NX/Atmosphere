@@ -162,7 +162,8 @@ namespace ams::dmnt::cheat::impl {
         u32 bit_width;
         MemoryAccessType mem_type;
         u32 reg_index;
-        bool load_from_reg;
+        u8 load_from_reg;
+        u8 offset_register;
         u64 rel_address;
     };
 
