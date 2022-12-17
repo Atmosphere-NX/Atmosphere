@@ -1032,24 +1032,28 @@ namespace ams::dmnt::cheat::impl {
                                 res_val = operand_1_value;
                                 break;
                             case RegisterArithmeticType_FloatAddition: {
+                                cur_opcode.perform_math_reg.bit_width = 4;
                                 float v1, v2;
                                 memcpy(&v1, &operand_1_value, sizeof v1);
                                 memcpy(&v2, &operand_2_value, sizeof v2);
                                 res_val = v1 + v2;
                             } break;
                             case RegisterArithmeticType_FloatMultiplication: {
+                                cur_opcode.perform_math_reg.bit_width = 4;
                                 float v1, v2;
                                 memcpy(&v1, &operand_1_value, sizeof v1);
                                 memcpy(&v2, &operand_2_value, sizeof v2);
                                 res_val = v1 * v2;
                             } break;
                             case RegisterArithmeticType_DoubleAddition: {
+                                cur_opcode.perform_math_reg.bit_width = 8;
                                 double v1, v2;
                                 memcpy(&v1, &operand_1_value, sizeof v1);
                                 memcpy(&v2, &operand_2_value, sizeof v2);
                                 res_val = v1 + v2;
                             } break;
                             case RegisterArithmeticType_DoubleMultiplication: {
+                                cur_opcode.perform_math_reg.bit_width = 8;
                                 double v1, v2;
                                 memcpy(&v1, &operand_1_value, sizeof v1);
                                 memcpy(&v2, &operand_2_value, sizeof v2);
