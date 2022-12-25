@@ -77,7 +77,7 @@ namespace ams::kern::arch::arm64 {
                 __asm__ __volatile__(
                     "    prfm   pstl1keep, %[m_next_ticket]\n"
                     "1:\n"
-                    "    ldaxrh %w[tmp0], %[m_next_ticket]\n"
+                    "    ldxrh  %w[tmp0], %[m_next_ticket]\n"
                     "    add    %w[tmp1], %w[tmp0], #0x1\n"
                     "    stxrh  %w[got_lock], %w[tmp1], %[m_next_ticket]\n"
                     "    cbnz   %w[got_lock], 1b\n"
