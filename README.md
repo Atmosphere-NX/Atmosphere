@@ -1,3 +1,12 @@
+# DMNT limits
+## MaxCheatCount = 0x80;
+Total number of cheat codes that can be put in a cheat code file and be loaded into memory
+
+## uint32_t opcodes[0x100]; 
+Each cheat can have up to 0x100 opcodes.
+
+## MaximumProgramOpcodeCount = 0x400; 
+No more than 0x400 opcodes can be enabled at anytime.
 
 ![Banner](img/banner.png?raw=true)
 =====
