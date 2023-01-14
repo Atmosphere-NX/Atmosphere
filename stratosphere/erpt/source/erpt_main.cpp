@@ -78,12 +78,6 @@ namespace ams {
         os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(erpt, Main));
         AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(erpt, Main));
 
-        /* Set the memory heap for erpt::srv namespace. */
-        R_ABORT_UNLESS(erpt::srv::Initialize(erpt::g_memory_heap, erpt::MemoryHeapSize));
-
-        /* Atmosphere always wants to redirect new reports to the SD card, to prevent them from being logged. */
-        erpt::srv::SetRedirectNewReportsToSdCard(true);
-
         /* Decide whether or not to clean up reports periodically. */
         {
             u8 disable_report_cleanup = 0;
@@ -93,6 +87,12 @@ namespace ams {
                 erpt::srv::SetEnabledAutomaticReportCleanup(true);
             }
         }
+
+        /* Set the memory heap for erpt::srv namespace, perform other service init/etc. */
+        R_ABORT_UNLESS(erpt::srv::Initialize(erpt::g_memory_heap, erpt::MemoryHeapSize));
+
+        /* Atmosphere always wants to redirect new reports to the SD card, to prevent them from being logged. */
+        erpt::srv::SetRedirectNewReportsToSdCard(true);
 
         /* Configure the OS version. */
         {
