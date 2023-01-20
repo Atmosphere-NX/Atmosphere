@@ -388,10 +388,14 @@ namespace ams::sdmmc::impl {
                 break;
             case SpeedMode_SdCardSdr50:
             case SpeedMode_SdCardSdr104:
-            case SpeedMode_GcAsicFpgaSpeed:
-            case SpeedMode_GcAsicSpeed:
                 /* Set as SDR104, 1.8V. */
                 reg::ReadWrite(m_sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_UHS_MODE_SELECT, SDR104));
+                reg::ReadWrite(m_sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_1_8V_SIGNALING_ENABLE, 1_8V_SIGNALING));
+                break;
+            case SpeedMode_GcAsicFpgaSpeed:
+            case SpeedMode_GcAsicSpeed:
+                /* Set as HS200, 1.8V. */
+                reg::ReadWrite(m_sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_UHS_MODE_SELECT, HS200));
                 reg::ReadWrite(m_sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_1_8V_SIGNALING_ENABLE, 1_8V_SIGNALING));
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
