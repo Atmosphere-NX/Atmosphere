@@ -632,6 +632,8 @@ namespace ams::sdmmc::impl {
             R_TRY(this->ExtendBusSpeedAtUhsIMode(max_sm, wb, wb_size));
         } else {
             R_TRY(this->ExtendBusSpeedAtNonUhsIMode(max_sm, spec_under_1_1, wb, wb_size));
+
+            R_TRY(this->GetSdStatus(wb, wb_size));
         }
 
         /* Enable power saving. */
