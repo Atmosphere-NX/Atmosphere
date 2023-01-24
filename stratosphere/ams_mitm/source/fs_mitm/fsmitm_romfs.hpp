@@ -115,10 +115,22 @@ namespace ams::mitm::fs::romfs {
         NON_MOVEABLE(BuildDirectoryContext);
 
         std::unique_ptr<char[]> path;
-        BuildDirectoryContext *parent;
-        BuildDirectoryContext *child;
-        BuildDirectoryContext *sibling;
-        BuildFileContext *file;
+        union {
+            BuildDirectoryContext *parent;
+            u32 parent_offset;
+        };
+        union {
+            BuildDirectoryContext *child;
+            u32 child_offset;
+        };
+        union {
+            BuildDirectoryContext *sibling;
+            u32 sibling_offset;
+        };
+        union {
+            BuildFileContext *file;
+            u32 file_offset;
+        };
         u32 path_len;
         u32 entry_offset;
         u32 hash_value;
@@ -176,7 +188,10 @@ namespace ams::mitm::fs::romfs {
 
         std::unique_ptr<char[]> path;
         BuildDirectoryContext *parent;
-        BuildFileContext *sibling;
+        union {
+            BuildFileContext *sibling;
+            u32 sibling_offset;
+        };
         s64 offset;
         s64 size;
         s64 orig_offset;

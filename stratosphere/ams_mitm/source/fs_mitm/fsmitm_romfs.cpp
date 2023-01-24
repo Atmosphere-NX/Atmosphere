@@ -80,6 +80,7 @@ namespace ams::mitm::fs {
                         while (m_cache == nullptr) {
                             cache_size >>= 1;
                             AMS_ABORT_UNLESS(cache_size >= 16_KB);
+                            m_cache = std::malloc(cache_size);
                         }
                         m_cache_bitsize = util::CountTrailingZeros(cache_size);
                     }
@@ -617,19 +618,42 @@ namespace ams::mitm::fs {
                 }
             }
 
+            /* Replace sibling pointers with sibling entry_offsets, so that we can de-allocate as we go. */
+            {
+                /* Set all directories sibling and file pointers. */
+                for (const auto &it : m_directories) {
+                    BuildDirectoryContext *cur_dir = it.get();
+
+                    cur_dir->ClearHashMark();
+
+                    cur_dir->sibling_offset = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
+                    cur_dir->child_offset   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
+                    cur_dir->file_offset    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+
+                    cur_dir->parent_offset  = cur_dir == m_root ? 0 : cur_dir->parent->entry_offset;
+                }
+
+                /* Replace all files' sibling pointers. */
+                for (const auto &it : m_files) {
+                    BuildFileContext *cur_file = it.get();
+
+                    cur_file->ClearHashMark();
+
+                    cur_file->sibling_offset = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
+                }
+            }
+
             /* Write the file table. */
             {
                 FileTableWriter file_table(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size + m_file_hash_table_size, m_file_table_size);
 
-                for (const auto &it : m_files) {
-                    BuildFileContext *cur_file = it.get();
+                for (auto it = m_files.begin(); it != m_files.end(); it = m_files.erase(it)) {
+                    BuildFileContext *cur_file = it->get();
                     FileEntry *cur_entry = file_table.GetEntry(cur_file->entry_offset, cur_file->path_len);
-
-                    cur_file->ClearHashMark();
 
                     /* Set entry fields. */
                     cur_entry->parent  = cur_file->parent->entry_offset;
-                    cur_entry->sibling = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
+                    cur_entry->sibling = cur_file->sibling_offset;
                     cur_entry->offset  = cur_file->offset;
                     cur_entry->size    = cur_file->size;
                     cur_entry->hash    = cur_file->hash_value;
@@ -660,8 +684,15 @@ namespace ams::mitm::fs {
                             break;
                         case DataSourceType::LooseSdFile:
                             {
-                                char *new_path = new char[cur_file->GetPathLength() + 1];
-                                cur_file->GetPath(new_path);
+                                char full_path[fs::EntryNameLengthMax + 1];
+                                const size_t path_needed_size = cur_file->GetPathLength() + 1;
+                                AMS_ABORT_UNLESS(path_needed_size <= sizeof(full_path));
+                                cur_file->GetPath(full_path);
+
+                                cur_file->path.reset();
+
+                                char *new_path = new char[path_needed_size];
+                                std::memcpy(new_path, full_path, path_needed_size);
                                 out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
                             }
                             break;
@@ -674,17 +705,15 @@ namespace ams::mitm::fs {
             {
                 DirectoryTableWriter dir_table(std::addressof(metadata_file), m_dir_hash_table_size, m_dir_table_size);
 
-                for (const auto &it : m_directories) {
-                    BuildDirectoryContext *cur_dir = it.get();
+                for (auto it = m_directories.begin(); it != m_directories.end(); it = m_directories.erase(it)) {
+                    BuildDirectoryContext *cur_dir = it->get();
                     DirectoryEntry *cur_entry = dir_table.GetEntry(cur_dir->entry_offset, cur_dir->path_len);
 
-                    cur_dir->ClearHashMark();
-
                     /* Set entry fields. */
-                    cur_entry->parent  = cur_dir == m_root ? 0 : cur_dir->parent->entry_offset;
-                    cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
-                    cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
-                    cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+                    cur_entry->parent  = cur_dir->parent_offset;
+                    cur_entry->sibling = cur_dir->sibling_offset;
+                    cur_entry->child   = cur_dir->child_offset;
+                    cur_entry->file    = cur_dir->file_offset;
                     cur_entry->hash    = cur_dir->hash_value;
 
                     /* Set name. */
