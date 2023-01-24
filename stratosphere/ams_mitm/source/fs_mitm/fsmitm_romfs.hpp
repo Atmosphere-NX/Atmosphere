@@ -16,7 +16,6 @@
 
 #pragma once
 #include <stratosphere.hpp>
-#include "../dns_mitm/dnsmitm_debug.hpp"
 
 namespace ams::mitm::fs::romfs {
 
@@ -117,11 +116,13 @@ namespace ams::mitm::fs::romfs {
         std::unique_ptr<char[]> path;
         union {
             BuildDirectoryContext *parent;
-            u32 parent_offset;
         };
         union {
             BuildDirectoryContext *child;
-            u32 child_offset;
+            struct {
+                u32 parent_offset;
+                u32 child_offset;
+            };
         };
         union {
             BuildDirectoryContext *sibling;
