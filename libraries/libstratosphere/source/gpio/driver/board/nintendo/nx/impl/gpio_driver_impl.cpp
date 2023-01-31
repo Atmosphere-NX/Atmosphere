@@ -194,7 +194,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         const InternalGpioPadNumber pad_number = pad->GetPadNumber();
 
         /* Configure the pad value by modifying the appropriate bit in IN */
-        const uintptr_t pad_address = GetGpioRegisterAddress(m_gpio_virtual_address, GpioRegisterType_GPIO_IN, pad_number);
+        const uintptr_t pad_address = GetGpioRegisterAddress(m_gpio_virtual_address, GpioRegisterType_GPIO_OUT, pad_number);
         const uintptr_t pad_index   = ConvertInternalGpioPadNumberToBitIndex(pad_number);
         SetMaskedBit(pad_address, pad_index, value);
 
