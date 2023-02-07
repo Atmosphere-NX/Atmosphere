@@ -1,4 +1,17 @@
 # Changelog
+## 1.4.1
++ A number of minor issues were fixed and improvements were made, including:
+  + `dmnt` cheat toggle files are no longer ignored when they are missing a trailing newline.
+  + The mechanism for automatically cleaning up `erpt_reports` added in 1.3.0 was fixed.
+    + This was actually just very fundamentally broken and has never worked, but it is verified working now.
+  + Minor fixes were made in `mesosphère` to match official kernel behavior (spin lock assembly was corrected, wrong result on failure in in GetProcessId was corrected).
+  + A missing call to GetSdStatus when initializing SD cards at non uhs-i mode was added in the sdmmc driver.
++ `ams.mitm`'s memory usage was increased by 16 MB, to prevent crashing when building romfs for games with obscene file counts.
+  + To quote the changelog for 1.2.3: "Animal Crossing's 2.0.0 update contains >99000 files [...] It's really hard to imagine any game being worse than Animal Crossing".
+  + As it turns out, Fire Emblem: Engage has ~186000 files, and is approximately twice as bad as animal crossing.
+  + The additional memory here is taken from the applet pool; no issues are expected to arise from this, but please report anything you may run into.
+  + As usual, if you encounter a game that exhausts ams.mitm's memory (crashing it) when loading layeredfs mods, please contact `SciresM#0524`.
+    + I am jinxing myself by saying this, but it's really hard to imagine any game being worse than Fire Emblem: Engage, but if it happens again I will drop everything to fix it as usual.
 ## 1.4.0
 + Support was added for 15.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.
