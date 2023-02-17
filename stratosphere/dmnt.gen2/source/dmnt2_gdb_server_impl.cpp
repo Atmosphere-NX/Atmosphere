@@ -53,7 +53,9 @@ namespace ams::dmnt {
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.06";
+            char version[10]="v0.07";
+            u16 x30_match = 0;
+            bool check_x30 = false;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
         bool GdbServerImpl::gen2_loop() {
@@ -1156,7 +1158,7 @@ namespace ams::dmnt {
                                                     } else {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
-                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
+                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true)) {
                                                             bool found = false;
                                                             for (int i = 0; i < m_watch_data.count; i++) {
                                                                 if (m_watch_data.from[i].address == thread_context.r[m_watch_data.i]) {
@@ -1211,22 +1213,23 @@ namespace ams::dmnt {
                                             AMS_DMNT2_GDB_LOG_DEBUG("GetWatchPointInfo FAIL %lx, addr=%lx, type=%s\n", thread_id, address, is_instr ? "Instr" : "Data");
                                         }
 
-                                        if (address == m_watch_data.address || address == (m_watch_data.address & -8) || m_watch_data.gen2loop_on == 2) {
+                                        if (address == m_watch_data.address || (address & -16) == (m_watch_data.address & -16) || m_watch_data.gen2loop_on == 2) {
                                             m_watch_data.intercepted = true;
                                             /* Clear the watch point */
                                             if (R_SUCCEEDED(m_debug_process.ClearWatchPoint( m_watch_data.address, m_watch_data.size))) {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
+                                                    u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
                                                     bool found = false;
                                                     for (int i = 0; i < m_watch_data.count; i++) {
-                                                        if (m_watch_data.from[i].address == thread_context.pc) {
+                                                        if (m_watch_data.from[i].address == ret_pc) {
                                                             (m_watch_data.from[i].count)++;
                                                             found = true;
                                                         }
                                                     };
                                                     if (!found && m_watch_data.count < max_watch_buffer) {
-                                                        m_watch_data.from[m_watch_data.count].address = thread_context.pc;
+                                                        m_watch_data.from[m_watch_data.count].address = ret_pc;
                                                         m_watch_data.from[m_watch_data.count].count = 1;
                                                         m_watch_data.count++;
                                                     };
@@ -2311,7 +2314,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.06 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.07 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
