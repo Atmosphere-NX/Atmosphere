@@ -48,7 +48,7 @@ namespace ams::kern::svc {
             /* Check whether the address is aligned. */
             const bool aligned = util::IsAligned(phys_addr, PageSize);
 
-            auto QueryIoMappingFromPageTable = [&](uint64_t phys_addr, size_t size) ALWAYS_INLINE_LAMBDA -> Result {
+            auto QueryMappingFromPageTable = [&](uint64_t phys_addr, size_t size) ALWAYS_INLINE_LAMBDA -> Result {
                 /* The size must be non-zero. */
                 R_UNLESS(size > 0, svc::ResultInvalidSize());
 
@@ -56,7 +56,12 @@ namespace ams::kern::svc {
                 R_UNLESS((phys_addr < phys_addr + size), svc::ResultNotFound());
 
                 /* Query the mapping. */
-                R_TRY(pt.QueryIoMapping(std::addressof(found_address), phys_addr, size));
+                R_TRY_CATCH(pt.QueryIoMapping(std::addressof(found_address), phys_addr, size)) {
+                    R_CATCH(svc::ResultNotFound) {
+                        /* If we failed to find an io mapping, check if the address is a static mapping. */
+                        R_TRY(pt.QueryStaticMapping(std::addressof(found_address), phys_addr, size));
+                    }
+                } R_END_TRY_CATCH;
 
                 /* Use the size as the found size. */
                 found_size = size;
@@ -66,12 +71,12 @@ namespace ams::kern::svc {
 
             if (aligned) {
                 /* Query the input. */
-                R_TRY(QueryIoMappingFromPageTable(phys_addr, size));
+                R_TRY(QueryMappingFromPageTable(phys_addr, size));
             } else {
                 if (kern::GetTargetFirmware() < TargetFirmware_8_0_0 && phys_addr >= PageSize) {
                     /* Query the aligned-down page. */
                     const size_t offset = phys_addr & (PageSize - 1);
-                    R_TRY(QueryIoMappingFromPageTable(phys_addr - offset, size + offset));
+                    R_TRY(QueryMappingFromPageTable(phys_addr - offset, size + offset));
 
                     /* Adjust the output address. */
                     found_address += offset;
