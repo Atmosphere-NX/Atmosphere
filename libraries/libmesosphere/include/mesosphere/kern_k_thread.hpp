@@ -108,10 +108,12 @@ namespace ams::kern {
                 u8 exception_flags;
                 bool is_pinned;
                 u8 reserved_2f;
+                u8 reserved_30[0x10];
                 KThreadContext context;
             };
 
             static_assert(util::IsAligned(AMS_OFFSETOF(StackParameters, context), 0x10));
+            static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
 
             static_assert(AMS_OFFSETOF(StackParameters, svc_access_flags)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
             static_assert(AMS_OFFSETOF(StackParameters, caller_save_fpu_registers) == THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS);
@@ -123,7 +125,9 @@ namespace ams::kern {
             static_assert(AMS_OFFSETOF(StackParameters, exception_flags)           == THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS);
             static_assert(AMS_OFFSETOF(StackParameters, is_pinned)                 == THREAD_STACK_PARAMETERS_IS_PINNED);
             static_assert(AMS_OFFSETOF(StackParameters, reserved_2f)               == THREAD_STACK_PARAMETERS_RESERVED_2F);
+            static_assert(AMS_OFFSETOF(StackParameters, reserved_30)               == THREAD_STACK_PARAMETERS_RESERVED_30);
             static_assert(AMS_OFFSETOF(StackParameters, context)                   == THREAD_STACK_PARAMETERS_THREAD_CONTEXT);
+
 
             static_assert(ExceptionFlag_IsCallingSvc                  == THREAD_EXCEPTION_FLAG_IS_CALLING_SVC);
             static_assert(ExceptionFlag_IsInExceptionHandler          == THREAD_EXCEPTION_FLAG_IS_IN_EXCEPTION_HANDLER);

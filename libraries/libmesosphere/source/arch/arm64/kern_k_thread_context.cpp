@@ -96,8 +96,8 @@ namespace ams::kern::arch::arm64 {
             /* SP                                                                        */
             /* |                                                                         */
             /* v                                                                         */
-            /* | u64 argument | u64 entrypoint | KThread::StackParameters (size 0x130) | */
-            static_assert(sizeof(KThread::StackParameters) == 0x130);
+            /* | u64 argument | u64 entrypoint | KThread::StackParameters (size 0x140) | */
+            static_assert(sizeof(KThread::StackParameters) == 0x140);
 
             u64 *stack = GetPointer<u64>(sp);
             *(--stack) = GetInteger(pc);
