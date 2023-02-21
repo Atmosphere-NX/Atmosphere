@@ -596,8 +596,11 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for read failure. */
+    adr     x10, 4f
+
 1:  /* Set our return address so that on read failure we continue as though we read -1. */
-    adr     x30, 4f
+    mov     x30, x10
 
     /* Read the word from io. */
     ldtr    w9, [x5]
@@ -643,8 +646,11 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for read failure. */
+    adr     x10, 4f
+
 1:  /* Set our return address so that on read failure we continue as though we read -1. */
-    adr     x30, 4f
+    mov     x30, x10
 
     /* Read the word from io. */
     ldtrh   w9, [x5]
@@ -690,8 +696,11 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for read failure. */
+    adr     x10, 4f
+
 1:  /* Set our return address so that on read failure we continue as though we read -1. */
-    adr     x30, 4f
+    mov     x30, x10
 
     /* Read the word from io. */
     ldtrb   w9, [x5]
@@ -737,11 +746,14 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for failure. */
+    adr     x10, 2f
+
 1:  /* Read the word from normal memory. */
     ldtr    w9, [x5]
 
-    /* Set our return address so that on read failure we continue. */
-    adr     x30, 2f
+    /* Set our return address so that on failure we continue. */
+    mov     x30, x10
 
     /* Write the word to io. */
     sttr    w9, [x5]
@@ -779,11 +791,14 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for failure. */
+    adr     x10, 2f
+
 1:  /* Read the word from normal memory. */
     ldtrh   w9, [x5]
 
-    /* Set our return address so that on read failure we continue. */
-    adr     x30, 2f
+    /* Set our return address so that on failure we continue. */
+    mov     x30, x10
 
     /* Write the word to io. */
     sttrh   w9, [x5]
@@ -821,11 +836,14 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm:
     /* Save our return address. */
     mov     x8, x30
 
+    /* Prepare return address for failure. */
+    adr     x10, 2f
+
 1:  /* Read the word from normal memory. */
     ldtrb   w9, [x5]
 
-    /* Set our return address so that on read failure we continue. */
-    adr     x30, 2f
+    /* Set our return address so that on failure we continue. */
+    mov     x30, x10
 
     /* Write the word to io. */
     sttrb   w9, [x5]
