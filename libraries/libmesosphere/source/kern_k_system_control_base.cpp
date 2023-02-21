@@ -20,6 +20,13 @@
 
 namespace ams::kern {
 
+    namespace init {
+
+        /* TODO: Is this function name architecture specific? */
+        void StartOtherCore(const ams::kern::init::KInitArguments *init_args);
+
+    }
+
     /* Initialization. */
     size_t KSystemControlBase::Init::GetRealMemorySize() {
         return ams::kern::MainMemorySize;
@@ -68,12 +75,28 @@ namespace ams::kern {
         return 0;
     }
 
-    void KSystemControlBase::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
+    void KSystemControlBase::Init::CpuOnImpl(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
         #if defined(ATMOSPHERE_ARCH_ARM64)
         MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<0, false>(core_id, entrypoint, arg)) == 0);
         #else
         AMS_INFINITE_LOOP();
         #endif
+    }
+
+    void KSystemControlBase::Init::TurnOnCpu(u64 core_id, const ams::kern::init::KInitArguments *args) {
+        /* Get entrypoint. */
+        KPhysicalAddress entrypoint = Null<KPhysicalAddress>;
+        while (!cpu::GetPhysicalAddressReadable(std::addressof(entrypoint), reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore), true)) { /* ... */ }
+
+        /* Get arguments. */
+        KPhysicalAddress args_addr = Null<KPhysicalAddress>;
+        while (!cpu::GetPhysicalAddressReadable(std::addressof(args_addr), reinterpret_cast<uintptr_t>(args), true)) { /* ... */ }
+
+        /* Ensure cache is correct for the initial arguments. */
+        cpu::StoreDataCacheForInitArguments(args, sizeof(*args));
+
+        /* Turn on the cpu. */
+        KSystemControl::Init::CpuOnImpl(core_id, GetInteger(entrypoint), GetInteger(args_addr));
     }
 
     /* Randomness for Initialization. */

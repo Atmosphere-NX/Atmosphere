@@ -395,7 +395,7 @@ namespace ams::kern::board::nintendo::nx::lps {
         R_SUCCEED();
     }
 
-    void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry) {
+    void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry, uintptr_t entry_arg) {
         /* Verify that we're allowed to perform suspension. */
         MESOSPHERE_ABORT_UNLESS(g_lps_init_done);
         MESOSPHERE_ABORT_UNLESS(GetCurrentCoreId() == 0);
@@ -416,7 +416,7 @@ namespace ams::kern::board::nintendo::nx::lps {
         Read(g_pmc_address + APBDEV_PMC_SCRATCH0);
 
         /* Invoke the sleep hander. */
-        KSleepManager::CpuSleepHandler(arg, entry);
+        KSleepManager::CpuSleepHandler(arg, entry, entry_arg);
 
         /* Disable deep power down. */
         Write(g_pmc_address + APBDEV_PMC_DPD_ENABLE, 0);

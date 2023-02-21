@@ -29,48 +29,63 @@ namespace ams::kern::init {
     /* Prototypes for functions declared in ASM that we need to reference. */
     void StartOtherCore(const ams::kern::init::KInitArguments *init_args);
 
+    void IdentityMappedFunctionAreaBegin();
+    void IdentityMappedFunctionAreaEnd();
+
     size_t GetMiscUnknownDebugRegionSize();
+
+    void InitializeDebugRegisters();
+    void InitializeExceptionVectors();
 
     namespace {
 
         /* Global Allocator. */
         constinit KInitialPageAllocator g_initial_page_allocator;
 
-        /* Global initial arguments array. */
-        constinit KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
-
         constinit KInitArguments g_init_arguments[cpu::NumCores];
 
+        /* Globals for passing data between InitializeCorePhase1 and InitializeCorePhase2. */
+        constinit InitialProcessBinaryLayout g_phase2_initial_process_binary_layout{};
+        constinit KPhysicalAddress g_phase2_resource_end_phys_addr = Null<KPhysicalAddress>;
+        constinit u64 g_phase2_linear_region_phys_to_virt_diff = 0;
+
         /* Page table attributes. */
+        constexpr PageTableEntry KernelTextAttribute(PageTableEntry::Permission_KernelRX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelMmioAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_Device_nGnRE, PageTableEntry::Shareable_OuterShareable, PageTableEntry::MappingFlag_Mapped);
 
         constexpr PageTableEntry KernelRwDataUncachedAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemoryNotCacheable, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
 
-        void StoreDataCache(const void *addr, size_t size) {
-            const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), cpu::DataCacheLineSize);
-            for (size_t stored = 0; stored < size; stored += cpu::DataCacheLineSize) {
-                __asm__ __volatile__("dc cvac, %[cur]" :: [cur]"r"(start + stored) : "memory");
-            }
-            cpu::DataSynchronizationBarrier();
-        }
-
-        void TurnOnAllCores(uintptr_t start_other_core_phys) {
+        void TurnOnAllCores() {
             cpu::MultiprocessorAffinityRegisterAccessor mpidr;
             const auto arg = mpidr.GetCpuOnArgument();
             const auto current_core = mpidr.GetAff0();
 
             for (s32 i = 0; i < static_cast<s32>(cpu::NumCores); i++) {
                 if (static_cast<s32>(current_core) != i) {
-                    KSystemControl::Init::CpuOn(arg | i, start_other_core_phys, GetInteger(g_init_arguments_phys_addr[i]));
+                    KSystemControl::Init::TurnOnCpu(arg | i, g_init_arguments + i);
                 }
             }
         }
 
-        void SetupInitialArguments(KInitialPageTable &init_pt, KInitialPageAllocator &allocator) {
-            AMS_UNUSED(init_pt, allocator);
+        void InvokeMain(u64 core_id) {
+            /* Clear cpacr_el1. */
+            cpu::SetCpacrEl1(0);
+            cpu::InstructionMemoryBarrier();
 
+            /* Initialize registers. */
+            InitializeDebugRegisters();
+            InitializeExceptionVectors();
+
+            /* Set exception stack. */
+            cpu::SetCntvCvalEl0(GetInteger(KMemoryLayout::GetExceptionStackTopAddress(static_cast<s32>(core_id))) - sizeof(KThread::StackParameters));
+
+            /* Call main. */
+            HorizonKernelMain(static_cast<s32>(core_id));
+        }
+
+        void SetupInitialArguments() {
             /* Get parameters for initial arguments. */
             const u64 ttbr0    = cpu::GetTtbr0El1();
             const u64 ttbr1    = cpu::GetTtbr1El1();
@@ -84,13 +99,6 @@ namespace ams::kern::init {
                 /* Get the arguments. */
                 KInitArguments *init_args = g_init_arguments + i;
 
-                /* Translate to a physical address. */
-                /* KPhysicalAddress phys_addr = Null<KPhysicalAddress>;                                                */
-                /* if (cpu::GetPhysicalAddressWritable(std::addressof(phys_addr), KVirtualAddress(init_args), true)) { */
-                /*     g_init_arguments_phys_addr[i] = phys_addr;                                                      */
-                /* }                                                                                                   */
-                g_init_arguments_phys_addr[i] = init_pt.GetPhysicalAddress(KVirtualAddress(init_args));
-
                 /* Set the arguments. */
                 init_args->ttbr0           = ttbr0;
                 init_args->ttbr1           = ttbr1;
@@ -100,14 +108,9 @@ namespace ams::kern::init {
                 init_args->cpuectlr        = cpuectlr;
                 init_args->sctlr           = sctlr;
                 init_args->sp              = GetInteger(KMemoryLayout::GetMainStackTopAddress(i)) - sizeof(KThread::StackParameters);
-                init_args->entrypoint      = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
+                init_args->entrypoint      = reinterpret_cast<uintptr_t>(::ams::kern::init::InvokeMain);
                 init_args->argument        = static_cast<u64>(i);
-                init_args->setup_function  = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
-                init_args->exception_stack = GetInteger(KMemoryLayout::GetExceptionStackTopAddress(i)) - sizeof(KThread::StackParameters);
             }
-
-            /* Ensure the arguments are written to memory. */
-            StoreDataCache(g_init_arguments, sizeof(g_init_arguments));
         }
 
         KVirtualAddress GetRandomAlignedRegionWithGuard(size_t size, size_t alignment, KInitialPageTable &pt, KMemoryRegionTree &tree, u32 type_id, size_t guard_size) {
@@ -167,18 +170,83 @@ namespace ams::kern::init {
             const KPhysicalAddress stack_start_phys = g_initial_page_allocator.Allocate(PageSize);
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_start_virt), StackSize, type, core_id));
 
-            page_table.Map(stack_start_virt, StackSize, stack_start_phys, KernelRwDataAttribute, g_initial_page_allocator);
+            page_table.Map(stack_start_virt, StackSize, stack_start_phys, KernelRwDataAttribute, g_initial_page_allocator, 0);
+        }
+
+        class KInitialPageAllocatorForFinalizeIdentityMapping final {
+            private:
+                struct FreeListEntry {
+                    FreeListEntry *next;
+                };
+            private:
+                FreeListEntry *m_free_list_head;
+                u64 m_phys_to_virt_offset;
+            public:
+                template<kern::arch::arm64::init::IsInitialPageAllocator PageAllocator>
+                KInitialPageAllocatorForFinalizeIdentityMapping(PageAllocator &allocator, u64 phys_to_virt) : m_free_list_head(nullptr), m_phys_to_virt_offset(phys_to_virt) {
+                    /* Allocate and free two pages. */
+                    for (size_t i = 0; i < 2; ++i) {
+                        KPhysicalAddress page = allocator.Allocate(PageSize);
+                        MESOSPHERE_INIT_ABORT_UNLESS(page != Null<KPhysicalAddress>);
+
+                        /* Free the pages. */
+                        this->Free(page, PageSize);
+                    }
+                }
+            public:
+                KPhysicalAddress Allocate(size_t size) {
+                    /* Check that the size is correct. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(size == PageSize);
+
+                    /* Check that we have a free page. */
+                    FreeListEntry *head = m_free_list_head;
+                    MESOSPHERE_INIT_ABORT_UNLESS(head != nullptr);
+
+                    /* Update the free list. */
+                    m_free_list_head = head->next;
+
+                    /* Return the page. */
+                    return KPhysicalAddress(reinterpret_cast<uintptr_t>(head) - m_phys_to_virt_offset);
+                }
+
+                void Free(KPhysicalAddress phys_addr, size_t size) {
+                    /* Check that the size is correct. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(size == PageSize);
+
+                    /* Convert to a free list entry. */
+                    FreeListEntry *fl = reinterpret_cast<FreeListEntry *>(GetInteger(phys_addr) + m_phys_to_virt_offset);
+
+                    /* Insert into free list. */
+                    fl->next = m_free_list_head;
+                    m_free_list_head = fl;
+                }
+        };
+        static_assert(kern::arch::arm64::init::IsInitialPageAllocator<KInitialPageAllocatorForFinalizeIdentityMapping>);
+
+        void FinalizeIdentityMapping(KInitialPageTable &init_pt, KInitialPageAllocator &allocator, u64 phys_to_virt_offset) {
+            /* Create an allocator for identity mapping finalization. */
+            KInitialPageAllocatorForFinalizeIdentityMapping finalize_allocator(allocator, phys_to_virt_offset);
+
+            /* Get the physical address of crt0. */
+            const KPhysicalAddress start_phys_addr = init_pt.GetPhysicalAddress(reinterpret_cast<uintptr_t>(::ams::kern::init::IdentityMappedFunctionAreaBegin));
+
+            /* Unmap the entire identity mapping. */
+            init_pt.UnmapTtbr0Entries(phys_to_virt_offset);
+
+            /* Re-map only the first page of code. */
+            const size_t size = util::AlignUp<size_t>(reinterpret_cast<uintptr_t>(::ams::kern::init::IdentityMappedFunctionAreaEnd) - reinterpret_cast<uintptr_t>(::ams::kern::init::IdentityMappedFunctionAreaBegin), PageSize);
+            init_pt.Map(KVirtualAddress(GetInteger(start_phys_addr)), size, start_phys_addr, KernelTextAttribute, finalize_allocator, phys_to_virt_offset);
         }
 
     }
 
-    void InitializeCore(uintptr_t misc_unk_debug_phys_addr, void **initial_state) {
+    void InitializeCorePhase1(uintptr_t misc_unk_debug_phys_addr, void **initial_state) {
         /* Ensure our first argument is page aligned. */
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(misc_unk_debug_phys_addr, PageSize));
 
         /* Decode the initial state. */
-        const auto initial_page_allocator_state  = *static_cast<KInitialPageAllocator::State *>(initial_state[0]);
-        const auto initial_process_binary_layout = *static_cast<InitialProcessBinaryLayout *>(initial_state[1]);
+        const auto initial_page_allocator_state = *static_cast<KInitialPageAllocator::State *>(initial_state[0]);
+        g_phase2_initial_process_binary_layout  = *static_cast<InitialProcessBinaryLayout *>(initial_state[1]);
 
         /* Restore the page allocator state setup by kernel loader. */
         g_initial_page_allocator.InitializeFromState(std::addressof(initial_page_allocator_state));
@@ -343,7 +411,7 @@ namespace ams::kern::init {
                     largest->SetPairAddress(GetInteger(map_virt_addr) + largest->GetAddress() - GetInteger(map_phys_addr));
 
                     /* Map the page in to our page table. */
-                    init_pt.Map(map_virt_addr, map_size, map_phys_addr, KernelMmioAttribute, g_initial_page_allocator);
+                    init_pt.Map(map_virt_addr, map_size, map_phys_addr, KernelMmioAttribute, g_initial_page_allocator, 0);
                 }
             } while (largest != nullptr);
         }
@@ -400,7 +468,7 @@ namespace ams::kern::init {
 
                     /* Map the page in to our page table. */
                     const auto attribute = largest->HasTypeAttribute(KMemoryRegionAttr_Uncached) ? KernelRwDataUncachedAttribute : KernelRwDataAttribute;
-                    init_pt.Map(map_virt_addr, map_size, map_phys_addr, attribute, g_initial_page_allocator);
+                    init_pt.Map(map_virt_addr, map_size, map_phys_addr, attribute, g_initial_page_allocator, 0);
                 }
             } while (largest != nullptr);
         }
@@ -412,7 +480,7 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_start_phys_addr), slab_region_size, KMemoryRegionType_DramKernelSlab));
 
         /* Map the slab region. */
-        init_pt.Map(slab_region_start, slab_region_size, slab_start_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+        init_pt.Map(slab_region_start, slab_region_size, slab_start_phys_addr, KernelRwDataAttribute, g_initial_page_allocator, 0);
 
         /* Physically randomize the slab region. */
         /* NOTE: Nintendo does this only on 10.0.0+ */
@@ -426,6 +494,8 @@ namespace ams::kern::init {
 
         /* Determine size available for kernel page table heaps. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
+        g_phase2_resource_end_phys_addr = resource_end_phys_addr;
+
         const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_applet_end_phys_addr);
 
         /* Insert a physical region for the kernel page table heap region */
@@ -472,7 +542,7 @@ namespace ams::kern::init {
                     cur_size     += region.GetSize();
                 } else {
                     const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
-                    init_pt.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+                    init_pt.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator, 0);
                     cur_phys_addr = region.GetAddress();
                     cur_size      = region.GetSize();
                 }
@@ -491,7 +561,7 @@ namespace ams::kern::init {
             /* Map the last block, which we may have skipped. */
             if (cur_size != 0) {
                 const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
-                init_pt.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+                init_pt.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator, 0);
             }
         }
 
@@ -510,23 +580,34 @@ namespace ams::kern::init {
         }
 
         /* Setup the initial arguments. */
-        SetupInitialArguments(init_pt, g_initial_page_allocator);
+        SetupInitialArguments();
+
+        /* Set linear difference for Phase2. */
+        g_phase2_linear_region_phys_to_virt_diff = linear_region_phys_to_virt_diff;
+    }
+
+    void InitializeCorePhase2() {
+        /* Create page table object for use during remaining initialization. */
+        KInitialPageTable init_pt;
+
+        /* Unmap the identity mapping. */
+        FinalizeIdentityMapping(init_pt, g_initial_page_allocator, g_phase2_linear_region_phys_to_virt_diff);
 
         /* Finalize the page allocator, we're done allocating at this point. */
         KInitialPageAllocator::State final_init_page_table_state;
         g_initial_page_allocator.GetFinalState(std::addressof(final_init_page_table_state));
         const KPhysicalAddress final_init_page_table_end_address = final_init_page_table_state.end_address;
-        const size_t init_page_table_region_size = GetInteger(final_init_page_table_end_address) - GetInteger(resource_end_phys_addr);
+        const size_t init_page_table_region_size = GetInteger(final_init_page_table_end_address) - GetInteger(g_phase2_resource_end_phys_addr);
 
         /* Insert regions for the initial page table region. */
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr), init_page_table_region_size, KMemoryRegionType_DramKernelInitPt));
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualDramKernelInitPt));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(g_phase2_resource_end_phys_addr), init_page_table_region_size, KMemoryRegionType_DramKernelInitPt));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(g_phase2_resource_end_phys_addr) + g_phase2_linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualDramKernelInitPt));
 
         /* Insert a physical region for the kernel trace buffer */
         if constexpr (IsKTraceEnabled) {
-            const KPhysicalAddress ktrace_buffer_phys_addr = GetInteger(resource_end_phys_addr) + init_page_table_region_size;
+            const KPhysicalAddress ktrace_buffer_phys_addr = GetInteger(g_phase2_resource_end_phys_addr) + init_page_table_region_size;
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr) + linear_region_phys_to_virt_diff, KTraceBufferSize, GetTypeForVirtualLinearMapping(KMemoryRegionType_KernelTraceBuffer)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr) + g_phase2_linear_region_phys_to_virt_diff, KTraceBufferSize, GetTypeForVirtualLinearMapping(KMemoryRegionType_KernelTraceBuffer)));
         }
 
         /* All linear-mapped DRAM regions that we haven't tagged by this point will be allocated to some pool partition. Tag them. */
@@ -538,12 +619,12 @@ namespace ams::kern::init {
         }
 
         /* Set the linear memory offsets, to enable conversion between physical and virtual addresses. */
-        KMemoryLayout::InitializeLinearMemoryAddresses(aligned_linear_phys_start, linear_region_start);
+        KMemoryLayout::InitializeLinearMemoryAddresses(g_phase2_linear_region_phys_to_virt_diff);
 
         /* Set the initial process binary physical address. */
         /* NOTE: Nintendo does this after pool partition setup, but it's a requirement that we do it before */
         /* to retain compatibility with < 5.0.0. */
-        const KPhysicalAddress ini_address = initial_process_binary_layout.address;
+        const KPhysicalAddress ini_address = g_phase2_initial_process_binary_layout.address;
         MESOSPHERE_INIT_ABORT_UNLESS(ini_address != Null<KPhysicalAddress>);
         SetInitialProcessBinaryPhysicalAddress(ini_address);
 
@@ -567,11 +648,11 @@ namespace ams::kern::init {
         KMemoryLayout::InitializeLinearMemoryRegionTrees();
 
         /* Turn on all other cores. */
-        TurnOnAllCores(GetInteger(init_pt.GetPhysicalAddress(reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore))));
+        TurnOnAllCores();
     }
 
-    KPhysicalAddress GetInitArgumentsAddress(s32 core_id) {
-        return g_init_arguments_phys_addr[core_id];
+    KInitArguments *GetInitArguments(s32 core_id) {
+        return g_init_arguments + core_id;
     }
 
     void InitializeDebugRegisters() {

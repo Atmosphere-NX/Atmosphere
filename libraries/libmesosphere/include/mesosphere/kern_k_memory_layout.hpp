@@ -183,10 +183,10 @@ namespace ams::kern {
                 return std::make_tuple(total_size, kernel_size);
             }
 
-            static void InitializeLinearMemoryAddresses(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
+            static void InitializeLinearMemoryAddresses(u64 phys_to_virt_diff) {
                 /* Set static differences. */
-                s_linear_phys_to_virt_diff = GetInteger(linear_virtual_start) - GetInteger(aligned_linear_phys_start);
-                s_linear_virt_to_phys_diff = GetInteger(aligned_linear_phys_start) - GetInteger(linear_virtual_start);
+                s_linear_phys_to_virt_diff =  phys_to_virt_diff;
+                s_linear_virt_to_phys_diff = -phys_to_virt_diff;
             }
 
             static void InitializeLinearMemoryRegionTrees();

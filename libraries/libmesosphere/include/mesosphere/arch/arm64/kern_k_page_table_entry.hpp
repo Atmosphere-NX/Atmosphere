@@ -161,9 +161,12 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE bool IsPrivilegedExecuteNever()         const { return this->GetBits(53, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsContiguous()                     const { return this->GetBits(52, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsGlobal()                         const { return this->GetBits(11, 1) == 0; }
-            constexpr ALWAYS_INLINE AccessFlag GetAccessFlag()              const { return static_cast<AccessFlag>(this->GetBits(10, 1)); }
-            constexpr ALWAYS_INLINE Shareable GetShareable()                const { return static_cast<Shareable>(this->GetBits(8, 2)); }
-            constexpr ALWAYS_INLINE PageAttribute GetPageAttribute()        const { return static_cast<PageAttribute>(this->GetBits(2, 3)); }
+            constexpr ALWAYS_INLINE AccessFlag GetAccessFlag()              const { return static_cast<AccessFlag>(this->SelectBits(10, 1)); }
+            constexpr ALWAYS_INLINE Shareable GetShareable()                const { return static_cast<Shareable>(this->SelectBits(8, 2)); }
+            constexpr ALWAYS_INLINE PageAttribute GetPageAttribute()        const { return static_cast<PageAttribute>(this->SelectBits(2, 3)); }
+            constexpr ALWAYS_INLINE int GetAccessFlagInteger()              const { return static_cast<int>(this->GetBits(10, 1)); }
+            constexpr ALWAYS_INLINE int GetShareableInteger()              const { return static_cast<int>(this->GetBits(8, 2)); }
+            constexpr ALWAYS_INLINE int GetPageAttributeInteger()           const { return static_cast<int>(this->GetBits(2, 3)); }
             constexpr ALWAYS_INLINE bool IsReadOnly()                       const { return this->GetBits(7, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsUserAccessible()                 const { return this->GetBits(6, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsNonSecure()                      const { return this->GetBits(5, 1) != 0; }
