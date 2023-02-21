@@ -243,7 +243,7 @@ namespace ams::kern {
             if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == m_core_id)) {
                 m_state.prev_thread = cur_thread;
             } else {
-                m_state.prev_thread =nullptr;
+                m_state.prev_thread = nullptr;
             }
         }
 

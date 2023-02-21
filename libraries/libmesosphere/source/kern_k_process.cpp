@@ -817,8 +817,8 @@ namespace ams::kern {
             m_exception_thread = nullptr;
 
             /* Remove waiter thread. */
-            s32 num_waiters;
-            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
+            bool has_waiters;
+            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(has_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
                 next->EndWait(ResultSuccess());
             }
 
