@@ -140,7 +140,7 @@ namespace ams::kern::init {
     }
 
     size_t CalculateSlabHeapGapSize() {
-        constexpr size_t KernelSlabHeapGapSize = 2_MB - 320_KB;
+        constexpr size_t KernelSlabHeapGapSize = 2_MB - 356_KB;
         static_assert(KernelSlabHeapGapSize <= KernelSlabHeapGapsSizeMax);
         return KernelSlabHeapGapSize;
     }
