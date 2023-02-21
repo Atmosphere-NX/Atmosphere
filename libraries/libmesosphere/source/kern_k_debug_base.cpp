@@ -219,12 +219,21 @@ namespace ams::kern {
             const s32 core_id = GetCurrentCoreId();
             KThread *thread = process->GetRunningThread(core_id);
 
-            /* Check that the thread's idle count is correct. */
-            R_UNLESS(process->GetRunningThreadIdleCount(core_id) == Kernel::GetScheduler(core_id).GetIdleCount(), svc::ResultNoThread());
-
-            /* Check that the thread is running on the current core. */
-            R_UNLESS(thread != nullptr,                  svc::ResultUnknownThread());
-            R_UNLESS(thread->GetActiveCore() == core_id, svc::ResultUnknownThread());
+            /* We want to check that the thread is actually running. */
+            /* If it is, then the scheduler will have just switched from the thread to the current thread. */
+            /* This implies exactly one switch will have taken place, and the current thread will be on the current core. */
+            const auto &scheduler = Kernel::GetScheduler(core_id);
+            if (!(thread != nullptr && thread->GetActiveCore() == core_id && process->GetRunningThreadSwitchCount(core_id) + 1 == scheduler.GetSwitchCount())) {
+                /* The most recent thread switch was from a thread other than the expected one to the current one. */
+                /* We want to use the appropriate result to inform userland about what thread we switched from. */
+                if (scheduler.GetIdleCount() + 1 == scheduler.GetSwitchCount()) {
+                    /* We switched from the idle thread. */
+                    R_THROW(svc::ResultNoThread());
+                } else {
+                    /* We switched from some other unknown thread. */
+                    R_THROW(svc::ResultUnknownThread());
+                }
+            }
 
             /* Get the thread's exception context. */
             GetExceptionContext(thread)->GetSvcThreadContext(out_context);
