@@ -367,10 +367,14 @@ namespace ams::kern::board::nintendo::nx {
 
     size_t KSystemControl::Init::GetMinimumNonSecureSystemPoolSize() {
         /* Verify that our minimum is at least as large as Nintendo's. */
-        constexpr size_t MinimumSize = ::ams::svc::RequiredNonSecureSystemMemorySize;
-        static_assert(MinimumSize >= 0x2C04000);
+        constexpr size_t MinimumSizeWithFatal = ::ams::svc::RequiredNonSecureSystemMemorySizeWithFatal;
+        static_assert(MinimumSizeWithFatal >= 0x2C04000);
 
-        return MinimumSize;
+        constexpr size_t MinimumSizeWithoutFatal = ::ams::svc::RequiredNonSecureSystemMemorySize;
+        static_assert(MinimumSizeWithoutFatal >= 0x2A00000);
+
+        /* Include fatal in non-seure size on 16.0.0+. */
+        return kern::GetTargetFirmware() >= ams::TargetFirmware_16_0_0 ? MinimumSizeWithFatal : MinimumSizeWithoutFatal;
     }
 
     u8 KSystemControl::Init::GetDebugLogUartPort() {
