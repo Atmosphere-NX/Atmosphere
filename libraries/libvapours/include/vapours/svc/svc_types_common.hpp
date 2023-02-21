@@ -188,6 +188,7 @@ namespace ams::svc {
         InfoType_FreeThreadCount                = 24,
         InfoType_ThreadTickCount                = 25,
         InfoType_IsSvcPermitted                 = 26,
+        InfoType_IoRegionHint                   = 27,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,

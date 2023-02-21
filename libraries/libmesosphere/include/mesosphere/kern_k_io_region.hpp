@@ -75,6 +75,19 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE KPhysicalAddress GetAddress() const { return m_physical_address; }
             constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
+
+            constexpr uintptr_t GetHint() const {
+                /* TODO: Is this architecture specific? */
+                if (m_size >= 2_MB) {
+                    return GetInteger(m_physical_address) & (2_MB - 1);
+                } else if (m_size >= 64_KB) {
+                    return GetInteger(m_physical_address) & (64_KB - 1);
+                } else if (m_size >= 4_KB) {
+                    return GetInteger(m_physical_address) & (4_KB - 1);
+                } else {
+                    return 0;
+                }
+            }
     };
 
 }

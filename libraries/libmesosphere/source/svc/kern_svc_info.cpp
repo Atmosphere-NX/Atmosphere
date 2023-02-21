@@ -297,6 +297,19 @@ namespace ams::kern::svc {
                         *out = GetCurrentProcess().IsPermittedSvc(static_cast<svc::SvcId>(info_subtype));
                     }
                     break;
+                case ams::svc::InfoType_IoRegionHint:
+                    {
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* Get the io region from its handle. */
+                        KScopedAutoObject io_region = GetCurrentProcess().GetHandleTable().GetObject<KIoRegion>(handle);
+                        R_UNLESS(io_region.IsNotNull(), svc::ResultInvalidHandle());
+
+                        /* Get the io region's address hint. */
+                        *out = io_region->GetHint();
+                    }
+                    break;
                 case ams::svc::InfoType_MesosphereMeta:
                     {
                         /* Verify the handle is invalid. */
