@@ -84,7 +84,9 @@ namespace ams::kern {
             KCapabilities               m_capabilities;
             ams::svc::ProgramId         m_program_id;
             u64                         m_process_id;
+            #if defined(MESOSPHERE_ENABLE_PROCESS_CREATION_TIME)
             s64                         m_creation_time;
+            #endif
             KProcessAddress             m_code_address;
             size_t                      m_code_size;
             size_t                      m_main_thread_stack_size;

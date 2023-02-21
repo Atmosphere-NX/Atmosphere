@@ -42,6 +42,11 @@
 #define MESOSPHERE_ENABLE_PANIC_REGISTER_DUMP
 #define MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP
 
+/* NOTE: In 16.0.0, Nintendo deleted the creation time field for KProcess, */
+/* but this may be useful for some debugging applications, and so can be. */
+/* re-enabled by toggling this define. */
+//#define MESOSPHERE_ENABLE_PROCESS_CREATION_TIME
+
 /* NOTE: This enables fast class token storage using a class member. */
 /* This saves a virtual call when doing KAutoObject->DynCast<>(), */
 /* at the cost of storing class tokens inside the class object. */

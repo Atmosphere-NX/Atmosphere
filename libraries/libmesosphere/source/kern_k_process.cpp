@@ -198,7 +198,6 @@ namespace ams::kern {
         /* Set misc fields. */
         m_state                     = State_Created;
         m_main_thread_stack_size    = 0;
-        m_creation_time             = KHardwareTimer::GetTick();
         m_used_kernel_memory_size   = 0;
         m_ideal_core_id             = 0;
         m_flags                     = params.flags;
@@ -208,6 +207,10 @@ namespace ams::kern {
         m_code_size                 = params.code_num_pages * PageSize;
         m_is_application            = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
         m_is_jit_debug              = false;
+
+        #if defined(MESOSPHERE_ENABLE_PROCESS_CREATION_TIME)
+        m_creation_time             = KHardwareTimer::GetTick();
+        #endif
 
         /* Set thread fields. */
         for (size_t i = 0; i < cpu::NumCores; i++) {
