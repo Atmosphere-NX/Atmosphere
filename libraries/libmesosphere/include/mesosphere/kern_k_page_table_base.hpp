@@ -363,7 +363,7 @@ namespace ams::kern {
             Result UnmapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm);
-            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size);
+            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
             Result MapInsecureMemory(KProcessAddress address, size_t size);

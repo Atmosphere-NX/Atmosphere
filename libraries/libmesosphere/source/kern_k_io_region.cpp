@@ -85,7 +85,7 @@ namespace ams::kern {
         KScopedLightLock lk(m_lock);
 
         /* Unmap ourselves. */
-        R_TRY(GetCurrentProcess().GetPageTable().UnmapIoRegion(address, m_physical_address, size));
+        R_TRY(GetCurrentProcess().GetPageTable().UnmapIoRegion(address, m_physical_address, size, m_mapping));
 
         /* Remove ourselves from the current process. */
         GetCurrentProcess().RemoveIoRegion(this);
