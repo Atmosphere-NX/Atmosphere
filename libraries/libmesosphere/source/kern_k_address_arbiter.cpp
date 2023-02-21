@@ -24,7 +24,9 @@ namespace ams::kern {
         }
 
         ALWAYS_INLINE bool DecrementIfLessThan(s32 *out, KProcessAddress address, s32 value) {
-            KScopedInterruptDisable di;
+            /* NOTE: If scheduler lock is not held here, interrupt disable is required. */
+            /* KScopedInterruptDisable di; */
+            MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
             if (!cpu::CanAccessAtomic(address)) {
                 return false;
@@ -34,7 +36,9 @@ namespace ams::kern {
         }
 
         ALWAYS_INLINE bool UpdateIfEqual(s32 *out, KProcessAddress address, s32 value, s32 new_value) {
-            KScopedInterruptDisable di;
+            /* NOTE: If scheduler lock is not held here, interrupt disable is required. */
+            /* KScopedInterruptDisable di; */
+            MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
             if (!cpu::CanAccessAtomic(address)) {
                 return false;

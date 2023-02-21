@@ -158,7 +158,8 @@ namespace ams::kern {
         u32 prev_tag;
         bool can_access;
         {
-            KScopedInterruptDisable di;
+            /* NOTE: If scheduler lock is not held here, interrupt disable is required. */
+            /* KScopedInterruptDisable di; */
 
             can_access = cpu::CanAccessAtomic(address);
             if (AMS_LIKELY(can_access)) {
