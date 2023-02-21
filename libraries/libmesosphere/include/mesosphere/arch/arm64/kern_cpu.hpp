@@ -36,6 +36,9 @@ namespace ams::kern::arch::arm64::cpu {
     #error "Unknown Board for cpu::NumCores"
 #endif
 
+    constexpr inline u32 El0Aarch64PsrMask = 0xF0000000;
+    constexpr inline u32 El0Aarch32PsrMask = 0xFE0FFE20;
+
     /* Initialization. */
     NOINLINE void InitializeInterruptThreads(s32 core_id);
 

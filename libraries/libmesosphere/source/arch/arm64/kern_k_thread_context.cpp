@@ -40,8 +40,6 @@ namespace ams::kern::arch::arm64 {
 
     namespace {
 
-        constexpr inline u32 El0PsrMask = 0xFF0FFE20;
-
         ALWAYS_INLINE bool IsFpuEnabled() {
             return cpu::ArchitecturalFeatureAccessControlRegisterAccessor().IsFpEnabled();
         }
@@ -191,7 +189,7 @@ namespace ams::kern::arch::arm64 {
             out->lr     = e_ctx->x[30];
             out->sp     = e_ctx->sp;
             out->pc     = e_ctx->pc;
-            out->pstate = e_ctx->psr & El0PsrMask;
+            out->pstate = e_ctx->psr & cpu::El0Aarch64PsrMask;
 
             /* Get the thread's general purpose registers. */
             if (thread->IsCallingSvc()) {
@@ -227,7 +225,7 @@ namespace ams::kern::arch::arm64 {
         } else {
             /* Set special registers. */
             out->pc     = static_cast<u32>(e_ctx->pc);
-            out->pstate = e_ctx->psr & El0PsrMask;
+            out->pstate = e_ctx->psr & cpu::El0Aarch32PsrMask;
 
             /* Get the thread's general purpose registers. */
             for (size_t i = 0; i < 15; ++i) {
