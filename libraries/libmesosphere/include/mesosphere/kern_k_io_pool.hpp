@@ -24,10 +24,10 @@ namespace ams::kern {
     class KIoPool final : public KAutoObjectWithSlabHeapAndContainer<KIoPool, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KIoPool, KAutoObject);
         private:
-            using IoRegionList = util::IntrusiveListMemberTraits<&KIoRegion::m_pool_list_node>::ListType;
+            using IoRegionTree = util::IntrusiveRedBlackTreeBaseTraits<KIoRegion>::TreeType<KIoRegion>;
         private:
             KLightLock m_lock;
-            IoRegionList m_io_region_list;
+            IoRegionTree m_io_region_tree;
             ams::svc::IoPoolType m_pool_type;
             bool m_is_initialized;
         public:
