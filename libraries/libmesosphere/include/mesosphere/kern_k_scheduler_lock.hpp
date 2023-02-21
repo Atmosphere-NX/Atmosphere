@@ -49,9 +49,9 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 if (this->IsLockedByCurrentThread()) {
-                    /* If we already own the lock, we can just increment the count. */
+                    /* If we already own the lock, the lock count should be > 0. */
+                    /* For debug, ensure this is true. */
                     MESOSPHERE_ASSERT(m_lock_count > 0);
-                    m_lock_count++;
                 } else {
                     /* Otherwise, we want to disable scheduling and acquire the spinlock. */
                     SchedulerType::DisableScheduling();
@@ -61,10 +61,12 @@ namespace ams::kern {
                     MESOSPHERE_ASSERT(m_lock_count == 0);
                     MESOSPHERE_ASSERT(m_owner_thread == nullptr);
 
-                    /* Increment count, take ownership. */
-                    m_lock_count = 1;
+                    /* Take ownership of the lock. */
                     m_owner_thread = GetCurrentThreadPointer();
                 }
+
+                /* Increment the lock count. */
+                m_lock_count++;
             }
 
             MESOSPHERE_ALWAYS_INLINE_IF_RELEASE void Unlock() {
