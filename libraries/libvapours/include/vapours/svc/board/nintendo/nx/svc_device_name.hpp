@@ -64,8 +64,9 @@ namespace ams::svc::board::nintendo::nx {
 
     namespace impl {
 
-        constexpr inline const size_t RequiredNonSecureSystemMemorySizeVi         = 0x2400 * 4_KB;
-        constexpr inline const size_t RequiredNonSecureSystemMemorySizeNvservices = 0x784  * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeVi         = 0x2280 * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeViFatal    = 0x200  * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeNvservices = 0x704  * 4_KB;
         constexpr inline const size_t RequiredNonSecureSystemMemorySizeMisc       = 0x80   * 4_KB;
 
     }
@@ -73,5 +74,7 @@ namespace ams::svc::board::nintendo::nx {
     constexpr inline const size_t RequiredNonSecureSystemMemorySize = impl::RequiredNonSecureSystemMemorySizeVi         +
                                                                       impl::RequiredNonSecureSystemMemorySizeNvservices +
                                                                       impl::RequiredNonSecureSystemMemorySizeMisc;
+
+    constexpr inline const size_t RequiredNonSecureSystemMemorySizeWithFatal = RequiredNonSecureSystemMemorySize + impl::RequiredNonSecureSystemMemorySizeViFatal;
 
 }
