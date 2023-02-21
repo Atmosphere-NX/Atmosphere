@@ -174,6 +174,10 @@
     HANDLER(ServiceProfileInfo,                  133) \
     HANDLER(BluetoothAudioInfo,                  134) \
     HANDLER(BluetoothPairingCountInfo,           135) \
+    HANDLER(FsProxyErrorInfo2,                   136) \
+    HANDLER(BuiltInWirelessOUIInfo,              137) \
+    HANDLER(WirelessAPOUIInfo,                   138) \
+    HANDLER(EthernetAdapterOUIInfo,              139) \
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,   Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -840,4 +844,10 @@
     HANDLER(FatFsBisUserUniqueDirectoryEntryPeakOpenCount,            661, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsSdCardUniqueFileEntryPeakOpenCount,                  662, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsSdCardUniqueDirectoryEntryPeakOpenCount,             663, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(ServerErrorIsRetryable,                                   664, ErrorInfo,                           FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(FsDeepRetryStartCount,                                    665, FsProxyErrorInfo2,                   FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(FsUnrecoverableByGameCardAccessFailedCount,               666, FsProxyErrorInfo2,                   FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(BuiltInWirelessOUI,                                       667, BuiltInWirelessOUIInfo,              FieldType_String,     FieldFlag_None   ) \
+    HANDLER(WirelessAPOUI,                                            668, WirelessAPOUIInfo,                   FieldType_String,     FieldFlag_None   ) \
+    HANDLER(EthernetAdapterOUI,                                       669, EthernetAdapterOUIInfo,              FieldType_String,     FieldFlag_None   ) \
 

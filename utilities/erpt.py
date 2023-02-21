@@ -227,6 +227,10 @@ CATEGORIES = {
     133 : 'ServiceProfileInfo',
     134 : 'BluetoothAudioInfo',
     135 : 'BluetoothPairingCountInfo',
+    136 : 'FsProxyErrorInfo2',
+    137 : 'BuiltInWirelessOUIInfo',
+    138 : 'WirelessAPOUIInfo',
+    139 : 'EthernetAdapterOUIInfo',
 }
 
 FIELD_TYPES = {
