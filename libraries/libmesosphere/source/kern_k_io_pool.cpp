@@ -47,7 +47,7 @@ namespace ams::kern {
 
             /* Check if the address/size falls within any allowable extents. */
             for (const auto &extents : g_io_region_extents) {
-                if (extents.address <= address && address + size - 1 <= extents.address + extents.size - 1) {
+                if (extents.size != 0 && extents.address <= address && address + size - 1 <= extents.address + extents.size - 1) {
                     return true;
                 }
             }
@@ -106,12 +106,23 @@ namespace ams::kern {
         KScopedLightLock lk(m_lock);
 
         /* Check that the desired range isn't already in our pool. */
-        for (const auto &region : m_io_region_list) {
-            R_UNLESS(!region.Overlaps(new_region->GetAddress(), new_region->GetSize()), svc::ResultBusy());
+        {
+            /* Get the lowest region with address >= the new region that's already in our tree. */
+            auto lowest_after = m_io_region_tree.nfind_key(new_region->GetAddress());
+            if (lowest_after != m_io_region_tree.end()) {
+                R_UNLESS(!lowest_after->Overlaps(new_region->GetAddress(), new_region->GetSize()), svc::ResultBusy());
+            }
+
+            /* There is no region with address >= the new region already in our tree, but we also need to check */
+            /* for a region with address < the new region already in our tree. */
+            if (lowest_after != m_io_region_tree.begin()) {
+                auto highest_before = --lowest_after;
+                R_UNLESS(!highest_before->Overlaps(new_region->GetAddress(), new_region->GetSize()), svc::ResultBusy());
+            }
         }
 
         /* Add the region to our pool. */
-        m_io_region_list.push_back(*new_region);
+        m_io_region_tree.insert(*new_region);
 
         R_SUCCEED();
     }
@@ -122,8 +133,8 @@ namespace ams::kern {
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
 
-        /* Remove the region from our list. */
-        m_io_region_list.erase(m_io_region_list.iterator_to(*region));
+        /* Remove the region from our tree. */
+        m_io_region_tree.erase(m_io_region_tree.iterator_to(*region));
     }
 
 }
