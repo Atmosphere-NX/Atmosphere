@@ -23,7 +23,7 @@
 #define THREAD_KERNEL_STACK_TOP 0x280
 
 /* ams::kern::KThread::StackParameters, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_thread.hpp */
-#define THREAD_STACK_PARAMETERS_SIZE                      0x130
+#define THREAD_STACK_PARAMETERS_SIZE                      0x140
 #define THREAD_STACK_PARAMETERS_SVC_PERMISSION            0x00
 #define THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS 0x18
 #define THREAD_STACK_PARAMETERS_CUR_THREAD                0x20
@@ -34,7 +34,8 @@
 #define THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS           0x2D
 #define THREAD_STACK_PARAMETERS_IS_PINNED                 0x2E
 #define THREAD_STACK_PARAMETERS_RESERVED_2F               0x2F
-#define THREAD_STACK_PARAMETERS_THREAD_CONTEXT            0x30
+#define THREAD_STACK_PARAMETERS_RESERVED_30               0x30
+#define THREAD_STACK_PARAMETERS_THREAD_CONTEXT            0x40
 
 #define THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC                    (0)
 #define THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_EXCEPTION_HANDLER           (1)
