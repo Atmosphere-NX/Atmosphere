@@ -29,8 +29,6 @@ namespace ams::kern::init {
         u64 sp;
         u64 entrypoint;
         u64 argument;
-        u64 setup_function;
-        u64 exception_stack;
     };
     static_assert(alignof(KInitArguments) == util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE));
     static_assert(sizeof(KInitArguments) == std::max(INIT_ARGUMENTS_SIZE, util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE)));
@@ -45,7 +43,5 @@ namespace ams::kern::init {
     static_assert(AMS_OFFSETOF(KInitArguments, sp)              == INIT_ARGUMENTS_SP);
     static_assert(AMS_OFFSETOF(KInitArguments, entrypoint)      == INIT_ARGUMENTS_ENTRYPOINT);
     static_assert(AMS_OFFSETOF(KInitArguments, argument)        == INIT_ARGUMENTS_ARGUMENT);
-    static_assert(AMS_OFFSETOF(KInitArguments, setup_function)  == INIT_ARGUMENTS_SETUP_FUNCTION);
-    static_assert(AMS_OFFSETOF(KInitArguments, exception_stack) == INIT_ARGUMENTS_EXCEPTION_STACK);
 
 }

@@ -18,6 +18,12 @@
 #include "kern_secure_monitor.hpp"
 #include "kern_lps_driver.hpp"
 
+namespace ams::kern::init {
+
+    void StartOtherCore(const ams::kern::init::KInitArguments *init_args);
+
+}
+
 namespace ams::kern::board::nintendo::nx {
 
     namespace {
@@ -67,14 +73,9 @@ namespace ams::kern::board::nintendo::nx {
         constinit KLightLock g_request_lock;
         constinit KLightLock g_cv_lock;
         constinit KLightConditionVariable g_cv{util::ConstantInitialize};
-        constinit KPhysicalAddress g_sleep_buffer_phys_addrs[cpu::NumCores];
         alignas(1_KB) constinit u64 g_sleep_buffers[cpu::NumCores][1_KB / sizeof(u64)];
+        constinit ams::kern::init::KInitArguments g_sleep_init_arguments[cpu::NumCores];
         constinit SavedSystemRegisters g_sleep_system_registers[cpu::NumCores] = {};
-
-        void PowerOnCpu(int core_id, KPhysicalAddress entry_phys_addr, u64 context_id) {
-            /* Request the secure monitor power on the core. */
-            ::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor, true>(cpu::MultiprocessorAffinityRegisterAccessor().GetCpuOnArgument() | core_id, GetInteger(entry_phys_addr), context_id);
-        }
 
         void WaitOtherCpuPowerOff() {
             constexpr u64 PmcPhysicalAddress = 0x7000E400;
@@ -473,18 +474,20 @@ namespace ams::kern::board::nintendo::nx {
         }
     }
 
-    void KSleepManager::ProcessRequests(uintptr_t buffer) {
+    void KSleepManager::ProcessRequests(uintptr_t sleep_buffer) {
         const auto target_fw = GetTargetFirmware();
         const s32 core_id    = GetCurrentCoreId();
-        KPhysicalAddress resume_entry_phys_addr = Null<KPhysicalAddress>;
+
+        ams::kern::init::KInitArguments * const init_args = g_sleep_init_arguments + core_id;
+        KPhysicalAddress start_core_phys_addr = Null<KPhysicalAddress>;
+        KPhysicalAddress init_args_phys_addr = Null<KPhysicalAddress>;
 
         /* Get the physical addresses we'll need. */
         {
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(std::addressof(g_sleep_buffer_phys_addrs[core_id]), KProcessAddress(buffer)));
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(std::addressof(resume_entry_phys_addr), KProcessAddress(&::ams::kern::board::nintendo::nx::KSleepManager::ResumeEntry)));
-
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(std::addressof(start_core_phys_addr), KProcessAddress(&::ams::kern::init::StartOtherCore)));
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(std::addressof(init_args_phys_addr), KProcessAddress(init_args)));
         }
-        const KPhysicalAddress sleep_buffer_phys_addr = g_sleep_buffer_phys_addrs[core_id];
+
         const u64 target_core_mask = (1ul << core_id);
 
         const bool use_legacy_lps_driver = target_fw < TargetFirmware_2_0_0;
@@ -547,15 +550,29 @@ namespace ams::kern::board::nintendo::nx {
                 /* Save the interrupt manager's state. */
                 Kernel::GetInterruptManager().Save(core_id);
 
+                /* Setup the initial arguments. */
+                {
+                    init_args->ttbr0      = cpu::GetTtbr0El1();
+                    init_args->ttbr1      = cpu::GetTtbr1El1();
+                    init_args->tcr        = cpu::GetTcrEl1();
+                    init_args->mair       = cpu::GetMairEl1();
+                    init_args->cpuactlr   = cpu::GetCpuActlrEl1();
+                    init_args->cpuectlr   = cpu::GetCpuEctlrEl1();
+                    init_args->sctlr      = cpu::GetSctlrEl1();
+                    init_args->sp         = 0;
+                    init_args->entrypoint = reinterpret_cast<uintptr_t>(::ams::kern::board::nintendo::nx::KSleepManager::ResumeEntry);
+                    init_args->argument   = sleep_buffer;
+                }
+
                 /* Ensure that all cores get to this point before continuing. */
                 cpu::SynchronizeAllCores();
 
                 /* Log that the core is going to sleep. */
-                MESOSPHERE_LOG("Core[%d]: Going to sleep, buffer = %010lx\n", core_id, GetInteger(sleep_buffer_phys_addr));
+                MESOSPHERE_LOG("Core[%d]: Going to sleep, buffer = %010lx\n", core_id, sleep_buffer);
 
                 /* If we're on a core other than zero, we can just invoke the sleep handler. */
                 if (core_id != 0) {
-                    CpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                    CpuSleepHandler(sleep_buffer, GetInteger(start_core_phys_addr), GetInteger(init_args_phys_addr));
                 } else {
                     /* Wait for all other cores to be powered off. */
                     WaitOtherCpuPowerOff();
@@ -574,9 +591,9 @@ namespace ams::kern::board::nintendo::nx {
                     /* Invoke the sleep handler. */
                     if (!use_legacy_lps_driver) {
                         /* When not using the legacy driver, invoke directly. */
-                        CpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                        CpuSleepHandler(sleep_buffer, GetInteger(start_core_phys_addr), GetInteger(init_args_phys_addr));
                     } else {
-                        lps::InvokeCpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                        lps::InvokeCpuSleepHandler(sleep_buffer, GetInteger(start_core_phys_addr), GetInteger(init_args_phys_addr));
                     }
 
                     /* Restore the debug log state. */
@@ -586,8 +603,10 @@ namespace ams::kern::board::nintendo::nx {
                     MESOSPHERE_LOG("Exiting SC7\n");
 
                     /* Wake up the other cores. */
+                    cpu::MultiprocessorAffinityRegisterAccessor mpidr;
+                    const auto arg = mpidr.GetCpuOnArgument();
                     for (s32 i = 1; i < static_cast<s32>(cpu::NumCores); ++i) {
-                        PowerOnCpu(i, resume_entry_phys_addr, GetInteger(g_sleep_buffer_phys_addrs[i]));
+                        KSystemControl::Init::TurnOnCpu(arg | i, g_sleep_init_arguments + i);
                     }
                 }
 

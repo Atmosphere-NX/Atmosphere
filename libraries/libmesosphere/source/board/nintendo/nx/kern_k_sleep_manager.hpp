@@ -22,14 +22,12 @@ namespace ams::kern::board::nintendo::nx {
         private:
             static void ResumeEntry(uintptr_t arg);
 
-            static void InvalidateDataCacheForResumeEntry(uintptr_t level);
-
             static void ProcessRequests(uintptr_t buffer);
         public:
             static void Initialize();
             static void SleepSystem();
         public:
-            static void CpuSleepHandler(uintptr_t arg, uintptr_t entry);
+            static void CpuSleepHandler(uintptr_t arg, uintptr_t entry, uintptr_t entry_args);
     };
 
 

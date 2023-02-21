@@ -62,20 +62,20 @@ namespace ams::kern::init::loader {
             }
         }
 
-        void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::PageAllocator &allocator) {
+        void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageAllocator &allocator) {
             /* Map in an RWX identity mapping for the kernel. */
             constexpr PageTableEntry KernelRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            init_pt.Map(base_address, kernel_size, base_address, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(base_address, kernel_size, base_address, KernelRWXIdentityAttribute, allocator, 0);
 
             /* Map in an RWX identity mapping for ourselves. */
             constexpr PageTableEntry KernelLdrRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
             const uintptr_t kernel_ldr_base = util::AlignDown(reinterpret_cast<uintptr_t>(__start__), PageSize);
             const uintptr_t kernel_ldr_size = util::AlignUp(reinterpret_cast<uintptr_t>(__end__), PageSize) - kernel_ldr_base;
-            init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator, 0);
 
             /* Map in the page table region as RW- for ourselves. */
             constexpr PageTableEntry PageTableRegionRWAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            init_pt.Map(page_table_region, page_table_region_size, page_table_region, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(page_table_region, page_table_region_size, page_table_region, KernelRWXIdentityAttribute, allocator, 0);
 
             /* Place the L1 table addresses in the relevant system registers. */
             cpu::SetTtbr0El1(init_pt.GetTtbr0L1TableAddress());
@@ -194,14 +194,14 @@ namespace ams::kern::init::loader {
 
         /* Map kernel .text as R-X. */
         constexpr PageTableEntry KernelTextAttribute(PageTableEntry::Permission_KernelRX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-        init_pt.Map(virtual_base_address + rx_offset, rx_end_offset - rx_offset, base_address + rx_offset, KernelTextAttribute, g_initial_page_allocator);
+        init_pt.Map(virtual_base_address + rx_offset, rx_end_offset - rx_offset, base_address + rx_offset, KernelTextAttribute, g_initial_page_allocator, 0);
 
         /* Map kernel .rodata and .rwdata as RW-. */
         /* Note that we will later reprotect .rodata as R-- */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-        init_pt.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator);
-        init_pt.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
+        init_pt.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator, 0);
+        init_pt.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator, 0);
 
         /* Physically randomize the kernel region. */
         /* NOTE: Nintendo does this only on 10.0.0+ */

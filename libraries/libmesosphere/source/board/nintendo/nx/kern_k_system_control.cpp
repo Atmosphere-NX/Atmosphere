@@ -382,7 +382,7 @@ namespace ams::kern::board::nintendo::nx {
         return static_cast<u8>((value >> 32) & 0xFF);
     }
 
-    void KSystemControl::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
+    void KSystemControl::Init::CpuOnImpl(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
         MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor, false>(core_id, entrypoint, arg)) == 0);
     }
 

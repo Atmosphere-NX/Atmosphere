@@ -189,6 +189,14 @@ namespace ams::kern::arch::arm64::cpu {
         return (par >> (BITSIZEOF(par) - BITSIZEOF(u8))) == 0xFF;
     }
 
+    ALWAYS_INLINE void StoreDataCacheForInitArguments(const void *addr, size_t size) {
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        for (size_t stored = 0; stored < size; stored += cpu::DataCacheLineSize) {
+            __asm__ __volatile__("dc cvac, %[cur]" :: [cur]"r"(start + stored) : "memory");
+        }
+        DataSynchronizationBarrier();
+    }
+
     /* Synchronization helpers. */
     NOINLINE void SynchronizeAllCores();
     void SynchronizeCores(u64 core_mask);
