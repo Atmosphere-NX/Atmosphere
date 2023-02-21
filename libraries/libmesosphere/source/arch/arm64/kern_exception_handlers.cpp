@@ -25,8 +25,6 @@ namespace ams::kern::arch::arm64 {
 
     namespace {
 
-        constexpr inline u32 El0PsrMask = 0xFF0FFE20;
-
         enum EsrEc : u32 {
             EsrEc_Unknown                   = 0b000000,
             EsrEc_WaitForInterruptOrEvent   = 0b000001,
@@ -134,7 +132,7 @@ namespace ams::kern::arch::arm64 {
                         info->sp     = context->sp;
                         info->lr     = context->x[30];
                         info->pc     = context->pc;
-                        info->pstate = (context->psr & El0PsrMask);
+                        info->pstate = (context->psr & cpu::El0Aarch64PsrMask);
                         info->afsr0  = afsr0;
                         info->afsr1  = afsr1;
                         info->esr    = esr;
@@ -151,7 +149,7 @@ namespace ams::kern::arch::arm64 {
                         info->pc     = context->pc;
                         info->flags  = 1;
 
-                        info->status_64.pstate = (context->psr & El0PsrMask);
+                        info->status_64.pstate = (context->psr & cpu::El0Aarch32PsrMask);
                         info->status_64.afsr0  = afsr0;
                         info->status_64.afsr1  = afsr1;
                         info->status_64.esr    = esr;
@@ -399,7 +397,7 @@ namespace ams::kern::arch::arm64 {
                 e_ctx->x[30] = info.info64.lr;
                 e_ctx->sp    = info.info64.sp;
                 e_ctx->pc    = info.info64.pc;
-                e_ctx->psr   = (info.info64.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask);
+                e_ctx->psr   = (info.info64.pstate & cpu::El0Aarch64PsrMask) | (e_ctx->psr & ~cpu::El0Aarch64PsrMask);
             } else {
                 for (size_t i = 0; i < util::size(info.info32.r); ++i) {
                     e_ctx->x[i] = info.info32.r[i];
@@ -407,7 +405,7 @@ namespace ams::kern::arch::arm64 {
                 e_ctx->x[14] = info.info32.lr;
                 e_ctx->x[13] = info.info32.sp;
                 e_ctx->pc    = info.info32.pc;
-                e_ctx->psr   = (info.info32.status_64.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask);
+                e_ctx->psr   = (info.info32.status_64.pstate & cpu::El0Aarch32PsrMask) | (e_ctx->psr & ~cpu::El0Aarch32PsrMask);
             }
 
             /* Note that PC was adjusted. */
