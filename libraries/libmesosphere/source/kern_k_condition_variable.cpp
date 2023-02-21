@@ -77,14 +77,14 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Remove waiter thread. */
-            s32 num_waiters;
-            KThread * const next_owner_thread = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), addr);
+            bool has_waiters;
+            KThread * const next_owner_thread = owner_thread->RemoveWaiterByKey(std::addressof(has_waiters), addr);
 
             /* Determine the next tag. */
             u32 next_value = 0;
             if (next_owner_thread != nullptr) {
                 next_value = next_owner_thread->GetAddressKeyValue();
-                if (num_waiters > 1) {
+                if (has_waiters) {
                     next_value |= ams::svc::HandleWaitMask;
                 }
             }
@@ -200,9 +200,11 @@ namespace ams::kern {
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 
-                this->SignalImpl(target_thread);
                 it = m_tree.erase(it);
                 target_thread->ClearConditionVariable();
+
+                this->SignalImpl(target_thread);
+
                 ++num_waiters;
             }
 
@@ -232,15 +234,15 @@ namespace ams::kern {
             /* Update the value and process for the next owner. */
             {
                 /* Remove waiter thread. */
-                s32 num_waiters;
-                KThread *next_owner_thread = cur_thread->RemoveWaiterByKey(std::addressof(num_waiters), GetInteger(addr));
+                bool has_waiters;
+                KThread *next_owner_thread = cur_thread->RemoveWaiterByKey(std::addressof(has_waiters), GetInteger(addr));
 
                 /* Update for the next owner thread. */
                 u32 next_value = 0;
                 if (next_owner_thread != nullptr) {
                     /* Get the next tag value. */
                     next_value = next_owner_thread->GetAddressKeyValue();
-                    if (num_waiters > 1) {
+                    if (has_waiters) {
                         next_value |= ams::svc::HandleWaitMask;
                     }
 

@@ -19,6 +19,7 @@ namespace ams::kern::init {
 
     /* For macro convenience. */
     using KSessionRequestMappings = KSessionRequest::SessionMappings::DynamicMappings;
+    using KThreadLockInfo         = KThread::LockWithPriorityInheritanceInfo;
 
     #define SLAB_COUNT(CLASS) g_slab_resource_counts.num_##CLASS
 
@@ -43,8 +44,9 @@ namespace ams::kern::init {
         HANDLER(KDebug,                  (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
         HANDLER(KIoPool,                 (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
         HANDLER(KIoRegion,               (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__) \
+        HANDLER(KSessionRequestMappings, (SLAB_COUNT(KSessionRequestMappings)),                                     ## __VA_ARGS__) \
         HANDLER(KSecureSystemResource,   (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
-        HANDLER(KSessionRequestMappings, (SLAB_COUNT(KSessionRequestMappings)),                                     ## __VA_ARGS__)
+        HANDLER(KThreadLockInfo,         (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__)
 
     namespace {
 
