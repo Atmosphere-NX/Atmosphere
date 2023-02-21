@@ -1242,7 +1242,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         if (m_is_jit_debug) {
-            return KDebugBase::CreateDebugEvent(m_jit_debug_event_type, m_jit_debug_exception_type, m_jit_debug_params[0], m_jit_debug_params[1], m_jit_debug_params[2], m_jit_debug_params[3], m_jit_debug_thread_id);
+            const uintptr_t params[5] = { m_jit_debug_exception_type, m_jit_debug_params[0], m_jit_debug_params[1], m_jit_debug_params[2], m_jit_debug_params[3] };
+            return KDebugBase::CreateDebugEvent(m_jit_debug_event_type, m_jit_debug_thread_id, params, util::size(params));
         } else {
             return nullptr;
         }

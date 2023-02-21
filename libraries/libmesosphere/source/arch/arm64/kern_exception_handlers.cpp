@@ -229,73 +229,71 @@ namespace ams::kern::arch::arm64 {
 
             {
                 /* Collect additional information based on the ec. */
-                ams::svc::DebugException exception;
-                uintptr_t param2 = 0;
-                uintptr_t param3 = 0;
+                uintptr_t params[3] = {};
                 switch (ec) {
                      case EsrEc_Unknown:
                      case EsrEc_IllegalExecution:
                      case EsrEc_BkptInstruction:
                      case EsrEc_BrkInstruction:
                          {
-                             exception = ams::svc::DebugException_UndefinedInstruction;
-                             param2 = far;
-                             param3 = data;
+                             params[0] = ams::svc::DebugException_UndefinedInstruction;
+                             params[1] = far;
+                             params[2] = data;
                          }
                          break;
                      case EsrEc_PcAlignmentFault:
                      case EsrEc_SpAlignmentFault:
                          {
-                             exception = ams::svc::DebugException_AlignmentFault;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_AlignmentFault;
+                             params[1]    = far;
                          }
                          break;
                      case EsrEc_Svc32:
                      case EsrEc_Svc64:
                          {
-                             exception = ams::svc::DebugException_UndefinedSystemCall;
-                             param2 = far;
-                             param3 = (esr & 0xFF);
+                             params[0] = ams::svc::DebugException_UndefinedSystemCall;
+                             params[1] = far;
+                             params[2] = (esr & 0xFF);
                          }
                          break;
                      case EsrEc_BreakPointEl0:
                      case EsrEc_SoftwareStepEl0:
                          {
-                             exception = ams::svc::DebugException_BreakPoint;
-                             param2    = far;
-                             param3    = ams::svc::BreakPointType_HardwareInstruction;
+                             params[0] = ams::svc::DebugException_BreakPoint;
+                             params[1] = far;
+                             params[2] = ams::svc::BreakPointType_HardwareInstruction;
                          }
                          break;
                      case EsrEc_WatchPointEl0:
                          {
-                             exception = ams::svc::DebugException_BreakPoint;
-                             param2    = far;
-                             param3    = ams::svc::BreakPointType_HardwareData;
+                             params[0] = ams::svc::DebugException_BreakPoint;
+                             params[1] = far;
+                             params[2] = ams::svc::BreakPointType_HardwareData;
                          }
                          break;
                      case EsrEc_SErrorInterrupt:
                          {
-                             exception = ams::svc::DebugException_MemorySystemError;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_MemorySystemError;
+                             params[1] = far;
                          }
                          break;
                      case EsrEc_InstructionAbortEl0:
                          {
-                             exception = ams::svc::DebugException_InstructionAbort;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_InstructionAbort;
+                             params[1] = far;
                          }
                          break;
                      case EsrEc_DataAbortEl0:
                      default:
                          {
-                             exception = ams::svc::DebugException_DataAbort;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_DataAbort;
+                             params[1] = far;
                          }
                          break;
                 }
 
                 /* Process the debug event. */
-                Result result = KDebug::OnDebugEvent(ams::svc::DebugEvent_Exception, exception, param2, param3);
+                Result result = KDebug::OnDebugEvent(ams::svc::DebugEvent_Exception, params, util::size(params));
 
                 /* If we should stop processing the exception, do so. */
                 if (svc::ResultStopProcessingException::Includes(result)) {
@@ -340,7 +338,7 @@ namespace ams::kern::arch::arm64 {
                 /* If the SVC is handled, handle it. */
                 if (!svc::ResultNotHandled::Includes(result)) {
                     /* If we successfully enter jit debug, stop processing the exception. */
-                    if (cur_process.EnterJitDebug(ams::svc::DebugEvent_Exception, exception, param2, param3)) {
+                    if (cur_process.EnterJitDebug(ams::svc::DebugEvent_Exception, static_cast<ams::svc::DebugException>(params[0]), params[1], params[2])) {
                         return;
                     }
                 }
@@ -420,58 +418,56 @@ namespace ams::kern::arch::arm64 {
                 GetCurrentThread().RestoreDebugParams(std::addressof(far), std::addressof(esr), std::addressof(data));
 
                 /* Collect additional information based on the ec. */
-                ams::svc::DebugException exception;
-                uintptr_t param2 = 0;
-                uintptr_t param3 = 0;
+                uintptr_t params[3] = {};
                 switch ((esr >> 26) & 0x3F) {
                      case EsrEc_Unknown:
                      case EsrEc_IllegalExecution:
                      case EsrEc_BkptInstruction:
                      case EsrEc_BrkInstruction:
                          {
-                             exception = ams::svc::DebugException_UndefinedInstruction;
-                             param2    = far;
-                             param3    = data;
+                             params[0] = ams::svc::DebugException_UndefinedInstruction;
+                             params[1] = far;
+                             params[2] = data;
                          }
                          break;
                      case EsrEc_PcAlignmentFault:
                      case EsrEc_SpAlignmentFault:
                          {
-                             exception = ams::svc::DebugException_AlignmentFault;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_AlignmentFault;
+                             params[1] = far;
                          }
                          break;
                      case EsrEc_Svc32:
                      case EsrEc_Svc64:
                          {
-                             exception = ams::svc::DebugException_UndefinedSystemCall;
-                             param2    = far;
-                             param3    = (esr & 0xFF);
+                             params[0] = ams::svc::DebugException_UndefinedSystemCall;
+                             params[1] = far;
+                             params[2] = (esr & 0xFF);
                          }
                          break;
                      case EsrEc_SErrorInterrupt:
                          {
-                             exception = ams::svc::DebugException_MemorySystemError;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_MemorySystemError;
+                             params[1] = far;
                          }
                          break;
                      case EsrEc_InstructionAbortEl0:
                          {
-                             exception = ams::svc::DebugException_InstructionAbort;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_InstructionAbort;
+                             params[1] = far;
                          }
                          break;
                      case EsrEc_DataAbortEl0:
                      default:
                          {
-                             exception = ams::svc::DebugException_DataAbort;
-                             param2    = far;
+                             params[0] = ams::svc::DebugException_DataAbort;
+                             params[1] = far;
                          }
                          break;
                 }
 
                 /* Process the debug event. */
-                Result result = KDebug::OnDebugEvent(ams::svc::DebugEvent_Exception, exception, param2, param3);
+                Result result = KDebug::OnDebugEvent(ams::svc::DebugEvent_Exception, params, util::size(params));
 
                 /* If the SVC is handled, handle it. */
                 if (!svc::ResultNotHandled::Includes(result)) {
@@ -481,7 +477,7 @@ namespace ams::kern::arch::arm64 {
                     }
 
                     /* If we successfully enter jit debug, restore. */
-                    if (cur_process.EnterJitDebug(ams::svc::DebugEvent_Exception, exception, param2, param3)) {
+                    if (cur_process.EnterJitDebug(ams::svc::DebugEvent_Exception, static_cast<ams::svc::DebugException>(params[0]), params[1], params[2])) {
                         svc::RestoreContext(reinterpret_cast<uintptr_t>(e_ctx));
                     }
                 }

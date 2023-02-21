@@ -249,7 +249,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KDebug::BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
-        R_RETURN(KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size));
+        const uintptr_t params[5] = { ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size };
+        R_RETURN(KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, params, util::size(params)));
     }
 
     #define MESOSPHERE_SET_HW_BREAK_POINT(ID, FLAGS, VALUE) \

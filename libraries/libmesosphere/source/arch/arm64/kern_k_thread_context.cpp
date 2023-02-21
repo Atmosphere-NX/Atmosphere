@@ -26,7 +26,9 @@ namespace ams::kern::arch::arm64 {
         /* Send KDebug event for this thread's creation. */
         {
             KScopedInterruptEnable ei;
-            KDebug::OnDebugEvent(ams::svc::DebugEvent_CreateThread, GetCurrentThread().GetId(), GetInteger(GetCurrentThread().GetThreadLocalRegionAddress()));
+
+            const uintptr_t params[2] = { GetCurrentThread().GetId(), GetInteger(GetCurrentThread().GetThreadLocalRegionAddress()) };
+            KDebug::OnDebugEvent(ams::svc::DebugEvent_CreateThread, params, util::size(params));
         }
 
         /* Handle any pending dpc. */
