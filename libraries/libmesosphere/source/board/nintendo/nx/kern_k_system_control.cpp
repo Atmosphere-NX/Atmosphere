@@ -398,40 +398,41 @@ namespace ams::kern::board::nintendo::nx {
 
     /* System Initialization. */
     void KSystemControl::InitializePhase1() {
-        /* Initialize our random generator. */
+        /* Configure KTargetSystem. */
+        {
+            /* Set IsDebugMode. */
+            {
+                KTargetSystem::SetIsDebugMode(GetConfigBool(smc::ConfigItem::IsDebugMode));
+
+                /* If debug mode, we want to initialize uart logging. */
+                KTargetSystem::EnableDebugLogging(KTargetSystem::IsDebugMode());
+            }
+
+            /* Set Kernel Configuration. */
+            {
+                const auto kernel_config = util::BitPack32{GetConfigU32(smc::ConfigItem::KernelConfiguration)};
+
+                KTargetSystem::EnableDebugMemoryFill(kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>());
+                KTargetSystem::EnableUserExceptionHandlers(kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>());
+                KTargetSystem::EnableDynamicResourceLimits(!kernel_config.Get<smc::KernelConfiguration::DisableDynamicResourceLimits>());
+                KTargetSystem::EnableUserPmuAccess(kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>());
+
+                g_call_smc_on_panic = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();
+            }
+
+            /* Set Kernel Debugging. */
+            {
+                /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
+                /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
+                KTargetSystem::EnableKernelDebugging(GetConfigBool(smc::ConfigItem::DisableProgramVerification));
+            }
+        }
+
+        /* Initialize random and resource limit. */
         {
             u64 seed;
             smc::GenerateRandomBytes(std::addressof(seed), sizeof(seed));
-            s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_initialized_random_generator = true;
-        }
-
-        /* Set IsDebugMode. */
-        {
-            KTargetSystem::SetIsDebugMode(GetConfigBool(smc::ConfigItem::IsDebugMode));
-
-            /* If debug mode, we want to initialize uart logging. */
-            KTargetSystem::EnableDebugLogging(KTargetSystem::IsDebugMode());
-            KDebugLog::Initialize();
-        }
-
-        /* Set Kernel Configuration. */
-        {
-            const auto kernel_config = util::BitPack32{GetConfigU32(smc::ConfigItem::KernelConfiguration)};
-
-            KTargetSystem::EnableDebugMemoryFill(kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>());
-            KTargetSystem::EnableUserExceptionHandlers(kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>());
-            KTargetSystem::EnableDynamicResourceLimits(!kernel_config.Get<smc::KernelConfiguration::DisableDynamicResourceLimits>());
-            KTargetSystem::EnableUserPmuAccess(kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>());
-
-            g_call_smc_on_panic = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();
-        }
-
-        /* Set Kernel Debugging. */
-        {
-            /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
-            /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
-            KTargetSystem::EnableKernelDebugging(GetConfigBool(smc::ConfigItem::DisableProgramVerification));
+            KSystemControlBase::InitializePhase1Base(seed);
         }
 
         /* Configure the Kernel Carveout region. */
@@ -441,9 +442,6 @@ namespace ams::kern::board::nintendo::nx {
 
             smc::ConfigureCarveout(0, carveout.GetAddress(), carveout.GetSize());
         }
-
-        /* Initialize the system resource limit (and potentially other things). */
-        KSystemControlBase::InitializePhase1(true);
     }
 
     void KSystemControl::InitializePhase2() {
