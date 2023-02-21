@@ -21,7 +21,7 @@ namespace ams::kern {
 
         constexpr uintptr_t Invalid = std::numeric_limits<uintptr_t>::max();
 
-        constexpr KAddressSpaceInfo AddressSpaceInfos[] = {
+        constinit KAddressSpaceInfo AddressSpaceInfos[] = {
             { 32, ams::svc::AddressSmallMap32Start, ams::svc::AddressSmallMap32Size,          KAddressSpaceInfo::Type_MapSmall, },
             { 32, ams::svc::AddressLargeMap32Start, ams::svc::AddressLargeMap32Size,          KAddressSpaceInfo::Type_MapLarge, },
             { 32, Invalid,                          ams::svc::AddressMemoryRegionHeap32Size,  KAddressSpaceInfo::Type_Heap,     },
@@ -37,67 +37,27 @@ namespace ams::kern {
             { 39, Invalid,                          ams::svc::AddressMemoryRegionStack39Size, KAddressSpaceInfo::Type_Stack,    },
         };
 
-        constexpr bool IsAllowedIndexForAddress(size_t index) {
-            return index < util::size(AddressSpaceInfos) && AddressSpaceInfos[index].GetAddress() != Invalid;
-        }
-
-        constexpr size_t AddressSpaceIndices32Bit[KAddressSpaceInfo::Type_Count] = {
-            0, 1, 0, 2, 0, 3,
-        };
-
-        constexpr size_t AddressSpaceIndices36Bit[KAddressSpaceInfo::Type_Count] = {
-            4, 5, 4, 6, 4, 7,
-        };
-
-        constexpr size_t AddressSpaceIndices39Bit[KAddressSpaceInfo::Type_Count] = {
-            9, 8, 8, 10, 12, 11,
-        };
-
-        constexpr bool IsAllowed32BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Map39Bit && type != KAddressSpaceInfo::Type_Stack;
-        }
-
-        constexpr bool IsAllowed36BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Map39Bit && type != KAddressSpaceInfo::Type_Stack;
-        }
-
-        constexpr bool IsAllowed39BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_MapLarge;
+        KAddressSpaceInfo &GetAddressSpaceInfo(size_t width, KAddressSpaceInfo::Type type) {
+            for (auto &info : AddressSpaceInfos) {
+                if (info.GetWidth() == width && info.GetType() == type) {
+                    return info;
+                }
+            }
+            MESOSPHERE_PANIC("Could not find AddressSpaceInfo");
         }
 
     }
 
     uintptr_t KAddressSpaceInfo::GetAddressSpaceStart(size_t width, KAddressSpaceInfo::Type type) {
-        switch (width) {
-            case 32:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed32BitType(type));
-                MESOSPHERE_ABORT_UNLESS(IsAllowedIndexForAddress(AddressSpaceIndices32Bit[type]));
-                return AddressSpaceInfos[AddressSpaceIndices32Bit[type]].GetAddress();
-            case 36:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed36BitType(type));
-                MESOSPHERE_ABORT_UNLESS(IsAllowedIndexForAddress(AddressSpaceIndices36Bit[type]));
-                return AddressSpaceInfos[AddressSpaceIndices36Bit[type]].GetAddress();
-            case 39:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed39BitType(type));
-                MESOSPHERE_ABORT_UNLESS(IsAllowedIndexForAddress(AddressSpaceIndices39Bit[type]));
-                return AddressSpaceInfos[AddressSpaceIndices39Bit[type]].GetAddress();
-            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-        }
+        return GetAddressSpaceInfo(width, type).GetAddress();
     }
 
     size_t KAddressSpaceInfo::GetAddressSpaceSize(size_t width, KAddressSpaceInfo::Type type) {
-        switch (width) {
-            case 32:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed32BitType(type));
-                return AddressSpaceInfos[AddressSpaceIndices32Bit[type]].GetSize();
-            case 36:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed36BitType(type));
-                return AddressSpaceInfos[AddressSpaceIndices36Bit[type]].GetSize();
-            case 39:
-                MESOSPHERE_ABORT_UNLESS(IsAllowed39BitType(type));
-                return AddressSpaceInfos[AddressSpaceIndices39Bit[type]].GetSize();
-            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-        }
+        return GetAddressSpaceInfo(width, type).GetSize();
+    }
+
+    void KAddressSpaceInfo::SetAddressSpaceSize(size_t width, Type type, size_t size) {
+        GetAddressSpaceInfo(width, type).SetSize(size);
     }
 
 }

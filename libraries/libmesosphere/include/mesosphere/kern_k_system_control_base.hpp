@@ -57,9 +57,11 @@ namespace ams::kern {
                     static void GenerateRandom(u64 *dst, size_t count);
                     static u64  GenerateRandomRange(u64 min, u64 max);
             };
+        protected:
+            static NOINLINE void InitializePhase1Base(u64 seed);
         public:
             /* Initialization. */
-            static NOINLINE void InitializePhase1(bool skip_target_system = false);
+            static NOINLINE void InitializePhase1();
             static NOINLINE void InitializePhase2();
             static NOINLINE u32 GetCreateProcessMemoryPool();
 
