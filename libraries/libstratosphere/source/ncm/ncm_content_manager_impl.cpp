@@ -675,6 +675,12 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
+    Result ContentManagerImpl::ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id) {
+        /* TODO */
+        AMS_UNUSED(fs_content_storage_id);
+        R_SUCCEED();
+    }
+
     Result ContentManagerImpl::GetMemoryReport(sf::Out<MemoryReport> out) {
         /* Populate content meta resource states. */
         MemoryReport report = {

@@ -118,6 +118,7 @@ namespace ams::fs::impl {
             ADD_ENUM_CASE(User);
             ADD_ENUM_CASE(System);
             ADD_ENUM_CASE(SdCard);
+            ADD_ENUM_CASE(System0);
             default: return ToValueString(static_cast<int>(id));
         }
     }
@@ -171,6 +172,8 @@ namespace ams::fs::impl {
             ADD_ENUM_CASE(System);
             ADD_ENUM_CASE(SystemProperEncryption);
             ADD_ENUM_CASE(SystemProperPartition);
+            ADD_ENUM_CASE(DeviceTreeBlob);
+            ADD_ENUM_CASE(System0);
             default: return ToValueString(static_cast<int>(id));
         }
     }

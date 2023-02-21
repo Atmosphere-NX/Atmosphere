@@ -17,6 +17,7 @@
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
 #include <stratosphere/ncm/ncm_content_storage.hpp>
 #include <stratosphere/ncm/ncm_i_content_manager.hpp>
+#include <stratosphere/fs/fs_content_storage_id.hpp>
 
 namespace ams::ncm {
 
@@ -45,6 +46,8 @@ namespace ams::ncm {
     Result InactivateContentMetaDatabase(StorageId storage_id);
 
     Result InvalidateRightsIdCache();
+
+    Result ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id);
 
     /* Deprecated API. */
     Result CloseContentStorageForcibly(StorageId storage_id);

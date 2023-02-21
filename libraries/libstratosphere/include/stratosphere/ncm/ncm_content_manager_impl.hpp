@@ -151,6 +151,7 @@ namespace ams::ncm {
             Result InactivateContentMetaDatabase(StorageId storage_id);
             Result InvalidateRightsIdCache();
             Result GetMemoryReport(sf::Out<MemoryReport> out);
+            Result ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id);
     };
     static_assert(IsIContentManager<ContentManagerImpl>);
 

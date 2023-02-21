@@ -14,16 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/fs/fs_common.hpp>
-#include <stratosphere/fs/fs_content_storage_id.hpp>
+#include <vapours.hpp>
 
 namespace ams::fs {
 
-    constexpr inline const char * const ContentStorageDirectoryName = "Contents";
-
-    const char *GetContentStorageMountName(ContentStorageId id);
-
-    Result MountContentStorage(ContentStorageId id);
-    Result MountContentStorage(const char *name, ContentStorageId id);
+    /* ACCURATE_TO_VERSION: 16.2.0.0 */
+    enum class ContentStorageId : u32 {
+        System  = 0,
+        User    = 1,
+        SdCard  = 2,
+        System0 = 3,
+    };
 
 }
