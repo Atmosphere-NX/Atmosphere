@@ -38,7 +38,7 @@ namespace ams::kern {
                 ams::svc::DebugException exception_type;
                 s32 exception_data_count;
                 uintptr_t exception_address;
-                uintptr_t exception_data[4];
+                uintptr_t exception_data[std::max<size_t>(4, cpu::NumCores)];
             };
 
             struct InfoSystemCall {
