@@ -72,13 +72,14 @@ namespace ams::kern {
             };
 
             enum OperationType {
-                OperationType_Map                         = 0,
-                OperationType_MapFirst                    = 1,
-                OperationType_MapGroup                    = 2,
-                OperationType_Unmap                       = 3,
-                OperationType_ChangePermissions           = 4,
-                OperationType_ChangePermissionsAndRefresh = 5,
-                OperationType_Separate                    = 6,
+                OperationType_Map                                 = 0,
+                OperationType_MapFirst                            = 1,
+                OperationType_MapGroup                            = 2,
+                OperationType_Unmap                               = 3,
+                OperationType_ChangePermissions                   = 4,
+                OperationType_ChangePermissionsAndRefresh         = 5,
+                OperationType_ChangePermissionsAndRefreshAndFlush = 6,
+                OperationType_Separate                            = 7,
             };
 
             static constexpr size_t MaxPhysicalMapAlignment = 1_GB;
