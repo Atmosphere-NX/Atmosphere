@@ -78,7 +78,7 @@ namespace ams::kern {
 
             /* Remove waiter thread. */
             s32 num_waiters;
-            KThread *next_owner_thread = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), addr);
+            KThread * const next_owner_thread = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), addr);
 
             /* Determine the next tag. */
             u32 next_value = 0;
@@ -87,24 +87,25 @@ namespace ams::kern {
                 if (num_waiters > 1) {
                     next_value |= ams::svc::HandleWaitMask;
                 }
-
-                /* Write the value to userspace. */
-                Result result;
-                if (AMS_LIKELY(WriteToUser(addr, std::addressof(next_value)))) {
-                    result = ResultSuccess();
-                } else {
-                    result = svc::ResultInvalidCurrentMemory();
-                }
-
-                /* Signal the next owner thread. */
-                next_owner_thread->EndWait(result);
-                R_RETURN(result);
-            } else {
-                /* Just write the value to userspace. */
-                R_UNLESS(WriteToUser(addr, std::addressof(next_value)), svc::ResultInvalidCurrentMemory());
-
-                R_SUCCEED();
             }
+
+            /* Synchronize memory before proceeding. */
+            cpu::DataMemoryBarrierInnerShareable();
+
+            /* Write the value to userspace. */
+            Result result;
+            if (AMS_LIKELY(WriteToUser(addr, std::addressof(next_value)))) {
+                result = ResultSuccess();
+            } else {
+                result = svc::ResultInvalidCurrentMemory();
+            }
+
+            /* If necessary, signal the next owner thread. */
+            if (next_owner_thread != nullptr) {
+                next_owner_thread->EndWait(result);
+            }
+
+            R_RETURN(result);
         }
     }
 
