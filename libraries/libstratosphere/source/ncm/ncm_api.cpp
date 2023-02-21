@@ -114,6 +114,10 @@ namespace ams::ncm {
         R_RETURN(g_content_manager->InvalidateRightsIdCache());
     }
 
+    Result ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id) {
+        R_RETURN(g_content_manager->ActivateFsContentStorage(fs_content_storage_id));
+    }
+
     /* Deprecated API. */
     Result CloseContentStorageForcibly(StorageId storage_id) {
         AMS_ABORT_UNLESS(hos::GetVersion() == hos::Version_1_0_0);

@@ -44,6 +44,8 @@ namespace ams::fs {
        SystemProperEncryption           = 32,
        SystemProperPartition            = 33,
        SignedSystemPartitionOnSafeMode  = 34,
+       DeviceTreeBlob                   = 35,
+       System0                          = 36,
    };
 
    const char *GetBisMountName(BisPartitionId id);
