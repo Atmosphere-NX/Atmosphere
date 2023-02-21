@@ -64,8 +64,8 @@ namespace ams::svc::board::nintendo::nx {
 
     namespace impl {
 
-        constexpr inline const size_t RequiredNonSecureSystemMemorySizeVi         = 0x2238 * 4_KB;
-        constexpr inline const size_t RequiredNonSecureSystemMemorySizeNvservices = 0x710  * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeVi         = 0x2400 * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeNvservices = 0x784  * 4_KB;
         constexpr inline const size_t RequiredNonSecureSystemMemorySizeMisc       = 0x80   * 4_KB;
 
     }
