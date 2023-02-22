@@ -294,7 +294,7 @@ namespace ams::ncm {
             case ContentMetaType::Application:
                 out_patch_id.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->patch_id.value);
                 break;
-            case ContentMetaType::Patch:
+            case ContentMetaType::AddOnContent:
                 R_UNLESS(reader.GetExtendedHeaderSize() == sizeof(AddOnContentMetaExtendedHeader), ncm::ResultInvalidAddOnContentMetaExtendedHeader());
                 out_patch_id.SetValue(reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->data_patch_id.value);
                 break;
