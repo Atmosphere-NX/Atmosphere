@@ -20,6 +20,7 @@ namespace ams::ncm {
 
     constexpr inline s32 SystemMaxContentMetaCount   = 0x800;
     constexpr inline s32 GameCardMaxContentMetaCount = 0x800;
+    constexpr inline s32 HostMaxContentMetaCount     = 0x800;
     constexpr inline s32 UserMaxContentMetaCount     = 0x2000;
     constexpr inline s32 SdCardMaxContentMetaCount   = 0x2000;
 
