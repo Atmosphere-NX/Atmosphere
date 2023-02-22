@@ -235,7 +235,7 @@ namespace ams::ncm {
             auto &root = m_roots[i];
 
             /* If we should, skip. */
-            if (!root.config.has_value() || root.config->skip_activate) {
+            if (root.config.has_value() && root.config->skip_activate) {
                 continue;
             }
 
@@ -473,7 +473,7 @@ namespace ams::ncm {
             auto &root = m_roots[i];
 
             /* If we should, skip. */
-            if (!root.storage_config.has_value() || root.storage_config->skip_activate) {
+            if (root.storage_config.has_value() && root.storage_config->skip_activate) {
                 continue;
             }
 
