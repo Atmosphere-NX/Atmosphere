@@ -21,9 +21,10 @@ namespace ams::ncm {
     struct ContentManagerConfig {
         bool build_system_database;
         bool import_database_from_system_on_sd;
+        bool enable_integrated_system_content;
 
         bool HasAnyConfig() const {
-            return this->ShouldBuildDatabase() || this->import_database_from_system_on_sd;
+            return this->ShouldBuildDatabase() || this->import_database_from_system_on_sd || this->enable_integrated_system_content;
         }
 
         bool ShouldBuildDatabase() const {
@@ -32,6 +33,10 @@ namespace ams::ncm {
 
         bool ShouldImportDatabaseFromSignedSystemPartitionOnSd() const {
             return this->import_database_from_system_on_sd;
+        }
+
+        bool IsIntegratedSystemContentEnabled() const {
+            return this->enable_integrated_system_content;
         }
     };
 

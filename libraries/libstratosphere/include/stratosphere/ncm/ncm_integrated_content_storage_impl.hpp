@@ -15,31 +15,34 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include <stratosphere/ncm/ncm_i_content_storage.hpp>
+#include <stratosphere/ncm/ncm_integrated_list.hpp>
 
 namespace ams::ncm {
 
-    class HostContentStorageImpl {
-        protected:
-            RegisteredHostContent *m_registered_content;
+    class IntegratedContentStorageImpl {
+        NON_COPYABLE(IntegratedContentStorageImpl);
+        NON_MOVEABLE(IntegratedContentStorageImpl);
+        private:
+            using ListType = ncm::IntegratedList<ncm::IContentStorage, 2>;
+            using DataType = ListType::ListData;
+        private:
+            os::SdkMutex m_mutex;
+            ListType m_list;
             bool m_disabled;
-        protected:
+        public:
+            IntegratedContentStorageImpl() : m_mutex(), m_list(), m_disabled(false) { /* ... */ }
+
+            void Add(sf::SharedPointer<ncm::IContentStorage> p, u8 id) {
+                DataType data = {std::move(p), id};
+                m_list.Add(data);
+            }
+        private:
             /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!m_disabled, ncm::ResultInvalidContentStorage());
                 R_SUCCEED();
             }
-
-            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path, fs::ContentAttributes attr) {
-                if (hos::GetVersion() >= hos::Version_3_0_0) {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str, attr));
-                } else {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str, attr));
-                    out_rights_id->key_generation = 0;
-                }
-                R_SUCCEED();
-            }
-        public:
-            HostContentStorageImpl(RegisteredHostContent *registered_content) : m_registered_content(registered_content), m_disabled(false) { /* ... */ }
         public:
             /* Actual commands. */
             Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);
@@ -78,6 +81,6 @@ namespace ams::ncm {
             Result RegisterPath(const ContentId &content_id, const Path &path);
             Result ClearRegisteredPath();
     };
-    static_assert(ncm::IsIContentStorage<HostContentStorageImpl>);
+    static_assert(ncm::IsIContentStorage<IntegratedContentStorageImpl>);
 
 }
