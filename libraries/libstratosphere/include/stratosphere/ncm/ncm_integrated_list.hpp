@@ -77,6 +77,15 @@ namespace ams::ncm {
 
                 R_RETURN(result);
             }
+
+            Result ForAll(auto callback) {
+                for (size_t i = 0; i < m_count; ++i) {
+                    R_TRY(callback(this->Get(i)));
+                }
+                R_SUCCEED();
+            }
+
+            size_t GetCount() const { return m_count; }
     };
 
 }

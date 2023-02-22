@@ -27,7 +27,7 @@ namespace ams::ncm {
             using ListType = ncm::IntegratedList<ncm::IContentStorage, 2>;
             using DataType = ListType::ListData;
         private:
-            os::SdkMutex m_mutex;
+            os::SdkRecursiveMutex m_mutex;
             ListType m_list;
             bool m_disabled;
         public:
