@@ -50,7 +50,7 @@ namespace ams::ncm {
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) override;
             virtual Result GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) override;
             virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override;
-            virtual Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) override;
+            virtual Result GetPatchContentMetaId(sf::Out<u64> out_patch_id, const ContentMetaKey &key) override;
             virtual Result DisableForcibly() override;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;

@@ -37,7 +37,7 @@ namespace ams::ncm {
             char path[MaxPackagePathLength];
             R_TRY(ConvertToFsCommonPath(path, sizeof(path), package_root_path, entry.name));
 
-            R_RETURN(ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(out, path));
+            R_RETURN(ncm::TryReadContentMetaPath(out, path, ncm::ReadContentMetaPathWithoutExtendedDataOrDigest));
         }
 
         template<typename F>
@@ -108,7 +108,7 @@ namespace ams::ncm {
 
                 /* Read the content meta path, and build. */
                 ncm::AutoBuffer package_meta;
-                if (R_SUCCEEDED(ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(std::addressof(package_meta), path.str))) {
+                if (R_SUCCEEDED(ncm::TryReadContentMetaPath(std::addressof(package_meta), path.str, ncm::ReadContentMetaPathWithoutExtendedDataOrDigest))) {
                     /* Get the size of the content. */
                     s64 size;
                     R_TRY(storage->GetSize(std::addressof(size), content_id));

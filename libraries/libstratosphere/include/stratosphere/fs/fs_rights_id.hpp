@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/fs/fs_content_attributes.hpp>
 
 namespace ams::fs {
 
@@ -41,7 +42,7 @@ namespace ams::fs {
     constexpr inline RightsId InvalidRightsId = {};
 
     /* Rights ID API */
-    Result GetRightsId(RightsId *out, const char *path);
-    Result GetRightsId(RightsId *out, u8 *out_key_generation, const char *path);
+    Result GetRightsId(RightsId *out, const char *path, fs::ContentAttributes attr);
+    Result GetRightsId(RightsId *out, u8 *out_key_generation, const char *path, fs::ContentAttributes attr);
 
 }

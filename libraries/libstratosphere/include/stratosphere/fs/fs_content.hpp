@@ -28,8 +28,8 @@ namespace ams::fs {
         ContentType_Data    = 4,
     };
 
-    Result MountContent(const char *name, const char *path, ContentType content_type);
-    Result MountContent(const char *name, const char *path, ncm::ProgramId id, ContentType content_type);
-    Result MountContent(const char *name, const char *path, ncm::DataId id, ContentType content_type);
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ContentType content_type);
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ncm::ProgramId id, ContentType content_type);
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ncm::DataId id, ContentType content_type);
 
 }

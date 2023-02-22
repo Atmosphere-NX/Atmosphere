@@ -53,7 +53,11 @@ namespace ams::fssrv {
         AMS_ABORT("TODO");
     }
 
-    Result FileSystemProxyImpl::OpenFileSystemWithId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u64 program_id, u32 type) {
+    Result FileSystemProxyImpl::OpenFileSystemWithIdObsolete(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u64 program_id, u32 type) {
+        AMS_ABORT("TODO");
+    }
+
+    Result FileSystemProxyImpl::OpenFileSystemWithId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, fs::ContentAttributes attr, u64 program_id, u32 type) {
         AMS_ABORT("TODO");
     }
 
@@ -255,7 +259,11 @@ namespace ams::fssrv {
         AMS_ABORT("TODO");
     }
 
-    Result FileSystemProxyImpl::OpenDataStorageByPath(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, u32 type) {
+    Result FileSystemProxyImpl::OpenDataStorageByPathObsolete(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, u32 type) {
+        AMS_ABORT("TODO");
+    }
+
+    Result FileSystemProxyImpl::OpenDataStorageByPath(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, fs::ContentAttributes attr, u32 type) {
         AMS_ABORT("TODO");
     }
 
@@ -303,7 +311,11 @@ namespace ams::fssrv {
         AMS_ABORT("TODO");
     }
 
-    Result FileSystemProxyImpl::GetRightsIdAndKeyGenerationByPath(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path) {
+    Result FileSystemProxyImpl::GetRightsIdAndKeyGenerationByPathObsolete(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path) {
+        AMS_ABORT("TODO");
+    }
+
+    Result FileSystemProxyImpl::GetRightsIdAndKeyGenerationByPath(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path, fs::ContentAttributes attr) {
         AMS_ABORT("TODO");
     }
 
@@ -448,9 +460,14 @@ namespace ams::fssrv {
         AMS_UNUSED(out_fs, path, program_id);
     }
 
-    Result FileSystemProxyImpl::OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, ncm::ProgramId program_id) {
+    Result FileSystemProxyImpl::OpenCodeFileSystemDeprecated2(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, ncm::ProgramId program_id) {
         AMS_ABORT("TODO");
         AMS_UNUSED(out_fs, out_verif, path, program_id);
+    }
+
+    Result FileSystemProxyImpl::OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
+        AMS_ABORT("TODO");
+        AMS_UNUSED(out_fs, out_verif, path, attr, program_id);
     }
 
     Result FileSystemProxyImpl::IsArchivedProgram(ams::sf::Out<bool> out, u64 process_id) {

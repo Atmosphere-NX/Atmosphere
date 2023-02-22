@@ -21,7 +21,8 @@ namespace ams::fs {
 
     /* ACCURATE_TO_VERSION: Unknown */
     enum ContentAttributes : u8 {
-        ContentAttributes_None = 0,
+        ContentAttributes_None = 0x0,
+        ContentAttributes_All  = 0xF,
     };
 
 }
