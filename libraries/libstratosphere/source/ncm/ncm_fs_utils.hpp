@@ -45,6 +45,6 @@ namespace ams::ncm::impl {
     MountName CreateUniqueMountName();
     RootDirectoryPath GetRootDirectoryPath(const MountName &mount_name);
 
-    Result MountContentMetaImpl(const char *mount_name, const char *path);
+    Result MountContentMetaImpl(const char *mount_name, const char *path, fs::ContentAttributes attr);
 
 }

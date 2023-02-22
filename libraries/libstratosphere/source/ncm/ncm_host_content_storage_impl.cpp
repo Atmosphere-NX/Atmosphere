@@ -129,22 +129,31 @@ namespace ams::ncm {
         R_THROW(ncm::ResultNotSupported());
     }
 
-    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out_rights_id, placeholder_id);
+        R_THROW(ncm::ResultNotSupported());
+    }
+
+    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr) {
+        AMS_UNUSED(out_rights_id, placeholder_id, attr);
         R_THROW(ncm::ResultNotSupported());
     }
 
     Result HostContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
         /* Obtain the regular rights id for the content id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromContentId(std::addressof(rights_id), content_id));
+        R_TRY(this->GetRightsIdFromContentIdDeprecated2(std::addressof(rights_id), content_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
         R_SUCCEED();
     }
 
-    Result HostContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+    Result HostContentStorageImpl::GetRightsIdFromContentIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+        R_RETURN(this->GetRightsIdFromContentId(out_rights_id, content_id, fs::ContentAttributes_None));
+    }
+
+    Result HostContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id, fs::ContentAttributes attr) {
         R_TRY(this->EnsureEnabled());
 
         /* Get the content path. */
@@ -153,7 +162,7 @@ namespace ams::ncm {
 
         /* Acquire the rights id for the content. */
         RightsId rights_id;
-        R_TRY_CATCH(GetRightsId(std::addressof(rights_id), path)) {
+        R_TRY_CATCH(GetRightsId(std::addressof(rights_id), path, attr)) {
             /* The content is absent, output a blank rights id. */
             R_CATCH(fs::ResultTargetNotFound) {
                 out_rights_id.SetValue({});
@@ -194,8 +203,13 @@ namespace ams::ncm {
         R_THROW(ncm::ResultNotSupported());
     }
 
-    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id);
+        R_THROW(ncm::ResultNotSupported());
+    }
+
+    Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
+        AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id, attr);
         R_THROW(ncm::ResultNotSupported());
     }
 

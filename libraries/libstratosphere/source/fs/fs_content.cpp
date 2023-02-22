@@ -32,7 +32,7 @@ namespace ams::fs {
             }
         }
 
-        Result MountContentImpl(const char *name, const char *path, u64 id, ContentType type) {
+        Result MountContentImpl(const char *name, const char *path, fs::ContentAttributes attr, u64 id, ContentType type) {
             /* Validate the mount name. */
             R_TRY(impl::CheckMountNameAllowingReserved(name));
 
@@ -46,7 +46,7 @@ namespace ams::fs {
             /* Open the filesystem. */
             auto fsp = impl::GetFileSystemProxyServiceObject();
             sf::SharedPointer<fssrv::sf::IFileSystem> fs;
-            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), sf_path, id, ConvertToFileSystemProxyType(type)));
+            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), sf_path, attr, id, ConvertToFileSystemProxyType(type)));
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
@@ -58,12 +58,12 @@ namespace ams::fs {
 
     }
 
-    Result MountContent(const char *name, const char *path, ContentType content_type) {
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ContentType content_type) {
         auto mount_impl = [=]() -> Result {
             /* This API only supports mounting Meta content. */
             R_UNLESS(content_type == ContentType_Meta, fs::ResultInvalidArgument());
 
-            R_RETURN(MountContentImpl(name, path, ncm::InvalidProgramId.value, content_type));
+            R_RETURN(MountContentImpl(name, path, attr, ncm::InvalidProgramId.value, content_type));
         };
 
         /* Perform the mount. */
@@ -75,9 +75,9 @@ namespace ams::fs {
         R_SUCCEED();
     }
 
-    Result MountContent(const char *name, const char *path, ncm::ProgramId id, ContentType content_type) {
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ncm::ProgramId id, ContentType content_type) {
         auto mount_impl = [=]() -> Result {
-            R_RETURN(MountContentImpl(name, path, id.value, content_type));
+            R_RETURN(MountContentImpl(name, path, attr, id.value, content_type));
         };
 
         /* Perform the mount. */
@@ -89,9 +89,9 @@ namespace ams::fs {
         R_SUCCEED();
     }
 
-    Result MountContent(const char *name, const char *path, ncm::DataId id, ContentType content_type) {
+    Result MountContent(const char *name, const char *path, fs::ContentAttributes attr, ncm::DataId id, ContentType content_type) {
         auto mount_impl = [=]() -> Result {
-            R_RETURN(MountContentImpl(name, path, id.value, content_type));
+            R_RETURN(MountContentImpl(name, path, attr, id.value, content_type));
         };
 
         /* Perform the mount. */

@@ -592,7 +592,7 @@ namespace ams::ncm {
                 /* Open the content storage and obtain the rights id. */
                 ncm::ContentStorage storage;
                 R_TRY(OpenContentStorage(std::addressof(storage), content_info->storage_id));
-                R_TRY(storage.GetRightsId(std::addressof(rights_id), content_info->placeholder_id));
+                R_TRY(storage.GetRightsId(std::addressof(rights_id), content_info->placeholder_id, content_info->GetContentAttributes()));
             }
 
             /* Install a ticket if necessary. */
@@ -827,10 +827,13 @@ namespace ams::ncm {
                 continue;
             }
 
+            /* Get the content info. */
+            const auto *content_info = reader.GetContentInfo(ContentType::Meta);
+
             /* List content meta infos. */
             std::unique_ptr<ContentMetaInfo[]> content_meta_infos;
             s32 num_content_meta_infos;
-            R_TRY(this->ReadContentMetaInfoList(std::addressof(num_content_meta_infos), std::addressof(content_meta_infos), reader.GetKey()));
+            R_TRY(this->ReadContentMetaInfoList(std::addressof(num_content_meta_infos), std::addressof(content_meta_infos), reader.GetKey(), content_info->GetContentAttributes()));
 
             /* Iterate over content meta infos. */
             for (s32 j = 0; j < num_content_meta_infos; j++) {
@@ -870,10 +873,13 @@ namespace ams::ncm {
                 continue;
             }
 
+            /* Get the content info. */
+            const auto *content_info = reader.GetContentInfo(ContentType::Meta);
+
             /* List content meta infos. */
             std::unique_ptr<ContentMetaInfo[]> content_meta_infos;
             s32 num_content_meta_infos;
-            R_TRY(this->ReadContentMetaInfoList(std::addressof(num_content_meta_infos), std::addressof(content_meta_infos), reader.GetKey()));
+            R_TRY(this->ReadContentMetaInfoList(std::addressof(num_content_meta_infos), std::addressof(content_meta_infos), reader.GetKey(), content_info->GetContentAttributes()));
 
             /* Iterate over content meta infos. */
             for (s32 j = 0; j < num_content_meta_infos; j++) {
@@ -989,8 +995,9 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version) {
+        fs::ContentAttributes attr;
         AutoBuffer meta;
-        R_TRY(ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(std::addressof(meta), path.str));
+        R_TRY(TryReadContentMetaPath(std::addressof(attr), std::addressof(meta), path.str, ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort));
 
         /* Create a reader. */
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
@@ -1005,7 +1012,7 @@ namespace ams::ncm {
 
             /* Create a mapper. */
             auto mapper = MultiCacheReadonlyMapper<4>(Span<u8>(buffers[0], sizeof(buffers[0])), Span<u8>(buffers[1], sizeof(buffers[1])));
-            R_TRY(mapper.Initialize(path.str, true));
+            R_TRY(mapper.Initialize(path.str, static_cast<fs::ContentAttributes>(static_cast<u8>(attr) & fs::ContentAttributes_All), true));
 
             /* Create an accessor. */
             auto accessor = PatchMetaExtendedDataAccessor{std::addressof(mapper)};
@@ -1153,7 +1160,7 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result InstallTaskBase::ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key) {
+    Result InstallTaskBase::ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key, fs::ContentAttributes attr) {
         /* Get the install content meta info. */
         InstallContentMetaInfo install_content_meta_info;
         R_TRY(this->GetInstallContentMetaInfo(std::addressof(install_content_meta_info), key));
@@ -1173,7 +1180,7 @@ namespace ams::ncm {
         content_storage.GetPlaceHolderPath(std::addressof(path), placeholder_id);
 
         /* Read the variation list. */
-        R_TRY(ReadVariationContentMetaInfoList(out_count, out_meta_infos, path, m_firmware_variation_id));
+        R_TRY(ReadVariationContentMetaInfoList(out_count, out_meta_infos, path, attr, m_firmware_variation_id));
 
         /* Delete the placeholder. */
         content_storage.DeletePlaceHolder(placeholder_id);
@@ -1377,7 +1384,7 @@ namespace ams::ncm {
 
             /* Get the rights id. */
             RightsId rights_id;
-            R_TRY(content_storage.GetRightsId(std::addressof(rights_id), content_info->GetPlaceHolderId()));
+            R_TRY(content_storage.GetRightsId(std::addressof(rights_id), content_info->GetPlaceHolderId(), content_info->GetContentAttributes()));
 
             /* Skip empty rights ids. */
             if (rights_id.id == fs::InvalidRightsId) {

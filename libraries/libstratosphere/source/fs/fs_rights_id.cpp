@@ -19,7 +19,13 @@
 
 namespace ams::fs {
 
-    Result GetRightsId(RightsId *out, const char *path) {
+    Result GetRightsId(RightsId *out, const char *path, fs::ContentAttributes attr) {
+        /* If possible, prefer the non-removed functionality. */
+        if (hos::GetVersion() >= hos::Version_3_0_0) {
+            u8 dummy_key_generation;
+            R_RETURN(GetRightsId(out, std::addressof(dummy_key_generation), path, attr));
+        }
+
         AMS_FS_R_UNLESS(out != nullptr,  fs::ResultNullptrArgument());
         AMS_FS_R_UNLESS(path != nullptr, fs::ResultNullptrArgument());
 
@@ -33,7 +39,7 @@ namespace ams::fs {
         R_SUCCEED();
     }
 
-    Result GetRightsId(RightsId *out, u8 *out_key_generation, const char *path) {
+    Result GetRightsId(RightsId *out, u8 *out_key_generation, const char *path, fs::ContentAttributes attr) {
         AMS_FS_R_UNLESS(out != nullptr,                fs::ResultNullptrArgument());
         AMS_FS_R_UNLESS(out_key_generation != nullptr, fs::ResultNullptrArgument());
         AMS_FS_R_UNLESS(path != nullptr,               fs::ResultNullptrArgument());
@@ -43,7 +49,7 @@ namespace ams::fs {
         R_TRY(fs::ConvertToFspPath(std::addressof(sf_path), path));
 
         auto fsp = impl::GetFileSystemProxyServiceObject();
-        AMS_FS_R_TRY(fsp->GetRightsIdAndKeyGenerationByPath(out, out_key_generation, sf_path));
+        AMS_FS_R_TRY(fsp->GetRightsIdAndKeyGenerationByPath(out, out_key_generation, sf_path, attr));
 
         R_SUCCEED();
     }

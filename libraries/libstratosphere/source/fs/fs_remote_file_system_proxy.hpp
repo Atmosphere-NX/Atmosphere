@@ -56,10 +56,13 @@ namespace ams::fs {
                 AMS_ABORT("TODO");
             }
 
+            Result OpenFileSystemWithIdObsolete(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u64 program_id, u32 type) {
+                R_RETURN(this->OpenFileSystemWithId(out, path, fs::ContentAttributes_None, program_id, type));
+            }
 
-            Result OpenFileSystemWithId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u64 program_id, u32 type) {
+            Result OpenFileSystemWithId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, fs::ContentAttributes attr, u64 program_id, u32 type) {
                 ::FsFileSystem fs;
-                R_TRY(fsOpenFileSystemWithId(std::addressof(fs), program_id, static_cast<::FsFileSystemType>(type), path.str));
+                R_TRY(fsOpenFileSystemWithId(std::addressof(fs), program_id, static_cast<::FsFileSystemType>(type), path.str, static_cast<::FsContentAttributes>(static_cast<u8>(attr))));
 
                 out.SetValue(ObjectFactory::CreateSharedEmplaced<fssrv::sf::IFileSystem, fssrv::impl::RemoteFileSystem>(fs));
                 R_SUCCEED();
@@ -261,7 +264,11 @@ namespace ams::fs {
                 AMS_ABORT("TODO");
             }
 
-            Result OpenDataStorageByPath(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, u32 type) {
+            Result OpenDataStorageByPathObsolete(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, u32 type) {
+                AMS_ABORT("TODO");
+            }
+
+            Result OpenDataStorageByPath(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, fs::ContentAttributes attr, u32 type) {
                 AMS_ABORT("TODO");
             }
 
@@ -319,9 +326,13 @@ namespace ams::fs {
                 R_RETURN(fsGetRightsIdByPath(path.str, reinterpret_cast<::FsRightsId *>(out.GetPointer())));
             }
 
-            Result GetRightsIdAndKeyGenerationByPath(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path) {
+            Result GetRightsIdAndKeyGenerationByPathObsolete(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path) {
+                R_RETURN(this->GetRightsIdAndKeyGenerationByPath(out, out_key_generation, path, fs::ContentAttributes_None))
+            }
+
+            Result GetRightsIdAndKeyGenerationByPath(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path, fs::ContentAttributes attr) {
                 static_assert(sizeof(RightsId) == sizeof(::FsRightsId));
-                R_RETURN(fsGetRightsIdAndKeyGenerationByPath(path.str, out_key_generation.GetPointer(), reinterpret_cast<::FsRightsId *>(out.GetPointer())));
+                R_RETURN(fsGetRightsIdAndKeyGenerationByPath(path.str, static_cast<::FsContentAttributes>(static_cast<u8>(attr)), out_key_generation.GetPointer(), reinterpret_cast<::FsRightsId *>(out.GetPointer())));
             }
 
             Result SetCurrentPosixTimeWithTimeDifference(s64 posix_time, s32 time_difference) {

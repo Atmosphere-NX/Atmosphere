@@ -263,7 +263,7 @@ namespace ams::pgl::srv {
                     R_UNLESS(has_content, pgl::ResultContentMetaNotFound());
 
                     /* Read the content meta buffer. */
-                    R_RETURN(ncm::ReadContentMetaPathWithoutExtendedDataOrDigest(std::addressof(m_content_meta_buffer), meta_path.str));
+                    R_RETURN(ncm::TryReadContentMetaPath(std::addressof(m_content_meta_buffer), meta_path.str, ncm::ReadContentMetaPathWithoutExtendedDataOrDigest));
                 }
 
                 Result SearchContent(bool *out, lr::Path *out_path, const char *extension, fs::OpenDirectoryMode mode) const {

@@ -34,11 +34,11 @@ namespace ams::ncm {
                 R_SUCCEED();
             }
 
-            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
+            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path, fs::ContentAttributes attr) {
                 if (hos::GetVersion() >= hos::Version_3_0_0) {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str, attr));
                 } else {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str, attr));
                     out_rights_id->key_generation = 0;
                 }
                 R_SUCCEED();
@@ -65,16 +65,19 @@ namespace ams::ncm {
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) = 0;
             virtual Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) = 0;
             virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr) = 0;
             virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) = 0;
-            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
+            virtual Result GetRightsIdFromContentIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
+            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id, fs::ContentAttributes attr) = 0;
             virtual Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) = 0;
             virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) = 0;
             virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) = 0;
             virtual Result FlushPlaceHolder() = 0;
             virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) = 0;
             virtual Result RepairInvalidFileAttribute() = 0;
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) = 0;
             virtual Result RegisterPath(const ContentId &content_id, const Path &path) = 0;
             virtual Result ClearRegisteredPath() = 0;
     };

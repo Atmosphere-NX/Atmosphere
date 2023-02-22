@@ -302,7 +302,7 @@ namespace ams::ncm {
                 this->Finalize();
             }
 
-            Result Initialize(const char *content_path, bool suppress_fs_auto_abort) {
+            Result Initialize(const char *content_path, fs::ContentAttributes attr, bool suppress_fs_auto_abort) {
                 /* Set whether we should suppress fs aborts. */
                 m_suppress_fs_auto_abort = suppress_fs_auto_abort;
 
@@ -311,7 +311,7 @@ namespace ams::ncm {
 
                 /* Mount the content. */
                 auto mount_name = impl::CreateUniqueMountName();
-                R_TRY(impl::MountContentMetaImpl(mount_name.str, content_path));
+                R_TRY(impl::MountContentMetaImpl(mount_name.str, content_path, attr));
 
                 /* Set our mount name. */
                 m_mount_name.emplace(mount_name.str);
