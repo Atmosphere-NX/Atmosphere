@@ -26,7 +26,7 @@ Result nsGetDocumentInterfaceFwd(Service* s, NsDocumentInterface* out) {
     );
 }
 
-static Result _nsGetApplicationContentPath(Service *s, void* out, size_t out_size, u64 app_id, NcmContentType content_type) {
+static Result _nsGetApplicationContentPathOld(Service *s, void* out, size_t out_size, u64 app_id, NcmContentType content_type) {
     const struct {
         u8 content_type;
         u64 app_id;
@@ -37,6 +37,16 @@ static Result _nsGetApplicationContentPath(Service *s, void* out, size_t out_siz
     );
 }
 
+static Result _nsGetApplicationContentPath(Service *s, void* out, size_t out_size, u8 *out_attr, u64 app_id, NcmContentType content_type) {
+    const struct {
+        u8 content_type;
+        u64 app_id;
+    } in = { content_type, app_id };
+    return serviceDispatchInOut(s, 21, in, *out_attr,
+        .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+        .buffers = { { out, out_size } },
+    );
+}
 
 static Result _nsResolveApplicationContentPath(Service* s, u64 app_id, NcmContentType content_type) {
     const struct {
@@ -55,7 +65,7 @@ static Result _nsGetRunningApplicationProgramId(Service* s, u64* out_program_id,
 
 /* Application Manager forwarders. */
 Result nsamGetApplicationContentPathFwd(Service* s, void* out, size_t out_size, u64 app_id, NcmContentType content_type) {
-    return _nsGetApplicationContentPath(s, out, out_size, app_id, content_type);
+    return _nsGetApplicationContentPathOld(s, out, out_size, app_id, content_type);
 }
 
 Result nsamResolveApplicationContentPathFwd(Service* s, u64 app_id, NcmContentType content_type) {
@@ -67,8 +77,12 @@ Result nsamGetRunningApplicationProgramIdFwd(Service* s, u64* out_program_id, u6
 }
 
 /* Web forwarders */
-Result nswebGetApplicationContentPath(NsDocumentInterface* doc, void* out, size_t out_size, u64 app_id, NcmContentType content_type) {
-    return _nsGetApplicationContentPath(&doc->s, out, out_size, app_id, content_type);
+Result nswebGetApplicationContentPath(NsDocumentInterface* doc, void* out, size_t out_size, u8 *out_attr, u64 app_id, NcmContentType content_type) {
+    if (hosversionAtLeast(16,0,0)) {
+        return _nsGetApplicationContentPath(&doc->s, out, out_size, out_attr, app_id, content_type);
+    } else {
+        return _nsGetApplicationContentPathOld(&doc->s, out, out_size, app_id, content_type);
+    }
 }
 
 Result nswebResolveApplicationContentPath(NsDocumentInterface* doc, u64 app_id, NcmContentType content_type) {
