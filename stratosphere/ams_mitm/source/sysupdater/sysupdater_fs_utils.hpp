@@ -28,6 +28,6 @@ namespace ams::mitm::sysupdater {
             util::string_view GetFileName() const;
     };
 
-    Result MountSdCardContentMeta(const char *mount_name, const char *path);
+    Result MountSdCardContentMeta(const char *mount_name, const char *path, ams::fs::ContentAttributes attr);
 
 }

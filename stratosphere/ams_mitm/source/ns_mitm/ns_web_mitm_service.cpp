@@ -19,8 +19,9 @@
 
 namespace ams::mitm::ns {
 
-    Result NsDocumentService::GetApplicationContentPath(const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type) {
-        R_RETURN(nswebGetApplicationContentPath(m_srv.get(), out_path.GetPointer(), out_path.GetSize(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type)));
+    Result NsDocumentService::GetApplicationContentPath(const sf::OutBuffer &out_path, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type) {
+        static_assert(sizeof(*out_attr.GetPointer()) == sizeof(u8));
+        R_RETURN(nswebGetApplicationContentPath(m_srv.get(), out_path.GetPointer(), out_path.GetSize(), reinterpret_cast<u8 *>(out_attr.GetPointer()), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type)));
     }
 
     Result NsDocumentService::ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type) {
