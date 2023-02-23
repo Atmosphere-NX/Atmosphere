@@ -312,10 +312,6 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result IntegratedContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
-        R_RETURN(this->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, fs::ContentAttributes_None));
-    }
-
     Result IntegratedContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
         AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id, attr);
         R_THROW(ncm::ResultInvalidOperation());

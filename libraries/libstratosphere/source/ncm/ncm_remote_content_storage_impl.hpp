@@ -66,7 +66,6 @@ namespace ams::ncm {
             }
 
             Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
-                static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 R_RETURN(ncmContentStorageCreatePlaceHolder(std::addressof(m_srv), Convert(content_id), Convert(placeholder_id), size));
             }
 
@@ -83,7 +82,6 @@ namespace ams::ncm {
             }
 
             Result Register(PlaceHolderId placeholder_id, ContentId content_id) {
-                static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 R_RETURN(ncmContentStorageRegister(std::addressof(m_srv), Convert(content_id), Convert(placeholder_id)));
             }
 
@@ -207,10 +205,6 @@ namespace ams::ncm {
                 R_RETURN(ncmContentStorageRepairInvalidFileAttribute(std::addressof(m_srv)));
             }
 
-            Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
-                R_RETURN(this->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, fs::ContentAttributes_None));
-            }
-
             Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
                 static_assert(sizeof(::NcmRightsId) == sizeof(ncm::RightsId));
                 ::NcmRightsId *out = reinterpret_cast<::NcmRightsId *>(out_rights_id.GetPointer());
@@ -224,6 +218,12 @@ namespace ams::ncm {
             Result ClearRegisteredPath() {
                 R_RETURN(ncmContentStorageClearRegisteredPath(std::addressof(m_srv)));
             }
+
+            /* 16.0.0 Alignment change hacks. */
+            Result CreatePlaceHolder_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id, s64 size) { R_RETURN(this->CreatePlaceHolder(placeholder_id, content_id, size)); }
+            Result Register_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id) { R_RETURN(this->Register(placeholder_id, content_id)); }
+            Result RevertToPlaceHolder_AtmosphereAlignmentFix(ncm::ContentId old_content_id, ncm::ContentId new_content_id, ncm::PlaceHolderId placeholder_id) { R_RETURN(this->RevertToPlaceHolder(placeholder_id, old_content_id, new_content_id)); }
+            Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, ContentId cache_content_id, PlaceHolderId placeholder_id) { R_RETURN(this->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, fs::ContentAttributes_None)); }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
     #endif

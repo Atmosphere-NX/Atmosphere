@@ -102,7 +102,6 @@ namespace ams::ncm {
             virtual Result FlushPlaceHolder() override;
             virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) override;
             virtual Result RepairInvalidFileAttribute() override;
-            virtual Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) override;
             virtual Result RegisterPath(const ContentId &content_id, const Path &path) override;
             virtual Result ClearRegisteredPath() override;
