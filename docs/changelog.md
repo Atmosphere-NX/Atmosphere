@@ -1,4 +1,14 @@
 # Changelog
+## 1.5.0
++ Support was added for 16.0.0
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `ncm` was updated to reflect the latest official behavior.
+  + Many FS apis were updated under the hood to reflect the latest official behavior.
+  + **Please Note**: 16.0.0 made breaking changes to a number of system APIs, including in FS/NCM/Shared Font commands that some homebrew programs may use.
+    + These programs may encounter strange errors, and may need to be recompiled with a libnx updated to support 16.0.0's changes to function properly.
++ A number of minor issues were fixed and improvements were made, including:
+  + An issue was fixed that could cause GPIO outputs to be misconfigured under certain circumstances.
++ General system stability improvements to enhance the user's experience.
 ## 1.4.1
 + A number of minor issues were fixed and improvements were made, including:
   + `dmnt` cheat toggle files are no longer ignored when they are missing a trailing newline.
@@ -15,7 +25,7 @@
 ## 1.4.0
 + Support was added for 15.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.
-  + `ncm` was updated to reflect the latest official kernel behavior.
+  + `ncm` was updated to reflect the latest official behavior.
 + A number of minor issues were fixed and improvements were made, including:
   + The capacity limit on registered add-on contents was fixed in NCM to reflect the increase that occurred in 12.0.0.
   + An off-by-one was fixed in mesosphere when computing the new value for an address arbiter signaled with ModifyByWaitingCountIfEqual.
