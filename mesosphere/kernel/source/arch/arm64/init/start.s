@@ -33,7 +33,18 @@
     adr reg, label;                 \
     ldr reg, [reg]
 
+
+
 .section    .crt0.text.start, "ax", %progbits
+
+/* ams::kern::init::IdentityMappedFunctionAreaBegin() */
+.global     _ZN3ams4kern4init31IdentityMappedFunctionAreaBeginEv
+.type       _ZN3ams4kern4init31IdentityMappedFunctionAreaBeginEv, %function
+_ZN3ams4kern4init31IdentityMappedFunctionAreaBeginEv:
+/* NOTE: This is not a real function, and only exists as a label for safety. */
+
+/*  ================ Functions after this line remain identity-mapped after initialization finishes. ================ */
+
 .global     _start
 _start:
     b _ZN3ams4kern4init10StartCore0Emm
@@ -145,13 +156,31 @@ _ZN3ams4kern4init10StartCore0Emm:
     /* Call ams::kern::init::InitializeCore(uintptr_t, void **) */
     mov x1, x0  /* Kernelldr returns a state object for the kernel to re-use. */
     mov x0, x21 /* Use the address we determined earlier. */
-    bl _ZN3ams4kern4init14InitializeCoreEmPPv
+    bl _ZN3ams4kern4init20InitializeCorePhase1EmPPv
 
     /* Get the init arguments for core 0. */
     mov x0, xzr
-    bl _ZN3ams4kern4init23GetInitArgumentsAddressEi
+    bl _ZN3ams4kern4init16GetInitArgumentsEi
 
-    bl _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
+    /* Setup the stack pointer. */
+    ldr x2, [x0, #(INIT_ARGUMENTS_SP)]
+    mov sp, x2
+
+    /* Perform further initialization with the stack pointer set up, as required. */
+    /* This will include e.g. unmapping the identity mapping. */
+    bl _ZN3ams4kern4init20InitializeCorePhase2Ev
+
+    /* Get the init arguments for core 0. */
+    mov x0, xzr
+    bl _ZN3ams4kern4init16GetInitArgumentsEi
+
+    /* Invoke the entrypoint. */
+    ldr x1, [x0, #(INIT_ARGUMENTS_ENTRYPOINT)]
+    ldr x0, [x0, #(INIT_ARGUMENTS_ARGUMENT)]
+    blr x1
+
+0:  /* If we return here, something has gone wrong, so wait forever. */
+    b 0b
 
 /* ams::kern::init::StartOtherCore(const ams::kern::init::KInitArguments *) */
 .section    .crt0.text._ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE, "ax", %progbits
@@ -221,52 +250,26 @@ _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
     dsb sy
     isb
 
+    /* Load remaining needed fields from the init args. */
+    ldr x3, [x20, #(INIT_ARGUMENTS_SCTLR)]
+    ldr x2, [x20, #(INIT_ARGUMENTS_SP)]
+    ldr x1, [x20, #(INIT_ARGUMENTS_ENTRYPOINT)]
+    ldr x0, [x20, #(INIT_ARGUMENTS_ARGUMENT)]
+
     /* Set sctlr_el1 and ensure instruction consistency. */
-    ldr x1, [x20, #(INIT_ARGUMENTS_SCTLR)]
-    msr sctlr_el1, x1
+    msr sctlr_el1, x3
 
     dsb sy
     isb
 
-    /* Jump to the virtual address equivalent to ams::kern::init::InvokeEntrypoint */
-    ldr x1, [x20, #(INIT_ARGUMENTS_SETUP_FUNCTION)]
-    adr x2, _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE
-    sub x1, x1, x2
-    adr x2, _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
-    add x1, x1, x2
-    mov x0, x20
-    br x1
+    /* Set the stack pointer. */
+    mov sp, x2
 
-/* ams::kern::init::InvokeEntrypoint(const ams::kern::init::KInitArguments *) */
-.section    .crt0.text._ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE, "ax", %progbits
-.global     _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
-.type       _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE, %function
-_ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
-    /* Preserve the KInitArguments pointer in a register. */
-    mov x20, x0
+    /* Invoke the entrypoint. */
+    blr x1
 
-    /* Clear CPACR_EL1. This will prevent classes of traps (SVE, etc). */
-    msr cpacr_el1, xzr
-    isb
-
-    /* Setup the stack pointer. */
-    ldr x1, [x20, #(INIT_ARGUMENTS_SP)]
-    mov sp, x1
-
-    /* Ensure that system debug registers are setup. */
-    bl _ZN3ams4kern4init24InitializeDebugRegistersEv
-
-    /* Ensure that the exception vectors are setup. */
-    bl _ZN3ams4kern4init26InitializeExceptionVectorsEv
-
-    /* Setup the exception stack in cntv_cval_el0. */
-    ldr x1, [x20, #(INIT_ARGUMENTS_EXCEPTION_STACK)]
-    msr cntv_cval_el0, x1
-
-    /* Jump to the entrypoint. */
-    ldr x1, [x20, #(INIT_ARGUMENTS_ENTRYPOINT)]
-    ldr x0, [x20, #(INIT_ARGUMENTS_ARGUMENT)]
-    br x1
+0:  /* If we return here, something has gone wrong, so wait forever. */
+    b 0b
 
 /* TODO: Can we remove this while retaining QEMU support? */
 #ifndef ATMOSPHERE_BOARD_NINTENDO_NX
@@ -559,3 +562,12 @@ _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv:
     b 0b
 3:
     ret
+
+
+/*  ================ Functions before this line remain identity-mapped after initialization finishes. ================ */
+
+/* ams::kern::init::IdentityMappedFunctionAreaEnd() */
+.global     _ZN3ams4kern4init29IdentityMappedFunctionAreaEndEv
+.type       _ZN3ams4kern4init31IdentityMappedFunctionAreaEndEv, %function
+_ZN3ams4kern4init29IdentityMappedFunctionAreaEndEv:
+/* NOTE: This is not a real function, and only exists as a label for safety. */

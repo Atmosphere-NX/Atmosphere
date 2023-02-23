@@ -35,7 +35,7 @@ namespace ams::fs {
             /* Open the filesystem. */
             auto fsp = impl::GetFileSystemProxyServiceObject();
             sf::SharedPointer<fssrv::sf::IFileSystem> fs;
-            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), sf_path, ncm::InvalidProgramId.value, impl::FileSystemProxyType_Package));
+            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), sf_path, fs::ContentAttributes_None, ncm::InvalidProgramId.value, impl::FileSystemProxyType_Package));
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));

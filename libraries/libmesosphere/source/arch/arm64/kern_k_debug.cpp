@@ -37,8 +37,6 @@ namespace ams::kern::arch::arm64 {
 
         static_assert(ForbiddenWatchPointFlagsMask == 0xFFFFFFFF00F0E006ul);
 
-        constexpr inline u32 El0PsrMask = 0xFF0FFE20;
-
     }
 
     uintptr_t KDebug::GetProgramCounter(const KThread &thread) {
@@ -104,7 +102,7 @@ namespace ams::kern::arch::arm64 {
                 out->lr     = e_ctx->x[30];
                 out->sp     = e_ctx->sp;
                 out->pc     = e_ctx->pc;
-                out->pstate = (e_ctx->psr & El0PsrMask);
+                out->pstate = (e_ctx->psr & cpu::El0Aarch64PsrMask);
 
                 /* Adjust PC if we should. */
                 if (e_ctx->write == 0 && thread->IsCallingSvc()) {
@@ -119,7 +117,7 @@ namespace ams::kern::arch::arm64 {
                 out->lr     = 0;
                 out->sp     = 0;
                 out->pc     = e_ctx->pc;
-                out->pstate = (e_ctx->psr & El0PsrMask);
+                out->pstate = (e_ctx->psr & cpu::El0Aarch32PsrMask);
 
                 /* Adjust PC if we should. */
                 if (e_ctx->write == 0 && thread->IsCallingSvc()) {
@@ -166,7 +164,7 @@ namespace ams::kern::arch::arm64 {
                 e_ctx->x[30] = ctx.lr;
                 e_ctx->sp    = ctx.sp;
                 e_ctx->pc    = ctx.pc;
-                e_ctx->psr   = ((ctx.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask));
+                e_ctx->psr   = ((ctx.pstate & cpu::El0Aarch64PsrMask) | (e_ctx->psr & ~cpu::El0Aarch64PsrMask));
                 e_ctx->tpidr = ctx.tpidr;
             } else {
                 e_ctx->x[13] = static_cast<u32>(ctx.r[13]);
@@ -174,7 +172,7 @@ namespace ams::kern::arch::arm64 {
                 e_ctx->x[30] = 0;
                 e_ctx->sp    = 0;
                 e_ctx->pc    = static_cast<u32>(ctx.pc);
-                e_ctx->psr   = ((ctx.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask));
+                e_ctx->psr   = ((ctx.pstate & cpu::El0Aarch32PsrMask) | (e_ctx->psr & ~cpu::El0Aarch32PsrMask));
                 e_ctx->tpidr = ctx.tpidr;
             }
         }
@@ -251,7 +249,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KDebug::BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
-        R_RETURN(KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size));
+        const uintptr_t params[5] = { ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size };
+        R_RETURN(KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, params, util::size(params)));
     }
 
     #define MESOSPHERE_SET_HW_BREAK_POINT(ID, FLAGS, VALUE) \

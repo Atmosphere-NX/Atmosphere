@@ -378,9 +378,11 @@ namespace ams::kern::arch::arm64 {
                 case OperationType_MapFirst:
                     R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, operation != OperationType_MapFirst, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
-                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, page_list, reuse_ll));
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, false, page_list, reuse_ll));
                 case OperationType_ChangePermissionsAndRefresh:
-                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, page_list, reuse_ll));
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, false, page_list, reuse_ll));
+                case OperationType_ChangePermissionsAndRefreshAndFlush:
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, true, page_list, reuse_ll));
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -1233,7 +1235,7 @@ namespace ams::kern::arch::arm64 {
         R_RETURN(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
     }
 
-    Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, bool flush_mapping, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Separate pages before we change permissions. */
@@ -1451,8 +1453,8 @@ namespace ams::kern::arch::arm64 {
                 KScopedSchedulerLock sl;
             }
 
-            /* Finally, apply the changes as directed, flushing the mappings before they're applied. */
-            ApplyEntryTemplate(entry_template, ApplyOption_FlushDataCache);
+            /* Finally, apply the changes as directed, flushing the mappings before they're applied (if we should). */
+            ApplyEntryTemplate(entry_template, flush_mapping ? ApplyOption_FlushDataCache : ApplyOption_None);
         }
 
         /* We've succeeded, now perform what coalescing we can. */

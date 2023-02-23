@@ -20,10 +20,10 @@
 
 namespace ams::fs {
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
-    Result MountCode(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id);
+    /* ACCURATE_TO_VERSION: 16.2.0.0 */
+    Result MountCode(CodeVerificationData *out, const char *name, const char *path, fs::ContentAttributes attr, ncm::ProgramId program_id);
 
-    Result MountCodeForAtmosphereWithRedirection(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific);
-    Result MountCodeForAtmosphere(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id);
+    Result MountCodeForAtmosphereWithRedirection(CodeVerificationData *out, const char *name, const char *path, fs::ContentAttributes attr, ncm::ProgramId program_id, bool is_hbl, bool is_specific);
+    Result MountCodeForAtmosphere(CodeVerificationData *out, const char *name, const char *path, fs::ContentAttributes attr, ncm::ProgramId program_id);
 
 }

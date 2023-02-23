@@ -20,8 +20,8 @@ namespace ams::ncm {
 
     namespace {
 
-        Result MountContentMetaByRemoteFileSystemProxy(const char *mount_name, const char *path) {
-            R_RETURN(fs::MountContent(mount_name, path, fs::ContentType_Meta));
+        Result MountContentMetaByRemoteFileSystemProxy(const char *mount_name, const char *path, fs::ContentAttributes attr) {
+            R_RETURN(fs::MountContent(mount_name, path, attr, fs::ContentType_Meta));
         }
 
         constinit MountContentMetaFunction g_mount_content_meta_func = MountContentMetaByRemoteFileSystemProxy;
@@ -30,8 +30,8 @@ namespace ams::ncm {
 
     namespace impl {
 
-        Result MountContentMetaImpl(const char *mount_name, const char *path) {
-            R_RETURN(g_mount_content_meta_func(mount_name, path));
+        Result MountContentMetaImpl(const char *mount_name, const char *path, fs::ContentAttributes attr) {
+            R_RETURN(g_mount_content_meta_func(mount_name, path, attr));
         }
 
     }
@@ -40,10 +40,10 @@ namespace ams::ncm {
         return impl::PathView(name).HasSuffix(".cnmt");
     }
 
-    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path) {
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path, fs::ContentAttributes attr) {
         /* Mount the content. */
         auto mount_name = impl::CreateUniqueMountName();
-        R_TRY(impl::MountContentMetaImpl(mount_name.str, path));
+        R_TRY(impl::MountContentMetaImpl(mount_name.str, path, attr));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Open the root directory. */
@@ -89,15 +89,15 @@ namespace ams::ncm {
         R_THROW(ncm::ResultContentMetaNotFound());
     }
 
-    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path) {
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path, fs::ContentAttributes attr) {
         fs::ScopedAutoAbortDisabler aad;
-        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
+        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path, attr));
     }
 
-    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path) {
+    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path, fs::ContentAttributes attr) {
         /* Mount the content. */
         auto mount_name = impl::CreateUniqueMountName();
-        R_TRY(impl::MountContentMetaImpl(mount_name.str, path));
+        R_TRY(impl::MountContentMetaImpl(mount_name.str, path, attr));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Open the root directory. */
@@ -157,14 +157,44 @@ namespace ams::ncm {
         R_THROW(ncm::ResultContentMetaNotFound());
     }
 
-    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path) {
+    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path, fs::ContentAttributes attr) {
         fs::ScopedAutoAbortDisabler aad;
-        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
+        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path, attr));
     }
 
-    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id) {
+    Result TryReadContentMetaPath(fs::ContentAttributes *out_attr, AutoBuffer *out, const char *path, ReadContentMetaPathFunction func) {
+        /* Try with attributes = none. */
+        fs::ContentAttributes attr = fs::ContentAttributes_None;
+        R_TRY_CATCH(func(out, path, attr)) {
+            R_CATCH(fs::ResultNcaHeaderSignature1VerificationFailed) {
+                /* On signature failure, try with attributes = all. */
+                attr = fs::ContentAttributes_All;
+                R_TRY(func(out, path, attr));
+            }
+        } R_END_TRY_CATCH;
+
+        /* Set output attributes. */
+        *out_attr = attr;
+        R_SUCCEED();
+    }
+
+    Result TryReadContentMetaPath(AutoBuffer *out, const char *path, ReadContentMetaPathFunction func) {
+        /* Try with attributes = none. */
+        fs::ContentAttributes attr = fs::ContentAttributes_None;
+        R_TRY_CATCH(func(out, path, attr)) {
+            R_CATCH(fs::ResultNcaHeaderSignature1VerificationFailed) {
+                /* On signature failure, try with attributes = all. */
+                attr = fs::ContentAttributes_All;
+                R_TRY(func(out, path, attr));
+            }
+        } R_END_TRY_CATCH;
+
+        R_SUCCEED();
+    }
+
+    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, fs::ContentAttributes attr, FirmwareVariationId firmware_variation_id) {
         AutoBuffer meta;
-        R_TRY(ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(std::addressof(meta), path.str));
+        R_TRY(ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(std::addressof(meta), path.str, attr));
 
         /* Create a reader for the content meta. */
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());

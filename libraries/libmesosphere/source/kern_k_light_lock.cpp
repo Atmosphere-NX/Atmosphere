@@ -68,13 +68,13 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Get the next owner. */
-            s32 num_waiters;
-            KThread *next_owner = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_tag)));
+            bool has_waiters;
+            KThread *next_owner = owner_thread->RemoveWaiterByKey(std::addressof(has_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_tag)));
 
             /* Pass the lock to the next owner. */
             uintptr_t next_tag = 0;
             if (next_owner != nullptr) {
-                next_tag = reinterpret_cast<uintptr_t>(next_owner) | static_cast<uintptr_t>(num_waiters > 1);
+                next_tag = reinterpret_cast<uintptr_t>(next_owner) | static_cast<uintptr_t>(has_waiters);
 
                 next_owner->EndWait(ResultSuccess());
 

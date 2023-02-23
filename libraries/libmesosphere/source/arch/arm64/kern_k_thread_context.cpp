@@ -26,7 +26,9 @@ namespace ams::kern::arch::arm64 {
         /* Send KDebug event for this thread's creation. */
         {
             KScopedInterruptEnable ei;
-            KDebug::OnDebugEvent(ams::svc::DebugEvent_CreateThread, GetCurrentThread().GetId(), GetInteger(GetCurrentThread().GetThreadLocalRegionAddress()));
+
+            const uintptr_t params[2] = { GetCurrentThread().GetId(), GetInteger(GetCurrentThread().GetThreadLocalRegionAddress()) };
+            KDebug::OnDebugEvent(ams::svc::DebugEvent_CreateThread, params, util::size(params));
         }
 
         /* Handle any pending dpc. */
@@ -39,8 +41,6 @@ namespace ams::kern::arch::arm64 {
     }
 
     namespace {
-
-        constexpr inline u32 El0PsrMask = 0xFF0FFE20;
 
         ALWAYS_INLINE bool IsFpuEnabled() {
             return cpu::ArchitecturalFeatureAccessControlRegisterAccessor().IsFpEnabled();
@@ -96,8 +96,8 @@ namespace ams::kern::arch::arm64 {
             /* SP                                                                        */
             /* |                                                                         */
             /* v                                                                         */
-            /* | u64 argument | u64 entrypoint | KThread::StackParameters (size 0x130) | */
-            static_assert(sizeof(KThread::StackParameters) == 0x130);
+            /* | u64 argument | u64 entrypoint | KThread::StackParameters (size 0x140) | */
+            static_assert(sizeof(KThread::StackParameters) == 0x140);
 
             u64 *stack = GetPointer<u64>(sp);
             *(--stack) = GetInteger(pc);
@@ -191,7 +191,7 @@ namespace ams::kern::arch::arm64 {
             out->lr     = e_ctx->x[30];
             out->sp     = e_ctx->sp;
             out->pc     = e_ctx->pc;
-            out->pstate = e_ctx->psr & El0PsrMask;
+            out->pstate = e_ctx->psr & cpu::El0Aarch64PsrMask;
 
             /* Get the thread's general purpose registers. */
             if (thread->IsCallingSvc()) {
@@ -227,7 +227,7 @@ namespace ams::kern::arch::arm64 {
         } else {
             /* Set special registers. */
             out->pc     = static_cast<u32>(e_ctx->pc);
-            out->pstate = e_ctx->psr & El0PsrMask;
+            out->pstate = e_ctx->psr & cpu::El0Aarch32PsrMask;
 
             /* Get the thread's general purpose registers. */
             for (size_t i = 0; i < 15; ++i) {

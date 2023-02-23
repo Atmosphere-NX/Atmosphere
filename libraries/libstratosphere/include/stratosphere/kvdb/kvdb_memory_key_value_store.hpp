@@ -279,6 +279,23 @@ namespace ams::kvdb {
                 R_SUCCEED();
             }
 
+            Result InitializeForReadOnlyArchiveFile(const char *path, size_t capacity, MemoryResource *mr) {
+                /* Ensure that the passed path is a directory. */
+                fs::DirectoryEntryType entry_type;
+                R_TRY(fs::GetEntryType(std::addressof(entry_type), path));
+                R_UNLESS(entry_type == fs::DirectoryEntryType_File, fs::ResultPathNotFound());
+
+                /* Set paths. */
+                m_path.Assign(path);
+                m_temp_path.Assign("");
+
+                /* Initialize our index. */
+                R_TRY(m_index.Initialize(capacity, mr));
+                m_memory_resource = mr;
+
+                R_SUCCEED();
+            }
+
             Result Initialize(size_t capacity, MemoryResource *mr) {
                 /* This initializes without an archive file. */
                 /* A store initialized this way cannot have its contents loaded from or flushed to disk. */

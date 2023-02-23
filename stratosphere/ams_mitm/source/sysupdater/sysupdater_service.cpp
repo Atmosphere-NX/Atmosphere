@@ -69,7 +69,7 @@ namespace ams::mitm::sysupdater {
             char path[ams::fs::EntryNameLengthMax];
             R_TRY(ConvertToFsCommonPath(path, sizeof(path), package_root_path, entry.name));
 
-            R_RETURN(ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
+            R_RETURN(ncm::TryReadContentMetaPath(out, path, ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest));
         }
 
         Result ReadContentMetaPath(ncm::AutoBuffer *out, const char *package_root, const ncm::ContentInfo &content_info) {
@@ -84,7 +84,7 @@ namespace ams::mitm::sysupdater {
             R_TRY(ConvertToFsCommonPath(content_path.str, sizeof(content_path.str), package_root, cnmt_nca_name));
 
             /* Read the content meta path. */
-            R_RETURN(ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest(out, content_path.str));
+            R_RETURN(ncm::TryReadContentMetaPath(out, content_path.str, ncm::ReadContentMetaPathAlongWithExtendedDataAndDigest));
         }
 
         Result GetSystemUpdateUpdateContentInfoFromPackage(ncm::ContentInfo *out, const char *package_root) {

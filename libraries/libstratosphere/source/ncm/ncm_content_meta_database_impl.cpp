@@ -275,11 +275,11 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
+    Result ContentMetaDatabaseImpl::GetPatchContentMetaId(sf::Out<u64> out_patch_id, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
         /* Only applications can have patches. */
-        R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
+        R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::AddOnContent, ncm::ResultInvalidContentMetaKey());
 
         /* Obtain the content meta for the key. */
         const void *meta;
@@ -290,7 +290,17 @@ namespace ams::ncm {
         ContentMetaReader reader(meta, meta_size);
 
         /* Obtain the patch id. */
-        out_patch_id.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->patch_id);
+        switch (key.type) {
+            case ContentMetaType::Application:
+                out_patch_id.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->patch_id.value);
+                break;
+            case ContentMetaType::AddOnContent:
+                R_UNLESS(reader.GetExtendedHeaderSize() == sizeof(AddOnContentMetaExtendedHeader), ncm::ResultInvalidAddOnContentMetaExtendedHeader());
+                out_patch_id.SetValue(reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->data_patch_id.value);
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
         R_SUCCEED();
     }
 

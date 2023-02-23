@@ -142,12 +142,14 @@ namespace ams::ncm {
                 R_RETURN(m_interface->ReadContentIdFile(sf::OutBuffer(dst, size), content_id, offset));
             }
 
-            Result GetRightsId(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
+            Result GetRightsId(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr) {
                 AMS_ASSERT(m_interface != nullptr);
 
                 const auto vers = hos::GetVersion();
-                if (vers >= hos::Version_3_0_0) {
-                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id));
+                if (vers >= hos::Version_16_0_0) {
+                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id, attr));
+                } else if (vers >= hos::Version_3_0_0) {
+                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdDeprecated2(out_rights_id, placeholder_id));
                 } else {
                     AMS_ABORT_UNLESS(vers >= hos::Version_2_0_0);
                     *out_rights_id = {};
@@ -155,12 +157,14 @@ namespace ams::ncm {
                 }
             }
 
-            Result GetRightsId(ncm::RightsId *out_rights_id, ContentId content_id) {
+            Result GetRightsId(ncm::RightsId *out_rights_id, ContentId content_id, fs::ContentAttributes attr) {
                 AMS_ASSERT(m_interface != nullptr);
 
                 const auto vers = hos::GetVersion();
-                if (vers >= hos::Version_3_0_0) {
-                    R_RETURN(m_interface->GetRightsIdFromContentId(out_rights_id, content_id));
+                if (vers >= hos::Version_16_0_0) {
+                    R_RETURN(m_interface->GetRightsIdFromContentId(out_rights_id, content_id, attr));
+                } else if (vers >= hos::Version_3_0_0) {
+                    R_RETURN(m_interface->GetRightsIdFromContentIdDeprecated2(out_rights_id, content_id));
                 } else {
                     AMS_ABORT_UNLESS(vers >= hos::Version_2_0_0);
                     *out_rights_id = {};
@@ -193,9 +197,15 @@ namespace ams::ncm {
                 R_RETURN(m_interface->RepairInvalidFileAttribute());
             }
 
-            Result GetRightsIdFromPlaceHolderIdWithCache(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+            Result GetRightsIdFromPlaceHolderIdWithCache(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
                 AMS_ASSERT(m_interface != nullptr);
-                R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id));
+
+                const auto vers = hos::GetVersion();
+                if (vers >= hos::Version_16_0_0) {
+                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, attr));
+                } else {
+                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCacheDeprecated(out_rights_id, cache_content_id, placeholder_id));
+                }
             }
     };
 

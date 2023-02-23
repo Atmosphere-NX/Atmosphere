@@ -714,14 +714,18 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         /* Obtain the regular rights id for the placeholder id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromPlaceHolderId(std::addressof(rights_id), placeholder_id));
+        R_TRY(this->GetRightsIdFromPlaceHolderIdDeprecated2(std::addressof(rights_id), placeholder_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
         R_SUCCEED();
     }
 
-    Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+        R_RETURN(this->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id, fs::ContentAttributes_None));
+    }
+
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr) {
         R_TRY(this->EnsureEnabled());
 
         /* Get the placeholder path. */
@@ -729,20 +733,24 @@ namespace ams::ncm {
         R_TRY(this->GetPlaceHolderPath(std::addressof(path), placeholder_id));
 
         /* Get the rights id for the placeholder id. */
-        R_RETURN(GetRightsId(out_rights_id.GetPointer(), path));
+        R_RETURN(GetRightsId(out_rights_id.GetPointer(), path, attr));
     }
 
     Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
         /* Obtain the regular rights id for the content id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromContentId(std::addressof(rights_id), content_id));
+        R_TRY(this->GetRightsIdFromContentIdDeprecated2(std::addressof(rights_id), content_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
         R_SUCCEED();
     }
 
-    Result ContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+    Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+        R_RETURN(this->GetRightsIdFromContentId(out_rights_id, content_id, fs::ContentAttributes_None));
+    }
+
+    Result ContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id, fs::ContentAttributes attr) {
         R_TRY(this->EnsureEnabled());
 
         /* Attempt to obtain the rights id from the cache. */
@@ -756,7 +764,7 @@ namespace ams::ncm {
 
         /* Obtain the rights id for the content. */
         ncm::RightsId rights_id;
-        R_TRY(GetRightsId(std::addressof(rights_id), path));
+        R_TRY(GetRightsId(std::addressof(rights_id), path, attr));
 
         /* Store the rights id to the cache. */
         m_rights_id_cache->Store(content_id, rights_id);
@@ -875,7 +883,7 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
         R_TRY(this->EnsureEnabled());
 
         /* Attempt to find the rights id in the cache. */
@@ -893,7 +901,7 @@ namespace ams::ncm {
 
         /* Get the rights id. */
         ncm::RightsId rights_id;
-        R_TRY(GetRightsId(std::addressof(rights_id), common_path));
+        R_TRY(GetRightsId(std::addressof(rights_id), common_path, attr));
         m_rights_id_cache->Store(cache_content_id, rights_id);
 
         /* Set output. */

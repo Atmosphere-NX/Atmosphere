@@ -15,15 +15,9 @@
  */
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_content_storage_id.hpp>
 
 namespace ams::fs {
-
-    /* ACCURATE_TO_VERSION: Unknown */
-    enum class ContentStorageId : u32 {
-        System = 0,
-        User   = 1,
-        SdCard = 2,
-    };
 
     constexpr inline const char * const ContentStorageDirectoryName = "Contents";
 

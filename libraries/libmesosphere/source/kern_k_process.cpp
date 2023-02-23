@@ -198,7 +198,6 @@ namespace ams::kern {
         /* Set misc fields. */
         m_state                     = State_Created;
         m_main_thread_stack_size    = 0;
-        m_creation_time             = KHardwareTimer::GetTick();
         m_used_kernel_memory_size   = 0;
         m_ideal_core_id             = 0;
         m_flags                     = params.flags;
@@ -209,11 +208,16 @@ namespace ams::kern {
         m_is_application            = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
         m_is_jit_debug              = false;
 
+        #if defined(MESOSPHERE_ENABLE_PROCESS_CREATION_TIME)
+        m_creation_time             = KHardwareTimer::GetTick();
+        #endif
+
         /* Set thread fields. */
         for (size_t i = 0; i < cpu::NumCores; i++) {
-            m_running_threads[i]            = nullptr;
-            m_pinned_threads[i]             = nullptr;
-            m_running_thread_idle_counts[i] = 0;
+            m_running_threads[i]              = nullptr;
+            m_pinned_threads[i]               = nullptr;
+            m_running_thread_idle_counts[i]   = 0;
+            m_running_thread_switch_counts[i] = 0;
         }
 
         /* Set max memory based on address space type. */
@@ -816,8 +820,8 @@ namespace ams::kern {
             m_exception_thread = nullptr;
 
             /* Remove waiter thread. */
-            s32 num_waiters;
-            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
+            bool has_waiters;
+            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(has_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
                 next->EndWait(ResultSuccess());
             }
 
@@ -1241,7 +1245,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         if (m_is_jit_debug) {
-            return KDebugBase::CreateDebugEvent(m_jit_debug_event_type, m_jit_debug_exception_type, m_jit_debug_params[0], m_jit_debug_params[1], m_jit_debug_params[2], m_jit_debug_params[3], m_jit_debug_thread_id);
+            const uintptr_t params[5] = { m_jit_debug_exception_type, m_jit_debug_params[0], m_jit_debug_params[1], m_jit_debug_params[2], m_jit_debug_params[3] };
+            return KDebugBase::CreateDebugEvent(m_jit_debug_event_type, m_jit_debug_thread_id, params, util::size(params));
         } else {
             return nullptr;
         }

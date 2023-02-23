@@ -230,7 +230,10 @@ namespace ams::mitm::sysupdater {
         return pos != util::string_view::npos ? m_path.substr(pos + 1) : m_path;
     }
 
-    Result MountSdCardContentMeta(const char *mount_name, const char *path) {
+    Result MountSdCardContentMeta(const char *mount_name, const char *path, ams::fs::ContentAttributes attr) {
+        /* TODO: What does attributes actually get used for? */
+        AMS_UNUSED(attr);
+
         /* Sanitize input. */
         /* NOTE: This is an internal API, so we won't bother with mount name sanitization. */
         R_UNLESS(path != nullptr, fs::ResultInvalidPath());

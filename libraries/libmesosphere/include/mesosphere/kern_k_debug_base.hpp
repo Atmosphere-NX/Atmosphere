@@ -74,7 +74,7 @@ namespace ams::kern {
                 return m_process_holder.Get();
             }
         private:
-            void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+            void PushDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params);
             void EnqueueDebugEventInfo(KEventInfo *info);
 
             template<typename T> requires (std::same_as<T, ams::svc::lp64::DebugEventInfo> || std::same_as<T, ams::svc::ilp32::DebugEventInfo>)
@@ -85,13 +85,13 @@ namespace ams::kern {
             /* NOTE: This is public/virtual override in Nintendo's kernel. */
             void OnFinalizeSynchronizationObject();
         private:
-            static Result ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4);
+            static Result ProcessDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params);
         public:
-            static Result OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+            static Result OnDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params);
             static Result OnExitProcess(KProcess *process);
             static Result OnTerminateProcess(KProcess *process);
             static Result OnExitThread(KThread *thread);
-            static KEventInfo *CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 thread_id);
+            static KEventInfo *CreateDebugEvent(ams::svc::DebugEvent event, u64 thread_id, const uintptr_t *params, size_t num_params);
     };
 
 }

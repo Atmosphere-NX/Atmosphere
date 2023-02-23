@@ -1600,7 +1600,7 @@ namespace ams::kern {
 
         /* Perform mapping operation. */
         const KPageProperties properties = { new_perm, false, false, DisableMergeAttribute_None };
-        const auto operation = was_x ? OperationType_ChangePermissionsAndRefresh : OperationType_ChangePermissions;
+        const auto operation = was_x ? OperationType_ChangePermissionsAndRefreshAndFlush : OperationType_ChangePermissions;
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, operation, false));
 
         /* Update the blocks. */
@@ -1649,7 +1649,7 @@ namespace ams::kern {
 
         /* Perform operation. */
         const KPageProperties properties = { old_perm, false, (new_attr & KMemoryAttribute_Uncached) != 0, DisableMergeAttribute_None };
-        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefresh, false));
+        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefreshAndFlush, false));
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, old_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
@@ -2019,15 +2019,22 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size) {
+    Result KPageTableBase::UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping) {
         const size_t num_pages = size / PageSize;
 
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
         /* Validate the memory state. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        KMemoryAttribute old_attr;
         size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Io, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_Locked));
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks),
+                                     dst_address, size,
+                                     KMemoryState_All, KMemoryState_Io,
+                                     KMemoryPermission_None, KMemoryPermission_None,
+                                     KMemoryAttribute_All, KMemoryAttribute_Locked));
 
         /* Validate that the region being unmapped corresponds to the physical range described. */
         {
@@ -2060,9 +2067,23 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
+        /* If the region being unmapped is Memory, synchronize. */
+        if (mapping == ams::svc::MemoryMapping_Memory) {
+            /* Change the region to be uncached. */
+            const KPageProperties properties = { old_perm, false, true, DisableMergeAttribute_None };
+            MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefresh, false));
+
+            /* Temporarily unlock ourselves, so that other operations can occur while we flush the region. */
+            m_general_lock.Unlock();
+            ON_SCOPE_EXIT { m_general_lock.Lock(); };
+
+            /* Flush the region. */
+            MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(GetVoidPointer(dst_address), size));
+        }
+
         /* Perform the unmap. */
         const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
-        R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+        MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);

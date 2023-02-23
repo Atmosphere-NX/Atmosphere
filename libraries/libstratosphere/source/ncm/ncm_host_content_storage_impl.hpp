@@ -29,11 +29,11 @@ namespace ams::ncm {
                 R_SUCCEED();
             }
 
-            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
+            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path, fs::ContentAttributes attr) {
                 if (hos::GetVersion() >= hos::Version_3_0_0) {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str, attr));
                 } else {
-                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str, attr));
                     out_rights_id->key_generation = 0;
                 }
                 R_SUCCEED();
@@ -42,38 +42,47 @@ namespace ams::ncm {
             HostContentStorageImpl(RegisteredHostContent *registered_content) : m_registered_content(registered_content), m_disabled(false) { /* ... */ }
         public:
             /* Actual commands. */
-            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);
-            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size);
-            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id);
-            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id);
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data);
-            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id);
-            virtual Result Delete(ContentId content_id);
-            virtual Result Has(sf::Out<bool> out, ContentId content_id);
-            virtual Result GetPath(sf::Out<Path> out, ContentId content_id);
-            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id);
-            virtual Result CleanupAllPlaceHolder();
-            virtual Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf);
-            virtual Result GetContentCount(sf::Out<s32> out_count);
-            virtual Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 start_offset);
-            virtual Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id);
-            virtual Result DisableForcibly();
-            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id);
-            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size);
-            virtual Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset);
-            virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id);
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id);
-            virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id);
-            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id);
-            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data);
-            virtual Result GetFreeSpaceSize(sf::Out<s64> out_size);
-            virtual Result GetTotalSpaceSize(sf::Out<s64> out_size);
-            virtual Result FlushPlaceHolder();
-            virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id);
-            virtual Result RepairInvalidFileAttribute();
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id);
-            virtual Result RegisterPath(const ContentId &content_id, const Path &path);
-            virtual Result ClearRegisteredPath();
+            Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);
+            Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size);
+            Result DeletePlaceHolder(PlaceHolderId placeholder_id);
+            Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id);
+            Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data);
+            Result Register(PlaceHolderId placeholder_id, ContentId content_id);
+            Result Delete(ContentId content_id);
+            Result Has(sf::Out<bool> out, ContentId content_id);
+            Result GetPath(sf::Out<Path> out, ContentId content_id);
+            Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id);
+            Result CleanupAllPlaceHolder();
+            Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf);
+            Result GetContentCount(sf::Out<s32> out_count);
+            Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 start_offset);
+            Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id);
+            Result DisableForcibly();
+            Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id);
+            Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size);
+            Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset);
+            Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id);
+            Result GetRightsIdFromPlaceHolderIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id);
+            Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr);
+            Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id);
+            Result GetRightsIdFromContentIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id);
+            Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id, fs::ContentAttributes attr);
+            Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data);
+            Result GetFreeSpaceSize(sf::Out<s64> out_size);
+            Result GetTotalSpaceSize(sf::Out<s64> out_size);
+            Result FlushPlaceHolder();
+            Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id);
+            Result RepairInvalidFileAttribute();
+            Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id);
+            Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr);
+            Result RegisterPath(const ContentId &content_id, const Path &path);
+            Result ClearRegisteredPath();
+
+            /* 16.0.0 Alignment change hacks. */
+            Result CreatePlaceHolder_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id, s64 size) { R_RETURN(this->CreatePlaceHolder(placeholder_id, content_id, size)); }
+            Result Register_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id) { R_RETURN(this->Register(placeholder_id, content_id)); }
+            Result RevertToPlaceHolder_AtmosphereAlignmentFix(ncm::ContentId old_content_id, ncm::ContentId new_content_id, ncm::PlaceHolderId placeholder_id) { R_RETURN(this->RevertToPlaceHolder(placeholder_id, old_content_id, new_content_id)); }
+            Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, ContentId cache_content_id, PlaceHolderId placeholder_id) { R_RETURN(this->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, fs::ContentAttributes_None)); }
     };
     static_assert(ncm::IsIContentStorage<HostContentStorageImpl>);
 

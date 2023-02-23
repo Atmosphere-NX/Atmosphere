@@ -23,11 +23,30 @@ namespace ams::kern {
     class KProcess;
     class KIoPool;
 
-    class KIoRegion final : public KAutoObjectWithSlabHeapAndContainer<KIoRegion, KAutoObjectWithList> {
+    class KIoRegion final : public KAutoObjectWithSlabHeapAndContainer<KIoRegion, KAutoObjectWithList>, public util::IntrusiveRedBlackTreeBaseNode<KIoRegion> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KIoRegion, KAutoObject);
         private:
             friend class KProcess;
             friend class KIoPool;
+        public:
+            using RedBlackKeyType = KPhysicalAddress;
+
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const RedBlackKeyType  &v) { return v; }
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const KIoRegion &v) { return v.GetAddress(); }
+
+            template<typename T> requires (std::same_as<T, KIoRegion> || std::same_as<T, RedBlackKeyType>)
+            static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KIoRegion &rhs) {
+                const RedBlackKeyType lval = GetRedBlackKey(lhs);
+                const RedBlackKeyType rval = GetRedBlackKey(rhs);
+
+                if (lval < rval) {
+                    return -1;
+                } else if (lval == rval) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
         private:
             KLightLock m_lock;
             KIoPool *m_pool;
@@ -38,7 +57,6 @@ namespace ams::kern {
             bool m_is_initialized;
             bool m_is_mapped;
             util::IntrusiveListNode m_process_list_node;
-            util::IntrusiveListNode m_pool_list_node;
         public:
             explicit KIoRegion() : m_pool(nullptr), m_is_initialized(false) { /* ... */ }
 
@@ -51,12 +69,25 @@ namespace ams::kern {
             Result Map(KProcessAddress address, size_t size, ams::svc::MemoryPermission map_perm);
             Result Unmap(KProcessAddress address, size_t size);
 
-            bool Overlaps(KPhysicalAddress address, size_t size) const {
+            constexpr bool Overlaps(KPhysicalAddress address, size_t size) const {
                 return m_physical_address <= (address + size - 1) && address <= (m_physical_address + m_size - 1);
             }
 
-            ALWAYS_INLINE KPhysicalAddress GetAddress() const { return m_physical_address; }
-            ALWAYS_INLINE size_t GetSize() const { return m_size; }
+            constexpr ALWAYS_INLINE KPhysicalAddress GetAddress() const { return m_physical_address; }
+            constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
+
+            constexpr uintptr_t GetHint() const {
+                /* TODO: Is this architecture specific? */
+                if (m_size >= 2_MB) {
+                    return GetInteger(m_physical_address) & (2_MB - 1);
+                } else if (m_size >= 64_KB) {
+                    return GetInteger(m_physical_address) & (64_KB - 1);
+                } else if (m_size >= 4_KB) {
+                    return GetInteger(m_physical_address) & (4_KB - 1);
+                } else {
+                    return 0;
+                }
+            }
     };
 
 }

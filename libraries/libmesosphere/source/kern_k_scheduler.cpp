@@ -88,10 +88,12 @@ namespace ams::kern {
             if (m_state.should_count_idle) {
                 if (AMS_LIKELY(highest_thread != nullptr)) {
                     if (KProcess *process = highest_thread->GetOwnerProcess(); process != nullptr) {
-                        process->SetRunningThread(m_core_id, highest_thread, m_state.idle_count);
+                        /* Set running thread (and increment switch count). */
+                        process->SetRunningThread(m_core_id, highest_thread, m_state.idle_count, ++m_state.switch_count);
                     }
                 } else {
-                    m_state.idle_count++;
+                    /* Set idle count and switch count to switch count + 1. */
+                    m_state.idle_count = ++m_state.switch_count;
                 }
             }
 
@@ -241,7 +243,7 @@ namespace ams::kern {
             if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == m_core_id)) {
                 m_state.prev_thread = cur_thread;
             } else {
-                m_state.prev_thread =nullptr;
+                m_state.prev_thread = nullptr;
             }
         }
 

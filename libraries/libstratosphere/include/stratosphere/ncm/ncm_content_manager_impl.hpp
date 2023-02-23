@@ -27,6 +27,8 @@
 #include <stratosphere/ncm/ncm_content_management_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta_utils.hpp>
 #include <stratosphere/ncm/ncm_registered_host_content.hpp>
+#include <stratosphere/ncm/ncm_integrated_content_meta_database_impl.hpp>
+#include <stratosphere/ncm/ncm_integrated_content_storage_impl.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
@@ -69,10 +71,29 @@ namespace ams::ncm {
     };
     static_assert(util::is_pod<SystemSaveDataInfo>::value);
 
+    struct IntegratedContentStorageImpl;
+
     class ContentManagerImpl {
         private:
-            constexpr static size_t MaxContentStorageRoots         = 8;
-            constexpr static size_t MaxContentMetaDatabaseRoots    = 8;
+            constexpr static size_t MaxContentStorageRoots                = 8;
+            constexpr static size_t MaxIntegratedContentStorageRoots      = 8;
+            constexpr static size_t MaxContentMetaDatabaseRoots           = 8;
+            constexpr static size_t MaxIntegratedContentMetaDatabaseRoots = 8;
+            constexpr static size_t MaxConfigs                            = 8;
+            constexpr static size_t MaxIntegratedConfigs                  = 8;
+        private:
+            struct ContentStorageConfig {
+                fs::ContentStorageId content_storage_id;
+                bool skip_verify_and_create;
+                bool skip_activate;
+            };
+
+            struct IntegratedContentStorageConfig {
+                ncm::StorageId storage_id;
+                fs::ContentStorageId content_storage_ids[MaxContentStorageRoots];
+                int num_content_storage_ids;
+                bool is_integrated;
+            };
         private:
             struct ContentStorageRoot {
                 NON_COPYABLE(ContentStorageRoot);
@@ -81,10 +102,42 @@ namespace ams::ncm {
                 char mount_name[fs::MountNameLengthMax + 1];
                 char path[128];
                 StorageId storage_id;
-                fs::ContentStorageId content_storage_id;
+                util::optional<ContentStorageConfig> config;
                 sf::SharedPointer<IContentStorage> content_storage;
 
-                ContentStorageRoot() : mount_name(), path(), storage_id(), content_storage_id(), content_storage() { /* ... */ }
+                ContentStorageRoot() : mount_name(), path(), storage_id(), config(util::nullopt), content_storage() { /* ... */ }
+            };
+
+            struct IntegratedContentStorageRoot {
+                NON_COPYABLE(IntegratedContentStorageRoot);
+                NON_MOVEABLE(IntegratedContentStorageRoot);
+
+                const IntegratedContentStorageConfig *m_config;
+                ContentStorageRoot *m_roots;
+                int m_num_roots;
+                sf::EmplacedRef<IContentStorage, IntegratedContentStorageImpl> m_integrated_content_storage;
+
+                IntegratedContentStorageRoot() : m_config(), m_roots(), m_num_roots(), m_integrated_content_storage() { /* ... */ }
+
+                Result Create();
+                Result Verify();
+                Result Open(sf::Out<sf::SharedPointer<IContentStorage>> out, RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content);
+                Result Activate(RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content);
+                Result Inactivate(RegisteredHostContent &registered_host_content);
+
+                Result Activate(ContentStorageRoot &root, RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content);
+
+                Result Activate(RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content, fs::ContentStorageId content_storage_id);
+
+                ContentStorageRoot *GetRoot(fs::ContentStorageId storage_id) {
+                    for (auto i = 0; i < m_num_roots; ++i) {
+                        if (auto &root = m_roots[i]; root.config.has_value() && root.config->content_storage_id == storage_id) {
+                            return std::addressof(root);
+                        }
+                    }
+
+                    return nullptr;
+                }
             };
 
             struct ContentMetaDatabaseRoot {
@@ -94,46 +147,100 @@ namespace ams::ncm {
                 char mount_name[fs::MountNameLengthMax + 1];
                 char path[128];
                 StorageId storage_id;
-                SystemSaveDataInfo info;
-                sf::SharedPointer<IContentMetaDatabase> content_meta_database;
+                util::optional<ContentStorageConfig> storage_config;
+                util::optional<SystemSaveDataInfo> save_data_info;
                 util::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
+                sf::SharedPointer<IContentMetaDatabase> content_meta_database;
                 ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
 
-                ContentMetaDatabaseRoot() : mount_name(), path(), storage_id(), info(), content_meta_database(), kvs(util::nullopt), memory_resource(), max_content_metas() { /* ... */ }
+                ContentMetaDatabaseRoot() : mount_name(), path(), storage_id(), storage_config(util::nullopt), save_data_info(util::nullopt), kvs(util::nullopt), content_meta_database(), memory_resource(), max_content_metas() { /* ... */ }
+            };
+
+            struct IntegratedContentMetaDatabaseRoot {
+                NON_COPYABLE(IntegratedContentMetaDatabaseRoot);
+                NON_MOVEABLE(IntegratedContentMetaDatabaseRoot);
+
+                const IntegratedContentStorageConfig *m_config;
+                ContentMetaDatabaseRoot *m_roots;
+                int m_num_roots;
+                sf::EmplacedRef<IContentMetaDatabase, IntegratedContentMetaDatabaseImpl> m_integrated_content_meta_database;
+
+                IntegratedContentMetaDatabaseRoot() : m_config(), m_roots(), m_num_roots(), m_integrated_content_meta_database() { /* ... */ }
+
+                Result Create();
+                Result Verify();
+                Result Open(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out);
+                Result Cleanup();
+                Result Activate();
+                Result Inactivate();
+
+                Result Activate(ContentMetaDatabaseRoot &root);
+
+                Result Activate(fs::ContentStorageId content_storage_id);
+
+                ContentMetaDatabaseRoot *GetRoot(fs::ContentStorageId storage_id) {
+                    for (auto i = 0; i < m_num_roots; ++i) {
+                        if (auto &root = m_roots[i]; root.storage_config.has_value() && root.storage_config->content_storage_id == storage_id) {
+                            return std::addressof(root);
+                        }
+                    }
+
+                    return nullptr;
+                }
             };
         private:
-            os::SdkRecursiveMutex m_mutex;
-            bool m_initialized;
-            ContentStorageRoot m_content_storage_roots[MaxContentStorageRoots];
-            ContentMetaDatabaseRoot m_content_meta_database_roots[MaxContentMetaDatabaseRoots];
-            u32 m_num_content_storage_entries;
-            u32 m_num_content_meta_entries;
-            RightsIdCache m_rights_id_cache;
-            RegisteredHostContent m_registered_host_content;
+            os::SdkRecursiveMutex m_mutex{};
+            bool m_initialized{false};
+            IntegratedContentStorageRoot m_integrated_content_storage_roots[MaxIntegratedContentStorageRoots]{};
+            ContentStorageRoot m_content_storage_roots[MaxContentStorageRoots]{};
+            IntegratedContentMetaDatabaseRoot m_integrated_content_meta_database_roots[MaxIntegratedContentMetaDatabaseRoots]{};
+            ContentMetaDatabaseRoot m_content_meta_database_roots[MaxContentMetaDatabaseRoots]{};
+            IntegratedContentStorageConfig m_integrated_configs[MaxIntegratedConfigs]{};
+            ContentStorageConfig m_configs[MaxConfigs]{};
+            u32 m_num_integrated_content_storage_entries{0};
+            u32 m_num_content_storage_entries{0};
+            u32 m_num_integrated_content_meta_entries{0};
+            u32 m_num_content_meta_entries{0};
+            u32 m_num_integrated_configs{0};
+            u32 m_num_configs{0};
+            RightsIdCache m_rights_id_cache{};
+            RegisteredHostContent m_registered_host_content{};
         public:
-            ContentManagerImpl() : m_mutex(), m_initialized(false), m_content_storage_roots(), m_content_meta_database_roots(), m_num_content_storage_entries(0), m_num_content_meta_entries(0), m_rights_id_cache(), m_registered_host_content() {
-                /* ... */
-            };
+            ContentManagerImpl() = default;
             ~ContentManagerImpl();
         public:
             Result Initialize(const ContentManagerConfig &config);
         private:
+            Result Initialize(const ContentManagerConfig &manager_config, const IntegratedContentStorageConfig *integrated_configs, size_t num_integrated_configs, const ContentStorageConfig *configs, size_t num_configs, const ncm::StorageId *activated_storages, size_t num_activated_storages);
+            Result InitializeStorageBuiltInSystem(const ContentManagerConfig &manager_config);
+            Result InitializeStorage(ncm::StorageId storage_id);
+
+            const ContentStorageConfig &GetContentStorageConfig(fs::ContentStorageId content_storage_id) {
+                for (size_t i = 0; i < m_num_configs; ++i) {
+                    if (m_configs[i].content_storage_id == content_storage_id) {
+                        return m_configs[i];
+                    }
+                }
+
+                /* NOTE: Nintendo accesses out of bounds memory here. Should we explicitly abort? This is guaranteed by data to never happen. */
+                AMS_ASSUME(false);
+            }
+        private:
             /* Helpers. */
-            Result GetContentStorageRoot(ContentStorageRoot **out, StorageId id);
-            Result GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id);
+            Result GetIntegratedContentStorageConfig(IntegratedContentStorageConfig **out, fs::ContentStorageId content_storage_id);
+            Result GetIntegratedContentStorageRoot(IntegratedContentStorageRoot **out, StorageId id);
+            Result GetIntegratedContentMetaDatabaseRoot(IntegratedContentMetaDatabaseRoot **out, StorageId id);
 
-            Result InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, fs::ContentStorageId content_storage_id);
-            Result InitializeGameCardContentStorageRoot(ContentStorageRoot *out);
+            Result InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, util::optional<ContentStorageConfig> config);
+            Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, util::optional<ContentStorageConfig> storage_config);
 
-            Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas, ContentMetaMemoryResource *mr);
-            Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas, ContentMetaMemoryResource *mr);
+            Result InitializeIntegratedContentStorageRoot(IntegratedContentStorageRoot *out, const IntegratedContentStorageConfig *config, size_t root_idx, size_t root_count);
+            Result InitializeIntegratedContentMetaDatabaseRoot(IntegratedContentMetaDatabaseRoot *out, const IntegratedContentStorageConfig *config, size_t root_idx, size_t root_count);
 
             Result BuildContentMetaDatabase(StorageId storage_id);
             Result ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition);
-            Result ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path);
-
-            Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
+            Result ImportContentMetaDatabaseImpl(ContentMetaDatabaseRoot *root, const char *import_mount_name);
         public:
             /* Actual commands. */
             Result CreateContentStorage(StorageId storage_id);
@@ -151,6 +258,7 @@ namespace ams::ncm {
             Result InactivateContentMetaDatabase(StorageId storage_id);
             Result InvalidateRightsIdCache();
             Result GetMemoryReport(sf::Out<MemoryReport> out);
+            Result ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id);
     };
     static_assert(IsIContentManager<ContentManagerImpl>);
 

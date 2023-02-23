@@ -36,6 +36,9 @@ namespace ams::kern::arch::arm64::cpu {
     #error "Unknown Board for cpu::NumCores"
 #endif
 
+    constexpr inline u32 El0Aarch64PsrMask = 0xF0000000;
+    constexpr inline u32 El0Aarch32PsrMask = 0xFE0FFE20;
+
     /* Initialization. */
     NOINLINE void InitializeInterruptThreads(s32 core_id);
 
@@ -184,6 +187,14 @@ namespace ams::kern::arch::arm64::cpu {
         }
 
         return (par >> (BITSIZEOF(par) - BITSIZEOF(u8))) == 0xFF;
+    }
+
+    ALWAYS_INLINE void StoreDataCacheForInitArguments(const void *addr, size_t size) {
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        for (size_t stored = 0; stored < size; stored += cpu::DataCacheLineSize) {
+            __asm__ __volatile__("dc cvac, %[cur]" :: [cur]"r"(start + stored) : "memory");
+        }
+        DataSynchronizationBarrier();
     }
 
     /* Synchronization helpers. */

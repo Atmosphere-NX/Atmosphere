@@ -23,7 +23,7 @@
 #define THREAD_KERNEL_STACK_TOP 0x280
 
 /* ams::kern::KThread::StackParameters, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_thread.hpp */
-#define THREAD_STACK_PARAMETERS_SIZE                      0x130
+#define THREAD_STACK_PARAMETERS_SIZE                      0x140
 #define THREAD_STACK_PARAMETERS_SVC_PERMISSION            0x00
 #define THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS 0x18
 #define THREAD_STACK_PARAMETERS_CUR_THREAD                0x20
@@ -34,7 +34,8 @@
 #define THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS           0x2D
 #define THREAD_STACK_PARAMETERS_IS_PINNED                 0x2E
 #define THREAD_STACK_PARAMETERS_RESERVED_2F               0x2F
-#define THREAD_STACK_PARAMETERS_THREAD_CONTEXT            0x30
+#define THREAD_STACK_PARAMETERS_RESERVED_30               0x30
+#define THREAD_STACK_PARAMETERS_THREAD_CONTEXT            0x40
 
 #define THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC                    (0)
 #define THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_EXCEPTION_HANDLER           (1)
@@ -245,7 +246,7 @@
 #define THREAD_LOCAL_REGION_SIZE           0x200
 
 /* ams::kern::init::KInitArguments, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/init/kern_k_init_arguments.hpp */
-#define INIT_ARGUMENTS_SIZE            0x60
+#define INIT_ARGUMENTS_SIZE            0x50
 #define INIT_ARGUMENTS_TTBR0           0x00
 #define INIT_ARGUMENTS_TTBR1           0x08
 #define INIT_ARGUMENTS_TCR             0x10
@@ -256,14 +257,12 @@
 #define INIT_ARGUMENTS_SP              0x38
 #define INIT_ARGUMENTS_ENTRYPOINT      0x40
 #define INIT_ARGUMENTS_ARGUMENT        0x48
-#define INIT_ARGUMENTS_SETUP_FUNCTION  0x50
-#define INIT_ARGUMENTS_EXCEPTION_STACK 0x58
 
 /* ams::kern::KScheduler (::SchedulingState), https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_scheduler.hpp */
 /* NOTE: Due to constraints on ldarb relative offsets, KSCHEDULER_NEEDS_SCHEDULING cannot trivially be changed, and will require assembly edits. */
 #define KSCHEDULER_NEEDS_SCHEDULING        0x00
 #define KSCHEDULER_INTERRUPT_TASK_RUNNABLE 0x01
-#define KSCHEDULER_HIGHEST_PRIORITY_THREAD 0x10
-#define KSCHEDULER_IDLE_THREAD_STACK       0x18
-#define KSCHEDULER_PREVIOUS_THREAD         0x20
-#define KSCHEDULER_INTERRUPT_TASK_MANAGER  0x28
+#define KSCHEDULER_HIGHEST_PRIORITY_THREAD 0x18
+#define KSCHEDULER_IDLE_THREAD_STACK       0x20
+#define KSCHEDULER_PREVIOUS_THREAD         0x28
+#define KSCHEDULER_INTERRUPT_TASK_MANAGER  0x30

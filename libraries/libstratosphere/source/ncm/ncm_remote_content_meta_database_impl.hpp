@@ -120,8 +120,8 @@ namespace ams::ncm {
                 R_RETURN(ncmContentMetaDatabaseGetRequiredSystemVersion(std::addressof(m_srv), out_version.GetPointer(), Convert(key)));
             }
 
-            Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
-                R_RETURN(ncmContentMetaDatabaseGetPatchId(std::addressof(m_srv), reinterpret_cast<u64 *>(out_patch_id.GetPointer()), Convert(key)));
+            Result GetPatchContentMetaId(sf::Out<u64> out_patch_id, const ContentMetaKey &key) {
+                R_RETURN(ncmContentMetaDatabaseGetPatchContentMetaId(std::addressof(m_srv), out_patch_id.GetPointer(), Convert(key)));
             }
 
             Result DisableForcibly() {

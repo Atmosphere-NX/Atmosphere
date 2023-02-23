@@ -99,6 +99,10 @@ namespace ams::ncm {
                 AMS_UNUSED(out);
                 AMS_ABORT();
             }
+
+            Result ActivateFsContentStorage(fs::ContentStorageId fs_content_storage_id) {
+                R_RETURN(::ncmActivateFsContentStorage(static_cast<::FsContentStorageId>(util::ToUnderlying(fs_content_storage_id))));
+            }
     };
     static_assert(ncm::IsIContentManager<RemoteContentManagerImpl>);
     #endif

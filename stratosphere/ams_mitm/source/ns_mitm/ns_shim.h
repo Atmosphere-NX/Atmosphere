@@ -22,7 +22,7 @@ Result nsamGetApplicationContentPathFwd(Service* s, void* out, size_t out_size, 
 Result nsamResolveApplicationContentPathFwd(Service* s, u64 app_id, NcmContentType content_type);
 Result nsamGetRunningApplicationProgramIdFwd(Service* s, u64* out_program_id, u64 app_id);
 
-Result nswebGetApplicationContentPath(NsDocumentInterface* doc, void* out, size_t out_size, u64 app_id, NcmContentType content_type);
+Result nswebGetApplicationContentPath(NsDocumentInterface* doc, void* out, size_t out_size, u8 *out_attr, u64 app_id, NcmContentType content_type);
 Result nswebResolveApplicationContentPath(NsDocumentInterface* doc, u64 app_id, NcmContentType content_type);
 Result nswebGetRunningApplicationProgramId(NsDocumentInterface* doc, u64* out_program_id, u64 app_id);
 

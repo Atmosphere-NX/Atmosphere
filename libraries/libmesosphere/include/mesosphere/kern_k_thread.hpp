@@ -108,10 +108,12 @@ namespace ams::kern {
                 u8 exception_flags;
                 bool is_pinned;
                 u8 reserved_2f;
+                u8 reserved_30[0x10];
                 KThreadContext context;
             };
 
             static_assert(util::IsAligned(AMS_OFFSETOF(StackParameters, context), 0x10));
+            static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
 
             static_assert(AMS_OFFSETOF(StackParameters, svc_access_flags)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
             static_assert(AMS_OFFSETOF(StackParameters, caller_save_fpu_registers) == THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS);
@@ -123,7 +125,9 @@ namespace ams::kern {
             static_assert(AMS_OFFSETOF(StackParameters, exception_flags)           == THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS);
             static_assert(AMS_OFFSETOF(StackParameters, is_pinned)                 == THREAD_STACK_PARAMETERS_IS_PINNED);
             static_assert(AMS_OFFSETOF(StackParameters, reserved_2f)               == THREAD_STACK_PARAMETERS_RESERVED_2F);
+            static_assert(AMS_OFFSETOF(StackParameters, reserved_30)               == THREAD_STACK_PARAMETERS_RESERVED_30);
             static_assert(AMS_OFFSETOF(StackParameters, context)                   == THREAD_STACK_PARAMETERS_THREAD_CONTEXT);
+
 
             static_assert(ExceptionFlag_IsCallingSvc                  == THREAD_EXCEPTION_FLAG_IS_CALLING_SVC);
             static_assert(ExceptionFlag_IsInExceptionHandler          == THREAD_EXCEPTION_FLAG_IS_IN_EXCEPTION_HANDLER);
@@ -197,6 +201,28 @@ namespace ams::kern {
             };
             static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
             static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
+
+            struct LockWithPriorityInheritanceComparator {
+                struct RedBlackKeyType {
+                    s32 m_priority;
+
+                    constexpr ALWAYS_INLINE s32 GetPriority() const {
+                        return m_priority;
+                    }
+                };
+
+                template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, RedBlackKeyType>)
+                static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThread &rhs) {
+                    if (lhs.GetPriority() < rhs.GetPriority()) {
+                        /* And then by priority. */
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                }
+            };
+            static_assert(ams::util::HasRedBlackKeyType<LockWithPriorityInheritanceComparator>);
+            static_assert(std::same_as<ams::util::RedBlackKeyType<LockWithPriorityInheritanceComparator, void>, LockWithPriorityInheritanceComparator::RedBlackKeyType>);
         private:
             util::IntrusiveListNode         m_process_list_node;
             util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node;
@@ -204,6 +230,67 @@ namespace ams::kern {
 
             using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::m_condvar_arbiter_tree_node>;
             using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
+
+            using LockWithPriorityInheritanceThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::m_condvar_arbiter_tree_node>;
+            using LockWithPriorityInheritanceThreadTree       = ConditionVariableThreadTreeTraits::TreeType<LockWithPriorityInheritanceComparator>;
+        public:
+            class LockWithPriorityInheritanceInfo : public KSlabAllocated<LockWithPriorityInheritanceInfo>, public util::IntrusiveListBaseNode<LockWithPriorityInheritanceInfo> {
+                private:
+                    LockWithPriorityInheritanceThreadTree m_tree;
+                    KProcessAddress m_address_key;
+                    KThread *m_owner;
+                    u32 m_waiter_count;
+                public:
+                    constexpr LockWithPriorityInheritanceInfo() : m_tree(), m_address_key(Null<KProcessAddress>), m_owner(nullptr), m_waiter_count() {
+                        /* ... */
+                    }
+
+                    static LockWithPriorityInheritanceInfo *Create(KProcessAddress address_key) {
+                        /* Create a new lock info. */
+                        auto *new_lock = LockWithPriorityInheritanceInfo::Allocate();
+                        MESOSPHERE_ABORT_UNLESS(new_lock != nullptr);
+
+                        /* Set the new lock's address key. */
+                        new_lock->m_address_key = address_key;
+
+                        return new_lock;
+                    }
+
+                    void SetOwner(KThread *new_owner) {
+                        /* Set new owner. */
+                        m_owner = new_owner;
+                    }
+
+                    void AddWaiter(KThread *waiter) {
+                        /* Insert the waiter. */
+                        m_tree.insert(*waiter);
+                        m_waiter_count++;
+
+                        waiter->SetWaitingLockInfo(this);
+                    }
+
+                    [[nodiscard]] bool RemoveWaiter(KThread *waiter) {
+                        m_tree.erase(m_tree.iterator_to(*waiter));
+
+                        waiter->SetWaitingLockInfo(nullptr);
+
+                        return (--m_waiter_count) == 0;
+                    }
+
+                    KThread *GetHighestPriorityWaiter() { return std::addressof(m_tree.front()); }
+                    const KThread *GetHighestPriorityWaiter() const { return std::addressof(m_tree.front()); }
+
+                    LockWithPriorityInheritanceThreadTree &GetThreadTree() { return m_tree; }
+                    const LockWithPriorityInheritanceThreadTree &GetThreadTree() const { return m_tree; }
+
+                    constexpr KProcessAddress GetAddressKey() const { return m_address_key; }
+
+                    constexpr KThread *GetOwner() const { return m_owner; }
+
+                    constexpr u32 GetWaiterCount() const { return m_waiter_count; }
+            };
+        private:
+            using LockWithPriorityInheritanceInfoList = util::IntrusiveListBaseTraits<LockWithPriorityInheritanceInfo>::ListType;
 
             ConditionVariableThreadTree                        *m_condvar_tree;
             uintptr_t                                           m_condvar_key;
@@ -224,9 +311,9 @@ namespace ams::kern {
             s64                                                 m_last_scheduled_tick;
             QueueEntry                                          m_per_core_priority_queue_entry[cpu::NumCores];
             KThreadQueue                                       *m_wait_queue;
-            WaiterList                                          m_waiter_list;
+            LockWithPriorityInheritanceInfoList                 m_held_lock_info_list;
+            LockWithPriorityInheritanceInfo                    *m_waiting_lock_info;
             WaiterList                                          m_pinned_waiter_list;
-            KThread                                            *m_lock_owner;
             uintptr_t                                           m_debug_params[3];
             KAutoObject                                        *m_closed_object;
             u32                                                 m_address_key_value;
@@ -260,8 +347,8 @@ namespace ams::kern {
                   m_process_list_node{}, m_condvar_arbiter_tree_node{util::ConstantInitialize}, m_priority{-1}, m_condvar_tree{}, m_condvar_key{},
                   m_caller_save_fpu_registers{}, m_virtual_affinity_mask{}, m_physical_affinity_mask{}, m_thread_id{}, m_cpu_time{0}, m_address_key{Null<KProcessAddress>}, m_parent{},
                   m_kernel_stack_top{}, m_light_ipc_data{}, m_tls_address{Null<KProcessAddress>}, m_tls_heap_address{}, m_activity_pause_lock{}, m_sync_object_buffer{util::ConstantInitialize},
-                  m_schedule_count{}, m_last_scheduled_tick{}, m_per_core_priority_queue_entry{}, m_wait_queue{}, m_waiter_list{}, m_pinned_waiter_list{},
-                  m_lock_owner{}, m_debug_params{}, m_closed_object{}, m_address_key_value{}, m_suspend_request_flags{}, m_suspend_allowed_flags{}, m_synced_index{},
+                  m_schedule_count{}, m_last_scheduled_tick{}, m_per_core_priority_queue_entry{}, m_wait_queue{}, m_held_lock_info_list{}, m_waiting_lock_info{},
+                  m_pinned_waiter_list{}, m_debug_params{}, m_closed_object{}, m_address_key_value{}, m_suspend_request_flags{}, m_suspend_allowed_flags{}, m_synced_index{},
                   m_wait_result{svc::ResultNoSynchronizationObject()}, m_debug_exception_result{ResultSuccess()}, m_base_priority{}, m_base_priority_on_unpin{},
                   m_physical_ideal_core_id{}, m_virtual_ideal_core_id{}, m_num_kernel_waiters{}, m_current_core_id{}, m_core_id{}, m_original_physical_affinity_mask{},
                   m_original_physical_ideal_core_id{}, m_num_core_migration_disables{}, m_thread_state{}, m_termination_requested{false}, m_wait_cancelled{},
@@ -407,6 +494,10 @@ namespace ams::kern {
             void ClearUsermodeExceptionSvcPermissions();
         private:
             void UpdateState();
+
+            ALWAYS_INLINE void AddHeldLock(LockWithPriorityInheritanceInfo *lock_info);
+            ALWAYS_INLINE LockWithPriorityInheritanceInfo *FindHeldLock(KProcessAddress address_key);
+
             ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
             ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
             ALWAYS_INLINE static void RestorePriority(KThread *thread);
@@ -441,6 +532,8 @@ namespace ams::kern {
             constexpr uintptr_t GetAddressArbiterKey() const { return m_condvar_key; }
 
             constexpr void SetConditionVariable(ConditionVariableThreadTree *tree, KProcessAddress address, uintptr_t cv_key, u32 value) {
+                MESOSPHERE_ASSERT(m_waiting_lock_info == nullptr);
+
                 m_condvar_tree      = tree;
                 m_condvar_key       = cv_key;
                 m_address_key       = address;
@@ -456,6 +549,8 @@ namespace ams::kern {
             }
 
             constexpr void SetAddressArbiter(ConditionVariableThreadTree *tree, uintptr_t address) {
+                MESOSPHERE_ASSERT(m_waiting_lock_info == nullptr);
+
                 m_condvar_tree = tree;
                 m_condvar_key  = address;
             }
@@ -491,15 +586,17 @@ namespace ams::kern {
 
             void AddWaiter(KThread *thread);
             void RemoveWaiter(KThread *thread);
-            KThread *RemoveWaiterByKey(s32 *out_num_waiters, KProcessAddress key);
+            KThread *RemoveWaiterByKey(bool *out_has_waiters, KProcessAddress key);
 
             constexpr KProcessAddress GetAddressKey() const { return m_address_key; }
             constexpr u32 GetAddressKeyValue() const { return m_address_key_value; }
-            constexpr void SetAddressKey(KProcessAddress key) { m_address_key = key; }
-            constexpr void SetAddressKey(KProcessAddress key, u32 val) { m_address_key = key; m_address_key_value = val; }
+            constexpr void SetAddressKey(KProcessAddress key) { MESOSPHERE_ASSERT(m_waiting_lock_info == nullptr); m_address_key = key; }
+            constexpr void SetAddressKey(KProcessAddress key, u32 val) { MESOSPHERE_ASSERT(m_waiting_lock_info == nullptr); m_address_key = key; m_address_key_value = val; }
 
-            constexpr void SetLockOwner(KThread *owner) { m_lock_owner = owner; }
-            constexpr KThread *GetLockOwner() const { return m_lock_owner; }
+            constexpr void SetWaitingLockInfo(LockWithPriorityInheritanceInfo *lock) { m_waiting_lock_info = lock; }
+            constexpr LockWithPriorityInheritanceInfo *GetWaitingLockInfo() { return m_waiting_lock_info; }
+
+            constexpr KThread *GetLockOwner() const { return m_waiting_lock_info != nullptr ? m_waiting_lock_info->GetOwner() : nullptr; }
 
             constexpr void ClearWaitQueue() { m_wait_queue = nullptr; }
 
@@ -528,8 +625,6 @@ namespace ams::kern {
 
             constexpr u32 *GetLightSessionData() const { return m_light_ipc_data; }
             constexpr void SetLightSessionData(u32 *data) { m_light_ipc_data = data; }
-
-            bool HasWaiters() const { return !m_waiter_list.empty(); }
 
             constexpr s64 GetLastScheduledTick() const { return m_last_scheduled_tick; }
             constexpr void SetLastScheduledTick(s64 tick) { m_last_scheduled_tick = tick; }

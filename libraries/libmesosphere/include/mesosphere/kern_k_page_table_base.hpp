@@ -72,13 +72,14 @@ namespace ams::kern {
             };
 
             enum OperationType {
-                OperationType_Map                         = 0,
-                OperationType_MapFirst                    = 1,
-                OperationType_MapGroup                    = 2,
-                OperationType_Unmap                       = 3,
-                OperationType_ChangePermissions           = 4,
-                OperationType_ChangePermissionsAndRefresh = 5,
-                OperationType_Separate                    = 6,
+                OperationType_Map                                 = 0,
+                OperationType_MapFirst                            = 1,
+                OperationType_MapGroup                            = 2,
+                OperationType_Unmap                               = 3,
+                OperationType_ChangePermissions                   = 4,
+                OperationType_ChangePermissionsAndRefresh         = 5,
+                OperationType_ChangePermissionsAndRefreshAndFlush = 6,
+                OperationType_Separate                            = 7,
             };
 
             static constexpr size_t MaxPhysicalMapAlignment = 1_GB;
@@ -363,7 +364,7 @@ namespace ams::kern {
             Result UnmapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm);
-            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size);
+            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
             Result MapInsecureMemory(KProcessAddress address, size_t size);

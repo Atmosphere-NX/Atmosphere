@@ -219,12 +219,21 @@ namespace ams::kern {
             const s32 core_id = GetCurrentCoreId();
             KThread *thread = process->GetRunningThread(core_id);
 
-            /* Check that the thread's idle count is correct. */
-            R_UNLESS(process->GetRunningThreadIdleCount(core_id) == Kernel::GetScheduler(core_id).GetIdleCount(), svc::ResultNoThread());
-
-            /* Check that the thread is running on the current core. */
-            R_UNLESS(thread != nullptr,                  svc::ResultUnknownThread());
-            R_UNLESS(thread->GetActiveCore() == core_id, svc::ResultUnknownThread());
+            /* We want to check that the thread is actually running. */
+            /* If it is, then the scheduler will have just switched from the thread to the current thread. */
+            /* This implies exactly one switch will have taken place, and the current thread will be on the current core. */
+            const auto &scheduler = Kernel::GetScheduler(core_id);
+            if (!(thread != nullptr && thread->GetActiveCore() == core_id && process->GetRunningThreadSwitchCount(core_id) + 1 == scheduler.GetSwitchCount())) {
+                /* The most recent thread switch was from a thread other than the expected one to the current one. */
+                /* We want to use the appropriate result to inform userland about what thread we switched from. */
+                if (scheduler.GetIdleCount() + 1 == scheduler.GetSwitchCount()) {
+                    /* We switched from the idle thread. */
+                    R_THROW(svc::ResultNoThread());
+                } else {
+                    /* We switched from some other unknown thread. */
+                    R_THROW(svc::ResultUnknownThread());
+                }
+            }
 
             /* Get the thread's exception context. */
             GetExceptionContext(thread)->GetSvcThreadContext(out_context);
@@ -280,7 +289,7 @@ namespace ams::kern {
                 m_old_process_state = target->SetDebugObject(this);
 
                 /* Send an event for our attaching to the process. */
-                this->PushDebugEvent(ams::svc::DebugEvent_CreateProcess);
+                this->PushDebugEvent(ams::svc::DebugEvent_CreateProcess, nullptr, 0);
 
                 /* Send events for attaching to each thread in the process. */
                 {
@@ -295,7 +304,8 @@ namespace ams::kern {
                             it->SetDebugAttached();
 
                             /* Send the event. */
-                            this->PushDebugEvent(ams::svc::DebugEvent_CreateThread, it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()));
+                            const uintptr_t params[2] = { it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()) };
+                            this->PushDebugEvent(ams::svc::DebugEvent_CreateThread, params, util::size(params));
                         }
                     }
                 }
@@ -306,7 +316,8 @@ namespace ams::kern {
                 }
 
                 /* Send an exception event to represent our attaching. */
-                this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerAttached);
+                const uintptr_t params[1] = { static_cast<uintptr_t>(ams::svc::DebugException_DebuggerAttached) };
+                this->PushDebugEvent(ams::svc::DebugEvent_Exception, params, util::size(params));
 
                 /* Signal. */
                 this->NotifyAvailable();
@@ -344,22 +355,22 @@ namespace ams::kern {
         /* Get the currently active threads. */
         constexpr u64 ThreadIdNoThread      = -1ll;
         constexpr u64 ThreadIdUnknownThread = -2ll;
-        u64 thread_ids[cpu::NumCores];
-        for (size_t i = 0; i < util::size(thread_ids); ++i) {
+        uintptr_t debug_info_params[1 + cpu::NumCores] = { static_cast<uintptr_t>(ams::svc::DebugException_DebuggerBreak), };
+        for (size_t i = 0; i < cpu::NumCores; ++i) {
             /* Get the currently running thread. */
             KThread *thread = target->GetRunningThread(i);
 
             /* Check that the thread's idle count is correct. */
             if (target->GetRunningThreadIdleCount(i) == Kernel::GetScheduler(i).GetIdleCount()) {
                 if (thread != nullptr && static_cast<size_t>(thread->GetActiveCore()) == i) {
-                    thread_ids[i] = thread->GetId();
+                    debug_info_params[1 + i] = thread->GetId();
                 } else {
                     /* We found an unknown thread. */
-                    thread_ids[i] = ThreadIdUnknownThread;
+                    debug_info_params[1 + i] = ThreadIdUnknownThread;
                 }
             } else {
                 /* We didn't find a thread. */
-                thread_ids[i] = ThreadIdNoThread;
+                debug_info_params[1 + i] = ThreadIdNoThread;
             }
         }
 
@@ -373,11 +384,7 @@ namespace ams::kern {
         }
 
         /* Send an exception event to represent our breaking the process. */
-        /* TODO: How should this be handled in the case of more than 4 physical cores? */
-        static_assert(util::size(thread_ids) <= 4);
-        [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-            this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[Ix]...);
-        }(std::make_index_sequence<util::size(thread_ids)>());
+        this->PushDebugEvent(ams::svc::DebugEvent_Exception, debug_info_params, util::size(debug_info_params));
 
         /* Signal. */
         this->NotifyAvailable();
@@ -725,7 +732,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    KEventInfo *KDebugBase::CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 cur_thread_id) {
+    KEventInfo *KDebugBase::CreateDebugEvent(ams::svc::DebugEvent event, u64 cur_thread_id, const uintptr_t *params, size_t num_params) {
         /* Allocate a new event. */
         KEventInfo *info = KEventInfo::Allocate();
 
@@ -740,23 +747,33 @@ namespace ams::kern {
             switch (event) {
                 case ams::svc::DebugEvent_CreateProcess:
                     {
-                        /* ... */
+                        /* Check parameters. */
+                        MESOSPHERE_ASSERT(params == nullptr);
+                        MESOSPHERE_ASSERT(num_params == 0);
                     }
                     break;
                 case ams::svc::DebugEvent_CreateThread:
                     {
+                        /* Check parameters. */
+                        MESOSPHERE_ASSERT(params != nullptr);
+                        MESOSPHERE_ASSERT(num_params == 2);
+
                         /* Set the thread id. */
-                        info->thread_id = param0;
+                        info->thread_id = params[0];
 
                         /* Set the thread creation info. */
-                        info->info.create_thread.thread_id   = param0;
-                        info->info.create_thread.tls_address = param1;
+                        info->info.create_thread.thread_id   = params[0];
+                        info->info.create_thread.tls_address = params[1];
                     }
                     break;
                 case ams::svc::DebugEvent_ExitProcess:
                     {
+                        /* Check parameters. */
+                        MESOSPHERE_ASSERT(params != nullptr);
+                        MESOSPHERE_ASSERT(num_params == 1);
+
                         /* Set the exit reason. */
-                        info->info.exit_process.reason = static_cast<ams::svc::ProcessExitReason>(param0);
+                        info->info.exit_process.reason = static_cast<ams::svc::ProcessExitReason>(params[0]);
 
                         /* Clear the thread id and flags. */
                         info->thread_id = 0;
@@ -765,30 +782,40 @@ namespace ams::kern {
                     break;
                 case ams::svc::DebugEvent_ExitThread:
                     {
+                        /* Check parameters. */
+                        MESOSPHERE_ASSERT(params != nullptr);
+                        MESOSPHERE_ASSERT(num_params == 2);
+
                         /* Set the thread id. */
-                        info->thread_id = param0;
+                        info->thread_id = params[0];
 
                         /* Set the exit reason. */
-                        info->info.exit_thread.reason = static_cast<ams::svc::ThreadExitReason>(param1);
+                        info->info.exit_thread.reason = static_cast<ams::svc::ThreadExitReason>(params[1]);
                     }
                     break;
                 case ams::svc::DebugEvent_Exception:
                     {
+                        /* Check parameters. */
+                        MESOSPHERE_ASSERT(params != nullptr);
+                        MESOSPHERE_ASSERT(num_params >= 1);
+
                         /* Set the thread id. */
                         info->thread_id = cur_thread_id;
 
                         /* Set the exception type, and clear the count. */
-                        info->info.exception.exception_type       = static_cast<ams::svc::DebugException>(param0);
+                        info->info.exception.exception_type       = static_cast<ams::svc::DebugException>(params[0]);
                         info->info.exception.exception_data_count = 0;
-                        switch (static_cast<ams::svc::DebugException>(param0)) {
+                        switch (static_cast<ams::svc::DebugException>(params[0])) {
                             case ams::svc::DebugException_UndefinedInstruction:
                             case ams::svc::DebugException_BreakPoint:
                             case ams::svc::DebugException_UndefinedSystemCall:
                                 {
-                                    info->info.exception.exception_address    = param1;
+                                    MESOSPHERE_ASSERT(num_params >= 3);
+
+                                    info->info.exception.exception_address    = params[1];
 
                                     info->info.exception.exception_data_count = 1;
-                                    info->info.exception.exception_data[0]    = param2;
+                                    info->info.exception.exception_data[0]    = params[2];
                                 }
                                 break;
                             case ams::svc::DebugException_DebuggerAttached:
@@ -800,12 +827,14 @@ namespace ams::kern {
                                 break;
                             case ams::svc::DebugException_UserBreak:
                                 {
-                                    info->info.exception.exception_address    = param1;
+                                    MESOSPHERE_ASSERT(num_params >= 2);
 
-                                    info->info.exception.exception_data_count = 3;
-                                    info->info.exception.exception_data[0]    = param2;
-                                    info->info.exception.exception_data[1]    = param3;
-                                    info->info.exception.exception_data[2]    = param4;
+                                    info->info.exception.exception_address    = params[1];
+
+                                    info->info.exception.exception_data_count = 0;
+                                    for (size_t i = 2; i < num_params; ++i) {
+                                        info->info.exception.exception_data[info->info.exception.exception_data_count++] = params[i];
+                                    }
                                 }
                                 break;
                             case ams::svc::DebugException_DebuggerBreak:
@@ -814,11 +843,10 @@ namespace ams::kern {
 
                                     info->info.exception.exception_address    = 0;
 
-                                    info->info.exception.exception_data_count = 4;
-                                    info->info.exception.exception_data[0]    = param1;
-                                    info->info.exception.exception_data[1]    = param2;
-                                    info->info.exception.exception_data[2]    = param3;
-                                    info->info.exception.exception_data[3]    = param4;
+                                    info->info.exception.exception_data_count = 0;
+                                    for (size_t i = 1; i < num_params; ++i) {
+                                        info->info.exception.exception_data[info->info.exception.exception_data_count++] = params[i];
+                                    }
                                 }
                                 break;
                             case ams::svc::DebugException_MemorySystemError:
@@ -831,7 +859,9 @@ namespace ams::kern {
                             case ams::svc::DebugException_AlignmentFault:
                             default:
                                 {
-                                    info->info.exception.exception_address = param1;
+                                    MESOSPHERE_ASSERT(num_params >= 2);
+
+                                    info->info.exception.exception_address = params[1];
                                 }
                                 break;
                         }
@@ -843,9 +873,9 @@ namespace ams::kern {
         return info;
     }
 
-    void KDebugBase::PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+    void KDebugBase::PushDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params) {
         /* Create and enqueue and event. */
-        if (KEventInfo *new_info = CreateDebugEvent(event, param0, param1, param2, param3, param4, GetCurrentThread().GetId()); new_info != nullptr) {
+        if (KEventInfo *new_info = CreateDebugEvent(event, GetCurrentThread().GetId(), params, num_params); new_info != nullptr) {
             this->EnqueueDebugEventInfo(new_info);
         }
     }
@@ -952,7 +982,10 @@ namespace ams::kern {
                             break;
                         case ams::svc::DebugException_DebuggerBreak:
                             {
-                                MESOSPHERE_ASSERT(info->info.exception.exception_data_count == 4);
+                                /* TODO: How does this work with non-4 cpu count? */
+                                static_assert(cpu::NumCores <= 4);
+
+                                MESOSPHERE_ASSERT(info->info.exception.exception_data_count == cpu::NumCores);
                                 out->info.exception.specific.debugger_break.active_thread_ids[0] = info->info.exception.exception_data[0];
                                 out->info.exception.specific.debugger_break.active_thread_ids[1] = info->info.exception.exception_data[1];
                                 out->info.exception.specific.debugger_break.active_thread_ids[2] = info->info.exception.exception_data[2];
@@ -1066,7 +1099,7 @@ namespace ams::kern {
         return !empty || !m_is_attached || this->GetProcessUnsafe()->IsTerminated();
     }
 
-    Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+    Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params) {
         /* Get the current process. */
         KProcess *process = GetCurrentProcessPointer();
 
@@ -1108,7 +1141,7 @@ namespace ams::kern {
             }
 
             /* Push the event. */
-            debug->PushDebugEvent(event, param0, param1, param2, param3, param4);
+            debug->PushDebugEvent(event, params, num_params);
             debug->NotifyAvailable();
 
             /* Set the process as breaked. */
@@ -1144,9 +1177,9 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KDebugBase::OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+    Result KDebugBase::OnDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params) {
         if (KProcess *process = GetCurrentProcessPointer(); process != nullptr && process->IsAttachedToDebugger()) {
-            R_RETURN(ProcessDebugEvent(event, param0, param1, param2, param3, param4));
+            R_RETURN(ProcessDebugEvent(event, params, num_params));
         }
         R_SUCCEED();
     }
@@ -1161,7 +1194,8 @@ namespace ams::kern {
 
             /* Push the event. */
             if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
-                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_ExitProcess);
+                const uintptr_t params[1] = { static_cast<uintptr_t>(ams::svc::ProcessExitReason_ExitProcess) };
+                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, params, util::size(params));
                 debug->NotifyAvailable();
             }
         }
@@ -1179,7 +1213,8 @@ namespace ams::kern {
 
             /* Push the event. */
             if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
-                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_TerminateProcess);
+                const uintptr_t params[1] = { static_cast<uintptr_t>(ams::svc::ProcessExitReason_TerminateProcess) };
+                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, params, util::size(params));
                 debug->NotifyAvailable();
             }
         }
@@ -1193,7 +1228,8 @@ namespace ams::kern {
         /* Check if we're attached to a debugger. */
         if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->IsAttachedToDebugger()) {
             /* If we are, submit the event. */
-            R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, thread->GetId(), thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread));
+            const uintptr_t params[2] = { thread->GetId(), static_cast<uintptr_t>(thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread) };
+            R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, params, util::size(params)));
         }
 
         R_SUCCEED();

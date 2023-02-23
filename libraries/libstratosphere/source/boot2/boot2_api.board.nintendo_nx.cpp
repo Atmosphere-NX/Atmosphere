@@ -74,6 +74,7 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
             ncm::SystemProgramId::Olsc,        /* olsc */
+            ncm::SystemProgramId::Ngc,         /* ngc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
@@ -115,6 +116,7 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
             ncm::SystemProgramId::Olsc,        /* olsc */
+            ncm::SystemProgramId::Ngc,         /* ngc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalMaintenanceLaunchPrograms = util::size(AdditionalMaintenanceLaunchPrograms);
@@ -398,6 +400,9 @@ namespace ams::boot2 {
         if (!IsUsbRequiredToMountSdCard()) {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
         }
+
+        /* Activate the system fs content storage. */
+        R_ABORT_UNLESS(ncm::ActivateFsContentStorage(fs::ContentStorageId::System));
 
         /* Find out whether we are maintenance mode. */
         const bool maintenance = IsMaintenanceMode();

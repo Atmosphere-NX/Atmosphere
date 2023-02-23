@@ -98,8 +98,8 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.MapIoRegion(dst_address, phys_addr, size, mapping, perm));
             }
 
-            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size) {
-                R_RETURN(m_page_table.UnmapIoRegion(dst_address, phys_addr, size));
+            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping) {
+                R_RETURN(m_page_table.UnmapIoRegion(dst_address, phys_addr, size, mapping));
             }
 
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {

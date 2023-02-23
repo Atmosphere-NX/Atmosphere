@@ -56,13 +56,16 @@ namespace ams::ncm {
                 static_assert(sizeof(ContentId)     == sizeof(::NcmContentId));
                 return reinterpret_cast<const ::NcmContentId *>(std::addressof(c));
             }
+
+            ALWAYS_INLINE ::FsContentAttributes Convert(fs::ContentAttributes attr) {
+                return static_cast<::FsContentAttributes>(static_cast<u8>(attr));
+            }
         public:
             Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
                 R_RETURN(ncmContentStorageGeneratePlaceHolderId(std::addressof(m_srv), Convert(out.GetPointer())));
             }
 
             Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
-                static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 R_RETURN(ncmContentStorageCreatePlaceHolder(std::addressof(m_srv), Convert(content_id), Convert(placeholder_id), size));
             }
 
@@ -79,7 +82,6 @@ namespace ams::ncm {
             }
 
             Result Register(PlaceHolderId placeholder_id, ContentId content_id) {
-                static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 R_RETURN(ncmContentStorageRegister(std::addressof(m_srv), Convert(content_id), Convert(placeholder_id)));
             }
 
@@ -137,16 +139,20 @@ namespace ams::ncm {
 
             Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
                 ::NcmRightsId rights_id;
-                R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(m_srv), std::addressof(rights_id), Convert(placeholder_id)));
+                R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(m_srv), std::addressof(rights_id), Convert(placeholder_id), Convert(fs::ContentAttributes_None)));
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
                 R_SUCCEED();
             }
 
-            Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+            Result GetRightsIdFromPlaceHolderIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+                R_RETURN(this->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id, fs::ContentAttributes_None));
+            }
+
+            Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, fs::ContentAttributes attr) {
                 ::NcmRightsId rights_id;
-                R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(m_srv), std::addressof(rights_id), Convert(placeholder_id)));
+                R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(m_srv), std::addressof(rights_id), Convert(placeholder_id), Convert(attr)));
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
@@ -155,16 +161,20 @@ namespace ams::ncm {
 
             Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
                 ::NcmRightsId rights_id;
-                R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(m_srv), std::addressof(rights_id), Convert(content_id)));
+                R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(m_srv), std::addressof(rights_id), Convert(content_id), Convert(fs::ContentAttributes_None)));
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
                 R_SUCCEED();
             }
 
-            Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+            Result GetRightsIdFromContentIdDeprecated2(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
+                R_RETURN(this->GetRightsIdFromContentId(out_rights_id, content_id, fs::ContentAttributes_None));
+            }
+
+            Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id, fs::ContentAttributes attr) {
                 ::NcmRightsId rights_id;
-                R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(m_srv), std::addressof(rights_id), Convert(content_id)));
+                R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(m_srv), std::addressof(rights_id), Convert(content_id), Convert(attr)));
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
@@ -195,10 +205,10 @@ namespace ams::ncm {
                 R_RETURN(ncmContentStorageRepairInvalidFileAttribute(std::addressof(m_srv)));
             }
 
-            Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+            Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
                 static_assert(sizeof(::NcmRightsId) == sizeof(ncm::RightsId));
                 ::NcmRightsId *out = reinterpret_cast<::NcmRightsId *>(out_rights_id.GetPointer());
-                R_RETURN(ncmContentStorageGetRightsIdFromPlaceHolderIdWithCache(std::addressof(m_srv), out, Convert(placeholder_id), Convert(cache_content_id)));
+                R_RETURN(ncmContentStorageGetRightsIdFromPlaceHolderIdWithCache(std::addressof(m_srv), out, Convert(placeholder_id), Convert(cache_content_id), Convert(attr)));
             }
 
             Result RegisterPath(const ContentId &content_id, const Path &path) {
@@ -208,6 +218,12 @@ namespace ams::ncm {
             Result ClearRegisteredPath() {
                 R_RETURN(ncmContentStorageClearRegisteredPath(std::addressof(m_srv)));
             }
+
+            /* 16.0.0 Alignment change hacks. */
+            Result CreatePlaceHolder_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id, s64 size) { R_RETURN(this->CreatePlaceHolder(placeholder_id, content_id, size)); }
+            Result Register_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id) { R_RETURN(this->Register(placeholder_id, content_id)); }
+            Result RevertToPlaceHolder_AtmosphereAlignmentFix(ncm::ContentId old_content_id, ncm::ContentId new_content_id, ncm::PlaceHolderId placeholder_id) { R_RETURN(this->RevertToPlaceHolder(placeholder_id, old_content_id, new_content_id)); }
+            Result GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, ContentId cache_content_id, PlaceHolderId placeholder_id) { R_RETURN(this->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, fs::ContentAttributes_None)); }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
     #endif

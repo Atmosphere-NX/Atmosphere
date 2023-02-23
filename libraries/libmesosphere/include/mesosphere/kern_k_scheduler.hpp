@@ -43,6 +43,7 @@ namespace ams::kern {
                 bool interrupt_task_runnable{false};
                 bool should_count_idle{false};
                 u64  idle_count{0};
+                u64  switch_count{0};
                 KThread *highest_priority_thread{nullptr};
                 void *idle_thread_stack{nullptr};
                 KThread *prev_thread{nullptr};
@@ -67,6 +68,7 @@ namespace ams::kern {
                 m_state.interrupt_task_runnable = false;
                 m_state.should_count_idle       = false;
                 m_state.idle_count              = 0;
+                m_state.switch_count            = 0;
                 m_state.idle_thread_stack       = nullptr;
                 m_state.highest_priority_thread = nullptr;
                 m_state.prev_thread             = nullptr;
@@ -91,6 +93,10 @@ namespace ams::kern {
 
             ALWAYS_INLINE u64 GetIdleCount() const {
                 return m_state.idle_count;
+            }
+
+            ALWAYS_INLINE u64 GetSwitchCount() const {
+                return m_state.switch_count;
             }
 
             ALWAYS_INLINE KThread *GetIdleThread() const {

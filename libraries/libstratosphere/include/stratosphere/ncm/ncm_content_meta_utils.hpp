@@ -23,17 +23,22 @@
 
 namespace ams::ncm {
 
-    using MountContentMetaFunction = Result (*)(const char *mount_name, const char *path);
+    using MountContentMetaFunction = Result (*)(const char *mount_name, const char *path, fs::ContentAttributes attr);
 
     bool IsContentMetaFileName(const char *name);
 
-    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path);
-    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path);
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path, fs::ContentAttributes attr);
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path, fs::ContentAttributes attr);
 
-    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path);
-    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path);
+    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path, fs::ContentAttributes attr);
+    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path, fs::ContentAttributes attr);
 
-    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id);
+    using ReadContentMetaPathFunction = Result (*)(AutoBuffer *out, const char *path, fs::ContentAttributes attr);
+
+    Result TryReadContentMetaPath(fs::ContentAttributes *out_attr, AutoBuffer *out, const char *path, ReadContentMetaPathFunction func);
+    Result TryReadContentMetaPath(AutoBuffer *out, const char *path, ReadContentMetaPathFunction func);
+
+    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, fs::ContentAttributes attr, FirmwareVariationId firmware_variation_id);
 
     void SetMountContentMetaFunction(MountContentMetaFunction func);
 

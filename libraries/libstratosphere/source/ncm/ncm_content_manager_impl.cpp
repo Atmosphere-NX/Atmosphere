@@ -130,49 +130,525 @@ namespace ams::ncm {
                 return fs::IsSignedSystemPartitionOnSdCardValidDeprecated();
             }
         }
+
+        Result EnsureAndMountSystemSaveData(const char *mount_name, const SystemSaveDataInfo &info) {
+            constexpr u64 OwnerId = 0;
+
+            /* Don't create save if absent - We want to handle this case ourselves. */
+            fs::DisableAutoSaveDataCreation();
+
+            /* Mount existing system save data if present, otherwise create it then mount. */
+            R_TRY_CATCH(fs::MountSystemSaveData(mount_name, info.space_id, info.id)) {
+                R_CATCH(fs::ResultTargetNotFound) {
+                    /* On 1.0.0, not all flags existed. Mask when appropriate. */
+                    constexpr u32 SaveDataFlags100Mask = fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
+                    const u32 flags = (hos::GetVersion() >= hos::Version_2_0_0) ? (info.flags) : (info.flags & SaveDataFlags100Mask);
+                    R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, flags));
+                    R_TRY(fs::MountSystemSaveData(mount_name, info.space_id, info.id));
+                }
+            } R_END_TRY_CATCH;
+
+            R_SUCCEED();
+        }
+
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Create() {
+        /* Create all storages. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            const auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (!root.config.has_value() || root.config->skip_verify_and_create) {
+                continue;
+            }
+
+            /* Mount the relevant content storage. */
+            R_TRY(fs::MountContentStorage(root.mount_name, root.config->content_storage_id));
+            ON_SCOPE_EXIT { fs::Unmount(root.mount_name); };
+
+            /* Ensure the content storage root's path exists. */
+            R_TRY(fs::EnsureDirectory(root.path));
+
+            /* Initialize content and placeholder directories for the root. */
+            R_TRY(ContentStorageImpl::InitializeBase(root.path));
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Verify() {
+        /* Verify all storages. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            const auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (!root.config.has_value() || root.config->skip_verify_and_create) {
+                continue;
+            }
+
+            /* Substitute the mount name in the root's path with a unique one. */
+            char path[0x80];
+            auto mount_name = impl::CreateUniqueMountName();
+            ReplaceMountName(path, mount_name.str, root.path);
+
+            /* Mount the relevant content storage. */
+            R_TRY(fs::MountContentStorage(mount_name.str, root.config->content_storage_id));
+            ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
+
+            /* Ensure the root, content and placeholder directories exist for the storage. */
+            R_TRY(ContentStorageImpl::VerifyBase(path));
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Open(sf::Out<sf::SharedPointer<IContentStorage>> out, RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content) {
+        /* Get the interface. */
+        const bool has_intf = m_config->is_integrated ? m_integrated_content_storage != nullptr : m_roots->content_storage != nullptr;
+
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
+            /* Obtain the content storage if already active. */
+            R_UNLESS(has_intf, GetContentStorageNotActiveResult(m_config->storage_id));
+        } else {
+            /* 1.0.0 activates content storages as soon as they are opened. */
+            if (!has_intf) {
+                R_TRY(this->Activate(rights_id_cache, registered_host_content));
+            }
+        }
+
+        *out = m_config->is_integrated ? m_integrated_content_storage : m_roots->content_storage;
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Activate(RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content) {
+        /* If necessary, create the integrated storage. */
+        if (m_config->is_integrated && !m_integrated_content_storage) {
+            m_integrated_content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, IntegratedContentStorageImpl>();
+        }
+
+        /* Activate all storages. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (root.config.has_value() && root.config->skip_activate) {
+                continue;
+            }
+
+            /* Activate. */
+            R_TRY(this->Activate(root, rights_id_cache, registered_host_content));
+
+            /* If we're integrated, add the storage. */
+            if (m_config->is_integrated) {
+                /* Determine the index of the storage. */
+                int index;
+                for (index = 0; index < m_config->num_content_storage_ids; ++index) {
+                    if (m_config->content_storage_ids[index] == root.config->content_storage_id) {
+                        break;
+                    }
+                }
+
+                /* Add the storage. */
+                m_integrated_content_storage.GetImpl().Add(root.content_storage, index + 1);
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Inactivate(RegisteredHostContent &registered_host_content) {
+        /* If we have an integrated storage, disable it. */
+        if (m_integrated_content_storage != nullptr) {
+            R_TRY(m_integrated_content_storage->DisableForcibly());
+            m_integrated_content_storage.Reset();
+        }
+
+        /* Disable and unmount all storages. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            auto &root = m_roots[i];
+
+            if (root.content_storage != nullptr) {
+                /* N doesn't bother checking the result of this. */
+                root.content_storage->DisableForcibly();
+                root.content_storage = nullptr;
+
+                if (root.storage_id == StorageId::Host) {
+                    registered_host_content.ClearPaths();
+                } else {
+                    fs::Unmount(root.mount_name);
+                }
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Activate(RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content, fs::ContentStorageId content_storage_id) {
+        /* Check that we have the desired storage id in some root. */
+        ContentStorageRoot *root = this->GetRoot(content_storage_id);
+        R_UNLESS(root != nullptr, ncm::ResultUnknownStorage());
+
+        /* If necessary, create the integrated storage. */
+        if (m_config->is_integrated && !m_integrated_content_storage) {
+            m_integrated_content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, IntegratedContentStorageImpl>();
+        }
+
+        /* Activate. */
+        R_TRY(this->Activate(*root, rights_id_cache, registered_host_content));
+
+        /* If we're integrated, add the storage. */
+        if (m_config->is_integrated) {
+            /* Determine the index of the storage. */
+            int index;
+            for (index = 0; index < m_config->num_content_storage_ids; ++index) {
+                if (m_config->content_storage_ids[index] == root->config->content_storage_id) {
+                    break;
+                }
+            }
+
+            /* Add the storage. */
+            m_integrated_content_storage.GetImpl().Add(root->content_storage, index + 1);
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentStorageRoot::Activate(ContentStorageRoot &root, RightsIdCache &rights_id_cache, RegisteredHostContent &registered_host_content) {
+        /* Check if the storage is already activated. */
+        R_SUCCEED_IF(root.content_storage != nullptr);
+
+        /* Handle based on whether or not we have a content storage config. */
+        if (root.config.has_value()) {
+            /* Mount the content storage. */
+            R_TRY(fs::MountContentStorage(root.mount_name, root.config->content_storage_id));
+            ON_RESULT_FAILURE { fs::Unmount(root.mount_name); };
+
+            /* Create a content storage. */
+            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ContentStorageImpl>();
+
+            /* Initialize content storage with an appropriate path function. */
+            switch (root.storage_id) {
+                case StorageId::BuiltInSystem:
+                    R_TRY(content_storage.GetImpl().Initialize(root.path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(rights_id_cache)));
+                    break;
+                case StorageId::SdCard:
+                    R_TRY(content_storage.GetImpl().Initialize(root.path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(rights_id_cache)));
+                    break;
+                default:
+                    R_TRY(content_storage.GetImpl().Initialize(root.path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(rights_id_cache)));
+                    break;
+            }
+
+            root.content_storage = std::move(content_storage);
+        } else {
+            switch (root.storage_id) {
+                case ncm::StorageId::Host:
+                    root.content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, HostContentStorageImpl>(std::addressof(registered_host_content));
+                    break;
+                case ncm::StorageId::GameCard:
+                    {
+                        /* Get the gamecard handle. */
+                        fs::GameCardHandle handle{};
+                        R_TRY(fs::GetGameCardHandle(std::addressof(handle)));
+
+                        /* Mount the secure gamecard partition. */
+                        R_TRY(fs::MountGameCardPartition(root.mount_name, handle, fs::GameCardPartition::Secure));
+                        ON_RESULT_FAILURE { fs::Unmount(root.mount_name); };
+
+                        /* Create the content storage. */
+                        auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ReadOnlyContentStorageImpl>();
+                        R_TRY(content_storage.GetImpl().Initialize(root.path, MakeFlatContentFilePath));
+                        root.content_storage = std::move(content_storage);
+                    }
+                    break;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Create() {
+        /* Create all content meta databases. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            const auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (!root.save_data_info.has_value()) {
+                continue;
+            }
+
+            /* Mount (and optionally create) save data for the root. */
+            R_TRY(EnsureAndMountSystemSaveData(root.mount_name, *root.save_data_info));
+            ON_SCOPE_EXIT { fs::Unmount(root.mount_name); };
+
+            /* Ensure the content meta database root's path exists. */
+            R_TRY(fs::EnsureDirectory(root.path));
+
+            /* Commit our changes. */
+            R_TRY(fs::CommitSaveData(root.mount_name));
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Verify() {
+        /* Verify all content meta databases. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            const auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (!root.save_data_info.has_value()) {
+                continue;
+            }
+
+            /* Mount save data for non-existing content meta databases. */
+            const bool mount = !root.content_meta_database;
+            if (mount) {
+                R_TRY(fs::MountSystemSaveData(root.mount_name, root.save_data_info->space_id, root.save_data_info->id));
+            }
+            auto mount_guard = SCOPE_GUARD { if (mount) { fs::Unmount(root.mount_name); } };
+
+            /* Ensure the root path exists. */
+            bool has_dir = false;
+            R_TRY(fs::HasDirectory(std::addressof(has_dir), root.path));
+            R_UNLESS(has_dir, ncm::ResultInvalidContentMetaDatabase());
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Open(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out) {
+        /* Get the interface. */
+        const bool has_intf = m_config->is_integrated ? m_integrated_content_meta_database != nullptr : m_roots->content_meta_database != nullptr;
+
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
+            /* Obtain the content meta database if already active. */
+            R_UNLESS(has_intf, GetContentMetaDatabaseNotActiveResult(m_config->storage_id));
+        } else {
+            /* 1.0.0 activates content meta database as soon as they are opened. */
+            if (!has_intf) {
+                R_TRY(this->Activate());
+            }
+        }
+
+        *out = m_config->is_integrated ? m_integrated_content_meta_database : m_roots->content_meta_database;
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Cleanup() {
+        /* Cleanup all content meta databases. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            const auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (!root.save_data_info.has_value()) {
+                continue;
+            }
+
+            /* Delete save data for the content meta database. */
+            R_TRY(fs::DeleteSaveData(root.save_data_info->space_id, root.save_data_info->id));
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Activate() {
+        /* If necessary, create the integrated meta database. */
+        if (m_config->is_integrated && !m_integrated_content_meta_database) {
+            m_integrated_content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, IntegratedContentMetaDatabaseImpl>();
+        }
+
+        /* Activate all meta databases. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            auto &root = m_roots[i];
+
+            /* If we should, skip. */
+            if (root.storage_config.has_value() && root.storage_config->skip_activate) {
+                continue;
+            }
+
+            /* Activate. */
+            R_TRY(this->Activate(root));
+
+            /* If we're integrated, add the meta database. */
+            if (m_config->is_integrated) {
+                /* Determine the index of the meta database. */
+                int index;
+                for (index = 0; index < m_config->num_content_storage_ids; ++index) {
+                    if (m_config->content_storage_ids[index] == root.storage_config->content_storage_id) {
+                        break;
+                    }
+                }
+
+                /* Add the meta database. */
+                m_integrated_content_meta_database.GetImpl().Add(root.content_meta_database, index + 1);
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Inactivate() {
+        /* If we have an integrated meta database, disable it. */
+        /* NOTE: Nintendo does not reset the integrated DB, presumably they just forgot... */
+        /*       ...this breaks this, hard, so we'll do the correct thing. */
+        if (m_integrated_content_meta_database != nullptr) {
+            R_TRY(m_integrated_content_meta_database->DisableForcibly());
+            m_integrated_content_meta_database.Reset();
+        }
+
+        /* Disable and unmount all storages. */
+        for (auto i = 0; i < m_num_roots; ++i) {
+            /* Get the current root. */
+            auto &root = m_roots[i];
+
+            if (root.content_meta_database != nullptr) {
+                /* N doesn't bother checking the result of this. */
+                root.content_meta_database->DisableForcibly();
+                root.content_meta_database = nullptr;
+                root.kvs = util::nullopt;
+
+                /* Additionally, if we have savedata, unmount. */
+                if (root.save_data_info.has_value()) {
+                    fs::Unmount(root.mount_name);
+                }
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Activate(ContentMetaDatabaseRoot &root) {
+        /* If the root is already activated, there's nothing to do. */
+        R_SUCCEED_IF(root.content_meta_database != nullptr);
+
+        /* Make a new kvs. */
+        root.kvs.emplace();
+
+        /* If we should, mount save data for this route. */
+        if (root.save_data_info.has_value()) {
+            /* Mount save data for this root. */
+            R_TRY(fs::MountSystemSaveData(root.mount_name, root.save_data_info->space_id, root.save_data_info->id));
+            ON_RESULT_FAILURE { fs::Unmount(root.mount_name); };
+
+            /* Initialize and load the key value store from the filesystem. */
+            R_TRY(root.kvs->Initialize(root.path, root.max_content_metas, root.memory_resource));
+            R_TRY(root.kvs->Load());
+
+            /* Create the content meta database. */
+            root.content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, ContentMetaDatabaseImpl>(std::addressof(*root.kvs), root.mount_name);
+        } else {
+            if (root.storage_id == StorageId::BuiltInSystem) {
+                /* Create a temporary mount name, and mount the partition. */
+                auto tmp_mount_name = impl::CreateUniqueMountName();
+
+                switch (root.storage_config->content_storage_id) {
+                    case fs::ContentStorageId::System:
+                        R_TRY(fs::MountBis(tmp_mount_name.str, fs::BisPartitionId::System));
+                        break;
+                    case fs::ContentStorageId::System0:
+                        R_TRY(fs::MountBis(tmp_mount_name.str, fs::BisPartitionId::System0));
+                        break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+                ON_SCOPE_EXIT { fs::Unmount(tmp_mount_name.str); };
+
+                /* Initialize and load the key value store from the filesystem. */
+                char path[fs::EntryNameLengthMax];
+                util::SNPrintf(path, sizeof(path), "%s:/cnmtdb.arc", tmp_mount_name.str);
+                R_TRY(root.kvs->InitializeForReadOnlyArchiveFile(path, root.max_content_metas, root.memory_resource));
+                R_TRY(root.kvs->Load());
+
+                /* Create an on memory content meta database. */
+                root.content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, OnMemoryContentMetaDatabaseImpl>(std::addressof(*root.kvs));
+            } else {
+                /* Initialize the key value store. */
+                R_TRY(root.kvs->Initialize(root.max_content_metas, root.memory_resource));
+
+                /* Create an on memory content meta database. */
+                root.content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, OnMemoryContentMetaDatabaseImpl>(std::addressof(*root.kvs));
+            }
+        }
+
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::IntegratedContentMetaDatabaseRoot::Activate(fs::ContentStorageId content_storage_id) {
+        /* Check that we have the desired storage id in some root. */
+        ContentMetaDatabaseRoot *root = this->GetRoot(content_storage_id);
+        R_UNLESS(root != nullptr, ncm::ResultUnknownStorage());
+
+        /* If necessary, create the integrated meta database. */
+        if (m_config->is_integrated && !m_integrated_content_meta_database) {
+            m_integrated_content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, IntegratedContentMetaDatabaseImpl>();
+        }
+
+        /* Activate. */
+        R_TRY(this->Activate(*root));
+
+        /* If we're integrated, add the storage. */
+        if (m_config->is_integrated) {
+            /* Determine the index of the meta database. */
+            int index;
+            for (index = 0; index < m_config->num_content_storage_ids; ++index) {
+                if (m_config->content_storage_ids[index] == root->storage_config->content_storage_id) {
+                    break;
+                }
+            }
+
+            /* Add the meta database. */
+            m_integrated_content_meta_database.GetImpl().Add(root->content_meta_database, index + 1);
+        }
+
+        R_SUCCEED();
     }
 
     ContentManagerImpl::~ContentManagerImpl() {
         std::scoped_lock lk(m_mutex);
 
         /* Disable and unmount all content storage roots. */
-        for (auto &root : m_content_storage_roots) {
-            this->InactivateContentStorage(root.storage_id);
+        for (size_t i = 0; i < m_num_integrated_content_storage_entries; ++i) {
+            this->InactivateContentStorage(m_integrated_content_storage_roots[i].m_config->storage_id);
         }
 
         /* Disable and unmount all content meta database roots. */
-        for (auto &root : m_content_meta_database_roots) {
-            this->InactivateContentMetaDatabase(root.storage_id);
+        for (size_t i = 0; i < m_num_integrated_content_meta_entries; ++i) {
+            this->InactivateContentMetaDatabase(m_integrated_content_meta_database_roots[i].m_config->storage_id);
         }
     }
 
-    Result ContentManagerImpl::EnsureAndMountSystemSaveData(const char *mount_name, const SystemSaveDataInfo &info) const {
-        constexpr u64 OwnerId = 0;
-
-        /* Don't create save if absent - We want to handle this case ourselves. */
-        fs::DisableAutoSaveDataCreation();
-
-        /* Mount existing system save data if present, otherwise create it then mount. */
-        R_TRY_CATCH(fs::MountSystemSaveData(mount_name, info.space_id, info.id)) {
-            R_CATCH(fs::ResultTargetNotFound) {
-                /* On 1.0.0, not all flags existed. Mask when appropriate. */
-                constexpr u32 SaveDataFlags100Mask = fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
-                const u32 flags = (hos::GetVersion() >= hos::Version_2_0_0) ? (info.flags) : (info.flags & SaveDataFlags100Mask);
-                R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, flags));
-                R_TRY(fs::MountSystemSaveData(mount_name, info.space_id, info.id));
+    Result ContentManagerImpl::GetIntegratedContentStorageConfig(IntegratedContentStorageConfig **out, fs::ContentStorageId content_storage_id) {
+        for (size_t i = 0; i < m_num_integrated_configs; ++i) {
+            auto &integrated_config = m_integrated_configs[i];
+            for (auto n = 0; n < integrated_config.num_content_storage_ids; n++) {
+                if (integrated_config.content_storage_ids[n] == content_storage_id) {
+                    *out = std::addressof(integrated_config);
+                    R_SUCCEED();
+                }
             }
-        } R_END_TRY_CATCH;
+        }
 
-        R_SUCCEED();
+        R_THROW(ncm::ResultUnknownStorage());
     }
 
-    Result ContentManagerImpl::GetContentStorageRoot(ContentStorageRoot **out, StorageId id) {
+
+    Result ContentManagerImpl::GetIntegratedContentStorageRoot(IntegratedContentStorageRoot **out, StorageId id) {
         /* Storage must not be StorageId::Any or StorageId::None. */
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
         /* Find a root with a matching storage id. */
-        for (auto &root : m_content_storage_roots) {
-            if (root.storage_id == id) {
+        for (size_t i = 0; i < m_num_integrated_content_storage_entries; ++i) {
+            if (auto &root = m_integrated_content_storage_roots[i]; root.m_config->storage_id == id) {
                 *out = std::addressof(root);
                 R_SUCCEED();
             }
@@ -181,13 +657,13 @@ namespace ams::ncm {
         R_THROW(ncm::ResultUnknownStorage());
     }
 
-    Result ContentManagerImpl::GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id) {
+    Result ContentManagerImpl::GetIntegratedContentMetaDatabaseRoot(IntegratedContentMetaDatabaseRoot **out, StorageId id) {
         /* Storage must not be StorageId::Any or StorageId::None. */
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
         /* Find a root with a matching storage id. */
-        for (auto &root : m_content_meta_database_roots) {
-            if (root.storage_id == id) {
+        for (size_t i = 0; i < m_num_integrated_content_meta_entries; ++i) {
+            if (auto &root = m_integrated_content_meta_database_roots[i]; root.m_config->storage_id == id) {
                 *out = std::addressof(root);
                 R_SUCCEED();
             }
@@ -197,9 +673,9 @@ namespace ams::ncm {
     }
 
 
-    Result ContentManagerImpl::InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, fs::ContentStorageId content_storage_id) {
+    Result ContentManagerImpl::InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, util::optional<ContentStorageConfig> config) {
         out->storage_id         = storage_id;
-        out->content_storage_id = content_storage_id;
+        out->config             = config;
         out->content_storage    = nullptr;
 
         /* Create a new mount name and copy it to out. */
@@ -209,24 +685,49 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result ContentManagerImpl::InitializeGameCardContentStorageRoot(ContentStorageRoot *out) {
-        out->storage_id         = StorageId::GameCard;
-        out->content_storage    = nullptr;
+    Result ContentManagerImpl::InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, util::optional<ContentStorageConfig> storage_config) {
+        out->storage_id     = storage_id;
+        out->storage_config = storage_config;
 
-        /* Create a new mount name and copy it to out. */
-        std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
-        util::SNPrintf(out->path, sizeof(out->path), "%s:", out->mount_name);
+        /* Set the storage-specific info. */
+        switch (storage_id) {
+            case ncm::StorageId::Host:
+                out->save_data_info    = util::nullopt;
+                out->max_content_metas = HostMaxContentMetaCount;
+                out->memory_resource   = std::addressof(g_sd_and_user_content_meta_memory_resource);
+                break;
+            case ncm::StorageId::GameCard:
+                out->save_data_info    = util::nullopt;
+                out->max_content_metas = GameCardMaxContentMetaCount;
+                out->memory_resource   = std::addressof(g_gamecard_content_meta_memory_resource);
+                break;
+            case ncm::StorageId::BuiltInSystem:
+                /* If we should, skip save data info. */
+                if (storage_config.has_value() && (storage_config->content_storage_id != fs::ContentStorageId::System || storage_config->skip_verify_and_create)) {
+                    out->save_data_info = util::nullopt;
+                } else {
+                    /* Otherwise, use normal save data info. */
+                    out->save_data_info = BuiltInSystemSystemSaveDataInfo;
+                }
 
-        R_SUCCEED();
-    }
+                out->max_content_metas = SystemMaxContentMetaCount;
+                out->memory_resource   = std::addressof(g_system_content_meta_memory_resource);
+                break;
+            case ncm::StorageId::BuiltInUser:
+                out->save_data_info    = BuiltInUserSystemSaveDataInfo;
+                out->max_content_metas = UserMaxContentMetaCount;
+                out->memory_resource   = std::addressof(g_sd_and_user_content_meta_memory_resource);
+                break;
+            case ncm::StorageId::SdCard:
+                out->save_data_info    = SdCardSystemSaveDataInfo;
+                out->max_content_metas = SdCardMaxContentMetaCount;
+                out->memory_resource   = std::addressof(g_sd_and_user_content_meta_memory_resource);
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
 
-    Result ContentManagerImpl::InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas, ContentMetaMemoryResource *memory_resource) {
-        out->storage_id            = storage_id;
-        out->info                  = info;
-        out->max_content_metas     = max_content_metas;
-        out->memory_resource       = memory_resource;
-        out->content_meta_database = nullptr;
-        out->kvs                   = util::nullopt;
+        /* Clear the kvs. */
+        out->kvs = util::nullopt;
 
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
@@ -236,22 +737,29 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
-    Result ContentManagerImpl::InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas, ContentMetaMemoryResource *memory_resource) {
-        out->storage_id            = StorageId::GameCard;
-        out->max_content_metas     = max_content_metas;
-        out->memory_resource       = memory_resource;
-        out->content_meta_database = nullptr;
-        out->kvs                   = util::nullopt;
+    Result ContentManagerImpl::InitializeIntegratedContentStorageRoot(IntegratedContentStorageRoot *out, const IntegratedContentStorageConfig *config, size_t root_idx, size_t root_count) {
+        /* Set config and roots. */
+        out->m_config    = config;
+        out->m_roots     = std::addressof(m_content_storage_roots[root_idx]);
+        out->m_num_roots = root_count;
 
         R_SUCCEED();
     }
 
-    Result ContentManagerImpl::ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path) {
-        std::scoped_lock lk(m_mutex);
+    Result ContentManagerImpl::InitializeIntegratedContentMetaDatabaseRoot(IntegratedContentMetaDatabaseRoot *out, const IntegratedContentStorageConfig *config, size_t root_idx, size_t root_count) {
+        /* Set config and roots. */
+        out->m_config    = config;
+        out->m_roots     = std::addressof(m_content_meta_database_roots[root_idx]);
+        out->m_num_roots = root_count;
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::ImportContentMetaDatabaseImpl(ContentMetaDatabaseRoot *root, const char *import_mount_name) {
+        /* Check that the root is system. */
+        AMS_ABORT_UNLESS(root->storage_id == ncm::StorageId::BuiltInSystem);
+
+        std::scoped_lock lk(m_mutex);
 
         /* Print the savedata path. */
         PathString savedata_db_path;
@@ -259,10 +767,10 @@ namespace ams::ncm {
 
         /* Print a path for the mounted partition. */
         PathString bis_db_path;
-        bis_db_path.AssignFormat("%s:/%s", import_mount_name, path);
+        bis_db_path.AssignFormat("%s:/%s", import_mount_name, "cnmtdb.arc");
 
         /* Mount the savedata. */
-        R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
+        R_TRY(fs::MountSystemSaveData(root->mount_name, root->save_data_info->space_id, root->save_data_info->id));
         ON_SCOPE_EXIT { fs::Unmount(root->mount_name); };
 
         /* Ensure the path exists for us to import to. */
@@ -300,6 +808,14 @@ namespace ams::ncm {
         /* Only support importing BuiltInSystem. */
         AMS_ABORT_UNLESS(storage_id == StorageId::BuiltInSystem);
 
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *integrated_root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(integrated_root), storage_id));
+
+        /* Obtain the root. */
+        ContentMetaDatabaseRoot *root = integrated_root->GetRoot(fs::ContentStorageId::System);
+        R_UNLESS(root != nullptr, ncm::ResultUnknownStorage());
+
         /* Get a mount name for the system partition. */
         auto bis_mount_name = impl::CreateUniqueMountName();
 
@@ -309,46 +825,132 @@ namespace ams::ncm {
 
         /* If we're not importing from a signed partition (or the partition signature is valid), import. */
         if (!from_signed_partition || IsSignedSystemPartitionOnSdCardValid(bis_mount_name.str)) {
-            R_TRY(this->ImportContentMetaDatabaseImpl(StorageId::BuiltInSystem, bis_mount_name.str, "cnmtdb.arc"));
+            R_TRY(this->ImportContentMetaDatabaseImpl(root, bis_mount_name.str));
         }
 
         R_SUCCEED();
     }
 
     Result ContentManagerImpl::Initialize(const ContentManagerConfig &config) {
+        /* Initialize based on whether integrated content is enabled. */
+        if (config.IsIntegratedSystemContentEnabled()) {
+            constexpr const IntegratedContentStorageConfig IntegratedConfigsForIntegratedSystemContent[] = {
+                { ncm::StorageId::BuiltInSystem, { fs::ContentStorageId::System, fs::ContentStorageId::System0 }, 2, true },
+                { ncm::StorageId::BuiltInUser,   { fs::ContentStorageId::User }, 1, false },
+                { ncm::StorageId::SdCard,        { fs::ContentStorageId::SdCard }, 1, false },
+                { ncm::StorageId::GameCard,      { }, 0, false },
+                { ncm::StorageId::Host,          { }, 0, false },
+            };
+            constexpr const ContentStorageConfig ContentStorageConfigsForIntegratedSystemContent[] = {
+                { .content_storage_id = fs::ContentStorageId::System,  .skip_verify_and_create = true,  .skip_activate = true, },
+                { .content_storage_id = fs::ContentStorageId::System0, .skip_verify_and_create = true,  .skip_activate = false, },
+                { .content_storage_id = fs::ContentStorageId::User,    .skip_verify_and_create = false, .skip_activate = false, },
+                { .content_storage_id = fs::ContentStorageId::SdCard,  .skip_verify_and_create = false, .skip_activate = false, },
+            };
+            constexpr const ncm::StorageId ActivatedStoragesForIntegratedSystemContent[] = {
+                ncm::StorageId::BuiltInSystem,
+            };
+
+            R_RETURN(this->Initialize(config, IntegratedConfigsForIntegratedSystemContent, util::size(IntegratedConfigsForIntegratedSystemContent), ContentStorageConfigsForIntegratedSystemContent, util::size(ContentStorageConfigsForIntegratedSystemContent), ActivatedStoragesForIntegratedSystemContent, util::size(ActivatedStoragesForIntegratedSystemContent)));
+        } else {
+            constexpr const IntegratedContentStorageConfig IntegratedConfigs[] = {
+                { ncm::StorageId::BuiltInSystem, { fs::ContentStorageId::System }, 1, false },
+                { ncm::StorageId::BuiltInUser,   { fs::ContentStorageId::User }, 1, false },
+                { ncm::StorageId::SdCard,        { fs::ContentStorageId::SdCard }, 1, false },
+                { ncm::StorageId::GameCard,      { }, 0, false },
+                { ncm::StorageId::Host,          { }, 0, false },
+            };
+            constexpr const ContentStorageConfig ContentStorageConfigs[] = {
+                { .content_storage_id = fs::ContentStorageId::System,  .skip_verify_and_create = false, .skip_activate = false, },
+                { .content_storage_id = fs::ContentStorageId::User,    .skip_verify_and_create = false, .skip_activate = false, },
+                { .content_storage_id = fs::ContentStorageId::SdCard,  .skip_verify_and_create = false, .skip_activate = false, },
+            };
+            constexpr const ncm::StorageId ActivatedStorages[] = {
+                ncm::StorageId::BuiltInSystem,
+            };
+
+            R_RETURN(this->Initialize(config, IntegratedConfigs, util::size(IntegratedConfigs), ContentStorageConfigs, util::size(ContentStorageConfigs), ActivatedStorages, util::size(ActivatedStorages)));
+        }
+    }
+
+    Result ContentManagerImpl::Initialize(const ContentManagerConfig &manager_config, const IntegratedContentStorageConfig *integrated_configs, size_t num_integrated_configs, const ContentStorageConfig *configs, size_t num_configs, const ncm::StorageId *activated_storages, size_t num_activated_storages) {
         std::scoped_lock lk(m_mutex);
 
         /* Check if we've already initialized. */
         R_SUCCEED_IF(m_initialized);
 
-        /* Clear storage id for all roots. */
-        for (auto &root : m_content_storage_roots) {
-            root.storage_id = StorageId::None;
+        /* Set our configs. */
+        for (size_t i = 0; i < num_integrated_configs; ++i) {
+            m_integrated_configs[i] = integrated_configs[i];
+        }
+        m_num_integrated_configs = num_integrated_configs;
+
+        for (size_t i = 0; i < num_configs; ++i) {
+            m_configs[i] = configs[i];
+        }
+        m_num_configs = num_configs;
+
+        /* Setup roots. */
+        m_num_integrated_content_storage_entries = 0;
+        m_num_content_storage_entries            = 0;
+        m_num_integrated_content_meta_entries    = 0;
+        m_num_content_meta_entries               = 0;
+        for (size_t i = 0; i < m_num_integrated_configs; ++i) {
+            /* Get the integrated config. */
+            const auto &integrated_config = m_integrated_configs[i];
+
+            /* Set up storage and meta db roots. */
+            size_t content_storage_root_idx = m_num_content_storage_entries;
+            size_t content_meta_root_idx    = m_num_content_meta_entries;
+            if (integrated_config.num_content_storage_ids > 0) {
+                /* If we have content storage ids, set up storage/meta db roots for each. */
+                for (auto n = 0; n < integrated_config.num_content_storage_ids; n++) {
+                    /* Get the config. */
+                    const auto &config = this->GetContentStorageConfig(integrated_config.content_storage_ids[n]);
+                    R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), integrated_config.storage_id, config));
+                    R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), integrated_config.storage_id, config));
+                }
+            } else {
+                /* If we have no content storage ids, set up a single storage/meta db root. */
+                R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), integrated_config.storage_id, util::nullopt));
+                R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), integrated_config.storage_id, util::nullopt));
+            }
+
+            R_TRY(this->InitializeIntegratedContentStorageRoot(std::addressof(m_integrated_content_storage_roots[m_num_integrated_content_storage_entries++]), std::addressof(integrated_config), content_storage_root_idx, m_num_content_storage_entries - content_storage_root_idx));
+            R_TRY(this->InitializeIntegratedContentMetaDatabaseRoot(std::addressof(m_integrated_content_meta_database_roots[m_num_integrated_content_meta_entries++]), std::addressof(integrated_config), content_meta_root_idx, m_num_content_meta_entries - content_meta_root_idx));
         }
 
-        for (auto &root : m_content_meta_database_roots) {
-            root.storage_id = StorageId::None;
+        /* Activate storages. */
+        for (size_t i = 0; i < num_activated_storages; i++) {
+            const auto storage_id = activated_storages[i];
+            if (storage_id == ncm::StorageId::BuiltInSystem) {
+                R_TRY(this->InitializeStorageBuiltInSystem(manager_config));
+            } else {
+                R_TRY(this->InitializeStorage(storage_id));
+            }
         }
 
-        /* First, setup the BuiltInSystem storage entry. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), StorageId::BuiltInSystem, fs::ContentStorageId::System));
+        m_initialized = true;
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::InitializeStorageBuiltInSystem(const ContentManagerConfig &manager_config) {
+        /* Setup and activate the storage for BuiltInSystem. */
         if (R_FAILED(this->VerifyContentStorage(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentStorage(StorageId::BuiltInSystem));
         }
         R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
-        /* Next, the BuiltInSystem content meta entry. */
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
-
+        /* Setup the content meta database for system. */
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* Try to build or import a database, depending on our configuration. */
-            if (config.ShouldBuildDatabase()) {
+            if (manager_config.ShouldBuildDatabase()) {
                 /* If we should build the database, do so. */
                 R_TRY(this->BuildContentMetaDatabase(StorageId::BuiltInSystem));
                 R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
-            } else if (config.ShouldImportDatabaseFromSignedSystemPartitionOnSd()) {
+            } else if (manager_config.ShouldImportDatabaseFromSignedSystemPartitionOnSd()) {
                 /* Otherwise if we should import the database from the SD, do so. */
                 R_TRY(this->ImportContentMetaDatabase(StorageId::BuiltInSystem, true));
                 R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
@@ -362,150 +964,86 @@ namespace ams::ncm {
             EnsureBuiltInSystemSaveDataFlags();
         }
 
+        /* Activate the content meta database. */
         R_TRY(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
-        /* Now for BuiltInUser's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), StorageId::BuiltInUser, fs::ContentStorageId::User));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_SUCCEED();
+    }
 
-        /* Beyond this point, N uses hardcoded indices. */
+    Result ContentManagerImpl::InitializeStorage(ncm::StorageId storage_id) {
+        /* Setup and activate the storage. */
+        if (R_FAILED(this->VerifyContentStorage(storage_id))) {
+            R_TRY(this->CreateContentStorage(storage_id));
+        }
+        R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
-        /* Next SdCard's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[2]), StorageId::SdCard, fs::ContentStorageId::SdCard));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[2]), StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        /* Setup the content meta database for system. */
+        if (R_FAILED(this->VerifyContentMetaDatabase(storage_id))) {
+            R_TRY(this->CreateContentMetaDatabase(storage_id));
+        }
+        R_TRY(this->ActivateContentMetaDatabase(storage_id));
 
-        /* GameCard's content storage and content meta entries. */
-        /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
-        R_TRY(this->InitializeGameCardContentStorageRoot(std::addressof(m_content_storage_roots[3])));
-        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[3]), GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
-
-        m_initialized = true;
         R_SUCCEED();
     }
 
     Result ContentManagerImpl::CreateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content storage root. */
-        ContentStorageRoot *root;
-        R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content storage root. */
+        IntegratedContentStorageRoot *root;
+        R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), storage_id));
 
-        /* Mount the relevant content storage. */
-        R_TRY(fs::MountContentStorage(root->mount_name, root->content_storage_id));
-        ON_SCOPE_EXIT { fs::Unmount(root->mount_name); };
-
-        /* Ensure the content storage root's path exists. */
-        R_TRY(fs::EnsureDirectory(root->path));
-
-        /* Initialize content and placeholder directories for the root. */
-        R_RETURN(ContentStorageImpl::InitializeBase(root->path));
+        R_RETURN(root->Create());
     }
 
     Result ContentManagerImpl::CreateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
-
-        /* Mount (and optionally create) save data for the root. */
-        R_TRY(this->EnsureAndMountSystemSaveData(root->mount_name, root->info));
-        ON_SCOPE_EXIT { fs::Unmount(root->mount_name); };
-
-        /* Ensure the content meta database root's path exists. */
-        R_TRY(fs::EnsureDirectory(root->path));
-
-        /* Commit our changes. */
-        R_RETURN(fs::CommitSaveData(root->mount_name));
+        R_RETURN(root->Create());
     }
 
     Result ContentManagerImpl::VerifyContentStorage(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content storage root. */
-        ContentStorageRoot *root;
-        R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content storage root. */
+        IntegratedContentStorageRoot *root;
+        R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), storage_id));
 
-        /* Substitute the mount name in the root's path with a unique one. */
-        char path[0x80];
-        auto mount_name = impl::CreateUniqueMountName();
-        ReplaceMountName(path, mount_name.str, root->path);
-
-        /* Mount the relevant content storage. */
-        R_TRY(fs::MountContentStorage(mount_name.str, root->content_storage_id));
-        ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
-
-        /* Ensure the root, content and placeholder directories exist for the storage. */
-        R_RETURN(ContentStorageImpl::VerifyBase(path));
+        R_RETURN(root->Verify());
     }
 
     Result ContentManagerImpl::VerifyContentMetaDatabase(StorageId storage_id) {
-        /* Game card content meta databases will always be valid. */
-        R_SUCCEED_IF(storage_id == StorageId::GameCard);
-
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        /* Mount save data for non-existing content meta databases. */
-        const bool mount = !root->content_meta_database;
-        if (mount) {
-            R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
-        }
-        auto mount_guard = SCOPE_GUARD { if (mount) { fs::Unmount(root->mount_name); } };
-
-        /* Ensure the root path exists. */
-        bool has_dir = false;
-        R_TRY(fs::HasDirectory(std::addressof(has_dir), root->path));
-        R_UNLESS(has_dir, ncm::ResultInvalidContentMetaDatabase());
-
-        R_SUCCEED();
+        R_RETURN(root->Verify());
     }
 
     Result ContentManagerImpl::OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content storage root. */
-        ContentStorageRoot *root;
-        R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content storage root. */
+        IntegratedContentStorageRoot *root;
+        R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), storage_id));
 
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            /* Obtain the content storage if already active. */
-            R_UNLESS(root->content_storage, GetContentStorageNotActiveResult(storage_id));
-        } else {
-            /* 1.0.0 activates content storages as soon as they are opened. */
-            if (!root->content_storage) {
-                R_TRY(this->ActivateContentStorage(storage_id));
-            }
-        }
-
-        *out = root->content_storage;
-        R_SUCCEED();
+        R_RETURN(root->Open(out, m_rights_id_cache, m_registered_host_content));
     }
 
     Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            /* Obtain the content meta database if already active. */
-            R_UNLESS(root->content_meta_database, GetContentMetaDatabaseNotActiveResult(storage_id));
-        } else {
-            /* 1.0.0 activates content meta databases as soon as they are opened. */
-            if (!root->content_meta_database) {
-                R_TRY(this->ActivateContentMetaDatabase(storage_id));
-            }
-        }
-
-        *out = root->content_meta_database;
-        R_SUCCEED();
+        R_RETURN(root->Open(out));
     }
 
     Result ContentManagerImpl::CloseContentStorageForcibly(StorageId storage_id) {
@@ -519,155 +1057,51 @@ namespace ams::ncm {
     Result ContentManagerImpl::CleanupContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Disable and unmount content meta database root. */
-        R_TRY(this->InactivateContentMetaDatabase(storage_id));
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
-
-        /* Delete save data for the content meta database root. */
-        R_RETURN(fs::DeleteSaveData(root->info.space_id, root->info.id));
+        R_RETURN(root->Cleanup());
     }
 
     Result ContentManagerImpl::ActivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content storage root. */
-        ContentStorageRoot *root;
-        R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content storage root. */
+        IntegratedContentStorageRoot *root;
+        R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), storage_id));
 
-        /* Check if the storage is already activated. */
-        R_SUCCEED_IF(root->content_storage != nullptr);
-
-        /* Mount based on the storage type. */
-        if (storage_id == StorageId::GameCard) {
-            fs::GameCardHandle handle{};
-            R_TRY(fs::GetGameCardHandle(std::addressof(handle)));
-            R_TRY(fs::MountGameCardPartition(root->mount_name, handle, fs::GameCardPartition::Secure));
-        } else {
-            R_TRY(fs::MountContentStorage(root->mount_name, root->content_storage_id));
-        }
-
-        /* Unmount on failure. */
-        auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
-
-        if (storage_id == StorageId::Host) {
-            /* Create a host content storage. */
-            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, HostContentStorageImpl>(std::addressof(m_registered_host_content));
-            root->content_storage = std::move(content_storage);
-        } else if (storage_id == StorageId::GameCard) {
-            /* Game card content storage is read only. */
-            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ReadOnlyContentStorageImpl>();
-            R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath));
-            root->content_storage = std::move(content_storage);
-        } else {
-            /* Create a content storage. */
-            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ContentStorageImpl>();
-
-            /* Initialize content storage with an appropriate path function. */
-            switch (storage_id) {
-                case StorageId::BuiltInSystem:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(m_rights_id_cache)));
-                    break;
-                case StorageId::SdCard:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(m_rights_id_cache)));
-                    break;
-                default:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(m_rights_id_cache)));
-                    break;
-            }
-
-            root->content_storage = std::move(content_storage);
-        }
-
-        /* Prevent unmounting. */
-        mount_guard.Cancel();
-        R_SUCCEED();
+        R_RETURN(root->Activate(m_rights_id_cache, m_registered_host_content));
     }
 
     Result ContentManagerImpl::InactivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content storage root. */
-        ContentStorageRoot *root;
-        R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content storage root. */
+        IntegratedContentStorageRoot *root;
+        R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), storage_id));
 
-        /* Disable and unmount the content storage, if present. */
-        if (root->content_storage != nullptr) {
-            /* N doesn't bother checking the result of this */
-            root->content_storage->DisableForcibly();
-            root->content_storage = nullptr;
-
-            if (storage_id == StorageId::Host) {
-                m_registered_host_content.ClearPaths();
-            } else {
-                fs::Unmount(root->mount_name);
-            }
-        }
-
-        R_SUCCEED();
+        R_RETURN(root->Inactivate(m_registered_host_content));
     }
 
     Result ContentManagerImpl::ActivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        /* Already activated. */
-        R_SUCCEED_IF(root->content_meta_database != nullptr);
-
-        /* Make a new kvs. */
-        root->kvs.emplace();
-
-        if (storage_id == StorageId::GameCard) {
-            /* Initialize the key value store. */
-            R_TRY(root->kvs->Initialize(root->max_content_metas, root->memory_resource));
-
-            /* Create an on memory content meta database for game cards. */
-            root->content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, OnMemoryContentMetaDatabaseImpl>(std::addressof(*root->kvs));
-        } else {
-            /* Mount save data for this root. */
-            R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
-
-            /* Unmount on failure. */
-            auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
-
-            /* Initialize and load the key value store from the filesystem. */
-            R_TRY(root->kvs->Initialize(root->path, root->max_content_metas, root->memory_resource));
-            R_TRY(root->kvs->Load());
-
-            /* Create the content meta database. */
-            root->content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, ContentMetaDatabaseImpl>(std::addressof(*root->kvs), root->mount_name);
-            mount_guard.Cancel();
-        }
-
-        R_SUCCEED();
+        R_RETURN(root->Activate());
     }
 
     Result ContentManagerImpl::InactivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(m_mutex);
 
-        /* Obtain the content meta database root. */
-        ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
+        /* Obtain the integrated content meta database root. */
+        IntegratedContentMetaDatabaseRoot *root;
+        R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
-        /* Disable the content meta database, if present. */
-        if (root->content_meta_database != nullptr) {
-            /* N doesn't bother checking the result of this */
-            root->content_meta_database->DisableForcibly();
-            root->content_meta_database = nullptr;
-            root->kvs = util::nullopt;
-
-            /* Also unmount, except in the case of game cards. */
-            if (storage_id != StorageId::GameCard) {
-                fs::Unmount(root->mount_name);
-            }
-        }
-
-        R_SUCCEED();
+        R_RETURN(root->Inactivate());
     }
 
     Result ContentManagerImpl::InvalidateRightsIdCache() {
@@ -704,6 +1138,29 @@ namespace ams::ncm {
 
         /* Output the report. */
         out.SetValue(report);
+        R_SUCCEED();
+    }
+
+    Result ContentManagerImpl::ActivateFsContentStorage(fs::ContentStorageId content_storage_id) {
+        /* Get the integrated config for the storage. */
+        IntegratedContentStorageConfig *integrated_config;
+        R_TRY(this->GetIntegratedContentStorageConfig(std::addressof(integrated_config), content_storage_id));
+
+        {
+            /* Obtain the integrated content meta database root. */
+            IntegratedContentStorageRoot *root;
+            R_TRY(this->GetIntegratedContentStorageRoot(std::addressof(root), integrated_config->storage_id));
+
+            R_TRY(root->Activate(m_rights_id_cache, m_registered_host_content, content_storage_id));
+        }
+        {
+            /* Obtain the integrated content meta database root. */
+            IntegratedContentMetaDatabaseRoot *root;
+            R_TRY(this->GetIntegratedContentMetaDatabaseRoot(std::addressof(root), integrated_config->storage_id));
+
+            R_TRY(root->Activate(content_storage_id));
+        }
+
         R_SUCCEED();
     }
 

@@ -84,7 +84,9 @@ namespace ams::kern {
             KCapabilities               m_capabilities;
             ams::svc::ProgramId         m_program_id;
             u64                         m_process_id;
+            #if defined(MESOSPHERE_ENABLE_PROCESS_CREATION_TIME)
             s64                         m_creation_time;
+            #endif
             KProcessAddress             m_code_address;
             size_t                      m_code_size;
             size_t                      m_main_thread_stack_size;
@@ -108,6 +110,7 @@ namespace ams::kern {
             KWaitObject                 m_wait_object;
             KThread                    *m_running_threads[cpu::NumCores];
             u64                         m_running_thread_idle_counts[cpu::NumCores];
+            u64                         m_running_thread_switch_counts[cpu::NumCores];
             KThread                    *m_pinned_threads[cpu::NumCores];
             util::Atomic<s64>           m_cpu_time;
             util::Atomic<s64>           m_num_process_switches;
@@ -285,9 +288,10 @@ namespace ams::kern {
                 return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->GetUsedSize() : 0;
             }
 
-            void SetRunningThread(s32 core, KThread *thread, u64 idle_count) {
-                m_running_threads[core]            = thread;
-                m_running_thread_idle_counts[core] = idle_count;
+            void SetRunningThread(s32 core, KThread *thread, u64 idle_count, u64 switch_count) {
+                m_running_threads[core]              = thread;
+                m_running_thread_idle_counts[core]   = idle_count;
+                m_running_thread_switch_counts[core] = switch_count;
             }
 
             void ClearRunningThread(KThread *thread) {
@@ -306,6 +310,7 @@ namespace ams::kern {
 
             constexpr KThread *GetRunningThread(s32 core) const { return m_running_threads[core]; }
             constexpr u64 GetRunningThreadIdleCount(s32 core) const { return m_running_thread_idle_counts[core]; }
+            constexpr u64 GetRunningThreadSwitchCount(s32 core) const { return m_running_thread_switch_counts[core]; }
 
             void RegisterThread(KThread *thread);
             void UnregisterThread(KThread *thread);
