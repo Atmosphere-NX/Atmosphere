@@ -283,11 +283,6 @@ namespace ams::ncm {
         R_THROW(ncm::ResultNotSupported());
     }
 
-    Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCacheDeprecated(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
-        AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id);
-        R_THROW(ncm::ResultNotSupported());
-    }
-
     Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) {
         AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id, attr);
         R_THROW(ncm::ResultNotSupported());

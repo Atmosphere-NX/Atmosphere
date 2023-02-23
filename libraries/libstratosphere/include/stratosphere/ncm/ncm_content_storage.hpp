@@ -204,7 +204,7 @@ namespace ams::ncm {
                 if (vers >= hos::Version_16_0_0) {
                     R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCache(out_rights_id, placeholder_id, cache_content_id, attr));
                 } else {
-                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCacheDeprecated(out_rights_id, placeholder_id, cache_content_id));
+                    R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCacheDeprecated(out_rights_id, cache_content_id, placeholder_id));
                 }
             }
     };

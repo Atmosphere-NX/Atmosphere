@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    struct alignas(4) ContentId {
+    struct ContentId {
         util::Uuid uuid;
 
         bool operator==(const ContentId &other) const {
@@ -38,7 +38,7 @@ namespace ams::ncm {
         }
     };
 
-    static_assert(alignof(ContentId) == 4);
+    static_assert(alignof(ContentId) == 1);
 
     constexpr inline ContentId InvalidContentId = { util::InvalidUuid };
 
