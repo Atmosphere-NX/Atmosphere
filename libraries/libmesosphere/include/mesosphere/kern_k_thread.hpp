@@ -214,7 +214,7 @@ namespace ams::kern {
                 template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, RedBlackKeyType>)
                 static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThread &rhs) {
                     if (lhs.GetPriority() < rhs.GetPriority()) {
-                        /* And then by priority. */
+                        /* Sort by priority. */
                         return -1;
                     } else {
                         return 1;
