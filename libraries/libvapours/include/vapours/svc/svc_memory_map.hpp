@@ -27,11 +27,11 @@ namespace ams::svc {
 
         constexpr inline size_t AddressMemoryRegionSmall36Size = 2_GB;
         constexpr inline size_t AddressMemoryRegionLarge36Size = 64_GB - AddressMemoryRegionSmall36Size;
-        constexpr inline size_t AddressMemoryRegionHeap36Size  = 6_GB;
+        constexpr inline size_t AddressMemoryRegionHeap36Size  = 8_GB;
         constexpr inline size_t AddressMemoryRegionAlias36Size = 6_GB;
 
         constexpr inline size_t AddressMemoryRegionSmall39Size = 64_GB;
-        constexpr inline size_t AddressMemoryRegionHeap39Size  = 6_GB;
+        constexpr inline size_t AddressMemoryRegionHeap39Size  = 8_GB;
         constexpr inline size_t AddressMemoryRegionAlias39Size = 64_GB;
         constexpr inline size_t AddressMemoryRegionStack39Size = 2_GB;
 
