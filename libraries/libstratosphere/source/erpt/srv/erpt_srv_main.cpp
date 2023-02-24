@@ -106,7 +106,7 @@ namespace ams::erpt::srv {
         g_sf_allocator.Attach(g_heap_handle);
 
         for (auto i = 0; i < CategoryId_Count; i++) {
-            Context *ctx = new Context(static_cast<CategoryId>(i), 1);
+            Context *ctx = new Context(static_cast<CategoryId>(i));
             AMS_ABORT_UNLESS(ctx != nullptr);
         }
 

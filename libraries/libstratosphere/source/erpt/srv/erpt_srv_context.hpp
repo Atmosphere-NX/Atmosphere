@@ -26,16 +26,12 @@ namespace ams::erpt::srv {
     class Context : public Allocator, public util::IntrusiveListBaseNode<Context> {
         private:
             const CategoryId m_category;
-            const u32 m_max_record_count;
-            u32 m_record_count;
-            util::IntrusiveListBaseTraits<ContextRecord>::ListType m_record_list;
+            std::unique_ptr<ContextRecord> m_record;
         public:
-            Context(CategoryId cat, u32 max_records);
+            Context(CategoryId cat);
             ~Context();
 
             Result AddCategoryToReport(Report *report);
-            Result AddContextToCategory(const ContextEntry *entry, const u8 *data, u32 data_size);
-            Result AddContextRecordToCategory(std::unique_ptr<ContextRecord> record);
         public:
             static Result SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size);
             static Result SubmitContextRecord(std::unique_ptr<ContextRecord> record);

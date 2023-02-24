@@ -99,6 +99,41 @@ namespace ams {
 
     namespace init {
 
+        namespace {
+
+            Result InitializePlatformServiceWithoutSessionCountForHomebrewCompatibility() {
+                /* NOTE: This implements a hack, to keep a session to pl:u without counting against the global limit. */
+                /* This is done because as of 16.0.0, pl:u is the only way to get shared font access, and there are */
+                /* not enough sessions for all reasonable the clients when homebrew gets involved. */
+                /* Please do not do similar things for other services; this is a hack which may not always work, */
+                /* and which could cause problems in other contexts where the ServerManager doesn't have enough */
+                /* slots in truth. */
+
+                /* Initialize pl. */
+                R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
+
+                /* Get the service session for pl. */
+                Service *srv = plGetServiceSession();
+
+                /* Next, create a clone. */
+                /* Because this doesn't go through sm, this does not count against the session limit. */
+                Service clone;
+                R_TRY(serviceClone(srv, std::addressof(clone)));
+
+                /* Next, close the pl service session from sm. */
+                /* This decrements the used session count by one, since the session is from sm. */
+                serviceClose(srv);
+
+                /* HACK: replace the session with the clone we made, to restore functionality. */
+                *srv = clone;
+
+                return 0;
+
+            }
+
+        }
+
+
         void InitializeSystemModule() {
             /* Initialize heap. */
             fatal::srv::InitializeFsHeap();
@@ -126,7 +161,7 @@ namespace ams {
 
             R_ABORT_UNLESS(psmInitialize());
             R_ABORT_UNLESS(spsmInitialize());
-            R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
+            R_ABORT_UNLESS(InitializePlatformServiceWithoutSessionCountForHomebrewCompatibility());
             gpio::Initialize();
 
             /* Mount the SD card. */
