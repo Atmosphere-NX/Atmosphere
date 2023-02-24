@@ -21,8 +21,7 @@ namespace ams::erpt::srv {
 
     class Context;
 
-    class ContextRecord : public Allocator, public util::IntrusiveListBaseNode<ContextRecord> {
-        friend class Context;
+    class ContextRecord : public Allocator {
         private:
             static u32 s_record_count;
         public:
