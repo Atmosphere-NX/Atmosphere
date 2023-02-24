@@ -16,6 +16,7 @@
 #include "ui_util.hpp"
 #include <cstdio>
 #include <math.h>
+#include <cstring>
 
 namespace dbk {
 
@@ -73,7 +74,7 @@ namespace dbk {
         nvgFill(vg);
 
         /* Setup the font. */
-        nvgFontSize(vg, 32.0f);
+        nvgFontSize(vg, std::min(32.0f, -(strlen(title)*0.5f) + 47.0f));
         nvgFontFace(vg, SwitchStandardFont);
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
         nvgFillColor(vg, nvgRGB(0, 0, 0));
