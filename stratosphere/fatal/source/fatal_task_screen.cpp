@@ -57,7 +57,7 @@ namespace ams::fatal::srv {
                 }
             }
 
-            /* We couldn't use heap, so try insecure memory, from the application pool. */
+            /* We couldn't use heap, so try insecure memory, from the system nonsecure pool. */
             {
                 uintptr_t address = 0;
                 if (R_SUCCEEDED(os::AllocateInsecureMemory(std::addressof(address), FrameBufferRequiredSizePageAligned))) {
