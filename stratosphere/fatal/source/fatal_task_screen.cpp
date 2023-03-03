@@ -42,7 +42,46 @@ namespace ams::fatal::srv {
         alignas(os::MemoryPageSize) constinit u8 g_nv_transfer_memory[0x40000];
 
         /* There should only be a single (1280*768) framebuffer. */
-        alignas(os::MemoryPageSize) constinit u8 g_framebuffer_memory[FatalScreenWidthAlignedBytes * util::AlignUp(FatalScreenHeight, 128)];
+        constexpr size_t FrameBufferRequiredSizeBytes       = FatalScreenWidthAlignedBytes * util::AlignUp(FatalScreenHeight, 128);
+        constexpr size_t FrameBufferRequiredSizePageAligned = util::AlignUp(FrameBufferRequiredSizeBytes, os::MemoryPageSize);
+        constexpr size_t FrameBufferRequiredSizeHeapAligned = util::AlignUp(FrameBufferRequiredSizeBytes, os::MemoryHeapUnitSize);
+
+        constinit u8 *g_framebuffer_pointer = nullptr;
+
+        void InitializeFrameBufferPointer() {
+            /* Try to get a framebuffer from heap. */
+            {
+                if (R_SUCCEEDED(os::SetMemoryHeapSize(FrameBufferRequiredSizeHeapAligned))) {
+                    g_framebuffer_pointer = reinterpret_cast<u8 *>(os::GetMemoryHeapAddress());
+                    return;
+                }
+            }
+
+            /* We couldn't use heap, so try insecure memory, from the system nonsecure pool. */
+            {
+                uintptr_t address = 0;
+                if (R_SUCCEEDED(os::AllocateInsecureMemory(std::addressof(address), FrameBufferRequiredSizePageAligned))) {
+                    g_framebuffer_pointer = reinterpret_cast<u8 *>(address);
+                    return;
+                }
+            }
+
+            /* Neither heap nor insecure is available, so we're going to have to try to raid the unsafe pool. */
+            {
+                /* First, increase the limit to an extremely high value. */
+                size_t large_size = std::max(64_MB, FrameBufferRequiredSizeHeapAligned);
+                while (svc::ResultLimitReached::Includes(svc::SetUnsafeLimit(large_size))) {
+                    large_size *= 2;
+                }
+
+                /* Next, map some unsafe memory. */
+                uintptr_t address = 0;
+                if (R_SUCCEEDED(os::AllocateUnsafeMemory(std::addressof(address), FrameBufferRequiredSizePageAligned))) {
+                    g_framebuffer_pointer = reinterpret_cast<u8 *>(address);
+                    return;
+                }
+            }
+        }
 
     }
 
@@ -202,8 +241,12 @@ namespace ams::fatal::srv {
         void ShowFatalTask::PreRenderFrameBuffer() {
             const FatalConfig &config = GetFatalConfig();
 
+            /* Allocate a frame buffer. */
+            InitializeFrameBufferPointer();
+            AMS_ABORT_UNLESS(g_framebuffer_pointer != nullptr);
+
             /* Pre-render the image into the static framebuffer. */
-            u16 *tiled_buf = reinterpret_cast<u16 *>(g_framebuffer_memory);
+            u16 *tiled_buf = reinterpret_cast<u16 *>(g_framebuffer_pointer);
 
             /* Temporarily use the NV transfer memory as font backing heap. */
             font::SetHeapMemory(g_nv_transfer_memory, sizeof(g_nv_transfer_memory));
@@ -214,7 +257,7 @@ namespace ams::fatal::srv {
             font::SetFontColor(0xFFFF);
 
             /* Draw a background. */
-            for (size_t i = 0; i < sizeof(g_framebuffer_memory) / sizeof(*tiled_buf); i++) {
+            for (size_t i = 0; i < FrameBufferRequiredSizeBytes / sizeof(*tiled_buf); i++) {
                 tiled_buf[i] = 0x39C9;
             }
 
@@ -439,7 +482,7 @@ namespace ams::fatal::srv {
             R_TRY(nvFenceInit());
 
             /* Create nvmap. */
-            R_TRY(nvMapCreate(std::addressof(m_map), g_framebuffer_memory, sizeof(g_framebuffer_memory), 0x20000, NvKind_Pitch, true));
+            R_TRY(nvMapCreate(std::addressof(m_map), g_framebuffer_pointer, FrameBufferRequiredSizeBytes, 0x20000, NvKind_Pitch, true));
 
             /* Setup graphics buffer. */
             {
@@ -460,9 +503,9 @@ namespace ams::fatal::srv {
                 grbuf.planes[0].block_height_log2   = 4;
                 grbuf.nvmap_id                      = nvMapGetId(std::addressof(m_map));
                 grbuf.stride                        = FatalScreenWidthAligned;
-                grbuf.total_size                    = sizeof(g_framebuffer_memory);
+                grbuf.total_size                    = FrameBufferRequiredSizeBytes;
                 grbuf.planes[0].pitch               = FatalScreenWidthAlignedBytes;
-                grbuf.planes[0].size                = sizeof(g_framebuffer_memory);
+                grbuf.planes[0].size                = FrameBufferRequiredSizeBytes;
                 grbuf.planes[0].offset              = 0;
 
                 R_TRY(nwindowConfigureBuffer(std::addressof(m_win), 0, std::addressof(grbuf)));
@@ -474,7 +517,7 @@ namespace ams::fatal::srv {
         void ShowFatalTask::DisplayPreRenderedFrame() {
             s32 slot;
             R_ABORT_UNLESS(nwindowDequeueBuffer(std::addressof(m_win), std::addressof(slot), nullptr));
-            dd::FlushDataCache(g_framebuffer_memory, sizeof(g_framebuffer_memory));
+            dd::FlushDataCache(g_framebuffer_pointer, FrameBufferRequiredSizeBytes);
             R_ABORT_UNLESS(nwindowQueueBuffer(std::addressof(m_win), m_win.cur_slot, NULL));
         }
 

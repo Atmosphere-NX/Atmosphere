@@ -78,6 +78,9 @@
 				"svcReplyAndReceive":	"0x43",
 				"svcReplyAndReceiveWithUserBuffer":	"0x44",
 				"svcCreateEvent":	"0x45",
+				"svcMapPhysicalMemoryUnsafe":	"0x48",
+				"svcUnmapPhysicalMemoryUnsafe":	"0x48",
+				"svcSetUnsafeLimit":	"0x4A",
 				"svcReadWriteRegister":	"0x4E",
                 "svcDebugActiveProcess": "0x60",
                 "svcGetDebugEvent": "0x63",
@@ -86,7 +89,9 @@
                 "svcQueryDebugProcessMemory": "0x69",
                 "svcReadDebugProcessMemory": "0x6a",
                 "svcGetDebugThreadParam": "0x6d",
-                "svcCallSecureMonitor": "0x7f"
+                "svcCallSecureMonitor": "0x7f",
+                "svcMapInsecureMemory": "0x90",
+                "svcUnmapInsecureMemory": "0x91"
 			}
 		}, {
 			"type":	"min_kernel_version",
