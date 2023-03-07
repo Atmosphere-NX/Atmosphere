@@ -29,7 +29,6 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     mov    x1, x0
 
     /* First, clear the need's scheduling bool (and dmb ish after, as it's an atomic). */
-    /* TODO: Should this be a stlrb? Nintendo does not do one. */
     strb   wzr, [x1]
     dmb    ish
 

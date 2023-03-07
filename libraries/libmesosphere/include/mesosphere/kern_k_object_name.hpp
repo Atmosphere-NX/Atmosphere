@@ -48,7 +48,7 @@ namespace ams::kern {
                 /* Check that the object is closed. */
                 R_UNLESS(derived->IsServerClosed(), svc::ResultInvalidState());
 
-                return Delete(obj.GetPointerUnsafe(), name);
+                R_RETURN(Delete(obj.GetPointerUnsafe(), name));
             }
 
             template<typename Derived> requires std::derived_from<Derived, KAutoObject>
