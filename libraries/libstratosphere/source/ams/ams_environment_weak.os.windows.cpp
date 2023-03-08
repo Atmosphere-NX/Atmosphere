@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 
 extern "C" char **__real___p__acmdln(void);
+extern "C" _invalid_parameter_handler __real__set_invalid_parameter_handler(_invalid_parameter_handler);
 
 namespace ams {
 
@@ -63,6 +64,13 @@ extern "C" {
     char **__wrap___p__acmdln(void) {
         ::ams::os::Initialize();
         return __real___p__acmdln();
+    }
+
+    /* On some mingw gcc versions, acmdln isn't used, so we need to hook a different part of crt init. */
+    _invalid_parameter_handler __wrap__set_invalid_parameter_handler(_invalid_parameter_handler handler) {
+        ::ams::os::Initialize();
+        return __real__set_invalid_parameter_handler(handler);
+
     }
 
 }
