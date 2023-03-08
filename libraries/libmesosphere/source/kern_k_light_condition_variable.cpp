@@ -51,7 +51,7 @@ namespace ams::kern {
 
         /* Sleep the thread. */
         {
-            KScopedSchedulerLockAndSleep lk(&timer, owner, timeout);
+            KScopedSchedulerLockAndSleep lk(std::addressof(timer), owner, timeout);
 
             if (!allow_terminating_thread && owner->IsTerminationRequested()) {
                 lk.CancelSleep();
