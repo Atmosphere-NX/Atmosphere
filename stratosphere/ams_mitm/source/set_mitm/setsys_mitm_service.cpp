@@ -173,7 +173,7 @@ namespace ams::mitm::settings {
                     /* Increment offset to the next database entry. */
                     db_offset += sizeof(settings::BluetoothDevicesSettings);
                 }
-                fs::FlushFile(file);
+                R_TRY(fs::FlushFile(file));
             } else {
                 R_TRY(fs::WriteFile(file, db_offset, db, total_entries * sizeof(settings::BluetoothDevicesSettings), fs::WriteOption::Flush));
             }
