@@ -253,14 +253,9 @@ namespace ams::settings {
         u8 device_type;
         u16 brr_size;
         u8 brr[0x9];
-        union {
-            u8 reserved[0x12B];
-
-            struct {
-                u8 padding;
-                char name2[0xF9];
-            };
-        };
+        u8 reserved0;
+        char name2[0xF9];
+        u8 reserved1[0x31];
     };
 
     static_assert(sizeof(BluetoothDevicesSettings) == sizeof(::SetSysBluetoothDevicesSettings));
