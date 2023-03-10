@@ -16,12 +16,15 @@
 #include <stratosphere.hpp>
 #include "setsys_mitm_service.hpp"
 #include "settings_sd_kvs.hpp"
+#include "setsys_shim.h"
 
 namespace ams::mitm::settings {
 
     using namespace ams::settings;
 
     namespace {
+
+        constexpr const char ExternalBluetoothDatabasePath[] = "@Sdcard:/atmosphere/bluetooth_devices.db";
 
         constinit os::SdkMutex g_firmware_version_lock;
         constinit bool g_cached_firmware_version;
@@ -87,6 +90,97 @@ namespace ams::mitm::settings {
             R_SUCCEED();
         }
 
+        bool ExternalBluetoothDatabaseEnabled() {
+            u8 en = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "enable_external_bluetooth_db");
+            return en;
+        }
+
+        bool HasExternalBluetoothDatabase() {
+            bool file_exists;
+            R_ABORT_UNLESS(fs::HasFile(std::addressof(file_exists), ExternalBluetoothDatabasePath));
+            return file_exists;
+        }
+
+        Result ReadExternalBluetoothDatabase(s32 *entries_read, settings::BluetoothDevicesSettings *db, size_t db_max_size) {
+            /* Open external database file. */
+            fs::FileHandle file;
+            R_TRY(fs::OpenFile(std::addressof(file), ExternalBluetoothDatabasePath, fs::OpenMode_Read));
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+            /* Read number of database entries stored in external database. */
+            size_t total_entries;
+            R_TRY(fs::ReadFile(file, 0, std::addressof(total_entries), sizeof(total_entries)));
+
+            u64 db_offset = sizeof(total_entries);
+            if (total_entries > db_max_size) {
+                /* Pairings are stored from least to most recent. Add offset to skip the older entries that won't fit. */
+                db_offset += (total_entries - db_max_size) * sizeof(settings::BluetoothDevicesSettings);
+
+                /* Cap number of database entries read to size of database on this firmware. */
+                total_entries = db_max_size;
+            }
+
+            /* Read database entries. */
+            R_TRY(fs::ReadFile(file, db_offset, db, total_entries * sizeof(settings::BluetoothDevicesSettings)));
+
+            /* Convert to old database format if running on a firmware below 13.0.0. */
+            if (hos::GetVersion() < hos::Version_13_0_0) {
+                for (size_t i = 0; i < total_entries; ++i) {
+                    /* Copy as many chars from currently used name field as we can fit in the original one. */
+                    util::SNPrintf(db[i].name, sizeof(db[i].name), "%s", db[i].name2);
+
+                    /* Clear the current name field. */
+                    std::memset(db[i].name2, 0, sizeof(db[i].name2));
+                }
+            }
+
+            *entries_read = total_entries;
+
+            R_SUCCEED();
+        }
+
+        Result StoreExternalBluetoothDatabase(const settings::BluetoothDevicesSettings *db, size_t total_entries) {
+            /* Open external database file. */
+            fs::FileHandle file;
+            R_TRY(fs::OpenFile(std::addressof(file), ExternalBluetoothDatabasePath, fs::OpenMode_Write));
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+            /* Set file size to accomodate all database entries */
+            R_TRY(fs::SetFileSize(file, sizeof(total_entries) + total_entries * sizeof(settings::BluetoothDevicesSettings)));
+
+            /* Write number of database entries. */
+            R_TRY(fs::WriteFile(file, 0, std::addressof(total_entries), sizeof(total_entries), fs::WriteOption::None));
+
+            /* Write database entries. */
+            u64 db_offset = sizeof(total_entries);
+            if (hos::GetVersion() < hos::Version_13_0_0) {
+                /* Convert to new database format if running on a firmware below 13.0.0 */
+                settings::BluetoothDevicesSettings tmp_entry;
+                for (size_t i = 0; i < total_entries; ++i) {
+                    /* Take a copy of the current database entry. */
+                    std::memcpy(std::addressof(tmp_entry), std::addressof(db[i]), sizeof(settings::BluetoothDevicesSettings));
+
+                    /* Copy the name field from the original location to the currently used one. */
+                    util::SNPrintf(tmp_entry.name2, sizeof(tmp_entry.name2), "%s", db[i].name);
+
+                    /* Clear the original name field. */
+                    std::memset(std::addressof(tmp_entry.name), 0, sizeof(tmp_entry.name));
+
+                    /* Write the converted database entry. */
+                    R_TRY(fs::WriteFile(file, db_offset, &tmp_entry, sizeof(settings::BluetoothDevicesSettings), fs::WriteOption::None));
+
+                    /* Increment offset to the next database entry. */
+                    db_offset += sizeof(settings::BluetoothDevicesSettings);
+                }
+                R_TRY(fs::FlushFile(file));
+            } else {
+                R_TRY(fs::WriteFile(file, db_offset, db, total_entries * sizeof(settings::BluetoothDevicesSettings), fs::WriteOption::Flush));
+            }
+
+            R_SUCCEED();
+        }
+
     }
 
     Result SetSysMitmService::GetFirmwareVersion(sf::Out<settings::FirmwareVersion> out) {
@@ -100,6 +194,47 @@ namespace ams::mitm::settings {
 
     Result SetSysMitmService::GetFirmwareVersion2(sf::Out<settings::FirmwareVersion> out) {
         R_RETURN(GetFirmwareVersionImpl(out.GetPointer(), m_client_info));
+    }
+
+    Result SetSysMitmService::SetBluetoothDevicesSettings(const sf::InMapAliasArray<settings::BluetoothDevicesSettings> &settings) {
+        /* Forward to session unless external database setting enabled. */
+        R_UNLESS(ExternalBluetoothDatabaseEnabled(), sm::mitm::ResultShouldForwardToSession());
+
+        /* Create the external database if it doesn't exist. */
+        if (!HasExternalBluetoothDatabase()) {
+            R_TRY(fs::CreateFile(ExternalBluetoothDatabasePath, 0));
+        }
+
+        /* Backup local database to sd card. */
+        R_TRY(StoreExternalBluetoothDatabase(settings.GetPointer(), settings.GetSize()));
+
+        /* Also allow the updated database to be stored to system save as usual. */
+        static_assert(sizeof(settings::BluetoothDevicesSettings) == sizeof(::SetSysBluetoothDevicesSettings));
+        R_TRY(setsysSetBluetoothDevicesSettingsFwd(m_forward_service.get(), reinterpret_cast<const ::SetSysBluetoothDevicesSettings *>(settings.GetPointer()), settings.GetSize()));
+
+        R_SUCCEED();
+    }
+
+    Result SetSysMitmService::GetBluetoothDevicesSettings(sf::Out<s32> out_count, const sf::OutMapAliasArray<settings::BluetoothDevicesSettings> &out) {
+        /* Forward to session unless external database setting enabled. */
+        R_UNLESS(ExternalBluetoothDatabaseEnabled(), sm::mitm::ResultShouldForwardToSession());
+
+        if (!HasExternalBluetoothDatabase()) {
+            /* Forward to the real command to fetch database stored in system save. */
+            static_assert(sizeof(settings::BluetoothDevicesSettings) == sizeof(::SetSysBluetoothDevicesSettings));
+            R_TRY(setsysGetBluetoothDevicesSettingsFwd(m_forward_service.get(), out_count.GetPointer(), reinterpret_cast<::SetSysBluetoothDevicesSettings *>(out.GetPointer()), out.GetSize()));
+
+            /* Create the external database file. */
+            R_TRY(fs::CreateFile(ExternalBluetoothDatabasePath, 0));
+
+            /* Backup local database to sd card. */
+            R_TRY(StoreExternalBluetoothDatabase(out.GetPointer(), out_count.GetValue()));
+        } else {
+            /* Read the external database from sd card. */
+            R_TRY(ReadExternalBluetoothDatabase(out_count.GetPointer(), out.GetPointer(), out.GetSize()));
+        }
+
+        R_SUCCEED();
     }
 
     Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
