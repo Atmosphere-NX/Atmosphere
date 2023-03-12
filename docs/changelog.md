@@ -6,6 +6,10 @@
   + Many FS apis were updated under the hood to reflect the latest official behavior.
   + **Please Note**: 16.0.0 made breaking changes to a number of system APIs, including in FS/NCM/Shared Font commands that some homebrew programs may use.
     + These programs may encounter strange errors, and may need to be recompiled with a libnx updated to support 16.0.0's changes to function properly.
++ A feature was added to optionally mirror the bluetooth pairing database to the SD card (thanks @ndeadly).
+  + This is opt-in, and can be controlled by setting `atmosphere!enable_external_bluetooth_db = u8!0x1`.
+  + When enabled, the pairing database will be synchronized to `/atmosphere/bluetooth_devices.db`.
+  + This allows paired devices to be automatically kept in-sync across sysmmc/all emummcs.
 + A number of minor issues were fixed and improvements were made, including:
   + An issue was fixed that could cause GPIO outputs to be misconfigured under certain circumstances.
 + General system stability improvements to enhance the user's experience.

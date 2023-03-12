@@ -235,4 +235,29 @@ namespace ams::settings {
         return !(lhs <= rhs);
     }
 
+    struct BluetoothDevicesSettings : public sf::LargeData {
+        u8 address[0x6];
+        char name[0x20];
+        u8 class_of_device[0x3];
+        u8 link_key[0x10];
+        u8 link_key_present;
+        u16 version;
+        u32 trusted_services;
+        u16 vid;
+        u16 pid;
+        u8 sub_class;
+        u8 attribute_mask;
+        u16 descriptor_length;
+        u8 descriptor[0x80];
+        u8 key_type;
+        u8 device_type;
+        u16 brr_size;
+        u8 brr[0x9];
+        u8 reserved0;
+        char name2[0xF9];
+        u8 reserved1[0x31];
+    };
+
+    static_assert(sizeof(BluetoothDevicesSettings) == sizeof(::SetSysBluetoothDevicesSettings));
+
 }

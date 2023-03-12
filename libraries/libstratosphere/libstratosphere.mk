@@ -154,10 +154,12 @@ spl_secure_monitor_api.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/l
 fs_id_string_impl.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 
 ifeq ($(ATMOSPHERE_OS_NAME),windows)
-os_%.o: CXXFLAGS += -fno-lto
-fssystem_%.o: CXXFLAGS += -fno-lto
-fssrv_%.o: CXXFLAGS += -fno-lto
-fs_%.o: CXXFLAGS += -fno-lto
+# I do not remember why these had fno-lto, but it appears to
+# work without no-lto (2023/03/09), so I am disabling these. I may regret this later.
+#os_%.o: CXXFLAGS += -fno-lto
+#fssystem_%.o: CXXFLAGS += -fno-lto
+#fssrv_%.o: CXXFLAGS += -fno-lto
+#fs_%.o: CXXFLAGS += -fno-lto
 endif
 
 #---------------------------------------------------------------------------------
