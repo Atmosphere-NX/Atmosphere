@@ -258,6 +258,8 @@ namespace ams::settings {
         u8 reserved1[0x31];
     };
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     static_assert(sizeof(BluetoothDevicesSettings) == sizeof(::SetSysBluetoothDevicesSettings));
+    #endif
 
 }
