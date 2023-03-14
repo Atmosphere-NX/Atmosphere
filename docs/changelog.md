@@ -1,4 +1,16 @@
 # Changelog
+## 1.5.1
++ `fatal` was updated to reduce memory footprint.
+  + Starting in 16.0.0, official `fatal` has no framebuffer or rendering logic, and instead calls other system service commands to draw the screen.
+  + However, these commands aren't usable by atmosphère (too small rendering window, bad color support).
+  + To reduce the relative memory footprint differential between atmosphère and official code, the framebuffer (2 MB) is now dynamically allocated when needed.
+    + This will try to allocate from multiple pools (preferring System > System_NonSecure > Application).
+    + This technically requires that 2 MB be available in at least one of these pools for the fatal screen to render (otherwise, a reboot-to-black-and-white-fatal will occur), but this should be a non-issue in almost all cases.
++ A feature was added to optionally mirror the bluetooth pairing database to the SD card (thanks @ndeadly).
+  + This allows device pairings to be automatically kept in-sync across sysmmc/all emummcs.
+  + This is opt-in, and can be controlled by setting `atmosphere!enable_external_bluetooth_db = u8!0x1`.
+  + When enabled, the pairing database will be synchronized to `/atmosphere/bluetooth_devices.db`.
++ General system stability improvements to enhance the user's experience.
 ## 1.5.0
 + Support was added for 16.0.0
   + `mesosphère` was updated to reflect the latest official kernel behavior.
@@ -6,10 +18,6 @@
   + Many FS apis were updated under the hood to reflect the latest official behavior.
   + **Please Note**: 16.0.0 made breaking changes to a number of system APIs, including in FS/NCM/Shared Font commands that some homebrew programs may use.
     + These programs may encounter strange errors, and may need to be recompiled with a libnx updated to support 16.0.0's changes to function properly.
-+ A feature was added to optionally mirror the bluetooth pairing database to the SD card (thanks @ndeadly).
-  + This is opt-in, and can be controlled by setting `atmosphere!enable_external_bluetooth_db = u8!0x1`.
-  + When enabled, the pairing database will be synchronized to `/atmosphere/bluetooth_devices.db`.
-  + This allows paired devices to be automatically kept in-sync across sysmmc/all emummcs.
 + A number of minor issues were fixed and improvements were made, including:
   + An issue was fixed that could cause GPIO outputs to be misconfigured under certain circumstances.
 + General system stability improvements to enhance the user's experience.
