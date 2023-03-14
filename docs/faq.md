@@ -11,7 +11,7 @@ People made rather a lot of fun of me (SciresM) for this.
 
 Several months later, when the first Atmosphère release occurred, I captioned it "Happy June 15th!" and pretended like I hadn't missed the first deadline.
 
-This amused me a lot, and so the practice has been kept of for every single release since.
+This amused me a lot, and so the practice has been kept up for every single release since.
 
 Depending on who you ask, you may be told that this is a dumb joke and it is not funny.
 
