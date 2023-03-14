@@ -38,7 +38,7 @@ namespace ams::dmnt {
             gen2_command command = SETW;
             int count = 0;
             int i = 8;
-            u64 address=0xAA55AA55,next_address, base = 0, offset = 0;
+            u64 address=0xAA55AA5566,next_address, base = 0, offset = 0;
             const char *module_name = name;
             char name[10] = "undefine";
             bool read, next_read, write, next_write, intercepted = 0;
@@ -58,12 +58,14 @@ namespace ams::dmnt {
             bool check_x30 = false;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
+#include "led.hpp"
         bool GdbServerImpl::gen2_loop() {
             m_watch_data.attached = this->HasDebugProcess();
             m_watch_data.gen2loop_on = m_session.IsValid() | gen2_server_on;
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
                 m_watch_data.done = true;
+                flash_led_connect();
                 switch (m_watch_data.command) {
                     case SETW:
                         clearw();
