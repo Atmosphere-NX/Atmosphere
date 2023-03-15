@@ -20,10 +20,26 @@
 
 namespace ams::dmnt {
 #define max_watch_buffer 0x100
+#define max_call_stack 3
+#define stack_check_size 100
         typedef struct {
-            u64 address;
-            u32 count;
+            u64 address:64;
+            u32 count:32;
         } PACKED m_from_t;
+        typedef struct {
+            int SP_offset : 16;
+            int code_offset : 16;
+        } PACKED call_stack_t;
+        typedef struct {
+            u64 address : 64;
+            call_stack_t stack[max_call_stack];
+        } PACKED m_from_stack_t;
+        typedef struct {
+            m_from_stack_t from_stack;
+            int count;
+        } PACKED m_from2_t;    
+#define max_watch_buffer2 (int) (max_watch_buffer * sizeof(m_from_t) / sizeof(m_from2_t))
+
         enum gen2_command {
             SETW,
             CLEARW,
@@ -43,7 +59,10 @@ namespace ams::dmnt {
             char name[10] = "undefine";
             bool read, next_read, write, next_write, intercepted = 0;
             u64 next_pc=0x55AA55AA;
-            m_from_t from[max_watch_buffer];
+            union {
+                m_from_t from[max_watch_buffer];
+                m_from2_t from2[max_watch_buffer2];
+            } fromU;
             int failed = 0;
             u8 gen2loop_on = false;
             u64 next_pid;
@@ -53,19 +72,22 @@ namespace ams::dmnt {
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.07";
+            char version[10]="v0.08";
             u16 x30_match = 0;
             bool check_x30 = false;
+            u16 stack_check_count = 0; //must be not greater than max_call_stack
+            call_stack_t call_stack[max_call_stack] = {0};
+            u64 main_start, main_end;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
-#include "led.hpp"
+// #include "led.hpp"
         bool GdbServerImpl::gen2_loop() {
             m_watch_data.attached = this->HasDebugProcess();
             m_watch_data.gen2loop_on = m_session.IsValid() | gen2_server_on;
             if (m_watch_data.execute) {
                 m_watch_data.execute = false;
                 m_watch_data.done = true;
-                flash_led_connect();
+                // flash_led_connect();
                 switch (m_watch_data.command) {
                     case SETW:
                         clearw();
@@ -1160,12 +1182,22 @@ namespace ams::dmnt {
                                                     } else {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
-                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true)) {
+                                                        u16 buffer[stack_check_size];
+                                                        auto Check_CALLSTACK = [&]() {
+                                                            if (m_watch_data.stack_check_count > 0) {
+                                                                m_debug_process.ReadMemory(buffer, thread_context.sp, sizeof buffer);
+                                                                for (int i = 0; i < m_watch_data.stack_check_count; i++) {
+                                                                    if (m_watch_data.call_stack[i].code_offset != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
+                                                                }
+                                                            }
+                                                            return true;
+                                                        };
+                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
                                                             u64 ret_Rvalue = thread_context.r[m_watch_data.i] | (thread_context.lr << (64-16));
                                                             bool found = false;
                                                             for (int i = 0; i < m_watch_data.count; i++) {
-                                                                if (m_watch_data.from[i].address == ret_Rvalue) {
-                                                                    (m_watch_data.from[i].count)++;
+                                                                if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
+                                                                    (m_watch_data.fromU.from[i].count)++;
                                                                     found = true;
                                                                 }
                                                             };
@@ -1178,8 +1210,8 @@ namespace ams::dmnt {
                                                                     };
                                                                 }
                                                                 if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
-                                                                    m_watch_data.from[m_watch_data.count].address = ret_Rvalue;
-                                                                    m_watch_data.from[m_watch_data.count].count = 1;
+                                                                    m_watch_data.fromU.from[m_watch_data.count].address = ret_Rvalue;
+                                                                    m_watch_data.fromU.from[m_watch_data.count].count = 1;
                                                                     m_watch_data.count++;
                                                                 };
                                                             }
@@ -1223,20 +1255,38 @@ namespace ams::dmnt {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                    u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
+                                                    u16 buffer[stack_check_size];
+                                                    auto get_from_stack = [&]() {
+                                                        m_from_stack_t m_from_stack = {0};
+                                                        auto index = 0;
+                                                        if (m_watch_data.stack_check_count > 0) {
+                                                            m_debug_process.ReadMemory(buffer, thread_context.sp, sizeof buffer);
+                                                            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i+= 2) {
+                                                                if (m_watch_data.main_start < (u64)(buffer + i) && (u64)(buffer + i) < m_watch_data.main_end) {
+                                                                    m_from_stack.stack[index].code_offset = buffer[i + 3];
+                                                                    m_from_stack.stack[index].SP_offset = i + 3;
+                                                                    index++;
+                                                                };
+                                                            }
+                                                        };
+                                                        m_from_stack.address = thread_context.pc | (thread_context.lr << (64-16));
+                                                        return m_from_stack;
+                                                    };
+                                                    // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
                                                     bool found = false;
                                                     for (int i = 0; i < m_watch_data.count; i++) {
-                                                        if (m_watch_data.from[i].address == ret_pc) {
-                                                            (m_watch_data.from[i].count)++;
+                                                        auto entry = get_from_stack();
+                                                        if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
+                                                            (m_watch_data.fromU.from2[i].count)++;
                                                             found = true;
                                                         }
                                                     };
-                                                    if (!found && m_watch_data.count < max_watch_buffer) {
-                                                        m_watch_data.from[m_watch_data.count].address = ret_pc;
-                                                        m_watch_data.from[m_watch_data.count].count = 1;
+                                                    if (!found && m_watch_data.count < max_watch_buffer2) {
+                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = get_from_stack();
+                                                        m_watch_data.fromU.from2[m_watch_data.count].count = 1;
                                                         m_watch_data.count++;
                                                     };
-                                                    // m_watch_data.from[thread_context.pc]++;
+                                                    // m_watch_data.fromU.from[thread_context.pc]++;
                                                     m_watch_data.next_pc = thread_context.pc + 4;
                                                     // if (m_watch_data.count < m_watch_data.max_count) {
                                                     //     m_watch_data.from.push_back(thread_context.pc);
@@ -2317,7 +2367,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.07a address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.08 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2469,10 +2519,10 @@ namespace ams::dmnt {
             // }
             for (auto i = 0; i < m_watch_data.count; i++) {
                 if (m_watch_data.read || m_watch_data.write) {
-                    get_region(m_watch_data.from[i].address);
-                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.from[i].address, m_watch_data.from[i].count, m_watch_data.module_name, m_watch_data.offset);
+                    get_region(m_watch_data.fromU.from[i].address);
+                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.fromU.from[i].address, m_watch_data.fromU.from[i].count, m_watch_data.module_name, m_watch_data.offset);
                 } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.from[i].address, m_watch_data.from[i].count);
+                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.fromU.from2[i].from_stack.address, m_watch_data.fromU.from2[i].count);
                 }
             }
             m_watch_data.intercepted = false;
