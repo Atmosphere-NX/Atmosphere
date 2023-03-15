@@ -78,6 +78,8 @@ namespace ams::dmnt {
             u16 stack_check_count = 0; //must be not greater than max_call_stack
             call_stack_t call_stack[max_call_stack] = {0};
             u64 main_start, main_end;
+            u64 total_trigger = 0;
+            u64 max_trigger = 0x10000;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
 // #include "led.hpp"
@@ -90,6 +92,7 @@ namespace ams::dmnt {
                 // flash_led_connect();
                 switch (m_watch_data.command) {
                     case SETW:
+                        m_watch_data.total_trigger = 0;
                         clearw();
                         m_watch_data.address = m_watch_data.next_address;
                         m_watch_data.read = m_watch_data.next_read;
@@ -1217,9 +1220,13 @@ namespace ams::dmnt {
                                                             }
                                                         }
 
-                                                        m_watch_data.next_pc = address + 4;
-                                                        if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
-                                                            m_watch_data.failed = 7;
+                                                        if (m_watch_data.total_trigger < m_watch_data.max_trigger) {
+                                                            m_watch_data.total_trigger++;
+                                                            m_watch_data.next_pc = address + 4;
+                                                            if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
+                                                                m_watch_data.failed = 7;
+                                                            } else
+                                                                m_debug_process.Continue();
                                                         } else
                                                             m_debug_process.Continue();
                                                     }
