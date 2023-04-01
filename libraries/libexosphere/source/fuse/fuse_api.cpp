@@ -359,7 +359,8 @@ namespace ams::fuse {
     }
 
     RetailInteractiveDisplayState GetRetailInteractiveDisplayState() {
-        return static_cast<RetailInteractiveDisplayState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::RetailInteractiveDisplayState>());
+        /* I do this so I can be incredibly lazy with certain things, please don't kill me :( */
+        return static_cast<RetailInteractiveDisplayState>(!util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::RetailInteractiveDisplayState>());
     }
 
     pmic::Regulator GetRegulator() {
