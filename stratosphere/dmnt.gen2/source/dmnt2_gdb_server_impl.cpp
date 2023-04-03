@@ -53,7 +53,7 @@ namespace ams::dmnt {
             bool execute = false, done = false;
             gen2_command command = SETW;
             int count = 0;
-            int i = 8;
+            u16 i = 8, j = 0;
             u64 address=0xAA55AA5566,next_address, base = 0, offset = 0;
             const char *module_name = name;
             char name[10] = "undefine";
@@ -72,9 +72,10 @@ namespace ams::dmnt {
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.08";
+            char version[10]="v0.09";
             u16 x30_match = 0;
             bool check_x30 = false;
+            bool two_register = false;
             u16 stack_check_count = 0; //must be not greater than max_call_stack
             call_stack_t call_stack[max_call_stack] = {0};
             u64 main_start, main_end;
@@ -1196,7 +1197,7 @@ namespace ams::dmnt {
                                                             return true;
                                                         };
                                                         if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
-                                                            u64 ret_Rvalue = thread_context.r[m_watch_data.i] | (thread_context.lr << (64-16));
+                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] : 0)) | (thread_context.lr << (64 - 16));
                                                             bool found = false;
                                                             for (int i = 0; i < m_watch_data.count; i++) {
                                                                 if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
@@ -2374,7 +2375,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.08 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.09 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
