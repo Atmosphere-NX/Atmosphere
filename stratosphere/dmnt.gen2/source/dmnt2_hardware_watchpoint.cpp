@@ -65,10 +65,10 @@ namespace ams::dmnt {
         /* Validate. */
         if (size <= 8) {
             /* Check that address is aligned. */
-            if (util::AlignDown(address, 8) != util::AlignDown(address + size - 1, 8)) {
-                AMS_DMNT2_GDB_LOG_ERROR("HardwareWatchPointManager::IsValidWatchPoint(%lx, %lx) FAIL range crosses qword boundary\n", address, size);
-                return false;
-            }
+            // if (util::AlignDown(address, 8) != util::AlignDown(address + size - 1, 8)) {
+            //     AMS_DMNT2_GDB_LOG_ERROR("HardwareWatchPointManager::IsValidWatchPoint(%lx, %lx) FAIL range crosses qword boundary\n", address, size);
+            //     return false;
+            // }
         } else {
             /* Check size is small enough. */
             if (size > 0x80000000) {
