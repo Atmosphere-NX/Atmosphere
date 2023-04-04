@@ -27,3 +27,6 @@ A list of planned features for Atmosphère can be found [here](roadmap.md).
 
 ## Release History
 A changelog of previous versions of Atmosphère can be found [here](changelog.md).
+
+## Frequently Asked Questions
+Answers to one or more frequently asked questions may be found [here](faq.md).

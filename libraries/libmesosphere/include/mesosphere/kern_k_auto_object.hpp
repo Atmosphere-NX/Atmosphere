@@ -79,7 +79,7 @@ namespace ams::kern {
                     }
 
                     ALWAYS_INLINE bool Close() {
-                        /* Atomically decrement the reference count, not allowing it to become negative. */
+                        /* Atomically decrement the reference count, not allowing it to decrement past zero. */
                         u32 cur = m_value.Load<std::memory_order_relaxed>();
                         do {
                             MESOSPHERE_ABORT_UNLESS(cur > 0);
