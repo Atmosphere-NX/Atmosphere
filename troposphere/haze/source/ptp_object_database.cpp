@@ -44,7 +44,7 @@ namespace haze {
         const size_t alloc_len = parent_name_len + 1 + name_len;
 
         /* Allocate memory for the node. */
-        ObjectNode *const node = reinterpret_cast<ObjectNode *>(m_object_heap->Allocate(sizeof(ObjectNode) + alloc_len));
+        ObjectNode * const node = reinterpret_cast<ObjectNode *>(m_object_heap->Allocate(sizeof(ObjectNode) + alloc_len));
         R_UNLESS(node != nullptr, haze::ResultOutOfMemory());
 
         {

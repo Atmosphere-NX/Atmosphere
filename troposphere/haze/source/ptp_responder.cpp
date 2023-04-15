@@ -17,13 +17,11 @@
 #include <haze/ptp_data_builder.hpp>
 #include <haze/ptp_data_parser.hpp>
 
-#define ARRAY_LEN(x) (sizeof(x)/sizeof(x[0]))
-
 namespace haze {
 
     namespace {
 
-        constexpr UsbCommsInterfaceInfo MtpInterfaceInfo{
+        constexpr UsbCommsInterfaceInfo MtpInterfaceInfo = {
             .bInterfaceClass = 0x06,
             .bInterfaceSubClass = 0x01,
             .bInterfaceProtocol = 0x01,
@@ -82,14 +80,14 @@ namespace haze {
         };
 
         constexpr PtpStorageInfo DefaultStorageInfo = {
-            .storage_type = PtpStorageType_FixedRam,
-            .filesystem_type = PtpFilesystemType_GenericHierarchical,
-            .access_capability = PtpAccessCapability_ReadWrite,
-            .max_capacity = 0,
-            .free_space_in_bytes = 0,
+            .storage_type         = PtpStorageType_FixedRam,
+            .filesystem_type      = PtpFilesystemType_GenericHierarchical,
+            .access_capability    = PtpAccessCapability_ReadWrite,
+            .max_capacity         = 0,
+            .free_space_in_bytes  = 0,
             .free_space_in_images = 0,
-            .storage_description = "",
-            .volume_label = "",
+            .storage_description  = "",
+            .volume_label         = "",
         };
 
         struct PtpObjectInfo {
@@ -115,40 +113,41 @@ namespace haze {
         };
 
         constexpr PtpObjectInfo DefaultObjectInfo = {
-            .storage_id = StorageId_SdmcFs,
-            .object_format = {},
-            .protection_status = PtpProtectionStatus_NoProtection,
+            .storage_id             = StorageId_SdmcFs,
+            .object_format          = {},
+            .protection_status      = PtpProtectionStatus_NoProtection,
             .object_compressed_size = 0,
-            .thumb_format = 0,
-            .thumb_compressed_size = 0,
-            .thumb_width = 0,
-            .thumb_height = 0,
-            .image_width = 0,
-            .image_height = 0,
-            .image_depth = 0,
-            .parent_object = PtpGetObjectHandles_RootParent,
-            .association_type = PtpAssociationType_Undefined,
-            .association_desc = 0,
-            .sequence_number = 0,
-            .filename = nullptr,
-            .capture_date = "",
-            .modification_date = "",
-            .keywords = "",
+            .thumb_format           = 0,
+            .thumb_compressed_size  = 0,
+            .thumb_width            = 0,
+            .thumb_height           = 0,
+            .image_width            = 0,
+            .image_height           = 0,
+            .image_depth            = 0,
+            .parent_object          = PtpGetObjectHandles_RootParent,
+            .association_type       = PtpAssociationType_Undefined,
+            .association_desc       = 0,
+            .sequence_number        = 0,
+            .filename               = nullptr,
+            .capture_date           = "",
+            .modification_date      = "",
+            .keywords               = "",
         };
 
         constexpr s64 DirectoryReadSize = 32;
         constexpr u64 FsBufferSize = haze::UsbBulkPacketBufferSize;
 
-        static constinit char s_filename_str[PtpStringMaxLength + 1];
-        static constinit char s_capture_date_str[PtpStringMaxLength + 1];
-        static constinit char s_modification_date_str[PtpStringMaxLength + 1];
-        static constinit char s_keywords_str[PtpStringMaxLength + 1];
+        constinit char g_filename_str[PtpStringMaxLength + 1];
+        constinit char g_capture_date_str[PtpStringMaxLength + 1];
+        constinit char g_modification_date_str[PtpStringMaxLength + 1];
+        constinit char g_keywords_str[PtpStringMaxLength + 1];
 
-        static constinit FsDirectoryEntry s_dir_entries[DirectoryReadSize] = {};
-        static constinit u8 s_fs_buffer[FsBufferSize] = {};
+        constinit FsDirectoryEntry g_dir_entries[DirectoryReadSize] = {};
+        constinit u8 g_fs_buffer[FsBufferSize] = {};
 
-        alignas(0x1000) static constinit u8 s_bulk_write_buffer[haze::UsbBulkPacketBufferSize] = {};
-        alignas(0x1000) static constinit u8 s_bulk_read_buffer[haze::UsbBulkPacketBufferSize] = {};
+        alignas(4_KB) constinit u8 g_bulk_write_buffer[haze::UsbBulkPacketBufferSize] = {};
+        alignas(4_KB) constinit u8 g_bulk_read_buffer[haze::UsbBulkPacketBufferSize] = {};
+
     }
 
     Result PtpResponder::Initialize(EventReactor *reactor, PtpObjectHeap *object_heap) {
@@ -199,7 +198,7 @@ namespace haze {
     }
 
     Result PtpResponder::HandleRequestImpl() {
-        PtpDataParser dp(s_bulk_read_buffer, std::addressof(m_usb_server));
+        PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
         R_TRY(dp.Read(std::addressof(m_request_header)));
 
         switch (m_request_header.type) {
@@ -238,32 +237,32 @@ namespace haze {
 
     template <typename Data>
     Result PtpResponder::WriteResponse(PtpResponseCode code, Data &&data) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
         R_TRY(db.AddResponseHeader(m_request_header, code, sizeof(Data)));
         R_TRY(db.Add(data));
         R_RETURN(db.Commit());
     }
 
     Result PtpResponder::WriteResponse(PtpResponseCode code) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
         R_TRY(db.AddResponseHeader(m_request_header, code, 0));
         R_RETURN(db.Commit());
     }
 
     Result PtpResponder::GetDeviceInfo(PtpDataParser &dp) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
-        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(MtpStandardVersion));
             R_TRY(db.Add(MtpVendorExtensionId));
             R_TRY(db.Add(MtpStandardVersion));
             R_TRY(db.AddString(MtpVendorExtensionDesc));
             R_TRY(db.Add(MtpFunctionalModeDefault));
-            R_TRY(db.AddArray(SupportedOperationCodes, ARRAY_LEN(SupportedOperationCodes)));
-            R_TRY(db.AddArray(SupportedEventCodes, ARRAY_LEN(SupportedEventCodes)));
-            R_TRY(db.AddArray(SupportedPropertyCodes, ARRAY_LEN(SupportedPropertyCodes)));
-            R_TRY(db.AddArray(SupportedCaptureFormats, ARRAY_LEN(SupportedCaptureFormats)));
-            R_TRY(db.AddArray(SupportedPlaybackFormats, ARRAY_LEN(SupportedPlaybackFormats)));
+            R_TRY(db.AddArray(SupportedOperationCodes, util::size(SupportedOperationCodes)));
+            R_TRY(db.AddArray(SupportedEventCodes, util::size(SupportedEventCodes)));
+            R_TRY(db.AddArray(SupportedPropertyCodes, util::size(SupportedPropertyCodes)));
+            R_TRY(db.AddArray(SupportedCaptureFormats, util::size(SupportedCaptureFormats)));
+            R_TRY(db.AddArray(SupportedPlaybackFormats, util::size(SupportedPlaybackFormats)));
             R_TRY(db.AddString(MtpDeviceManufacturer));
             R_TRY(db.AddString(MtpDeviceModel));
             R_TRY(db.AddString(MtpDeviceVersion));
@@ -300,17 +299,17 @@ namespace haze {
     Result PtpResponder::GetStorageIds(PtpDataParser &dp) {
         R_TRY(dp.Finalize());
 
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
-            R_RETURN(db.AddArray(SupportedStorageIds, ARRAY_LEN(SupportedStorageIds)));
+            R_RETURN(db.AddArray(SupportedStorageIds, util::size(SupportedStorageIds)));
         }));
 
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
     Result PtpResponder::GetStorageInfo(PtpDataParser &dp) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
         PtpStorageInfo storage_info(DefaultStorageInfo);
 
         /* Get the storage ID the client requested information for. */
@@ -332,13 +331,12 @@ namespace haze {
                     storage_info.storage_description = "SD Card";
                 }
                 break;
-
             default:
                 R_THROW(haze::ResultStorageNotFound());
         }
 
         /* Write the result. */
-        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(storage_info.storage_type));
             R_TRY(db.Add(storage_info.filesystem_type));
             R_TRY(db.Add(storage_info.access_capability));
@@ -355,7 +353,7 @@ namespace haze {
     }
 
     Result PtpResponder::GetObjectHandles(PtpDataParser &dp) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
         /* Get the object ID the client requested enumeration for. */
         u32 storage_id, object_format_code, association_object_handle;
@@ -375,7 +373,7 @@ namespace haze {
         }
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto *fileobj = m_object_database.GetObject(association_object_handle);
+        auto * const fileobj = m_object_database.GetObject(association_object_handle);
         R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
 
         /* Try to read the object as a directory. */
@@ -393,17 +391,18 @@ namespace haze {
         R_TRY(db.AddDataHeader(m_request_header, sizeof(u32) + (entry_count * sizeof(u32))));
         R_TRY(db.Add(static_cast<u32>(entry_count)));
 
+        /* Enumerate the directory, writing results to the data builder as we progres. */
         /* TODO: How should we handle the directory contents changing during enumeration? */
         /* Is this even feasible to handle? */
         while (true) {
             /* Get the next batch. */
             s64 read_count = 0;
-            R_TRY(m_fs.ReadDirectory(std::addressof(dir), std::addressof(read_count), DirectoryReadSize, s_dir_entries));
+            R_TRY(m_fs.ReadDirectory(std::addressof(dir), std::addressof(read_count), DirectoryReadSize, g_dir_entries));
 
             /* Write to output. */
             for (s64 i = 0; i < read_count; i++) {
                 u32 handle;
-                R_TRY(m_object_database.AddObjectId(fileobj->GetName(), s_dir_entries[i].name, std::addressof(handle), fileobj->GetObjectId()));
+                R_TRY(m_object_database.AddObjectId(fileobj->GetName(), g_dir_entries[i].name, std::addressof(handle), fileobj->GetObjectId()));
                 R_TRY(db.Add(handle));
             }
 
@@ -419,7 +418,7 @@ namespace haze {
     }
 
     Result PtpResponder::GetObjectInfo(PtpDataParser &dp) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
         /* Get the object ID the client requested info for. */
         u32 object_id;
@@ -427,7 +426,7 @@ namespace haze {
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto *fileobj = m_object_database.GetObject(object_id);
+        auto * const fileobj = m_object_database.GetObject(object_id);
         R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
 
         /* Build info about the object. */
@@ -435,9 +434,9 @@ namespace haze {
 
         if (object_id == StorageId_SdmcFs) {
             /* The SD Card directory has some special properties. */
-            object_info.object_format = PtpObjectFormatCode_Association;
+            object_info.object_format    = PtpObjectFormatCode_Association;
             object_info.association_type = PtpAssociationType_GenericFolder;
-            object_info.filename = "SD Card";
+            object_info.filename         = "SD Card";
         } else {
             /* Figure out what type of object this is. */
             FsDirEntryType entry_type;
@@ -455,20 +454,20 @@ namespace haze {
                 R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
             }
 
-            object_info.filename = std::strrchr(fileobj->GetName(), '/') + 1;
+            object_info.filename               = std::strrchr(fileobj->GetName(), '/') + 1;
             object_info.object_compressed_size = size;
-            object_info.parent_object = fileobj->GetParentId();
+            object_info.parent_object          = fileobj->GetParentId();
 
             if (entry_type == FsDirEntryType_Dir) {
-                object_info.object_format = PtpObjectFormatCode_Association;
+                object_info.object_format    = PtpObjectFormatCode_Association;
                 object_info.association_type = PtpAssociationType_GenericFolder;
             } else {
-                object_info.object_format = PtpObjectFormatCode_Undefined;
+                object_info.object_format    = PtpObjectFormatCode_Undefined;
                 object_info.association_type = PtpAssociationType_Undefined;
             }
         }
 
-        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(object_info.storage_id));
             R_TRY(db.Add(object_info.object_format));
             R_TRY(db.Add(object_info.protection_status));
@@ -496,7 +495,7 @@ namespace haze {
     }
 
     Result PtpResponder::GetObject(PtpDataParser &dp) {
-        PtpDataBuilder db(s_bulk_write_buffer, std::addressof(m_usb_server));
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
         /* Get the object ID the client requested. */
         u32 object_id;
@@ -504,7 +503,7 @@ namespace haze {
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto *fileobj = m_object_database.GetObject(object_id);
+        auto * const fileobj = m_object_database.GetObject(object_id);
         R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
 
         /* Lock the object as a file. */
@@ -515,21 +514,23 @@ namespace haze {
         ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
         /* Get the file's size. */
-        s64 size = 0, offset = 0;
+        s64 size = 0;
         R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
 
         /* Send the header and file size. */
         R_TRY(db.AddDataHeader(m_request_header, size));
 
+        /* Begin reading the file, writing data to the builder as we progress. */
+        s64 offset = 0;
         while (true) {
             /* Get the next batch. */
             size_t bytes_read;
-            R_TRY(m_fs.ReadFile(std::addressof(file), offset, s_fs_buffer, FsBufferSize, FsReadOption_None, std::addressof(bytes_read)));
+            R_TRY(m_fs.ReadFile(std::addressof(file), offset, g_fs_buffer, FsBufferSize, FsReadOption_None, std::addressof(bytes_read)));
 
             offset += bytes_read;
 
             /* Write to output. */
-            R_TRY(db.AddBuffer(s_fs_buffer, bytes_read));
+            R_TRY(db.AddBuffer(g_fs_buffer, bytes_read));
 
             /* If we read fewer bytes than the batch size, we're done. */
             if (bytes_read < FsBufferSize) {
@@ -548,7 +549,7 @@ namespace haze {
         R_TRY(rdp.Read(std::addressof(parent_object)));
         R_TRY(rdp.Finalize());
 
-        PtpDataParser dp(s_bulk_read_buffer, std::addressof(m_usb_server));
+        PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
         PtpObjectInfo info(DefaultObjectInfo);
 
         /* Ensure that we have a data header. */
@@ -574,10 +575,10 @@ namespace haze {
         R_TRY(dp.Read(std::addressof(info.association_type)));
         R_TRY(dp.Read(std::addressof(info.association_desc)));
         R_TRY(dp.Read(std::addressof(info.sequence_number)));
-        R_TRY(dp.ReadString(s_filename_str));
-        R_TRY(dp.ReadString(s_capture_date_str));
-        R_TRY(dp.ReadString(s_modification_date_str));
-        R_TRY(dp.ReadString(s_keywords_str));
+        R_TRY(dp.ReadString(g_filename_str));
+        R_TRY(dp.ReadString(g_capture_date_str));
+        R_TRY(dp.ReadString(g_modification_date_str));
+        R_TRY(dp.ReadString(g_keywords_str));
         R_TRY(dp.Finalize());
 
         /* Rewrite requests for creating in storage directories. */
@@ -586,7 +587,7 @@ namespace haze {
         }
 
         /* Check if we know about the parent object. If we don't, it's an error. */
-        auto *parentobj = m_object_database.GetObject(parent_object);
+        auto * const parentobj = m_object_database.GetObject(parent_object);
         R_UNLESS(parentobj != nullptr, haze::ResultObjectNotFound());
 
         /* Make a new object with the intended name. */
@@ -594,13 +595,13 @@ namespace haze {
         new_object_info.storage_id = StorageId_SdmcFs;
         new_object_info.parent_object_id = parent_object;
 
-        R_TRY(m_object_database.AddObjectId(parentobj->GetName(), s_filename_str, std::addressof(new_object_info.object_id), parentobj->GetObjectId()));
+        R_TRY(m_object_database.AddObjectId(parentobj->GetName(), g_filename_str, std::addressof(new_object_info.object_id), parentobj->GetObjectId()));
 
         /* Ensure we maintain a clean state on failure. */
         ON_RESULT_FAILURE { m_object_database.RemoveObjectId(new_object_info.object_id); };
 
         /* Get the object name we just built. */
-        auto *fileobj = m_object_database.GetObject(new_object_info.object_id);
+        auto * const fileobj = m_object_database.GetObject(new_object_info.object_id);
         R_UNLESS(fileobj != nullptr, haze::ResultGeneralFailure());
 
         /* Create the object on the filesystem. */
@@ -622,7 +623,7 @@ namespace haze {
 
         R_TRY(rdp.Finalize());
 
-        PtpDataParser dp(s_bulk_read_buffer, std::addressof(m_usb_server));
+        PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
 
         /* Ensure that we have a data header. */
         PtpUsbBulkContainer data_header;
@@ -632,7 +633,7 @@ namespace haze {
         R_UNLESS(data_header.trans_id == m_request_header.trans_id, haze::ResultOperationNotSupported());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto *fileobj = m_object_database.GetObject(m_send_object_id);
+        auto * const fileobj = m_object_database.GetObject(m_send_object_id);
         R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
 
         /* Lock the object as a file. */
@@ -650,19 +651,19 @@ namespace haze {
         while (true) {
             /* Read as many bytes as we can. */
             size_t bytes_received;
-            Result rc = dp.ReadBuffer(s_fs_buffer, FsBufferSize, std::addressof(bytes_received));
+            const Result read_res = dp.ReadBuffer(g_fs_buffer, FsBufferSize, std::addressof(bytes_received));
 
             /* Write to the file. */
-            R_TRY(m_fs.WriteFile(std::addressof(file), offset, s_fs_buffer, bytes_received, 0));
+            R_TRY(m_fs.WriteFile(std::addressof(file), offset, g_fs_buffer, bytes_received, 0));
 
             offset += bytes_received;
 
             /* If we received fewer bytes than the batch size, we're done. */
-            if (haze::ResultEndOfTransmission::Includes(rc)) {
+            if (haze::ResultEndOfTransmission::Includes(read_res)) {
                 break;
             }
 
-            R_TRY(rc);
+            R_TRY(read_res);
         }
 
         /* We succeeded. */
@@ -675,7 +676,7 @@ namespace haze {
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto *fileobj = m_object_database.GetObject(object_id);
+        auto * const fileobj = m_object_database.GetObject(object_id);
         R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
 
         /* Figure out what type of object this is. */
