@@ -29,7 +29,6 @@ namespace haze {
         private:
             EventConsumer *m_consumers[MAX_WAIT_OBJECTS];
             Waiter m_waiters[MAX_WAIT_OBJECTS];
-
             s32 m_num_wait_objects;
             bool m_stop_requested;
 

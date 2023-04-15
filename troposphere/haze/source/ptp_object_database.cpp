@@ -60,7 +60,9 @@ namespace haze {
         /* Check if an object with this name already exists. If it does, we can just return it here. */
         auto it = m_name_to_object_id.find_key(node->m_name);
         if (it != m_name_to_object_id.end()) {
-            if (out_object_id) *out_object_id = it->GetObjectId();
+            if (out_object_id) {
+                *out_object_id = it->GetObjectId();
+            }
             R_SUCCEED();
         }
 
@@ -74,7 +76,9 @@ namespace haze {
         m_object_id_to_name.insert(*node);
 
         /* Set output. */
-        if (out_object_id) *out_object_id = node->GetObjectId();
+        if (out_object_id) {
+            *out_object_id = node->GetObjectId();
+        }
 
         /* We succeeded. */
         R_SUCCEED();
@@ -83,7 +87,9 @@ namespace haze {
     void PtpObjectDatabase::RemoveObjectId(u32 object_id) {
         /* Find in forward mapping. */
         auto it = m_object_id_to_name.find_key(object_id);
-        if (it == m_object_id_to_name.end()) return;
+        if (it == m_object_id_to_name.end()) {
+            return;
+        }
 
         /* Free the node. */
         ObjectNode *node = std::addressof(*it);
@@ -95,7 +101,9 @@ namespace haze {
     PtpObjectDatabase::ObjectNode *PtpObjectDatabase::GetObject(u32 object_id) {
         /* Find in forward mapping. */
         auto it = m_object_id_to_name.find_key(object_id);
-        if (it == m_object_id_to_name.end()) return nullptr;
+        if (it == m_object_id_to_name.end()) {
+            return nullptr;
+        }
 
         return std::addressof(*it);
     }

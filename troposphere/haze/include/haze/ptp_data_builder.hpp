@@ -28,7 +28,6 @@ namespace haze {
             size_t m_offset;
             u8 *m_data;
             bool m_disabled;
-
         private:
             template <typename T>
             constexpr static size_t Strlen(const T *str) {
@@ -50,7 +49,6 @@ namespace haze {
                     R_RETURN(m_server->WritePacket(m_data, m_offset));
                 }
             }
-
         public:
             constexpr explicit PtpDataBuilder(void *data, AsyncUsbServer *server) : m_server(server),  m_transmitted_size(), m_offset(), m_data(static_cast<u8 *>(data)), m_disabled() { /* ... */ }
 

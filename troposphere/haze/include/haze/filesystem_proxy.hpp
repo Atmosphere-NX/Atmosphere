@@ -24,7 +24,6 @@ namespace haze {
         private:
             EventReactor *m_reactor;
             FsFileSystem *m_filesystem;
-
         public:
             constexpr explicit FilesystemProxy() : m_reactor(), m_filesystem() { /* ... */ }
 
@@ -39,7 +38,6 @@ namespace haze {
                 m_reactor = nullptr;
                 m_filesystem = nullptr;
             }
-
         private:
             template <typename F, typename... Args>
             Result ForwardResult(F func, Args &&... args) {
@@ -49,7 +47,6 @@ namespace haze {
 
                 R_RETURN(rc);
             }
-
         public:
             Result GetTotalSpace(const char *path, s64 *out) {
                 R_RETURN(this->ForwardResult(fsFsGetTotalSpace, m_filesystem, path, out));

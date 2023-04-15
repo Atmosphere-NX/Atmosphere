@@ -23,7 +23,7 @@ namespace haze {
     class ConsoleMainLoop : public EventConsumer {
         private:
             static constexpr size_t FrameDelayNs = 33333333;
-
+        private:
             EventReactor *m_reactor;
             PtpObjectHeap *m_object_heap;
 
@@ -36,7 +36,6 @@ namespace haze {
             u32 m_last_heap_used;
             u32 m_last_heap_total;
             bool m_is_applet_mode;
-
         private:
             static void Run(void *arg) {
                 static_cast<ConsoleMainLoop *>(arg)->Run();
@@ -49,11 +48,14 @@ namespace haze {
                     Waiter cancel_waiter = waiterForUEvent(std::addressof(m_cancel_event));
                     Result rc = waitObjects(std::addressof(idx), std::addressof(cancel_waiter), 1, FrameDelayNs);
 
-                    if (R_SUCCEEDED(rc)) break;
-                    if (svc::ResultTimedOut::Includes(rc)) ueventSignal(std::addressof(m_event));
+                    if (R_SUCCEEDED(rc)) {
+                        break;
+                    }
+                    if (svc::ResultTimedOut::Includes(rc)) {
+                        ueventSignal(std::addressof(m_event));
+                    }
                 }
             }
-
         public:
             explicit ConsoleMainLoop() : m_reactor(), m_pad(), m_thread(), m_event(), m_cancel_event(), m_last_heap_used(), m_last_heap_total(), m_is_applet_mode() { /* ... */ }
 
@@ -110,12 +112,12 @@ namespace haze {
                 m_last_heap_total = heap_total;
 
                 const char *used_unit = "B";
-                if (heap_used > 1024) { heap_used >>= 10; used_unit = "KiB"; }
-                if (heap_used > 1024) { heap_used >>= 10; used_unit = "MiB"; }
+                if (heap_used >= 1024) { heap_used >>= 10; used_unit = "KiB"; }
+                if (heap_used >= 1024) { heap_used >>= 10; used_unit = "MiB"; }
 
                 const char *total_unit = "B";
-                if (heap_total > 1024) { heap_total >>= 10; total_unit = "KiB"; }
-                if (heap_total > 1024) { heap_total >>= 10; total_unit = "MiB"; }
+                if (heap_total >= 1024) { heap_total >>= 10; total_unit = "KiB"; }
+                if (heap_total >= 1024) { heap_total >>= 10; total_unit = "MiB"; }
 
                 consoleClear();
                 printf("USB File Transfer\n\n");

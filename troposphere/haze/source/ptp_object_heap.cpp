@@ -28,7 +28,9 @@ namespace haze {
         size_t mem_used = 0;
 
         /* Skip re-initialization if we are currently initialized. */
-        if (m_heap_block_size != 0) return;
+        if (m_heap_block_size != 0) {
+            return;
+        }
 
         /* Estimate how much memory we can reserve. */
         HAZE_R_ABORT_UNLESS(svcGetInfo(std::addressof(mem_used), InfoType_UsedMemorySize, CUR_PROCESS_HANDLE, 0));
@@ -50,7 +52,9 @@ namespace haze {
     }
 
     void PtpObjectHeap::Finalize() {
-        if (m_heap_block_size == 0) return;
+        if (m_heap_block_size == 0) {
+            return;
+        }
 
         /* Tear down the heap, allowing a subsequent call to Initialize() if desired. */
         for (size_t i = 0; i < NumHeapBlocks; i++) {

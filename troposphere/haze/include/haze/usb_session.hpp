@@ -30,11 +30,9 @@ namespace haze {
         private:
             UsbDsInterface *m_interface;
             UsbDsEndpoint *m_endpoints[UsbSessionEndpoint_Count];
-
         private:
             Result Initialize1x(const UsbCommsInterfaceInfo *info);
             Result Initialize5x(const UsbCommsInterfaceInfo *info);
-
         public:
             constexpr explicit UsbSession() : m_interface(), m_endpoints() { /* ... */ }
 

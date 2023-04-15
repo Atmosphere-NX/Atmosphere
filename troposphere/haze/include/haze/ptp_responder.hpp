@@ -32,7 +32,6 @@ namespace haze {
             PtpObjectHeap *m_object_heap;
             u32 m_send_object_id;
             bool m_session_open;
-
             PtpObjectDatabase m_object_database;
 
         public:

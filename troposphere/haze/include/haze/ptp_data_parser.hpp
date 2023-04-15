@@ -28,7 +28,6 @@ namespace haze {
             u32 m_offset;
             u8 *m_data;
             bool m_eos;
-
         private:
             Result Flush() {
                 R_UNLESS(!m_eos, haze::ResultEndOfTransmission());
@@ -40,7 +39,6 @@ namespace haze {
 
                 R_RETURN(m_server->ReadPacket(m_data, haze::UsbBulkPacketBufferSize, std::addressof(m_received_size)));
             }
-
         public:
             constexpr explicit PtpDataParser(void *data, AsyncUsbServer *server) : m_server(server), m_received_size(), m_offset(), m_data(static_cast<u8 *>(data)), m_eos() { /* ... */ }
 

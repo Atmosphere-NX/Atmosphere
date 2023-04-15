@@ -23,16 +23,13 @@ namespace haze {
     class AsyncUsbServer final {
         private:
             EventReactor *m_reactor;
-
         public:
             constexpr explicit AsyncUsbServer() : m_reactor() { /* ... */ }
 
             Result Initialize(const UsbCommsInterfaceInfo *interface_info, u16 id_vendor, u16 id_product, EventReactor *reactor);
             void Finalize();
-
         private:
             Result TransferPacketImpl(bool read, void *page, u32 size, u32 *out_size_transferred) const;
-
         public:
             Result ReadPacket(void *page, u32 size, u32 *out_size_transferred) const {
                 return this->TransferPacketImpl(true, page, size, out_size_transferred);

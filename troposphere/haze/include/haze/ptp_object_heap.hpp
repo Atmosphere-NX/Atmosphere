@@ -24,18 +24,16 @@ namespace haze {
     class PtpObjectHeap {
         private:
             static constexpr size_t NumHeapBlocks = 2;
-
+        private:
             void *m_heap_blocks[NumHeapBlocks];
             void *m_next_address;
             u32 m_heap_block_size;
             u32 m_current_heap_block;
-
         public:
             constexpr explicit PtpObjectHeap() : m_heap_blocks(), m_next_address(), m_heap_block_size(), m_current_heap_block() { /* ... */ }
 
             void Initialize();
             void Finalize();
-
         public:
             constexpr size_t GetSizeTotal() const {
                 return m_heap_block_size * NumHeapBlocks;
@@ -44,7 +42,6 @@ namespace haze {
             constexpr size_t GetSizeUsed() const {
                 return (m_heap_block_size * m_current_heap_block) + this->GetNextAddress() - this->GetFirstAddress();
             }
-
         private:
             constexpr u8 *GetNextAddress()  const { return static_cast<u8 *>(m_next_address); }
             constexpr u8 *GetFirstAddress() const { return static_cast<u8 *>(m_heap_blocks[m_current_heap_block]); }
@@ -58,8 +55,12 @@ namespace haze {
             }
 
             constexpr bool AllocationIsSatisfyable(size_t n) const {
-                if (this->GetNextAddress() + n < this->GetNextAddress()) return false;
-                if (this->GetNextAddress() + n > this->GetCurrentBlockEnd()) return false;
+                if (this->GetNextAddress() + n < this->GetNextAddress()) {
+                    return false;
+                }
+                if (this->GetNextAddress() + n > this->GetCurrentBlockEnd()) {
+                    return false;
+                }
 
                 return true;
             }
@@ -80,17 +81,20 @@ namespace haze {
 
                 return result;
             }
-
         public:
             template <typename T = void>
             constexpr T *Allocate(size_t n) {
-                if (n + 7 < n) return nullptr;
+                if (n + 7 < n) {
+                    return nullptr;
+                }
 
                 /* Round up the amount to a multiple of 8. */
                 n = (n + 7) & ~7ull;
 
                 /* Check if the allocation is possible. */
-                if (!this->AllocationIsPossible(n)) return nullptr;
+                if (!this->AllocationIsPossible(n)) {
+                    return nullptr;
+                }
 
                 /* If the allocation is not satisfyable now, we might be able to satisfy it on the next block. */
                 /* However, if the next block would be empty, we won't be able to satisfy the request. */

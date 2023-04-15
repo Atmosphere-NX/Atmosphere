@@ -70,7 +70,6 @@ namespace haze {
                     }
                 };
             };
-
         private:
             using ObjectNameToIdTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&ObjectNode::m_object_name_to_id_node>;
             using ObjectNameToIdTree       = ObjectNameToIdTreeTraits::TreeType<ObjectNode::NameComparator>;
@@ -82,13 +81,11 @@ namespace haze {
             ObjectNameToIdTree m_name_to_object_id;
             ObjectIdToNameTree m_object_id_to_name;
             u32 m_next_object_id;
-
         public:
             constexpr explicit PtpObjectDatabase() : m_object_heap(), m_name_to_object_id(), m_object_id_to_name(), m_next_object_id() { /* ... */ }
 
             void Initialize(PtpObjectHeap *object_heap);
             void Finalize();
-
         public:
             /* Object database API. */
             Result AddObjectId(const char *parent_name, const char *name, u32 *out_object_id, u32 parent_id, u32 desired_object_id = 0);
