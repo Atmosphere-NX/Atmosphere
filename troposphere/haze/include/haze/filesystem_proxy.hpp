@@ -1,0 +1,123 @@
+/*
+ * Copyright (c) Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#pragma once
+
+#include <haze/common.hpp>
+#include <haze/event_reactor.hpp>
+
+namespace haze {
+
+    class FilesystemProxy final {
+        private:
+            EventReactor *m_reactor;
+            FsFileSystem *m_filesystem;
+
+        public:
+            constexpr explicit FilesystemProxy() : m_reactor(), m_filesystem() { /* ... */ }
+
+            void Initialize(EventReactor *reactor, FsFileSystem *fs) {
+                HAZE_ASSERT(fs != nullptr);
+
+                m_reactor = reactor;
+                m_filesystem = fs;
+            }
+
+            void Finalize() {
+                m_reactor = nullptr;
+                m_filesystem = nullptr;
+            }
+
+        private:
+            template <typename F, typename... Args>
+            Result ForwardResult(F func, Args &&... args) {
+                Result rc = func(std::forward<Args>(args)...);
+
+                R_UNLESS(!m_reactor->GetStopRequested(), haze::ResultStopRequested());
+
+                R_RETURN(rc);
+            }
+
+        public:
+            Result GetTotalSpace(const char *path, s64 *out) {
+                R_RETURN(this->ForwardResult(fsFsGetTotalSpace, m_filesystem, path, out));
+            }
+
+            Result GetFreeSpace(const char *path, s64 *out) {
+                R_RETURN(this->ForwardResult(fsFsGetFreeSpace, m_filesystem, path, out));
+            }
+
+            Result GetEntryType(const char *path, FsDirEntryType *out_entry_type) {
+                R_RETURN(this->ForwardResult(fsFsGetEntryType, m_filesystem, path, out_entry_type));
+            }
+
+            Result CreateFile(const char* path, s64 size, u32 option) {
+                R_RETURN(this->ForwardResult(fsFsCreateFile, m_filesystem, path, size, option));
+            }
+
+            Result DeleteFile(const char* path) {
+                R_RETURN(this->ForwardResult(fsFsDeleteFile, m_filesystem, path));
+            }
+
+            Result OpenFile(const char *path, u32 mode, FsFile *out_file) {
+                R_RETURN(this->ForwardResult(fsFsOpenFile, m_filesystem, path, mode, out_file));
+            }
+
+            Result FileGetSize(FsFile *file, s64 *out_size) {
+                R_RETURN(this->ForwardResult(fsFileGetSize, file, out_size));
+            }
+
+            Result FileSetSize(FsFile *file, s64 size) {
+                R_RETURN(this->ForwardResult(fsFileSetSize, file, size));
+            }
+
+            Result FileRead(FsFile *file, s64 off, void *buf, u64 read_size, u32 option, u64 *out_bytes_read) {
+                R_RETURN(this->ForwardResult(fsFileRead, file, off, buf, read_size, option, out_bytes_read));
+            }
+
+            Result FileWrite(FsFile *file, s64 off, const void *buf, u64 write_size, u32 option) {
+                R_RETURN(this->ForwardResult(fsFileWrite, file, off, buf, write_size, option));
+            }
+
+            void FileClose(FsFile *file) {
+                fsFileClose(file);
+            }
+
+            Result CreateDirectory(const char* path) {
+                R_RETURN(this->ForwardResult(fsFsCreateDirectory, m_filesystem, path));
+            }
+
+            Result DeleteDirectory(const char* path) {
+                R_RETURN(this->ForwardResult(fsFsDeleteDirectory, m_filesystem, path));
+            }
+
+            Result OpenDirectory(const char *path, u32 mode, FsDir *out_dir) {
+                R_RETURN(this->ForwardResult(fsFsOpenDirectory, m_filesystem, path, mode, out_dir));
+            }
+
+            Result DirectoryRead(FsDir *d, s64 *out_total_entries, size_t max_entries, FsDirectoryEntry *buf) {
+                R_RETURN(this->ForwardResult(fsDirRead, d, out_total_entries, max_entries, buf));
+            }
+
+            Result DirectoryGetEntryCount(FsDir *d, s64 *out_count) {
+                R_RETURN(this->ForwardResult(fsDirGetEntryCount, d, out_count));
+            }
+
+            void DirectoryClose(FsDir *d) {
+                fsDirClose(d);
+            }
+    };
+
+}
