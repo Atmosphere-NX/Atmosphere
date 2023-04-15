@@ -59,10 +59,10 @@ namespace haze {
             PtpOperationCode_DeleteObject,
         };
 
-        constexpr PtpEventCode SupportedEventCodes[] = {};
-        constexpr PtpDevicePropertyCode SupportedPropertyCodes[] = {};
-        constexpr PtpObjectFormatCode SupportedCaptureFormats[] = {};
-        constexpr PtpObjectFormatCode SupportedPlaybackFormats[] = {};
+        constexpr PtpEventCode SupportedEventCodes[]             = { /* ... */};
+        constexpr PtpDevicePropertyCode SupportedPropertyCodes[] = { /* ...*/ };
+        constexpr PtpObjectFormatCode SupportedCaptureFormats[]  = { /* ...*/ };
+        constexpr PtpObjectFormatCode SupportedPlaybackFormats[] = { /* ...*/ };
 
         constexpr StorageId SupportedStorageIds[] = {
             StorageId_SdmcFs,

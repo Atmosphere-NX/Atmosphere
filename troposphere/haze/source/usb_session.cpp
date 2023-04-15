@@ -19,43 +19,43 @@ namespace haze {
 
     namespace {
 
-        static constexpr u32 DefaultInterfaceNumber = 0;
+        constexpr const u32 DefaultInterfaceNumber = 0;
 
     }
 
     Result UsbSession::Initialize1x(const UsbCommsInterfaceInfo *info) {
         struct usb_interface_descriptor interface_descriptor = {
-            .bLength = USB_DT_INTERFACE_SIZE,
-            .bDescriptorType = USB_DT_INTERFACE,
-            .bInterfaceNumber = DefaultInterfaceNumber,
-            .bInterfaceClass = info->bInterfaceClass,
+            .bLength            = USB_DT_INTERFACE_SIZE,
+            .bDescriptorType    = USB_DT_INTERFACE,
+            .bInterfaceNumber   = DefaultInterfaceNumber,
+            .bInterfaceClass    = info->bInterfaceClass,
             .bInterfaceSubClass = info->bInterfaceSubClass,
             .bInterfaceProtocol = info->bInterfaceProtocol,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_in = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_IN,
-            .bmAttributes = USB_TRANSFER_TYPE_BULK,
-            .wMaxPacketSize = PtpUsbBulkHighSpeedMaxPacketLength,
+            .bmAttributes     = USB_TRANSFER_TYPE_BULK,
+            .wMaxPacketSize   = PtpUsbBulkHighSpeedMaxPacketLength,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_out = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_OUT,
-            .bmAttributes = USB_TRANSFER_TYPE_BULK,
-            .wMaxPacketSize = PtpUsbBulkHighSpeedMaxPacketLength,
+            .bmAttributes     = USB_TRANSFER_TYPE_BULK,
+            .wMaxPacketSize   = PtpUsbBulkHighSpeedMaxPacketLength,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_interrupt = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_IN,
-            .bmAttributes = USB_TRANSFER_TYPE_INTERRUPT,
-            .wMaxPacketSize = 0x18,
-            .bInterval = 0x4,
+            .bmAttributes     = USB_TRANSFER_TYPE_INTERRUPT,
+            .wMaxPacketSize   = 0x18,
+            .bInterval        = 0x4,
         };
 
         /* Set up interface. */
@@ -71,45 +71,45 @@ namespace haze {
 
     Result UsbSession::Initialize5x(const UsbCommsInterfaceInfo *info) {
         struct usb_interface_descriptor interface_descriptor = {
-            .bLength = USB_DT_INTERFACE_SIZE,
-            .bDescriptorType = USB_DT_INTERFACE,
-            .bInterfaceNumber = DefaultInterfaceNumber,
-            .bNumEndpoints = 3,
-            .bInterfaceClass = info->bInterfaceClass,
+            .bLength            = USB_DT_INTERFACE_SIZE,
+            .bDescriptorType    = USB_DT_INTERFACE,
+            .bInterfaceNumber   = DefaultInterfaceNumber,
+            .bNumEndpoints      = 3,
+            .bInterfaceClass    = info->bInterfaceClass,
             .bInterfaceSubClass = info->bInterfaceSubClass,
             .bInterfaceProtocol = info->bInterfaceProtocol,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_in = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_IN,
-            .bmAttributes = USB_TRANSFER_TYPE_BULK,
-            .wMaxPacketSize = PtpUsbBulkHighSpeedMaxPacketLength,
+            .bmAttributes     = USB_TRANSFER_TYPE_BULK,
+            .wMaxPacketSize   = PtpUsbBulkHighSpeedMaxPacketLength,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_out = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_OUT,
-            .bmAttributes = USB_TRANSFER_TYPE_BULK,
-            .wMaxPacketSize = PtpUsbBulkHighSpeedMaxPacketLength,
+            .bmAttributes     = USB_TRANSFER_TYPE_BULK,
+            .wMaxPacketSize   = PtpUsbBulkHighSpeedMaxPacketLength,
         };
 
         struct usb_endpoint_descriptor endpoint_descriptor_interrupt = {
-            .bLength = USB_DT_ENDPOINT_SIZE,
-            .bDescriptorType = USB_DT_ENDPOINT,
+            .bLength          = USB_DT_ENDPOINT_SIZE,
+            .bDescriptorType  = USB_DT_ENDPOINT,
             .bEndpointAddress = USB_ENDPOINT_IN,
-            .bmAttributes = USB_TRANSFER_TYPE_INTERRUPT,
-            .wMaxPacketSize = 0x18,
-            .bInterval = 0x4,
+            .bmAttributes     = USB_TRANSFER_TYPE_INTERRUPT,
+            .wMaxPacketSize   = 0x18,
+            .bInterval        = 0x4,
         };
 
         struct usb_ss_endpoint_companion_descriptor endpoint_companion = {
-            .bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),
-            .bDescriptorType = USB_DT_SS_ENDPOINT_COMPANION,
-            .bMaxBurst = 0x0F,
-            .bmAttributes = 0x00,
+            .bLength           = sizeof(struct usb_ss_endpoint_companion_descriptor),
+            .bDescriptorType   = USB_DT_SS_ENDPOINT_COMPANION,
+            .bMaxBurst         = 0x0F,
+            .bmAttributes      = 0x00,
             .wBytesPerInterval = 0x00,
         };
 
@@ -150,30 +150,31 @@ namespace haze {
     Result UsbSession::Initialize(const UsbCommsInterfaceInfo *info, u16 id_vendor, u16 id_product) {
         R_TRY(usbDsInitialize());
 
-        if (hosversionAtLeast(5,0,0)) {
-            u8 iManufacturer, iProduct, iSerialNumber;
-            static const u16 supported_langs[1] = {0x0409};
+        if (hosversionAtLeast(5, 0, 0)) {
+            static const u16 supported_langs[1] = { 0x0409 };
 
-            R_TRY(usbDsAddUsbLanguageStringDescriptor(NULL, supported_langs, sizeof(supported_langs)/sizeof(u16)));
+            R_TRY(usbDsAddUsbLanguageStringDescriptor(NULL, supported_langs, util::size(supported_langs)));
+
+            u8 iManufacturer, iProduct, iSerialNumber;
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iManufacturer), "Nintendo"));
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iProduct), "Nintendo Switch"));
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iSerialNumber), "SerialNumber"));
 
-            // Send device descriptors
+            /* Send device descriptors */
             struct usb_device_descriptor device_descriptor = {
-                .bLength = USB_DT_DEVICE_SIZE,
-                .bDescriptorType = USB_DT_DEVICE,
-                .bcdUSB = 0x0200,
-                .bDeviceClass = 0x00,
-                .bDeviceSubClass = 0x00,
-                .bDeviceProtocol = 0x00,
-                .bMaxPacketSize0 = 0x40,
-                .idVendor = id_vendor,
-                .idProduct = id_product,
-                .bcdDevice = 0x0100,
-                .iManufacturer = iManufacturer,
-                .iProduct = iProduct,
-                .iSerialNumber = iSerialNumber,
+                .bLength            = USB_DT_DEVICE_SIZE,
+                .bDescriptorType    = USB_DT_DEVICE,
+                .bcdUSB             = 0x0200,
+                .bDeviceClass       = 0x00,
+                .bDeviceSubClass    = 0x00,
+                .bDeviceProtocol    = 0x00,
+                .bMaxPacketSize0    = 0x40,
+                .idVendor           = id_vendor,
+                .idProduct          = id_product,
+                .bcdDevice          = 0x0100,
+                .iManufacturer      = iManufacturer,
+                .iProduct           = iProduct,
+                .iSerialNumber      = iSerialNumber,
                 .bNumConfigurations = 0x01
             };
             R_TRY(usbDsSetUsbDeviceDescriptor(UsbDeviceSpeed_High, std::addressof(device_descriptor)));
@@ -207,9 +208,9 @@ namespace haze {
             R_TRY(usbDsSetBinaryObjectStore(bos, sizeof(bos)));
         }
 
-        R_TRY(hosversionAtLeast(5,0,0) ? this->Initialize5x(info) : this->Initialize1x(info));
+        R_TRY(hosversionAtLeast(5, 0, 0) ? this->Initialize5x(info) : this->Initialize1x(info));
 
-        if (hosversionAtLeast(5,0,0)) {
+        if (hosversionAtLeast(5, 0, 0)) {
             R_TRY(usbDsEnable());
         }
 
@@ -233,7 +234,7 @@ namespace haze {
     }
 
     Result UsbSession::TransferAsync(UsbSessionEndpoint ep, void *buffer, size_t size, u32 *out_urb_id) {
-        return usbDsEndpoint_PostBufferAsync(m_endpoints[ep], buffer, size, out_urb_id);
+        R_RETURN(usbDsEndpoint_PostBufferAsync(m_endpoints[ep], buffer, size, out_urb_id));
     }
 
     Result UsbSession::GetTransferResult(UsbSessionEndpoint ep, u32 urb_id, u32 *out_transferred_size) {
