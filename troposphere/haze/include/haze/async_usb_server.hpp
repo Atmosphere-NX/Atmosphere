@@ -32,12 +32,12 @@ namespace haze {
             Result TransferPacketImpl(bool read, void *page, u32 size, u32 *out_size_transferred) const;
         public:
             Result ReadPacket(void *page, u32 size, u32 *out_size_transferred) const {
-                return this->TransferPacketImpl(true, page, size, out_size_transferred);
+                R_RETURN(this->TransferPacketImpl(true, page, size, out_size_transferred));
             }
 
             Result WritePacket(void *page, u32 size) const {
                 u32 size_transferred;
-                return this->TransferPacketImpl(false, page, size, std::addressof(size_transferred));
+                R_RETURN(this->TransferPacketImpl(false, page, size, std::addressof(size_transferred)));
             }
     };
 

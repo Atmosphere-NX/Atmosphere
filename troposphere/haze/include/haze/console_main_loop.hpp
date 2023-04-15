@@ -22,7 +22,7 @@ namespace haze {
 
     class ConsoleMainLoop : public EventConsumer {
         private:
-            static constexpr size_t FrameDelayNs = 33333333;
+            static constexpr size_t FrameDelayNs = 33'333'333;
         private:
             EventReactor *m_reactor;
             PtpObjectHeap *m_object_heap;
@@ -74,7 +74,7 @@ namespace haze {
                 padInitializeAny(std::addressof(m_pad));
 
                 /* Create the delay thread with higher priority than the main thread. */
-                R_TRY(threadCreate(std::addressof(m_thread), ConsoleMainLoop::Run, this, nullptr, 0x1000, 0x2b, -2));
+                R_TRY(threadCreate(std::addressof(m_thread), ConsoleMainLoop::Run, this, nullptr, 4_KB, 0x2b, -2));
 
                 /* Ensure we close the thread on failure. */
                 ON_RESULT_FAILURE { threadClose(std::addressof(m_thread)); };
@@ -87,16 +87,20 @@ namespace haze {
             }
 
             void Finalize() {
+                /* Signal the delay thread to shut down. */
                 ueventSignal(std::addressof(m_cancel_event));
 
+                /* Wait for the delay thread to exit and close it. */
                 HAZE_R_ABORT_UNLESS(threadWaitForExit(std::addressof(m_thread)));
 
                 HAZE_R_ABORT_UNLESS(threadClose(std::addressof(m_thread)));
 
+                /* Disconnect from the event loop.*/
                 m_reactor->RemoveConsumer(this);
             }
         private:
             void RedrawConsole() {
+                /* Get use amounts from the heap. */
                 u32 heap_used = m_object_heap->GetSizeUsed();
                 u32 heap_total = m_object_heap->GetSizeTotal();
                 u32 heap_pct = heap_total > 0 ? static_cast<u32>((heap_used * 100ul) / heap_total) : 0;
@@ -107,23 +111,27 @@ namespace haze {
                     return;
                 }
 
+                /* Update cached use amounts. */
                 m_last_heap_used = heap_used;
                 m_last_heap_total = heap_total;
 
+                /* Determine units to use for printing to the console. */
                 const char *used_unit = "B";
-                if (heap_used >= 1024) { heap_used >>= 10; used_unit = "KiB"; }
-                if (heap_used >= 1024) { heap_used >>= 10; used_unit = "MiB"; }
+                if (heap_used >= 1_KB) { heap_used >>= 10; used_unit = "KiB"; }
+                if (heap_used >= 1_KB) { heap_used >>= 10; used_unit = "MiB"; }
 
                 const char *total_unit = "B";
-                if (heap_total >= 1024) { heap_total >>= 10; total_unit = "KiB"; }
-                if (heap_total >= 1024) { heap_total >>= 10; total_unit = "MiB"; }
+                if (heap_total >= (1_MB / 1_KB)) { heap_total >>= 10; total_unit = "KiB"; }
+                if (heap_total >= (1_MB / 1_KB)) { heap_total >>= 10; total_unit = "MiB"; }
 
+                /* Draw the console UI. */
                 consoleClear();
                 printf("USB File Transfer\n\n");
                 printf("Connect console to computer. Press [+] to exit.\n");
                 printf("Heap used: %u %s / %u %s (%u%%)\n", heap_used, used_unit, heap_total, total_unit, heap_pct);
 
                 if (m_is_applet_mode) {
+                    /* Print "Applet Mode" in red text. */
                     printf("\n" CONSOLE_ESC(38;5;196m) "Applet Mode" CONSOLE_ESC(0m) "\n");
                 }
 
@@ -131,11 +139,13 @@ namespace haze {
             }
         protected:
             void ProcessEvent() override {
+                /* Update the console. */
                 this->RedrawConsole();
 
                 /* Check buttons. */
                 padUpdate(std::addressof(m_pad));
 
+                /* If the plus button is held, request immediate exit. */
                 if (padGetButtonsDown(std::addressof(m_pad)) & HidNpadButton_Plus) {
                     m_reactor->RequestStop();
                 }
