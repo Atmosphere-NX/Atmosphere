@@ -17,7 +17,7 @@
 
 #include <vapours/results.hpp>
 
-/* Please note: These results are all custom, and not official. */
+/* NOTE: These results are all custom, and not official. */
 R_DEFINE_NAMESPACE_RESULT_MODULE(haze, 420);
 
 namespace haze {

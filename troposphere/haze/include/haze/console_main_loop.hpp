@@ -101,8 +101,8 @@ namespace haze {
         private:
             void RedrawConsole() {
                 /* Get use amounts from the heap. */
-                u32 heap_used = m_object_heap->GetSizeUsed();
-                u32 heap_total = m_object_heap->GetSizeTotal();
+                u32 heap_used = m_object_heap->GetUsedSize();
+                u32 heap_total = m_object_heap->GetTotalSize();
                 u32 heap_pct = heap_total > 0 ? static_cast<u32>((heap_used * 100ul) / heap_total) : 0;
 
                 if (heap_used == m_last_heap_used && heap_total == m_last_heap_total) {

@@ -29,25 +29,17 @@ namespace haze {
             u8 *m_data;
             bool m_disabled;
         private:
-            template <typename T>
-            constexpr static size_t Strlen(const T *str) {
-                const T *s = str;
-                for (; *s; ++s) {
-                }
-                return s - str;
-            }
-
             Result Flush() {
                 ON_SCOPE_EXIT {
                     m_transmitted_size += m_offset;
                     m_offset = 0;
                 };
 
-                if (m_disabled) {
-                    R_SUCCEED();
-                } else {
-                    R_RETURN(m_server->WritePacket(m_data, m_offset));
-                }
+                /* If we're disabled, we have nothing to do. */
+                R_SUCCEED_IF(m_disabled);
+
+                /* Otherwise, we should write our buffered data. */
+                R_RETURN(m_server->WritePacket(m_data, m_offset));
             }
         public:
             constexpr explicit PtpDataBuilder(void *data, AsyncUsbServer *server) : m_server(server),  m_transmitted_size(), m_offset(), m_data(static_cast<u8 *>(data)), m_disabled() { /* ... */ }
@@ -58,7 +50,7 @@ namespace haze {
                     R_TRY(this->Flush());
                 }
 
-                if (m_transmitted_size % PtpUsbBulkHighSpeedMaxPacketLength == 0) {
+                if (util::IsAligned(m_transmitted_size, PtpUsbBulkHighSpeedMaxPacketLength)) {
                     /* If the transmission size was a multiple of wMaxPacketSize, send a zero length packet. */
                     R_TRY(this->Flush());
                 }
@@ -69,7 +61,7 @@ namespace haze {
             Result AddBuffer(const u8 *buffer, u32 count) {
                 while (count > 0) {
                     /* Calculate how many bytes we can write now. */
-                    u32 write_size = std::min<u32>(count, haze::UsbBulkPacketBufferSize - m_offset);
+                    const u32 write_size = std::min<u32>(count, haze::UsbBulkPacketBufferSize - m_offset);
 
                     /* Write this number of bytes. */
                     std::memcpy(m_data + m_offset, buffer, write_size);
@@ -77,7 +69,7 @@ namespace haze {
                     buffer += write_size;
                     count -= write_size;
 
-                    /* If we cannot write more bytes now, flush. */
+                    /* If our buffer is full, flush it. */
                     if (m_offset == haze::UsbBulkPacketBufferSize) {
                         R_TRY(this->Flush());
                     }
@@ -115,15 +107,18 @@ namespace haze {
 
             template <typename F>
             Result WriteVariableLengthData(PtpUsbBulkContainer &request, F &&func) {
-                m_disabled = true;
-                R_TRY(func());
-                R_TRY(this->Commit());
+                {
+                    m_disabled = true;
+                    ON_SCOPE_EXIT { m_disabled = false; };
+
+                    R_TRY(func());
+                    R_TRY(this->Commit());
+                }
 
                 const size_t data_size = m_transmitted_size;
 
                 m_transmitted_size = 0;
                 m_offset = 0;
-                m_disabled = false;
 
                 R_TRY(this->AddDataHeader(request, data_size));
                 R_TRY(func());
@@ -134,9 +129,11 @@ namespace haze {
 
             template <typename T>
             Result AddString(const T *str) {
-                u8 len = static_cast<u8>(std::min(Strlen(str), PtpStringMaxLength - 1));
+                /* Use one less maximum string length for maximum length with null terminator. */
+                const u8 len = static_cast<u8>(std::min<s32>(util::Strlen(str), PtpStringMaxLength - 1));
+
                 if (len > 0) {
-                    /* Write null terminator for non-empty strings. */
+                    /* Length is padded by null terminator for non-empty strings. */
                     R_TRY(this->Add<u8>(len + 1));
 
                     for (size_t i = 0; i < len; i++) {
@@ -152,11 +149,11 @@ namespace haze {
             }
 
             template <typename T>
-            Result AddArray(const T *ary, u32 count) {
+            Result AddArray(const T *arr, u32 count) {
                 R_TRY(this->Add<u32>(count));
 
                 for (size_t i = 0; i < count; i++) {
-                    R_TRY(this->Add<T>(ary[i]));
+                    R_TRY(this->Add<T>(arr[i]));
                 }
 
                 R_SUCCEED();

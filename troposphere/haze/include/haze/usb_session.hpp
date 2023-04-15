@@ -20,10 +20,10 @@
 namespace haze {
 
     enum UsbSessionEndpoint {
-        UsbSessionEndpoint_Read,
-        UsbSessionEndpoint_Write,
-        UsbSessionEndpoint_Interrupt,
-        UsbSessionEndpoint_Count,
+        UsbSessionEndpoint_Read      = 0,
+        UsbSessionEndpoint_Write     = 1,
+        UsbSessionEndpoint_Interrupt = 2,
+        UsbSessionEndpoint_Count     = 3,
     };
 
     class UsbSession {

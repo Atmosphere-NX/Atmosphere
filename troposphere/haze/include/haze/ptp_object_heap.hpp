@@ -19,7 +19,7 @@
 
 namespace haze {
 
-    /* This simple arena allocator implementation allows us to rapidly reclaim the entire object graph. */
+    /* This simple linear allocator implementation allows us to rapidly reclaim the entire object graph. */
     /* This is critical for maintaining interactivity when a session is closed. */
     class PtpObjectHeap {
         private:
@@ -35,11 +35,11 @@ namespace haze {
             void Initialize();
             void Finalize();
         public:
-            constexpr size_t GetSizeTotal() const {
+            constexpr size_t GetTotalSize() const {
                 return m_heap_block_size * NumHeapBlocks;
             }
 
-            constexpr size_t GetSizeUsed() const {
+            constexpr size_t GetUsedSize() const {
                 return (m_heap_block_size * m_current_heap_block) + this->GetNextAddress() - this->GetFirstAddress();
             }
         private:
@@ -55,9 +55,12 @@ namespace haze {
             }
 
             constexpr bool AllocationIsSatisfyable(size_t n) const {
+                /* Check for overflow. */
                 if (this->GetNextAddress() + n < this->GetNextAddress()) {
                     return false;
                 }
+
+                /* Check if we would exceed the size of the current block. */
                 if (this->GetNextAddress() + n > this->GetCurrentBlockEnd()) {
                     return false;
                 }
@@ -84,12 +87,13 @@ namespace haze {
         public:
             template <typename T = void>
             constexpr T *Allocate(size_t n) {
-                if (n + 7 < n) {
+                /* Check for overflow. */
+                if (!util::CanAddWithoutOverflow(n, 7ul)) {
                     return nullptr;
                 }
 
                 /* Round up the amount to a multiple of 8. */
-                n = (n + 7) & ~7ull;
+                n = util::AlignUp(n, 8);
 
                 /* Check if the allocation is possible. */
                 if (!this->AllocationIsPossible(n)) {
@@ -112,7 +116,7 @@ namespace haze {
                     m_next_address = this->GetNextAddress() - n;
                 }
 
-                /* Otherwise, do nothing. */
+                /* ... */
             }
 
             template <typename T, typename... Args>

@@ -24,51 +24,52 @@ namespace haze {
     class PtpObjectDatabase {
         public:
             struct ObjectNode {
-                util::IntrusiveRedBlackTreeNode m_object_name_to_id_node;
-                util::IntrusiveRedBlackTreeNode m_object_id_to_name_node;
-                u32 m_parent_id;
-                u32 m_object_id;
-                char m_name[];
+                public:
+                    util::IntrusiveRedBlackTreeNode m_object_name_to_id_node;
+                    util::IntrusiveRedBlackTreeNode m_object_id_to_name_node;
+                    u32 m_parent_id;
+                    u32 m_object_id;
+                    char m_name[];
+                public:
+                    explicit ObjectNode(char *name, u32 parent_id, u32 object_id) : m_object_name_to_id_node(), m_object_id_to_name_node(), m_parent_id(parent_id), m_object_id(object_id) { /* ... */ }
 
-                explicit ObjectNode(char *name, u32 parent_id, u32 object_id) : m_object_name_to_id_node(), m_object_id_to_name_node(), m_parent_id(parent_id), m_object_id(object_id) { /* ... */ }
+                    const char *GetName() const { return m_name; }
+                    u32 GetParentId()     const { return m_parent_id; }
+                    u32 GetObjectId()     const { return m_object_id; }
 
-                const char *GetName() const { return m_name; }
-                u32 GetParentId()     const { return m_parent_id; }
-                u32 GetObjectId()     const { return m_object_id; }
+                    struct NameComparator {
+                        struct RedBlackKeyType {
+                            const char *m_name;
 
-                struct NameComparator {
-                    struct RedBlackKeyType {
-                        const char *m_name;
+                            constexpr RedBlackKeyType(const char *name) : m_name(name) { /* ... */ }
 
-                        constexpr RedBlackKeyType(const char *name) : m_name(name) { /* ... */ }
+                            constexpr const char *GetName() const {
+                                return m_name;
+                            }
+                        };
 
-                        constexpr const char *GetName() const {
-                            return m_name;
+                        template<typename T> requires (std::same_as<T, ObjectNode> || std::same_as<T, RedBlackKeyType>)
+                        static constexpr int Compare(const T &lhs, const ObjectNode &rhs) {
+                            return std::strcmp(lhs.GetName(), rhs.GetName());
                         }
                     };
 
-                    template<typename T> requires (std::same_as<T, ObjectNode> || std::same_as<T, RedBlackKeyType>)
-                    static constexpr int Compare(const T &lhs, const ObjectNode &rhs) {
-                        return std::strcmp(lhs.GetName(), rhs.GetName());
-                    }
-                };
+                    struct IdComparator {
+                        struct RedBlackKeyType {
+                            u32 m_object_id;
 
-                struct IdComparator {
-                    struct RedBlackKeyType {
-                        u32 m_object_id;
+                            constexpr RedBlackKeyType(u32 object_id) : m_object_id(object_id) { /* ... */ }
 
-                        constexpr RedBlackKeyType(u32 object_id) : m_object_id(object_id) { /* ... */ }
+                            constexpr u32 GetObjectId() const {
+                                return m_object_id;
+                            }
+                        };
 
-                        constexpr u32 GetObjectId() const {
-                            return m_object_id;
+                        template<typename T> requires (std::same_as<T, ObjectNode> || std::same_as<T, RedBlackKeyType>)
+                        static constexpr int Compare(const T &lhs, const ObjectNode &rhs) {
+                            return lhs.GetObjectId() - rhs.GetObjectId();
                         }
                     };
-
-                    template<typename T> requires (std::same_as<T, ObjectNode> || std::same_as<T, RedBlackKeyType>)
-                    static constexpr int Compare(const T &lhs, const ObjectNode &rhs) {
-                        return lhs.GetObjectId() - rhs.GetObjectId();
-                    }
-                };
             };
         private:
             using ObjectNameToIdTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&ObjectNode::m_object_name_to_id_node>;
