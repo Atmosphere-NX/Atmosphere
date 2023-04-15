@@ -101,7 +101,7 @@ namespace haze {
                 }
 
                 /* Write null terminator. */
-                *out_string++ = 0;
+                *out_string++ = '\x00';
 
                 R_SUCCEED();
             }

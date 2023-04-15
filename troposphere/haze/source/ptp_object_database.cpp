@@ -38,36 +38,36 @@ namespace haze {
     }
 
     Result PtpObjectDatabase::AddObjectId(const char *parent_name, const char *name, u32 *out_object_id, u32 parent_id, u32 desired_object_id) {
-        ObjectNode *node = nullptr;
-
         /* Calculate length of the name. */
         const size_t parent_name_len = std::strlen(parent_name);
         const size_t name_len = std::strlen(name) + 1;
         const size_t alloc_len = parent_name_len + 1 + name_len;
 
         /* Allocate memory for the node. */
-        node = reinterpret_cast<ObjectNode *>(m_object_heap->Allocate(sizeof(ObjectNode) + alloc_len));
+        ObjectNode *const node = reinterpret_cast<ObjectNode *>(m_object_heap->Allocate(sizeof(ObjectNode) + alloc_len));
         R_UNLESS(node != nullptr, haze::ResultOutOfMemory());
 
-        /* Ensure we maintain a clean state on failure. */
-        auto guard = SCOPE_GUARD { m_object_heap->Deallocate(node, sizeof(ObjectNode) + alloc_len); };
+        {
+            /* Ensure we maintain a clean state on failure. */
+            auto guard = SCOPE_GUARD { m_object_heap->Deallocate(node, sizeof(ObjectNode) + alloc_len); };
 
-        /* Take ownership of the name. */
-        std::strncpy(node->m_name, parent_name, parent_name_len + 1);
-        node->m_name[parent_name_len] = '/';
-        std::strncpy(node->m_name + parent_name_len + 1, name, name_len);
+            /* Take ownership of the name. */
+            std::strncpy(node->m_name, parent_name, parent_name_len + 1);
+            node->m_name[parent_name_len] = '/';
+            std::strncpy(node->m_name + parent_name_len + 1, name, name_len);
 
-        /* Check if an object with this name already exists. If it does, we can just return it here. */
-        auto it = m_name_to_object_id.find_key(node->m_name);
-        if (it != m_name_to_object_id.end()) {
-            if (out_object_id) {
-                *out_object_id = it->GetObjectId();
+            /* Check if an object with this name already exists. If it does, we can just return it here. */
+            auto it = m_name_to_object_id.find_key(node->m_name);
+            if (it != m_name_to_object_id.end()) {
+                if (out_object_id) {
+                    *out_object_id = it->GetObjectId();
+                }
+                R_SUCCEED();
             }
-            R_SUCCEED();
-        }
 
-        /* Persist the reference to the node. */
-        guard.Cancel();
+            /* Persist the reference to the node. */
+            guard.Cancel();
+        }
 
         /* Insert node into trees. */
         node->m_parent_id = parent_id;

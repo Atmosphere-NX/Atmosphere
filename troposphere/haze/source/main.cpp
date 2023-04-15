@@ -16,7 +16,7 @@
 #include <haze.hpp>
 #include <haze/console_main_loop.hpp>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
     haze::PtpObjectHeap ptp_object_heap;
 
     haze::EventReactor event_reactor;

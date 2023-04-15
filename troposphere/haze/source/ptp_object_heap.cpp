@@ -20,22 +20,22 @@ namespace haze {
     namespace {
 
         /* Allow 20MiB for use by libnx. */
-        static constexpr size_t LibnxReservedMem = 20_MB;
+        static constexpr size_t LibnxReservedMemorySize = 20_MB;
 
     }
 
     void PtpObjectHeap::Initialize() {
         size_t mem_used = 0;
 
-        /* Skip re-initialization if we are currently initialized. */
+        /* If we're already initialized, skip re-initialization. */
         if (m_heap_block_size != 0) {
             return;
         }
 
         /* Estimate how much memory we can reserve. */
         HAZE_R_ABORT_UNLESS(svcGetInfo(std::addressof(mem_used), InfoType_UsedMemorySize, CUR_PROCESS_HANDLE, 0));
-        HAZE_ASSERT(mem_used > LibnxReservedMem);
-        mem_used -= LibnxReservedMem;
+        HAZE_ASSERT(mem_used > LibnxReservedMemorySize);
+        mem_used -= LibnxReservedMemorySize;
 
         /* Take the rest for ourselves. */
         m_heap_block_size = mem_used / NumHeapBlocks;

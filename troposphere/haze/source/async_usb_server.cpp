@@ -49,6 +49,7 @@ namespace haze {
             R_THROW(haze::ResultNotConfigured());
         }
 
+        /* Select the appropriate endpoint and begin a transfer. */
         UsbSessionEndpoint ep = read ? UsbSessionEndpoint_Read : UsbSessionEndpoint_Write;
         R_TRY(s_usb_session.TransferAsync(ep, page, size, std::addressof(urb_id)));
 

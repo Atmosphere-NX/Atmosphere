@@ -29,10 +29,10 @@ namespace haze {
     }
 
     void EventReactor::RemoveConsumer(EventConsumer *consumer) {
-        s32 input_index = 0, output_index = 0;
+        s32 output_index = 0;
 
         /* Remove the consumer. */
-        for (; input_index < m_num_wait_objects; input_index++) {
+        for (s32 input_index = 0; input_index < m_num_wait_objects; input_index++) {
             if (m_consumers[input_index] == consumer) {
                 continue;
             }
@@ -48,7 +48,7 @@ namespace haze {
         m_num_wait_objects = output_index;
     }
 
-    Result EventReactor::WaitForImpl(s32 *out_arg_waiter, s32 num_arg_waiters, const Waiter *arg_waiters) {
+    Result EventReactor::WaitForImpl(s32 *out_arg_waiter, const Waiter *arg_waiters, s32 num_arg_waiters) {
         HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= MAX_WAIT_OBJECTS);
 
         while (true) {
@@ -62,7 +62,7 @@ namespace haze {
             s32 idx;
             HAZE_R_ABORT_UNLESS(waitObjects(std::addressof(idx), m_waiters, m_num_wait_objects + num_arg_waiters, -1));
 
-            /* If this refers to a waiter in the argument list, return it. */
+            /* If a waiter in the argument list was signaled, return it. */
             if (idx >= m_num_wait_objects) {
                 *out_arg_waiter = idx - m_num_wait_objects;
                 R_SUCCEED();
