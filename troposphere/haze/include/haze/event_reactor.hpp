@@ -42,7 +42,7 @@ namespace haze {
         public:
             template <typename... Args>
             Result WaitFor(s32 *out_arg_waiter, Args &&... arg_waiters) {
-                const Waiter arg_waiter_array[] = {arg_waiters...};
+                const Waiter arg_waiter_array[] = { arg_waiters... };
                 return this->WaitForImpl(out_arg_waiter, sizeof...(Args), arg_waiter_array);
             }
         private:

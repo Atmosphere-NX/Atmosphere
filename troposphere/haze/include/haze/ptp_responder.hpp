@@ -27,7 +27,7 @@ namespace haze {
     class PtpResponder final {
         private:
             AsyncUsbServer m_usb_server;
-            FilesystemProxy m_fs;
+            FileSystemProxy m_fs;
             PtpUsbBulkContainer m_request_header;
             PtpObjectHeap *m_object_heap;
             u32 m_send_object_id;

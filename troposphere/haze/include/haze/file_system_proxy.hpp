@@ -20,12 +20,12 @@
 
 namespace haze {
 
-    class FilesystemProxy final {
+    class FileSystemProxy final {
         private:
             EventReactor *m_reactor;
             FsFileSystem *m_filesystem;
         public:
-            constexpr explicit FilesystemProxy() : m_reactor(), m_filesystem() { /* ... */ }
+            constexpr explicit FileSystemProxy() : m_reactor(), m_filesystem() { /* ... */ }
 
             void Initialize(EventReactor *reactor, FsFileSystem *fs) {
                 HAZE_ASSERT(fs != nullptr);
@@ -41,10 +41,13 @@ namespace haze {
         private:
             template <typename F, typename... Args>
             Result ForwardResult(F func, Args &&... args) {
-                Result rc = func(std::forward<Args>(args)...);
+                /* Perform the method call, collecting its result. */
+                const Result rc = func(std::forward<Args>(args)...);
 
+                /* If the event loop was stopped, return that here. */
                 R_UNLESS(!m_reactor->GetStopRequested(), haze::ResultStopRequested());
 
+                /* Otherwise, return the call result. */
                 R_RETURN(rc);
             }
         public:
@@ -72,23 +75,23 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsFsOpenFile, m_filesystem, path, mode, out_file));
             }
 
-            Result FileGetSize(FsFile *file, s64 *out_size) {
+            Result GetSizeFile(FsFile *file, s64 *out_size) {
                 R_RETURN(this->ForwardResult(fsFileGetSize, file, out_size));
             }
 
-            Result FileSetSize(FsFile *file, s64 size) {
+            Result SetSizeFile(FsFile *file, s64 size) {
                 R_RETURN(this->ForwardResult(fsFileSetSize, file, size));
             }
 
-            Result FileRead(FsFile *file, s64 off, void *buf, u64 read_size, u32 option, u64 *out_bytes_read) {
+            Result ReadFile(FsFile *file, s64 off, void *buf, u64 read_size, u32 option, u64 *out_bytes_read) {
                 R_RETURN(this->ForwardResult(fsFileRead, file, off, buf, read_size, option, out_bytes_read));
             }
 
-            Result FileWrite(FsFile *file, s64 off, const void *buf, u64 write_size, u32 option) {
+            Result WriteFile(FsFile *file, s64 off, const void *buf, u64 write_size, u32 option) {
                 R_RETURN(this->ForwardResult(fsFileWrite, file, off, buf, write_size, option));
             }
 
-            void FileClose(FsFile *file) {
+            void CloseFile(FsFile *file) {
                 fsFileClose(file);
             }
 
@@ -104,15 +107,15 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsFsOpenDirectory, m_filesystem, path, mode, out_dir));
             }
 
-            Result DirectoryRead(FsDir *d, s64 *out_total_entries, size_t max_entries, FsDirectoryEntry *buf) {
+            Result ReadDirectory(FsDir *d, s64 *out_total_entries, size_t max_entries, FsDirectoryEntry *buf) {
                 R_RETURN(this->ForwardResult(fsDirRead, d, out_total_entries, max_entries, buf));
             }
 
-            Result DirectoryGetEntryCount(FsDir *d, s64 *out_count) {
+            Result GetEntryCountDirectory(FsDir *d, s64 *out_count) {
                 R_RETURN(this->ForwardResult(fsDirGetEntryCount, d, out_count));
             }
 
-            void DirectoryClose(FsDir *d) {
+            void CloseDirectory(FsDir *d) {
                 fsDirClose(d);
             }
     };

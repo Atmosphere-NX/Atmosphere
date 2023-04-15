@@ -383,11 +383,11 @@ namespace haze {
         R_TRY(m_fs.OpenDirectory(fileobj->GetName(), FsDirOpenMode_ReadDirs | FsDirOpenMode_ReadFiles, std::addressof(dir)));
 
         /* Ensure we maintain a clean state on exit. */
-        ON_SCOPE_EXIT { m_fs.DirectoryClose(std::addressof(dir)); };
+        ON_SCOPE_EXIT { m_fs.CloseDirectory(std::addressof(dir)); };
 
         /* Count how many entries are in the directory. */
         s64 entry_count = 0;
-        R_TRY(m_fs.DirectoryGetEntryCount(std::addressof(dir), std::addressof(entry_count)));
+        R_TRY(m_fs.GetEntryCountDirectory(std::addressof(dir), std::addressof(entry_count)));
 
         /* Begin writing. */
         R_TRY(db.AddDataHeader(m_request_header, sizeof(u32) + (entry_count * sizeof(u32))));
@@ -398,7 +398,7 @@ namespace haze {
         while (true) {
             /* Get the next batch. */
             s64 read_count = 0;
-            R_TRY(m_fs.DirectoryRead(std::addressof(dir), std::addressof(read_count), DirectoryReadSize, s_dir_entries));
+            R_TRY(m_fs.ReadDirectory(std::addressof(dir), std::addressof(read_count), DirectoryReadSize, s_dir_entries));
 
             /* Write to output. */
             for (s64 i = 0; i < read_count; i++) {
@@ -450,9 +450,9 @@ namespace haze {
                 R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
                 /* Ensure we maintain a clean state on exit. */
-                ON_SCOPE_EXIT { m_fs.FileClose(std::addressof(file)); };
+                ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
-                R_TRY(m_fs.FileGetSize(std::addressof(file), std::addressof(size)));
+                R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
             }
 
             object_info.filename = std::strrchr(fileobj->GetName(), '/') + 1;
@@ -512,11 +512,11 @@ namespace haze {
         R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
         /* Ensure we maintain a clean state on exit. */
-        ON_SCOPE_EXIT { m_fs.FileClose(std::addressof(file)); };
+        ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
         /* Get the file's size. */
         s64 size = 0, offset = 0;
-        R_TRY(m_fs.FileGetSize(std::addressof(file), std::addressof(size)));
+        R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
 
         /* Send the header and file size. */
         R_TRY(db.AddDataHeader(m_request_header, size));
@@ -524,7 +524,7 @@ namespace haze {
         while (true) {
             /* Get the next batch. */
             size_t bytes_read;
-            R_TRY(m_fs.FileRead(std::addressof(file), offset, s_fs_buffer, FsBufferSize, FsReadOption_None, std::addressof(bytes_read)));
+            R_TRY(m_fs.ReadFile(std::addressof(file), offset, s_fs_buffer, FsBufferSize, FsReadOption_None, std::addressof(bytes_read)));
 
             offset += bytes_read;
 
@@ -640,11 +640,11 @@ namespace haze {
         R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Write | FsOpenMode_Append, std::addressof(file)));
 
         /* Ensure we maintain a clean state on exit. */
-        ON_SCOPE_EXIT { m_fs.FileClose(std::addressof(file)); };
+        ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
         /* Truncate the file after locking for write. */
         s64 offset = 0;
-        R_TRY(m_fs.FileSetSize(std::addressof(file), 0));
+        R_TRY(m_fs.SetSizeFile(std::addressof(file), 0));
 
         /* Begin writing. */
         while (true) {
@@ -653,7 +653,7 @@ namespace haze {
             Result rc = dp.ReadBuffer(s_fs_buffer, FsBufferSize, std::addressof(bytes_received));
 
             /* Write to the file. */
-            R_TRY(m_fs.FileWrite(std::addressof(file), offset, s_fs_buffer, bytes_received, 0));
+            R_TRY(m_fs.WriteFile(std::addressof(file), offset, s_fs_buffer, bytes_received, 0));
 
             offset += bytes_received;
 
