@@ -95,7 +95,6 @@ namespace haze {
 
                 m_reactor->RemoveConsumer(this);
             }
-
         private:
             void RedrawConsole() {
                 u32 heap_used = m_object_heap->GetSizeUsed();
@@ -130,7 +129,6 @@ namespace haze {
 
                 consoleUpdate(NULL);
             }
-
         protected:
             void ProcessEvent() override {
                 this->RedrawConsole();

@@ -32,17 +32,15 @@ namespace haze {
             PtpObjectHeap *m_object_heap;
             u32 m_send_object_id;
             bool m_session_open;
-            PtpObjectDatabase m_object_database;
 
+            PtpObjectDatabase m_object_database;
         public:
             constexpr explicit PtpResponder() : m_usb_server(), m_fs(), m_request_header(), m_object_heap(), m_send_object_id(), m_session_open(), m_object_database() { /* ... */ }
 
             Result Initialize(EventReactor *reactor, PtpObjectHeap *object_heap);
             void Finalize();
-
         public:
             Result HandleRequest();
-
         private:
             /* Request handling. */
             Result HandleRequestImpl();

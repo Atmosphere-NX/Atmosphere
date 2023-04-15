@@ -31,24 +31,20 @@ namespace haze {
             Waiter m_waiters[MAX_WAIT_OBJECTS];
             s32 m_num_wait_objects;
             bool m_stop_requested;
-
         public:
             constexpr explicit EventReactor() : m_consumers(), m_waiters(), m_num_wait_objects(), m_stop_requested() { /* ... */ }
 
             bool AddConsumer(EventConsumer *consumer, Waiter waiter);
             void RemoveConsumer(EventConsumer *consumer);
-
         public:
             void RequestStop()            { m_stop_requested = true; }
             bool GetStopRequested() const { return m_stop_requested; }
-
         public:
             template <typename... Args>
             Result WaitFor(s32 *out_arg_waiter, Args &&... arg_waiters) {
                 const Waiter arg_waiter_array[] = {arg_waiters...};
                 return this->WaitForImpl(out_arg_waiter, sizeof...(Args), arg_waiter_array);
             }
-
         private:
             Result WaitForImpl(s32 *out_arg_waiter, s32 num_arg_waiters, const Waiter *arg_waiters);
     };
