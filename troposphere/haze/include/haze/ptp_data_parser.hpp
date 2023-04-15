@@ -75,13 +75,13 @@ namespace haze {
             }
 
             template <typename T>
-            Result Read(T &out_t) {
+            Result Read(T *out_t) {
                 size_t read_count;
-                std::array<u8, sizeof(T)> bytes = {};
+                u8 bytes[sizeof(T)];
 
-                R_TRY(this->ReadBuffer(bytes.data(), bytes.size(), std::addressof(read_count)));
+                R_TRY(this->ReadBuffer(bytes, sizeof(T), std::addressof(read_count)));
 
-                out_t = std::bit_cast<T>(bytes);
+                std::memcpy(out_t, bytes, sizeof(T));
 
                 R_SUCCEED();
             }
@@ -90,12 +90,12 @@ namespace haze {
             /* The result will be null-terminated on successful completion. */
             Result ReadString(char *out_string) {
                 u8 len;
-                R_TRY(this->Read(len));
+                R_TRY(this->Read(std::addressof(len)));
 
                 /* Read characters one by one. */
                 for (size_t i = 0; i < len; i++) {
                     u16 chr;
-                    R_TRY(this->Read(chr));
+                    R_TRY(this->Read(std::addressof(chr)));
 
                     *out_string++ = static_cast<char>(chr);
                 }

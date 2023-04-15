@@ -88,9 +88,11 @@ namespace haze {
 
             template <typename T>
             Result Add(T value) {
-                const auto bytes = std::bit_cast<std::array<u8, sizeof(T)>>(value);
+                u8 bytes[sizeof(T)];
 
-                R_RETURN(this->AddBuffer(bytes.data(), bytes.size()));
+                std::memcpy(bytes, std::addressof(value), sizeof(T));
+
+                R_RETURN(this->AddBuffer(bytes, sizeof(T)));
             }
 
             Result AddDataHeader(PtpUsbBulkContainer &request, u32 data_size) {

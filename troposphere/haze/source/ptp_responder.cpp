@@ -200,7 +200,7 @@ namespace haze {
 
     Result PtpResponder::HandleRequestImpl() {
         PtpDataParser dp(s_bulk_read_buffer, std::addressof(m_usb_server));
-        R_TRY(dp.Read(m_request_header));
+        R_TRY(dp.Read(std::addressof(m_request_header)));
 
         switch (m_request_header.type) {
             case PtpUsbBulkContainerType_Command: R_RETURN(this->HandleCommandRequest(dp));
@@ -315,7 +315,7 @@ namespace haze {
 
         /* Get the storage ID the client requested information for. */
         u32 storage_id;
-        R_TRY(dp.Read(storage_id));
+        R_TRY(dp.Read(std::addressof(storage_id)));
         R_TRY(dp.Finalize());
 
         /* Get the info from fs. */
@@ -359,9 +359,9 @@ namespace haze {
 
         /* Get the object ID the client requested enumeration for. */
         u32 storage_id, object_format_code, association_object_handle;
-        R_TRY(dp.Read(storage_id));
-        R_TRY(dp.Read(object_format_code));
-        R_TRY(dp.Read(association_object_handle));
+        R_TRY(dp.Read(std::addressof(storage_id)));
+        R_TRY(dp.Read(std::addressof(object_format_code)));
+        R_TRY(dp.Read(std::addressof(association_object_handle)));
         R_TRY(dp.Finalize());
 
         /* Handle top-level requests. */
@@ -423,7 +423,7 @@ namespace haze {
 
         /* Get the object ID the client requested info for. */
         u32 object_id;
-        R_TRY(dp.Read(object_id));
+        R_TRY(dp.Read(std::addressof(object_id)));
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
@@ -500,7 +500,7 @@ namespace haze {
 
         /* Get the object ID the client requested. */
         u32 object_id;
-        R_TRY(dp.Read(object_id));
+        R_TRY(dp.Read(std::addressof(object_id)));
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
@@ -544,8 +544,8 @@ namespace haze {
 
     Result PtpResponder::SendObjectInfo(PtpDataParser &rdp) {
         u32 storage_id, parent_object;
-        R_TRY(rdp.Read(storage_id));
-        R_TRY(rdp.Read(parent_object));
+        R_TRY(rdp.Read(std::addressof(storage_id)));
+        R_TRY(rdp.Read(std::addressof(parent_object)));
         R_TRY(rdp.Finalize());
 
         PtpDataParser dp(s_bulk_read_buffer, std::addressof(m_usb_server));
@@ -553,27 +553,27 @@ namespace haze {
 
         /* Ensure that we have a data header. */
         PtpUsbBulkContainer data_header;
-        R_TRY(dp.Read(data_header));
+        R_TRY(dp.Read(std::addressof(data_header)));
         R_UNLESS(data_header.type == PtpUsbBulkContainerType_Data,  haze::ResultUnknownRequestType());
         R_UNLESS(data_header.code == m_request_header.code,         haze::ResultOperationNotSupported());
         R_UNLESS(data_header.trans_id == m_request_header.trans_id, haze::ResultOperationNotSupported());
 
         /* Read in the object info. */
-        R_TRY(dp.Read(info.storage_id));
-        R_TRY(dp.Read(info.object_format));
-        R_TRY(dp.Read(info.protection_status));
-        R_TRY(dp.Read(info.object_compressed_size));
-        R_TRY(dp.Read(info.thumb_format));
-        R_TRY(dp.Read(info.thumb_compressed_size));
-        R_TRY(dp.Read(info.thumb_width));
-        R_TRY(dp.Read(info.thumb_height));
-        R_TRY(dp.Read(info.image_width));
-        R_TRY(dp.Read(info.image_height));
-        R_TRY(dp.Read(info.image_depth));
-        R_TRY(dp.Read(info.parent_object));
-        R_TRY(dp.Read(info.association_type));
-        R_TRY(dp.Read(info.association_desc));
-        R_TRY(dp.Read(info.sequence_number));
+        R_TRY(dp.Read(std::addressof(info.storage_id)));
+        R_TRY(dp.Read(std::addressof(info.object_format)));
+        R_TRY(dp.Read(std::addressof(info.protection_status)));
+        R_TRY(dp.Read(std::addressof(info.object_compressed_size)));
+        R_TRY(dp.Read(std::addressof(info.thumb_format)));
+        R_TRY(dp.Read(std::addressof(info.thumb_compressed_size)));
+        R_TRY(dp.Read(std::addressof(info.thumb_width)));
+        R_TRY(dp.Read(std::addressof(info.thumb_height)));
+        R_TRY(dp.Read(std::addressof(info.image_width)));
+        R_TRY(dp.Read(std::addressof(info.image_height)));
+        R_TRY(dp.Read(std::addressof(info.image_depth)));
+        R_TRY(dp.Read(std::addressof(info.parent_object)));
+        R_TRY(dp.Read(std::addressof(info.association_type)));
+        R_TRY(dp.Read(std::addressof(info.association_desc)));
+        R_TRY(dp.Read(std::addressof(info.sequence_number)));
         R_TRY(dp.ReadString(s_filename_str));
         R_TRY(dp.ReadString(s_capture_date_str));
         R_TRY(dp.ReadString(s_modification_date_str));
@@ -626,7 +626,7 @@ namespace haze {
 
         /* Ensure that we have a data header. */
         PtpUsbBulkContainer data_header;
-        R_TRY(dp.Read(data_header));
+        R_TRY(dp.Read(std::addressof(data_header)));
         R_UNLESS(data_header.type == PtpUsbBulkContainerType_Data,  haze::ResultUnknownRequestType());
         R_UNLESS(data_header.code == m_request_header.code,         haze::ResultOperationNotSupported());
         R_UNLESS(data_header.trans_id == m_request_header.trans_id, haze::ResultOperationNotSupported());
@@ -671,7 +671,7 @@ namespace haze {
 
     Result PtpResponder::DeleteObject(PtpDataParser &dp) {
         u32 object_id;
-        R_TRY(dp.Read(object_id));
+        R_TRY(dp.Read(std::addressof(object_id)));
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
