@@ -289,6 +289,7 @@ namespace haze {
     Result PtpResponder::GetDeviceInfo(PtpDataParser &dp) {
         PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
+        /* Write the device info data. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(MtpStandardVersion));
             R_TRY(db.Add(MtpVendorExtensionId));
@@ -308,6 +309,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -328,7 +330,7 @@ namespace haze {
         /* Register the root storages. */
         m_object_database.RegisterObject(object, StorageId_SdmcFs);
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -337,6 +339,7 @@ namespace haze {
 
         this->ForceCloseSession();
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -345,10 +348,12 @@ namespace haze {
 
         PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
+        /* Write the storage ID array. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
             R_RETURN(db.AddArray(SupportedStorageIds, util::size(SupportedStorageIds)));
         }));
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -379,7 +384,7 @@ namespace haze {
                 R_THROW(haze::ResultInvalidStorageId());
         }
 
-        /* Write the result. */
+        /* Write the storage info data. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(storage_info.storage_type));
             R_TRY(db.Add(storage_info.filesystem_type));
@@ -393,6 +398,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -456,8 +462,10 @@ namespace haze {
             }
         }
 
+        /* Flush the data response. */
         R_TRY(db.Commit());
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -511,6 +519,7 @@ namespace haze {
             }
         }
 
+        /* Write the object info data. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(object_info.storage_id));
             R_TRY(db.Add(object_info.object_format));
@@ -535,6 +544,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -582,12 +592,15 @@ namespace haze {
             }
         }
 
+        /* Flush the data response. */
         R_TRY(db.Commit());
 
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
     Result PtpResponder::SendObjectInfo(PtpDataParser &rdp) {
+        /* Get the storage ID and parent object and flush the request packet. */
         u32 storage_id, parent_object;
         R_TRY(rdp.Read(std::addressof(storage_id)));
         R_TRY(rdp.Read(std::addressof(parent_object)));
@@ -659,7 +672,7 @@ namespace haze {
             m_send_object_id = new_object_info.object_id;
         }
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok, new_object_info));
     }
 
@@ -693,7 +706,7 @@ namespace haze {
         s64 offset = 0;
         R_TRY(m_fs.SetFileSize(std::addressof(file), 0));
 
-        /* Begin writing. */
+        /* Begin writing to the filesystem. */
         while (true) {
             /* Read as many bytes as we can. */
             size_t bytes_received;
@@ -712,11 +725,12 @@ namespace haze {
             R_TRY(read_res);
         }
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
     Result PtpResponder::DeleteObject(PtpDataParser &dp) {
+        /* Get the object ID and flush the request packet. */
         u32 object_id;
         R_TRY(dp.Read(std::addressof(object_id)));
         R_TRY(dp.Finalize());
@@ -742,7 +756,7 @@ namespace haze {
         /* Remove the object from the database. */
         m_object_database.DeleteObject(obj);
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -756,7 +770,7 @@ namespace haze {
             R_RETURN(db.AddArray(SupportedObjectProperties, util::size(SupportedObjectProperties)));
         }));
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -826,7 +840,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -890,7 +904,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -969,7 +983,7 @@ namespace haze {
         /* Register the new object. */
         m_object_database.RegisterObject(newobj, object_id);
 
-        /* We succeeded. */
+        /* Write the the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 }
