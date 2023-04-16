@@ -51,7 +51,7 @@ namespace haze {
             Result WriteResponse(PtpResponseCode code, Data &&data);
             Result WriteResponse(PtpResponseCode code);
 
-            /* Operations. */
+            /* PTP operations. */
             Result GetDeviceInfo(PtpDataParser &dp);
             Result OpenSession(PtpDataParser &dp);
             Result CloseSession(PtpDataParser &dp);
@@ -63,6 +63,12 @@ namespace haze {
             Result SendObjectInfo(PtpDataParser &dp);
             Result SendObject(PtpDataParser &dp);
             Result DeleteObject(PtpDataParser &dp);
+
+            /* MTP operations. */
+            Result GetObjectPropsSupported(PtpDataParser &dp);
+            Result GetObjectPropDesc(PtpDataParser &dp);
+            Result GetObjectPropValue(PtpDataParser &dp);
+            Result SetObjectPropValue(PtpDataParser &dp);
     };
 
 }

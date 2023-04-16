@@ -49,6 +49,7 @@ namespace haze {
     }
 
     Result EventReactor::WaitForImpl(s32 *out_arg_waiter, const Waiter *arg_waiters, s32 num_arg_waiters) {
+        HAZE_ASSERT(0 <= num_arg_waiters && num_arg_waiters <= svc::ArgumentHandleCountMax);
         HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= svc::ArgumentHandleCountMax);
 
         while (true) {

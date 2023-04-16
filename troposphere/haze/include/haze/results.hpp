@@ -34,6 +34,7 @@ namespace haze {
     R_DEFINE_ERROR_RESULT(StorageNotFound,       10);
     R_DEFINE_ERROR_RESULT(OperationNotSupported, 11);
     R_DEFINE_ERROR_RESULT(UnknownRequestType,    12);
-    R_DEFINE_ERROR_RESULT(GeneralFailure,        13);
+    R_DEFINE_ERROR_RESULT(UnknownPropertyCode,   13);
+    R_DEFINE_ERROR_RESULT(GeneralFailure,        14);
 
 }

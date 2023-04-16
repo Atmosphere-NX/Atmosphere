@@ -119,19 +119,6 @@ namespace haze {
                 /* Otherwise, do nothing. */
                 /* ... */
             }
-
-            template <typename T, typename... Args>
-            constexpr T *New(Args&&... args) {
-                T *t = static_cast<T *>(this->Allocate(sizeof(T)));
-                std::construct_at(t, std::forward<Args>(args)...);
-                return t;
-            }
-
-            template <typename T>
-            constexpr void Delete(T *t) {
-                std::destroy_at(t);
-                this->Deallocate(t, sizeof(T));
-            }
     };
 
 }

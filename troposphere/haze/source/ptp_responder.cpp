@@ -22,24 +22,24 @@ namespace haze {
     namespace {
 
         constexpr UsbCommsInterfaceInfo MtpInterfaceInfo = {
-            .bInterfaceClass = 0x06,
+            .bInterfaceClass    = 0x06,
             .bInterfaceSubClass = 0x01,
             .bInterfaceProtocol = 0x01,
         };
 
         /* This is a VID:PID recognized by libmtp. */
-        constexpr u16 SwitchMtpIdVendor = 0x057e;
+        constexpr u16 SwitchMtpIdVendor  = 0x057e;
         constexpr u16 SwitchMtpIdProduct = 0x201d;
 
         /* Constants used for MTP GetDeviceInfo response. */
-        constexpr u16 MtpStandardVersion = 100;
-        constexpr u32 MtpVendorExtensionId = 6;
-        constexpr auto MtpVendorExtensionDesc = "microsoft.com: 1.0;";
+        constexpr u16 MtpStandardVersion       = 100;
+        constexpr u32 MtpVendorExtensionId     = 6;
+        constexpr auto MtpVendorExtensionDesc  = "microsoft.com: 1.0;";
         constexpr u16 MtpFunctionalModeDefault = 0;
-        constexpr auto MtpDeviceManufacturer = "Nintendo";
-        constexpr auto MtpDeviceModel = "Switch";
-        constexpr auto MtpDeviceVersion = "1.0.0";
-        constexpr auto MtpDeviceSerialNumber = "SerialNumber";
+        constexpr auto MtpDeviceManufacturer   = "Nintendo";
+        constexpr auto MtpDeviceModel          = "Switch";
+        constexpr auto MtpDeviceVersion        = "1.0.0";
+        constexpr auto MtpDeviceSerialNumber   = "SerialNumber";
 
         enum StorageId : u32 {
             StorageId_SdmcFs = 0xffffffffu - 1,
@@ -57,16 +57,37 @@ namespace haze {
             PtpOperationCode_SendObjectInfo,
             PtpOperationCode_SendObject,
             PtpOperationCode_DeleteObject,
+            PtpOperationCode_MtpGetObjectPropsSupported,
+            PtpOperationCode_MtpGetObjectPropDesc,
+            PtpOperationCode_MtpGetObjectPropValue,
+            PtpOperationCode_MtpSetObjectPropValue,
         };
 
-        constexpr const PtpEventCode SupportedEventCodes[]             = { /* ... */};
-        constexpr const PtpDevicePropertyCode SupportedPropertyCodes[] = { /* ...*/ };
-        constexpr const PtpObjectFormatCode SupportedCaptureFormats[]  = { /* ...*/ };
+        constexpr const PtpEventCode SupportedEventCodes[]                = { /* ... */ };
+        constexpr const PtpDevicePropertyCode SupportedDeviceProperties[] = { /* ... */ };
+        constexpr const PtpObjectFormatCode SupportedCaptureFormats[]     = { /* ... */ };
 
         constexpr const PtpObjectFormatCode SupportedPlaybackFormats[] = {
             PtpObjectFormatCode_Undefined,
             PtpObjectFormatCode_Association,
         };
+
+        constexpr const PtpObjectPropertyCode SupportedObjectProperties[] = {
+            PtpObjectPropertyCode_StorageId,
+            PtpObjectPropertyCode_ObjectFormat,
+            PtpObjectPropertyCode_ObjectSize,
+            PtpObjectPropertyCode_ObjectFileName,
+        };
+
+        constexpr bool IsSupportedObjectPropertyCode(PtpObjectPropertyCode c) {
+            for (size_t i = 0; i < util::size(SupportedObjectProperties); i++) {
+                if (SupportedObjectProperties[i] == c) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         constexpr const StorageId SupportedStorageIds[] = {
             StorageId_SdmcFs,
@@ -141,16 +162,16 @@ namespace haze {
         constexpr s64 DirectoryReadSize = 32;
         constexpr u64 FsBufferSize = haze::UsbBulkPacketBufferSize;
 
-        constinit char g_filename_str[PtpStringMaxLength + 1];
-        constinit char g_capture_date_str[PtpStringMaxLength + 1];
-        constinit char g_modification_date_str[PtpStringMaxLength + 1];
-        constinit char g_keywords_str[PtpStringMaxLength + 1];
+        constinit char g_filename_str[PtpStringMaxLength + 1]          = {};
+        constinit char g_capture_date_str[PtpStringMaxLength + 1]      = {};
+        constinit char g_modification_date_str[PtpStringMaxLength + 1] = {};
+        constinit char g_keywords_str[PtpStringMaxLength + 1]          = {};
 
         constinit FsDirectoryEntry g_dir_entries[DirectoryReadSize] = {};
         constinit u8 g_fs_buffer[FsBufferSize] = {};
 
         alignas(4_KB) constinit u8 g_bulk_write_buffer[haze::UsbBulkPacketBufferSize] = {};
-        alignas(4_KB) constinit u8 g_bulk_read_buffer[haze::UsbBulkPacketBufferSize] = {};
+        alignas(4_KB) constinit u8 g_bulk_read_buffer[haze::UsbBulkPacketBufferSize]  = {};
 
     }
 
@@ -190,7 +211,11 @@ namespace haze {
             R_CATCH(haze::ResultObjectNotFound) {
                 R_TRY(this->WriteResponse(PtpResponseCode_InvalidObjectHandle));
             }
-            R_CATCH(fs::ResultPathNotFound, fs::ResultPathAlreadyExists, fs::ResultTargetLocked, fs::ResultDirectoryNotEmpty, fs::ResultNotEnoughFreeSpaceSdCard) {
+            R_CATCH(haze::ResultUnknownPropertyCode) {
+                R_TRY(this->WriteResponse(PtpResponseCode_MtpObjectPropNotSupported));
+            }
+            R_CATCH_MODULE(fs) {
+                /* Errors from fs are typically recoverable. */
                 R_TRY(this->WriteResponse(PtpResponseCode_GeneralError));
             }
             R_CATCH_ALL() {
@@ -217,18 +242,22 @@ namespace haze {
         }
 
         switch (m_request_header.code) {
-            case PtpOperationCode_GetDeviceInfo:    R_RETURN(this->GetDeviceInfo(dp));    break;
-            case PtpOperationCode_OpenSession:      R_RETURN(this->OpenSession(dp));      break;
-            case PtpOperationCode_CloseSession:     R_RETURN(this->CloseSession(dp));     break;
-            case PtpOperationCode_GetStorageIds:    R_RETURN(this->GetStorageIds(dp));    break;
-            case PtpOperationCode_GetStorageInfo:   R_RETURN(this->GetStorageInfo(dp));   break;
-            case PtpOperationCode_GetObjectHandles: R_RETURN(this->GetObjectHandles(dp)); break;
-            case PtpOperationCode_GetObjectInfo:    R_RETURN(this->GetObjectInfo(dp));    break;
-            case PtpOperationCode_GetObject:        R_RETURN(this->GetObject(dp));        break;
-            case PtpOperationCode_SendObjectInfo:   R_RETURN(this->SendObjectInfo(dp));   break;
-            case PtpOperationCode_SendObject:       R_RETURN(this->SendObject(dp));       break;
-            case PtpOperationCode_DeleteObject:     R_RETURN(this->DeleteObject(dp));     break;
-            default:                                R_THROW(haze::ResultOperationNotSupported());
+            case PtpOperationCode_GetDeviceInfo:              R_RETURN(this->GetDeviceInfo(dp));           break;
+            case PtpOperationCode_OpenSession:                R_RETURN(this->OpenSession(dp));             break;
+            case PtpOperationCode_CloseSession:               R_RETURN(this->CloseSession(dp));            break;
+            case PtpOperationCode_GetStorageIds:              R_RETURN(this->GetStorageIds(dp));           break;
+            case PtpOperationCode_GetStorageInfo:             R_RETURN(this->GetStorageInfo(dp));          break;
+            case PtpOperationCode_GetObjectHandles:           R_RETURN(this->GetObjectHandles(dp));        break;
+            case PtpOperationCode_GetObjectInfo:              R_RETURN(this->GetObjectInfo(dp));           break;
+            case PtpOperationCode_GetObject:                  R_RETURN(this->GetObject(dp));               break;
+            case PtpOperationCode_SendObjectInfo:             R_RETURN(this->SendObjectInfo(dp));          break;
+            case PtpOperationCode_SendObject:                 R_RETURN(this->SendObject(dp));              break;
+            case PtpOperationCode_DeleteObject:               R_RETURN(this->DeleteObject(dp));            break;
+            case PtpOperationCode_MtpGetObjectPropsSupported: R_RETURN(this->GetObjectPropsSupported(dp)); break;
+            case PtpOperationCode_MtpGetObjectPropDesc:       R_RETURN(this->GetObjectPropDesc(dp));       break;
+            case PtpOperationCode_MtpGetObjectPropValue:      R_RETURN(this->GetObjectPropValue(dp));      break;
+            case PtpOperationCode_MtpSetObjectPropValue:      R_RETURN(this->SetObjectPropValue(dp));      break;
+            default:                                          R_THROW(haze::ResultOperationNotSupported());
         }
     }
 
@@ -264,7 +293,7 @@ namespace haze {
             R_TRY(db.Add(MtpFunctionalModeDefault));
             R_TRY(db.AddArray(SupportedOperationCodes, util::size(SupportedOperationCodes)));
             R_TRY(db.AddArray(SupportedEventCodes, util::size(SupportedEventCodes)));
-            R_TRY(db.AddArray(SupportedPropertyCodes, util::size(SupportedPropertyCodes)));
+            R_TRY(db.AddArray(SupportedDeviceProperties, util::size(SupportedDeviceProperties)));
             R_TRY(db.AddArray(SupportedCaptureFormats, util::size(SupportedCaptureFormats)));
             R_TRY(db.AddArray(SupportedPlaybackFormats, util::size(SupportedPlaybackFormats)));
             R_TRY(db.AddString(MtpDeviceManufacturer));
@@ -329,10 +358,10 @@ namespace haze {
                     R_TRY(m_fs.GetTotalSpace("/", std::addressof(total_space)));
                     R_TRY(m_fs.GetFreeSpace("/", std::addressof(free_space)));
 
-                    storage_info.max_capacity = total_space;
-                    storage_info.free_space_in_bytes = free_space;
+                    storage_info.max_capacity         = total_space;
+                    storage_info.free_space_in_bytes  = free_space;
                     storage_info.free_space_in_images = 0;
-                    storage_info.storage_description = "SD Card";
+                    storage_info.storage_description  = "SD Card";
                 }
                 break;
             default:
@@ -699,5 +728,145 @@ namespace haze {
 
         /* We succeeded. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
+    }
+
+    Result PtpResponder::GetObjectPropsSupported(PtpDataParser &dp) {
+        R_TRY(dp.Finalize());
+
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
+
+        /* Write information about all object properties we can support. */
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+            R_RETURN(db.AddArray(SupportedObjectProperties, util::size(SupportedObjectProperties)));
+        }));
+
+        /* We succeeded. */
+        R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
+    }
+
+    Result PtpResponder::GetObjectPropDesc(PtpDataParser &dp) {
+        PtpObjectPropertyCode property_code;
+        u16 object_format;
+
+        R_TRY(dp.Read(std::addressof(property_code)));
+        R_TRY(dp.Read(std::addressof(object_format)));
+        R_TRY(dp.Finalize());
+
+        /* Ensure we have a valid property code before continuing. */
+        R_UNLESS(IsSupportedObjectPropertyCode(property_code), haze::ResultUnknownPropertyCode());
+
+        /* Begin writing information about the property code. */
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
+
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+            R_TRY(db.Add(property_code));
+
+            /* Each property code corresponds to a different pattern, which contains the data type, */
+            /* whether the property can be set for an object, and the default value of the property. */
+            switch (property_code) {
+                case PtpObjectPropertyCode_ObjectSize:
+                    {
+                        R_TRY(db.Add(PtpDataTypeCode_U64));
+                        R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
+                        R_TRY(db.Add<u64>(0));
+                    }
+                    break;
+                case PtpObjectPropertyCode_StorageId:
+                    {
+                        R_TRY(db.Add(PtpDataTypeCode_U32));
+                        R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
+                        R_TRY(db.Add(StorageId_SdmcFs));
+                    }
+                    break;
+                case PtpObjectPropertyCode_ObjectFormat:
+                    {
+                        R_TRY(db.Add(PtpDataTypeCode_U32));
+                        R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
+                        R_TRY(db.Add(PtpObjectFormatCode_Undefined));
+                    }
+                    break;
+                case PtpObjectPropertyCode_ObjectFileName:
+                    {
+                        R_TRY(db.Add(PtpDataTypeCode_String));
+                        R_TRY(db.Add(PtpPropertyGetSetFlag_GetSet));
+                        R_TRY(db.AddString(""));
+                    }
+                    break;
+                HAZE_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            /* Group code is a required part of the response, but doesn't seem to be used for anything. */
+            R_TRY(db.Add(PtpPropertyGroupCode_Default));
+
+            /* We don't use the form flag. */
+            R_TRY(db.Add(PtpPropertyFormFlag_None));
+
+            R_SUCCEED();
+        }));
+
+        /* We succeeded. */
+        R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
+    }
+
+    Result PtpResponder::GetObjectPropValue(PtpDataParser &dp) {
+        u32 object_id;
+        PtpObjectPropertyCode property_code;
+
+        R_TRY(dp.Read(std::addressof(object_id)));
+        R_TRY(dp.Read(std::addressof(property_code)));
+        R_TRY(dp.Finalize());
+
+        /* Ensure we have a valid property code before continuing. */
+        R_UNLESS(IsSupportedObjectPropertyCode(property_code), haze::ResultUnknownPropertyCode());
+
+        /* Check if we know about the object. If we don't, it's an error. */
+        auto * const fileobj = m_object_database.GetObject(object_id);
+        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+
+        /* Get the object type. */
+        FsDirEntryType entry_type;
+        R_TRY(m_fs.GetEntryType(fileobj->GetName(), std::addressof(entry_type)));
+
+        /* Get the object size. */
+        s64 size = 0;
+        if (entry_type == FsDirEntryType_File) {
+            FsFile file;
+            R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
+
+            /* Ensure we maintain a clean state on exit. */
+            ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
+
+            R_TRY(m_fs.GetFileSize(std::addressof(file), std::addressof(size)));
+        }
+
+        /* Begin writing the requested object property. */
+        PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
+
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+            switch (property_code) {
+                case PtpObjectPropertyCode_ObjectSize:
+                    R_TRY(db.Add<u64>(size));
+                    break;
+                case PtpObjectPropertyCode_StorageId:
+                    R_TRY(db.Add(StorageId_SdmcFs));
+                    break;
+                case PtpObjectPropertyCode_ObjectFormat:
+                    R_TRY(db.Add(entry_type == FsDirEntryType_File ? PtpObjectFormatCode_Undefined : PtpObjectFormatCode_Association));
+                    break;
+                case PtpObjectPropertyCode_ObjectFileName:
+                    R_TRY(db.AddString(std::strrchr(fileobj->GetName(), '/') + 1));
+                    break;
+                HAZE_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            R_SUCCEED();
+        }));
+
+        /* We succeeded. */
+        R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
+    }
+
+    Result PtpResponder::SetObjectPropValue(PtpDataParser &dp) {
+        R_THROW(haze::ResultOperationNotSupported());
     }
 }

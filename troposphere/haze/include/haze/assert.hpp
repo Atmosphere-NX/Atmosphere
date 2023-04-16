@@ -28,3 +28,5 @@
     const auto _tmp_r_abort_rc = (res_expr);   \
     HAZE_ASSERT(R_SUCCEEDED(_tmp_r_abort_rc)); \
 }
+
+#define HAZE_UNREACHABLE_DEFAULT_CASE() default: HAZE_ASSERT(false)
