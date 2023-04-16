@@ -37,31 +37,32 @@ namespace haze {
         m_object_heap = nullptr;
     }
 
-    Result PtpObjectDatabase::AddObjectId(const char *parent_name, const char *name, u32 *out_object_id, u32 parent_id, u32 desired_object_id) {
-        /* Calculate length of the name. */
-        const size_t parent_name_len = std::strlen(parent_name);
-        const size_t name_len = std::strlen(name) + 1;
-        const size_t alloc_len = parent_name_len + 1 + name_len;
+    Result PtpObjectDatabase::CreateOrFindObject(const char *parent_name, const char *name, u32 parent_id, PtpObject **out_object) {
+        constexpr auto separator = "/";
+
+        /* Calculate length of the new name with null terminator. */
+        const size_t parent_name_len = util::Strlen(parent_name);
+        const size_t separator_len   = util::Strlen(separator);
+        const size_t name_len        = util::Strlen(name);
+        const size_t terminator_len  = 1;
+        const size_t alloc_len       = sizeof(PtpObject) + parent_name_len + separator_len + name_len + terminator_len;
 
         /* Allocate memory for the node. */
-        ObjectNode * const node = m_object_heap->Allocate<ObjectNode>(sizeof(ObjectNode) + alloc_len);
-        R_UNLESS(node != nullptr, haze::ResultOutOfMemory());
+        PtpObject * const object = m_object_heap->Allocate<PtpObject>(alloc_len);
+        R_UNLESS(object != nullptr, haze::ResultOutOfMemory());
 
         {
             /* Ensure we maintain a clean state on failure. */
-            auto guard = SCOPE_GUARD { m_object_heap->Deallocate(node, sizeof(ObjectNode) + alloc_len); };
+            auto guard = SCOPE_GUARD { m_object_heap->Deallocate(object, alloc_len); };
 
             /* Take ownership of the name. */
-            std::strncpy(node->m_name, parent_name, parent_name_len + 1);
-            node->m_name[parent_name_len] = '/';
-            std::strncpy(node->m_name + parent_name_len + 1, name, name_len);
+            std::strncpy(object->m_name,                                   parent_name, parent_name_len + terminator_len);
+            std::strncpy(object->m_name + parent_name_len,                 separator,   separator_len + terminator_len);
+            std::strncpy(object->m_name + parent_name_len + separator_len, name,        name_len + terminator_len);
 
             /* Check if an object with this name already exists. If it does, we can just return it here. */
-            auto it = m_name_to_object_id.find_key(node->m_name);
-            if (it != m_name_to_object_id.end()) {
-                if (out_object_id) {
-                    *out_object_id = it->GetObjectId();
-                }
+            if (auto * const existing = this->GetObjectByName(object->GetName()); existing != nullptr) {
+                *out_object = existing;
                 R_SUCCEED();
             }
 
@@ -69,37 +70,70 @@ namespace haze {
             guard.Cancel();
         }
 
-        /* Insert node into trees. */
-        node->m_parent_id = parent_id;
-        node->m_object_id = desired_object_id == 0 ? m_next_object_id++ : desired_object_id;
-        m_name_to_object_id.insert(*node);
-        m_object_id_to_name.insert(*node);
+        /* Set node properties. */
+        object->m_parent_id = parent_id;
+        object->m_object_id = 0;
 
         /* Set output. */
-        if (out_object_id) {
-            *out_object_id = node->GetObjectId();
-        }
+        *out_object = object;
 
         /* We succeeded. */
         R_SUCCEED();
     }
 
-    void PtpObjectDatabase::RemoveObjectId(u32 object_id) {
-        /* Find in forward mapping. */
-        auto it = m_object_id_to_name.find_key(object_id);
-        if (it == m_object_id_to_name.end()) {
+    void PtpObjectDatabase::RegisterObject(PtpObject *object, u32 desired_id) {
+        /* If the object is already registered, skip registration. */
+        if (object->GetIsRegistered()) {
             return;
         }
 
-        /* Free the node. */
-        ObjectNode *node = std::addressof(*it);
-        m_object_id_to_name.erase(m_object_id_to_name.iterator_to(*node));
-        m_name_to_object_id.erase(m_name_to_object_id.iterator_to(*node));
-        m_object_heap->Deallocate(node, sizeof(ObjectNode) + std::strlen(node->GetName()) + 1);
+        /* Set desired object ID. */
+        if (desired_id == 0) {
+            desired_id = m_next_object_id++;
+        }
+
+        /* Insert node into trees. */
+        object->m_object_id = desired_id;
+        m_name_to_object_id.insert(*object);
+        m_object_id_to_name.insert(*object);
     }
 
-    PtpObjectDatabase::ObjectNode *PtpObjectDatabase::GetObject(u32 object_id) {
-        /* Find in forward mapping. */
+    void PtpObjectDatabase::UnregisterObject(PtpObject *object) {
+        /* If the object is not registered, skip trying to unregister. */
+        if (!object->GetIsRegistered()) {
+            return;
+        }
+
+        /* Remove node from trees. */
+        m_object_id_to_name.erase(m_object_id_to_name.iterator_to(*object));
+        m_name_to_object_id.erase(m_name_to_object_id.iterator_to(*object));
+        object->m_object_id = 0;
+    }
+
+    void PtpObjectDatabase::DeleteObject(PtpObject *object) {
+        /* Unregister the object as required. */
+        this->UnregisterObject(object);
+
+        /* Free the object. */
+        m_object_heap->Deallocate(object, sizeof(PtpObject) + std::strlen(object->GetName()) + 1);
+    }
+
+    Result PtpObjectDatabase::CreateAndRegisterObjectId(const char *parent_name, const char *name, u32 parent_id, u32 *out_object_id) {
+        /* Try to create the object. */
+        PtpObject *object;
+        R_TRY(this->CreateOrFindObject(parent_name, name, parent_id, std::addressof(object)));
+
+        /* We succeeded, so register it. */
+        this->RegisterObject(object);
+
+        /* Set the output ID. */
+        *out_object_id = object->GetObjectId();
+
+        R_SUCCEED();
+    }
+
+    PtpObject *PtpObjectDatabase::GetObjectById(u32 object_id) {
+        /* Find in ID mapping. */
         auto it = m_object_id_to_name.find_key(object_id);
         if (it == m_object_id_to_name.end()) {
             return nullptr;
@@ -108,4 +142,13 @@ namespace haze {
         return std::addressof(*it);
     }
 
+    PtpObject *PtpObjectDatabase::GetObjectByName(const char *name) {
+        /* Find in name mapping. */
+        auto it = m_name_to_object_id.find_key(name);
+        if (it == m_name_to_object_id.end()) {
+            return nullptr;
+        }
+
+        return std::addressof(*it);
+    }
 }

@@ -71,6 +71,10 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsFsDeleteFile, m_filesystem, path));
             }
 
+            Result RenameFile(const char *old_path, const char *new_path) {
+                R_RETURN(this->ForwardResult(fsFsRenameFile, m_filesystem, old_path, new_path));
+            }
+
             Result OpenFile(const char *path, u32 mode, FsFile *out_file) {
                 R_RETURN(this->ForwardResult(fsFsOpenFile, m_filesystem, path, mode, out_file));
             }
@@ -101,6 +105,10 @@ namespace haze {
 
             Result DeleteDirectoryRecursively(const char* path) {
                 R_RETURN(this->ForwardResult(fsFsDeleteDirectoryRecursively, m_filesystem, path));
+            }
+
+            Result RenameDirectory(const char *old_path, const char *new_path) {
+                R_RETURN(this->ForwardResult(fsFsRenameDirectory, m_filesystem, old_path, new_path));
             }
 
             Result OpenDirectory(const char *path, u32 mode, FsDir *out_dir) {

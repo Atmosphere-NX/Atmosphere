@@ -205,14 +205,17 @@ namespace haze {
             R_CATCH(haze::ResultOperationNotSupported) {
                 R_TRY(this->WriteResponse(PtpResponseCode_OperationNotSupported));
             }
-            R_CATCH(haze::ResultStorageNotFound) {
+            R_CATCH(haze::ResultInvalidStorageId) {
                 R_TRY(this->WriteResponse(PtpResponseCode_InvalidStorageId));
             }
-            R_CATCH(haze::ResultObjectNotFound) {
+            R_CATCH(haze::ResultInvalidObjectId) {
                 R_TRY(this->WriteResponse(PtpResponseCode_InvalidObjectHandle));
             }
             R_CATCH(haze::ResultUnknownPropertyCode) {
                 R_TRY(this->WriteResponse(PtpResponseCode_MtpObjectPropNotSupported));
+            }
+            R_CATCH(haze::ResultInvalidPropertyValue) {
+                R_TRY(this->WriteResponse(PtpResponseCode_MtpInvalidObjectPropValue));
             }
             R_CATCH_MODULE(fs) {
                 /* Errors from fs are typically recoverable. */
@@ -313,11 +316,18 @@ namespace haze {
         /* Close, if we're already open. */
         this->ForceCloseSession();
 
-        /* Initialize the database with hardcoded storage IDs. */
+        /* Initialize the database. */
         m_session_open = true;
         m_object_database.Initialize(m_object_heap);
-        R_TRY(m_object_database.AddObjectId("", "", nullptr, PtpGetObjectHandles_RootParent, StorageId_SdmcFs));
 
+        /* Create the root storages. */
+        PtpObject *object;
+        R_TRY(m_object_database.CreateOrFindObject("", "", PtpGetObjectHandles_RootParent, std::addressof(object)));
+
+        /* Register the root storages. */
+        m_object_database.RegisterObject(object, StorageId_SdmcFs);
+
+        /* We succeeded. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -365,7 +375,7 @@ namespace haze {
                 }
                 break;
             default:
-                R_THROW(haze::ResultStorageNotFound());
+                R_THROW(haze::ResultInvalidStorageId());
         }
 
         /* Write the result. */
@@ -406,12 +416,12 @@ namespace haze {
         }
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(association_object_handle);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(association_object_handle);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Try to read the object as a directory. */
         FsDir dir;
-        R_TRY(m_fs.OpenDirectory(fileobj->GetName(), FsDirOpenMode_ReadDirs | FsDirOpenMode_ReadFiles, std::addressof(dir)));
+        R_TRY(m_fs.OpenDirectory(obj->GetName(), FsDirOpenMode_ReadDirs | FsDirOpenMode_ReadFiles, std::addressof(dir)));
 
         /* Ensure we maintain a clean state on exit. */
         ON_SCOPE_EXIT { m_fs.CloseDirectory(std::addressof(dir)); };
@@ -435,7 +445,7 @@ namespace haze {
             /* Write to output. */
             for (s64 i = 0; i < read_count; i++) {
                 u32 handle;
-                R_TRY(m_object_database.AddObjectId(fileobj->GetName(), g_dir_entries[i].name, std::addressof(handle), fileobj->GetObjectId()));
+                R_TRY(m_object_database.CreateAndRegisterObjectId(obj->GetName(), g_dir_entries[i].name, obj->GetObjectId(), std::addressof(handle)));
                 R_TRY(db.Add(handle));
             }
 
@@ -459,8 +469,8 @@ namespace haze {
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Build info about the object. */
         PtpObjectInfo object_info(DefaultObjectInfo);
@@ -473,13 +483,13 @@ namespace haze {
         } else {
             /* Figure out what type of object this is. */
             FsDirEntryType entry_type;
-            R_TRY(m_fs.GetEntryType(fileobj->GetName(), std::addressof(entry_type)));
+            R_TRY(m_fs.GetEntryType(obj->GetName(), std::addressof(entry_type)));
 
             /* Get the size, if we are requesting info about a file. */
             s64 size = 0;
             if (entry_type == FsDirEntryType_File) {
                 FsFile file;
-                R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
+                R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
                 /* Ensure we maintain a clean state on exit. */
                 ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
@@ -487,9 +497,9 @@ namespace haze {
                 R_TRY(m_fs.GetFileSize(std::addressof(file), std::addressof(size)));
             }
 
-            object_info.filename               = std::strrchr(fileobj->GetName(), '/') + 1;
+            object_info.filename               = std::strrchr(obj->GetName(), '/') + 1;
             object_info.object_compressed_size = size;
-            object_info.parent_object          = fileobj->GetParentId();
+            object_info.parent_object          = obj->GetParentId();
 
             if (entry_type == FsDirEntryType_Dir) {
                 object_info.object_format    = PtpObjectFormatCode_Association;
@@ -536,12 +546,12 @@ namespace haze {
         R_TRY(dp.Finalize());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Lock the object as a file. */
         FsFile file;
-        R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
+        R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
         /* Ensure we maintain a clean state on exit. */
         ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
@@ -585,7 +595,7 @@ namespace haze {
         PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
         PtpObjectInfo info(DefaultObjectInfo);
 
-        /* Ensure that we have a data header. */
+        /* Ensure we have a data header. */
         PtpUsbBulkContainer data_header;
         R_TRY(dp.Read(std::addressof(data_header)));
         R_UNLESS(data_header.type == PtpUsbBulkContainerType_Data,  haze::ResultUnknownRequestType());
@@ -620,29 +630,31 @@ namespace haze {
         }
 
         /* Check if we know about the parent object. If we don't, it's an error. */
-        auto * const parentobj = m_object_database.GetObject(parent_object);
-        R_UNLESS(parentobj != nullptr, haze::ResultObjectNotFound());
+        auto * const parentobj = m_object_database.GetObjectById(parent_object);
+        R_UNLESS(parentobj != nullptr, haze::ResultInvalidObjectId());
 
         /* Make a new object with the intended name. */
         PtpNewObjectInfo new_object_info;
         new_object_info.storage_id       = StorageId_SdmcFs;
         new_object_info.parent_object_id = parent_object == storage_id ? 0 : parent_object;
 
-        R_TRY(m_object_database.AddObjectId(parentobj->GetName(), g_filename_str, std::addressof(new_object_info.object_id), parentobj->GetObjectId()));
+        /* Create the object in the database. */
+        PtpObject *obj;
+        R_TRY(m_object_database.CreateOrFindObject(parentobj->GetName(), g_filename_str, parentobj->GetObjectId(), std::addressof(obj)));
 
         /* Ensure we maintain a clean state on failure. */
-        ON_RESULT_FAILURE { m_object_database.RemoveObjectId(new_object_info.object_id); };
+        ON_RESULT_FAILURE { m_object_database.DeleteObject(obj); };
 
-        /* Get the object name we just built. */
-        auto * const fileobj = m_object_database.GetObject(new_object_info.object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultGeneralFailure());
+        /* Register the object with a new ID. */
+        m_object_database.RegisterObject(obj);
+        new_object_info.object_id = obj->GetObjectId();
 
         /* Create the object on the filesystem. */
         if (info.object_format == PtpObjectFormatCode_Association) {
-            R_TRY(m_fs.CreateDirectory(fileobj->GetName()));
+            R_TRY(m_fs.CreateDirectory(obj->GetName()));
             m_send_object_id = 0;
         } else {
-            R_TRY(m_fs.CreateFile(fileobj->GetName(), 0, 0));
+            R_TRY(m_fs.CreateFile(obj->GetName(), 0, 0));
             m_send_object_id = new_object_info.object_id;
         }
 
@@ -658,7 +670,7 @@ namespace haze {
 
         PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
 
-        /* Ensure that we have a data header. */
+        /* Ensure we have a data header. */
         PtpUsbBulkContainer data_header;
         R_TRY(dp.Read(std::addressof(data_header)));
         R_UNLESS(data_header.type == PtpUsbBulkContainerType_Data,  haze::ResultUnknownRequestType());
@@ -666,12 +678,12 @@ namespace haze {
         R_UNLESS(data_header.trans_id == m_request_header.trans_id, haze::ResultOperationNotSupported());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(m_send_object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(m_send_object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Lock the object as a file. */
         FsFile file;
-        R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Write | FsOpenMode_Append, std::addressof(file)));
+        R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Write | FsOpenMode_Append, std::addressof(file)));
 
         /* Ensure we maintain a clean state on exit. */
         ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
@@ -708,23 +720,26 @@ namespace haze {
         R_TRY(dp.Read(std::addressof(object_id)));
         R_TRY(dp.Finalize());
 
+        /* Disallow deleting the storage root. */
+        R_UNLESS(object_id != StorageId_SdmcFs, haze::ResultInvalidObjectId());
+
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Figure out what type of object this is. */
         FsDirEntryType entry_type;
-        R_TRY(m_fs.GetEntryType(fileobj->GetName(), std::addressof(entry_type)));
+        R_TRY(m_fs.GetEntryType(obj->GetName(), std::addressof(entry_type)));
 
         /* Remove the object from the filesystem. */
         if (entry_type == FsDirEntryType_Dir) {
-            R_TRY(m_fs.DeleteDirectoryRecursively(fileobj->GetName()));
+            R_TRY(m_fs.DeleteDirectoryRecursively(obj->GetName()));
         } else {
-            R_TRY(m_fs.DeleteFile(fileobj->GetName()));
+            R_TRY(m_fs.DeleteFile(obj->GetName()));
         }
 
-        /* Remove the object from tracking. */
-        m_object_database.RemoveObjectId(fileobj->GetObjectId());
+        /* Remove the object from the database. */
+        m_object_database.DeleteObject(obj);
 
         /* We succeeded. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
@@ -816,22 +831,25 @@ namespace haze {
         R_TRY(dp.Read(std::addressof(property_code)));
         R_TRY(dp.Finalize());
 
+        /* Disallow renaming the storage root. */
+        R_UNLESS(object_id != StorageId_SdmcFs, haze::ResultInvalidObjectId());
+
         /* Ensure we have a valid property code before continuing. */
         R_UNLESS(IsSupportedObjectPropertyCode(property_code), haze::ResultUnknownPropertyCode());
 
         /* Check if we know about the object. If we don't, it's an error. */
-        auto * const fileobj = m_object_database.GetObject(object_id);
-        R_UNLESS(fileobj != nullptr, haze::ResultObjectNotFound());
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
         /* Get the object type. */
         FsDirEntryType entry_type;
-        R_TRY(m_fs.GetEntryType(fileobj->GetName(), std::addressof(entry_type)));
+        R_TRY(m_fs.GetEntryType(obj->GetName(), std::addressof(entry_type)));
 
         /* Get the object size. */
         s64 size = 0;
         if (entry_type == FsDirEntryType_File) {
             FsFile file;
-            R_TRY(m_fs.OpenFile(fileobj->GetName(), FsOpenMode_Read, std::addressof(file)));
+            R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
             /* Ensure we maintain a clean state on exit. */
             ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
@@ -854,7 +872,7 @@ namespace haze {
                     R_TRY(db.Add(entry_type == FsDirEntryType_File ? PtpObjectFormatCode_Undefined : PtpObjectFormatCode_Association));
                     break;
                 case PtpObjectPropertyCode_ObjectFileName:
-                    R_TRY(db.AddString(std::strrchr(fileobj->GetName(), '/') + 1));
+                    R_TRY(db.AddString(std::strrchr(obj->GetName(), '/') + 1));
                     break;
                 HAZE_UNREACHABLE_DEFAULT_CASE();
             }
@@ -866,7 +884,82 @@ namespace haze {
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
-    Result PtpResponder::SetObjectPropValue(PtpDataParser &dp) {
-        R_THROW(haze::ResultOperationNotSupported());
+    Result PtpResponder::SetObjectPropValue(PtpDataParser &rdp) {
+        u32 object_id;
+        PtpObjectPropertyCode property_code;
+
+        R_TRY(rdp.Read(std::addressof(object_id)));
+        R_TRY(rdp.Read(std::addressof(property_code)));
+        R_TRY(rdp.Finalize());
+
+        PtpDataParser dp(g_bulk_read_buffer, std::addressof(m_usb_server));
+
+        /* Ensure we have a data header. */
+        PtpUsbBulkContainer data_header;
+        R_TRY(dp.Read(std::addressof(data_header)));
+        R_UNLESS(data_header.type == PtpUsbBulkContainerType_Data,      haze::ResultUnknownRequestType());
+        R_UNLESS(data_header.code == m_request_header.code,             haze::ResultOperationNotSupported());
+        R_UNLESS(data_header.trans_id == m_request_header.trans_id,     haze::ResultOperationNotSupported());
+
+        /* Ensure we have a valid property code before continuing. */
+        R_UNLESS(property_code == PtpObjectPropertyCode_ObjectFileName, haze::ResultUnknownPropertyCode());
+
+        /* Check if we know about the object. If we don't, it's an error. */
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
+
+        /* We are reading a file name. */
+        R_TRY(dp.ReadString(g_filename_str));
+        R_TRY(dp.Finalize());
+
+        /* Ensure we can actually process the new name. */
+        const bool is_empty         = g_filename_str[0] == '\x00';
+        const bool contains_slashes = std::strchr(g_filename_str, '/') != nullptr;
+        R_UNLESS(!is_empty && !contains_slashes, haze::ResultInvalidPropertyValue());
+
+        /* Add a new object in the database with the new name. */
+        PtpObject *newobj;
+        {
+            /* Find the last path separator in the existing object name. */
+            char *pathsep = std::strrchr(obj->m_name, '/');
+            HAZE_ASSERT(pathsep != nullptr);
+
+            /* Temporarily mark the path separator as null to facilitate processing. */
+            *pathsep = '\x00';
+            ON_SCOPE_EXIT { *pathsep = '/'; };
+
+            R_TRY(m_object_database.CreateOrFindObject(obj->GetName(), g_filename_str, obj->GetParentId(), std::addressof(newobj)));
+        }
+
+        {
+            /* Ensure we maintain a clean state on failure. */
+            ON_RESULT_FAILURE {
+                if (!newobj->GetIsRegistered()) {
+                    /* Only delete if the object was not registered. */
+                    /* Otherwise, we would remove an object that still exists. */
+                    m_object_database.DeleteObject(newobj);
+                }
+            };
+
+            /* Get the old object type. */
+            FsDirEntryType entry_type;
+            R_TRY(m_fs.GetEntryType(obj->GetName(), std::addressof(entry_type)));
+
+            /* Attempt to rename the object on the filesystem. */
+            if (entry_type == FsDirEntryType_Dir) {
+                R_TRY(m_fs.RenameDirectory(obj->GetName(), newobj->GetName()));
+            } else {
+                R_TRY(m_fs.RenameFile(obj->GetName(), newobj->GetName()));
+            }
+        }
+
+        /* Unregister and free the old object. */
+        m_object_database.DeleteObject(obj);
+
+        /* Register the new object. */
+        m_object_database.RegisterObject(newobj, object_id);
+
+        /* We succeeded. */
+        R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 }
