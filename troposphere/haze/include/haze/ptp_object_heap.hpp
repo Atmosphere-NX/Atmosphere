@@ -56,7 +56,7 @@ namespace haze {
 
             constexpr bool AllocationIsSatisfyable(size_t n) const {
                 /* Check for overflow. */
-                if (this->GetNextAddress() + n < this->GetNextAddress()) {
+                if (!util::CanAddWithoutOverflow(reinterpret_cast<uintptr_t>(this->GetNextAddress()), n)) {
                     return false;
                 }
 
