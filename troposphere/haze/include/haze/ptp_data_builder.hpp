@@ -107,23 +107,34 @@ namespace haze {
 
             template <typename F>
             Result WriteVariableLengthData(PtpUsbBulkContainer &request, F &&func) {
+                HAZE_ASSERT(m_offset == 0 && m_transmitted_size == 0);
+
+                /* Declare how many bytes the data will require to write. */
+                size_t data_size = 0;
                 {
+                    /* Temporarily disable writing to calculate the size.*/
                     m_disabled = true;
-                    ON_SCOPE_EXIT { m_disabled = false; };
+
+                    ON_SCOPE_EXIT {
+                        /* Report how many bytes were required. */
+                        data_size = m_transmitted_size;
+
+                        /* On exit, enable writing and reset sizes. */
+                        m_transmitted_size = 0;
+                        m_disabled = false;
+                        m_offset = 0;
+                    };
 
                     R_TRY(func());
                     R_TRY(this->Commit());
                 }
 
-                const size_t data_size = m_transmitted_size;
-
-                m_transmitted_size = 0;
-                m_offset = 0;
-
+                /* Actually copy and write the data. */
                 R_TRY(this->AddDataHeader(request, data_size));
                 R_TRY(func());
                 R_TRY(this->Commit());
 
+                /* We succeeded. */
                 R_SUCCEED();
             }
 
