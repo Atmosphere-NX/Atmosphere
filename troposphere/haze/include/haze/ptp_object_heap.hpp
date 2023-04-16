@@ -116,6 +116,7 @@ namespace haze {
                     m_next_address = this->GetNextAddress() - n;
                 }
 
+                /* Otherwise, do nothing. */
                 /* ... */
             }
 

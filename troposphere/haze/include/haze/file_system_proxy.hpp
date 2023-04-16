@@ -75,11 +75,11 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsFsOpenFile, m_filesystem, path, mode, out_file));
             }
 
-            Result GetSizeFile(FsFile *file, s64 *out_size) {
+            Result GetFileSize(FsFile *file, s64 *out_size) {
                 R_RETURN(this->ForwardResult(fsFileGetSize, file, out_size));
             }
 
-            Result SetSizeFile(FsFile *file, s64 size) {
+            Result SetFileSize(FsFile *file, s64 size) {
                 R_RETURN(this->ForwardResult(fsFileSetSize, file, size));
             }
 
@@ -111,7 +111,7 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsDirRead, d, out_total_entries, max_entries, buf));
             }
 
-            Result GetEntryCountDirectory(FsDir *d, s64 *out_count) {
+            Result GetDirectoryEntryCount(FsDir *d, s64 *out_count) {
                 R_RETURN(this->ForwardResult(fsDirGetEntryCount, d, out_count));
             }
 

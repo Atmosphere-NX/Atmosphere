@@ -385,7 +385,7 @@ namespace haze {
 
         /* Count how many entries are in the directory. */
         s64 entry_count = 0;
-        R_TRY(m_fs.GetEntryCountDirectory(std::addressof(dir), std::addressof(entry_count)));
+        R_TRY(m_fs.GetDirectoryEntryCount(std::addressof(dir), std::addressof(entry_count)));
 
         /* Begin writing. */
         R_TRY(db.AddDataHeader(m_request_header, sizeof(u32) + (entry_count * sizeof(u32))));
@@ -451,7 +451,7 @@ namespace haze {
                 /* Ensure we maintain a clean state on exit. */
                 ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
-                R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
+                R_TRY(m_fs.GetFileSize(std::addressof(file), std::addressof(size)));
             }
 
             object_info.filename               = std::strrchr(fileobj->GetName(), '/') + 1;
@@ -515,7 +515,7 @@ namespace haze {
 
         /* Get the file's size. */
         s64 size = 0;
-        R_TRY(m_fs.GetSizeFile(std::addressof(file), std::addressof(size)));
+        R_TRY(m_fs.GetFileSize(std::addressof(file), std::addressof(size)));
 
         /* Send the header and file size. */
         R_TRY(db.AddDataHeader(m_request_header, size));
@@ -645,7 +645,7 @@ namespace haze {
 
         /* Truncate the file after locking for write. */
         s64 offset = 0;
-        R_TRY(m_fs.SetSizeFile(std::addressof(file), 0));
+        R_TRY(m_fs.SetFileSize(std::addressof(file), 0));
 
         /* Begin writing. */
         while (true) {
