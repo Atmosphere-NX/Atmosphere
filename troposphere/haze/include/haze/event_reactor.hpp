@@ -42,6 +42,7 @@ namespace haze {
         public:
             template <typename... Args>
             Result WaitFor(s32 *out_arg_waiter, Args &&... arg_waiters) {
+                static_assert(sizeof...(Args) > 0);
                 const Waiter arg_waiter_array[] = { arg_waiters... };
                 return this->WaitForImpl(out_arg_waiter, arg_waiter_array, sizeof...(Args));
             }
