@@ -131,7 +131,7 @@ namespace haze {
         PtpResponseCode_MtpSpecification_By_Group_Unsupported = 0xa807,
         PtpResponseCode_MtpSpecification_By_Depth_Unsupported = 0xa808,
         PtpResponseCode_MtpObject_Too_Large                   = 0xa809,
-        PtpResponseCode_MtpObjectProp_Not_Supported           = 0xa80A,
+        PtpResponseCode_MtpObjectProp_Not_Supported           = 0xa80a,
     };
 
     enum PtpEventCode : u16 {
