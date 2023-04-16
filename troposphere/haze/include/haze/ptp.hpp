@@ -216,7 +216,7 @@ namespace haze {
         PtpObjectPropertyCode_AllowedFolderContents               = 0xdc0c,
         PtpObjectPropertyCode_Hidden                              = 0xdc0d,
         PtpObjectPropertyCode_SystemObject                        = 0xdc0e,
-        PtpObjectPropertyCode_PersistantUniqueObjectIdentifier    = 0xdc41,
+        PtpObjectPropertyCode_PersistentUniqueObjectIdentifier    = 0xdc41,
         PtpObjectPropertyCode_SyncId                              = 0xdc42,
         PtpObjectPropertyCode_PropertyBag                         = 0xdc43,
         PtpObjectPropertyCode_Name                                = 0xdc44,

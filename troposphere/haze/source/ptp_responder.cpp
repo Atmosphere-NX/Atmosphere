@@ -77,6 +77,7 @@ namespace haze {
             PtpObjectPropertyCode_ObjectFormat,
             PtpObjectPropertyCode_ObjectSize,
             PtpObjectPropertyCode_ObjectFileName,
+            PtpObjectPropertyCode_PersistentUniqueObjectIdentifier,
         };
 
         constexpr bool IsSupportedObjectPropertyCode(PtpObjectPropertyCode c) {
@@ -779,6 +780,12 @@ namespace haze {
             /* Each property code corresponds to a different pattern, which contains the data type, */
             /* whether the property can be set for an object, and the default value of the property. */
             switch (property_code) {
+                case PtpObjectPropertyCode_PersistentUniqueObjectIdentifier:
+                    {
+                        R_TRY(db.Add(PtpDataTypeCode_U128));
+                        R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
+                        R_TRY(db.Add<u128>(0));
+                    }
                 case PtpObjectPropertyCode_ObjectSize:
                     {
                         R_TRY(db.Add(PtpDataTypeCode_U64));
@@ -862,6 +869,9 @@ namespace haze {
 
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
             switch (property_code) {
+                case PtpObjectPropertyCode_PersistentUniqueObjectIdentifier:
+                    R_TRY(db.Add<u128>(object_id));
+                    break;
                 case PtpObjectPropertyCode_ObjectSize:
                     R_TRY(db.Add<u64>(size));
                     break;
