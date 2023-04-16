@@ -129,7 +129,7 @@ namespace haze {
 
             template <typename T>
             Result AddString(const T *str) {
-                /* Use one less maximum string length for maximum length with null terminator. */
+                /* Use one less than the maximum string length for maximum length with null terminator. */
                 const u8 len = static_cast<u8>(std::min<s32>(util::Strlen(str), PtpStringMaxLength - 1));
 
                 if (len > 0) {

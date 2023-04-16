@@ -62,7 +62,11 @@ namespace haze {
         constexpr const PtpEventCode SupportedEventCodes[]             = { /* ... */};
         constexpr const PtpDevicePropertyCode SupportedPropertyCodes[] = { /* ...*/ };
         constexpr const PtpObjectFormatCode SupportedCaptureFormats[]  = { /* ...*/ };
-        constexpr const PtpObjectFormatCode SupportedPlaybackFormats[] = { /* ...*/ };
+
+        constexpr const PtpObjectFormatCode SupportedPlaybackFormats[] = {
+            PtpObjectFormatCode_Undefined,
+            PtpObjectFormatCode_Association,
+        };
 
         constexpr const StorageId SupportedStorageIds[] = {
             StorageId_SdmcFs,
@@ -592,8 +596,8 @@ namespace haze {
 
         /* Make a new object with the intended name. */
         PtpNewObjectInfo new_object_info;
-        new_object_info.storage_id = StorageId_SdmcFs;
-        new_object_info.parent_object_id = parent_object;
+        new_object_info.storage_id       = StorageId_SdmcFs;
+        new_object_info.parent_object_id = parent_object == storage_id ? 0 : parent_object;
 
         R_TRY(m_object_database.AddObjectId(parentobj->GetName(), g_filename_str, std::addressof(new_object_info.object_id), parentobj->GetObjectId()));
 
@@ -605,7 +609,7 @@ namespace haze {
         R_UNLESS(fileobj != nullptr, haze::ResultGeneralFailure());
 
         /* Create the object on the filesystem. */
-        if (info.association_type == PtpAssociationType_GenericFolder) {
+        if (info.object_format == PtpObjectFormatCode_Association) {
             R_TRY(m_fs.CreateDirectory(fileobj->GetName()));
             m_send_object_id = 0;
         } else {
@@ -685,7 +689,7 @@ namespace haze {
 
         /* Remove the object from the filesystem. */
         if (entry_type == FsDirEntryType_Dir) {
-            R_TRY(m_fs.DeleteDirectory(fileobj->GetName()));
+            R_TRY(m_fs.DeleteDirectoryRecursively(fileobj->GetName()));
         } else {
             R_TRY(m_fs.DeleteFile(fileobj->GetName()));
         }

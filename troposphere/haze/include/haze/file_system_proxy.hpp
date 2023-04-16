@@ -99,8 +99,8 @@ namespace haze {
                 R_RETURN(this->ForwardResult(fsFsCreateDirectory, m_filesystem, path));
             }
 
-            Result DeleteDirectory(const char* path) {
-                R_RETURN(this->ForwardResult(fsFsDeleteDirectory, m_filesystem, path));
+            Result DeleteDirectoryRecursively(const char* path) {
+                R_RETURN(this->ForwardResult(fsFsDeleteDirectoryRecursively, m_filesystem, path));
             }
 
             Result OpenDirectory(const char *path, u32 mode, FsDir *out_dir) {
