@@ -23,19 +23,20 @@ namespace haze {
 
     struct PtpObject {
         public:
-            util::IntrusiveRedBlackTreeNode m_object_name_to_id_node;
-            util::IntrusiveRedBlackTreeNode m_object_id_to_name_node;
+            util::IntrusiveRedBlackTreeNode m_name_node;
+            util::IntrusiveRedBlackTreeNode m_object_id_node;
             u32 m_parent_id;
             u32 m_object_id;
             char m_name[];
         public:
-            explicit PtpObject(char *name, u32 parent_id, u32 object_id) : m_object_name_to_id_node(), m_object_id_to_name_node(), m_parent_id(parent_id), m_object_id(object_id) { /* ... */ }
-
             const char *GetName()  const { return m_name; }
             u32 GetParentId()      const { return m_parent_id; }
             u32 GetObjectId()      const { return m_object_id; }
+        public:
             bool GetIsRegistered() const { return m_object_id != 0; }
-
+            void Register(u32 object_id) { m_object_id = object_id; }
+            void Unregister()            { m_object_id = 0; }
+        public:
             struct NameComparator {
                 struct RedBlackKeyType {
                     const char *m_name;
@@ -73,18 +74,18 @@ namespace haze {
 
     class PtpObjectDatabase {
         private:
-            using ObjectNameToIdTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&PtpObject::m_object_name_to_id_node>;
-            using ObjectNameToIdTree       = ObjectNameToIdTreeTraits::TreeType<PtpObject::NameComparator>;
+            using ObjectNameTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&PtpObject::m_name_node>;
+            using ObjectNameTree       = ObjectNameTreeTraits::TreeType<PtpObject::NameComparator>;
 
-            using ObjectIdToNameTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&PtpObject::m_object_id_to_name_node>;
-            using ObjectIdToNameTree       = ObjectIdToNameTreeTraits::TreeType<PtpObject::IdComparator>;
+            using ObjectIdTreeTraits   = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&PtpObject::m_object_id_node>;
+            using ObjectIdTree         = ObjectIdTreeTraits::TreeType<PtpObject::IdComparator>;
 
             PtpObjectHeap *m_object_heap;
-            ObjectNameToIdTree m_name_to_object_id;
-            ObjectIdToNameTree m_object_id_to_name;
+            ObjectNameTree m_name_tree;
+            ObjectIdTree m_object_id_tree;
             u32 m_next_object_id;
         public:
-            constexpr explicit PtpObjectDatabase() : m_object_heap(), m_name_to_object_id(), m_object_id_to_name(), m_next_object_id() { /* ... */ }
+            constexpr explicit PtpObjectDatabase() : m_object_heap(), m_name_tree(), m_object_id_tree(), m_next_object_id() { /* ... */ }
 
             void Initialize(PtpObjectHeap *object_heap);
             void Finalize();
