@@ -153,7 +153,7 @@ namespace haze {
         if (hosversionAtLeast(5, 0, 0)) {
             static const u16 supported_langs[1] = { 0x0409 };
 
-            R_TRY(usbDsAddUsbLanguageStringDescriptor(NULL, supported_langs, util::size(supported_langs)));
+            R_TRY(usbDsAddUsbLanguageStringDescriptor(nullptr, supported_langs, util::size(supported_langs)));
 
             u8 iManufacturer, iProduct, iSerialNumber;
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iManufacturer), "Nintendo"));

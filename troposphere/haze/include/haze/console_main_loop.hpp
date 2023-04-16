@@ -138,7 +138,7 @@ namespace haze {
                     printf("\n" CONSOLE_ESC(38;5;196m) "Applet Mode" CONSOLE_ESC(0m) "\n");
                 }
 
-                consoleUpdate(NULL);
+                consoleUpdate(nullptr);
             }
         protected:
             void ProcessEvent() override {
