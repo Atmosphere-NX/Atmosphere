@@ -87,13 +87,13 @@ namespace haze {
         public:
             template <typename T = void>
             constexpr T *Allocate(size_t n) {
-                /* Check for overflow. */
-                if (!util::CanAddWithoutOverflow(n, 7ul)) {
+                /* Check for overflow in alignment. */
+                if (!util::CanAddWithoutOverflow(n, alignof(u64) - 1)) {
                     return nullptr;
                 }
 
-                /* Round up the amount to a multiple of 8. */
-                n = util::AlignUp(n, 8);
+                /* Align the amount to satisfy allocation for u64. */
+                n = util::AlignUp(n, alignof(u64));
 
                 /* Check if the allocation is possible. */
                 if (!this->AllocationIsPossible(n)) {

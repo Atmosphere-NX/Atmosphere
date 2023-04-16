@@ -61,8 +61,12 @@ namespace haze {
 
             Result Initialize(EventReactor *reactor, PtpObjectHeap *object_heap) {
                 /* Register event reactor and heap. */
-                m_reactor = reactor;
+                m_reactor     = reactor;
                 m_object_heap = object_heap;
+
+                /* Set cached use amounts to invalid values. */
+                m_last_heap_used  = 0xffffffffu;
+                m_last_heap_total = 0xffffffffu;
 
                 /* Get whether we are launched in applet mode. */
                 AppletType applet_type = appletGetAppletType();
@@ -104,9 +108,9 @@ namespace haze {
         private:
             void RedrawConsole() {
                 /* Get use amounts from the heap. */
-                u32 heap_used = m_object_heap->GetUsedSize();
+                u32 heap_used  = m_object_heap->GetUsedSize();
                 u32 heap_total = m_object_heap->GetTotalSize();
-                u32 heap_pct = heap_total > 0 ? static_cast<u32>((heap_used * 100ul) / heap_total) : 0;
+                u32 heap_pct   = heap_total > 0 ? static_cast<u32>((heap_used * 100ul) / heap_total) : 0;
 
                 if (heap_used == m_last_heap_used && heap_total == m_last_heap_total) {
                     /* If usage didn't change, skip redrawing the console. */
@@ -115,7 +119,7 @@ namespace haze {
                 }
 
                 /* Update cached use amounts. */
-                m_last_heap_used = heap_used;
+                m_last_heap_used  = heap_used;
                 m_last_heap_total = heap_total;
 
                 /* Determine units to use for printing to the console. */
