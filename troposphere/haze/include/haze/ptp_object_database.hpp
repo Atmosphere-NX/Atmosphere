@@ -50,7 +50,9 @@ namespace haze {
 
                 template<typename T> requires (std::same_as<T, PtpObject> || std::same_as<T, RedBlackKeyType>)
                 static constexpr int Compare(const T &lhs, const PtpObject &rhs) {
-                    return std::strcmp(lhs.GetName(), rhs.GetName());
+                    /* All SD card filesystems supported by fs are case-insensitive and case-preserving. */
+                    /* Account for that in collation here. */
+                    return strcasecmp(lhs.GetName(), rhs.GetName());
                 }
             };
 

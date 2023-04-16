@@ -134,21 +134,19 @@ namespace haze {
 
     PtpObject *PtpObjectDatabase::GetObjectById(u32 object_id) {
         /* Find in ID mapping. */
-        auto it = m_object_id_tree.find_key(object_id);
-        if (it == m_object_id_tree.end()) {
+        if (auto it = m_object_id_tree.find_key(object_id); it != m_object_id_tree.end()) {
+            return std::addressof(*it);
+        } else {
             return nullptr;
         }
-
-        return std::addressof(*it);
     }
 
     PtpObject *PtpObjectDatabase::GetObjectByName(const char *name) {
         /* Find in name mapping. */
-        auto it = m_name_tree.find_key(name);
-        if (it == m_name_tree.end()) {
+        if (auto it = m_name_tree.find_key(name); it != m_name_tree.end()) {
+            return std::addressof(*it);
+        } else {
             return nullptr;
         }
-
-        return std::addressof(*it);
     }
 }
