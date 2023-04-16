@@ -27,8 +27,8 @@ namespace haze {
 
     class EventReactor {
         private:
-            EventConsumer *m_consumers[MAX_WAIT_OBJECTS];
-            Waiter m_waiters[MAX_WAIT_OBJECTS];
+            EventConsumer *m_consumers[svc::ArgumentHandleCountMax];
+            Waiter m_waiters[svc::ArgumentHandleCountMax];
             s32 m_num_wait_objects;
             bool m_stop_requested;
         public:

@@ -15,11 +15,12 @@
  */
 #pragma once
 
-#define HAZE_ASSERT(expr)                                                                       \
-{                                                                                               \
-    if (const bool __tmp_haze_assert_val = static_cast<bool>(expr); (!__tmp_haze_assert_val)) { \
-        svcBreak(BreakReason_Assert, 0, 0);                                                     \
-    }                                                                                           \
+#define HAZE_ASSERT(expr)                                       \
+{                                                               \
+    const bool __tmp_haze_assert_val = static_cast<bool>(expr); \
+    if (AMS_UNLIKELY(!__tmp_haze_assert_val)) {                 \
+        svcBreak(BreakReason_Assert, 0, 0);                     \
+    }                                                           \
 }
 
 #define HAZE_R_ABORT_UNLESS(res_expr)          \

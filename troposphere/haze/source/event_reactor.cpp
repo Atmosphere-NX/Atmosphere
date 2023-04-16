@@ -18,7 +18,7 @@
 namespace haze {
 
     bool EventReactor::AddConsumer(EventConsumer *consumer, Waiter waiter) {
-        HAZE_ASSERT(m_num_wait_objects + 1 <= MAX_WAIT_OBJECTS);
+        HAZE_ASSERT(m_num_wait_objects + 1 <= svc::ArgumentHandleCountMax);
 
         /* Add to the end of the list. */
         m_consumers[m_num_wait_objects] = consumer;
@@ -49,7 +49,7 @@ namespace haze {
     }
 
     Result EventReactor::WaitForImpl(s32 *out_arg_waiter, const Waiter *arg_waiters, s32 num_arg_waiters) {
-        HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= MAX_WAIT_OBJECTS);
+        HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= svc::ArgumentHandleCountMax);
 
         while (true) {
             R_UNLESS(!m_stop_requested, haze::ResultStopRequested());
@@ -60,7 +60,7 @@ namespace haze {
             }
 
             s32 idx;
-            HAZE_R_ABORT_UNLESS(waitObjects(std::addressof(idx), m_waiters, m_num_wait_objects + num_arg_waiters, -1));
+            HAZE_R_ABORT_UNLESS(waitObjects(std::addressof(idx), m_waiters, m_num_wait_objects + num_arg_waiters, svc::WaitInfinite));
 
             /* If a waiter in the argument list was signaled, return it. */
             if (idx >= m_num_wait_objects) {

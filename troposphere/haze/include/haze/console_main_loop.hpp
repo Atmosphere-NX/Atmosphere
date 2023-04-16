@@ -60,12 +60,15 @@ namespace haze {
             explicit ConsoleMainLoop() : m_reactor(), m_pad(), m_thread(), m_event(), m_cancel_event(), m_last_heap_used(), m_last_heap_total(), m_is_applet_mode() { /* ... */ }
 
             Result Initialize(EventReactor *reactor, PtpObjectHeap *object_heap) {
+                /* Register event reactor and heap. */
                 m_reactor = reactor;
                 m_object_heap = object_heap;
 
+                /* Get whether we are launched in applet mode. */
                 AppletType applet_type = appletGetAppletType();
                 m_is_applet_mode = applet_type != AppletType_Application && applet_type != AppletType_SystemApplication;
 
+                /* Initialize events. */
                 ueventCreate(std::addressof(m_event), true);
                 ueventCreate(std::addressof(m_cancel_event), true);
 
@@ -73,8 +76,8 @@ namespace haze {
                 padConfigureInput(1, HidNpadStyleSet_NpadStandard);
                 padInitializeAny(std::addressof(m_pad));
 
-                /* Create the delay thread with higher priority than the main thread. */
-                R_TRY(threadCreate(std::addressof(m_thread), ConsoleMainLoop::Run, this, nullptr, 4_KB, 0x2b, -2));
+                /* Create the delay thread with higher priority than the main thread (which runs at priority 0x2c). */
+                R_TRY(threadCreate(std::addressof(m_thread), ConsoleMainLoop::Run, this, nullptr, 4_KB, 0x2b, svc::IdealCoreUseProcessValue));
 
                 /* Ensure we close the thread on failure. */
                 ON_RESULT_FAILURE { threadClose(std::addressof(m_thread)); };

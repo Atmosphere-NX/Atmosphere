@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#define ATMOSPHERE_OS_HORIZON
+#define ATMOSPHERE_ARCH_ARM64
+#define ATMOSPHERE_ARCH_ARM_V8A
+
 #include <algorithm>
 #include <cstring>
 #include <bit>
@@ -28,6 +32,8 @@
 #include <haze/assert.hpp>
 
 #include <vapours/literals.hpp>
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_types_common.hpp>
 
 namespace haze {
 

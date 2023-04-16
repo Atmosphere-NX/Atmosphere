@@ -59,12 +59,12 @@ namespace haze {
             PtpOperationCode_DeleteObject,
         };
 
-        constexpr PtpEventCode SupportedEventCodes[]             = { /* ... */};
-        constexpr PtpDevicePropertyCode SupportedPropertyCodes[] = { /* ...*/ };
-        constexpr PtpObjectFormatCode SupportedCaptureFormats[]  = { /* ...*/ };
-        constexpr PtpObjectFormatCode SupportedPlaybackFormats[] = { /* ...*/ };
+        constexpr const PtpEventCode SupportedEventCodes[]             = { /* ... */};
+        constexpr const PtpDevicePropertyCode SupportedPropertyCodes[] = { /* ...*/ };
+        constexpr const PtpObjectFormatCode SupportedCaptureFormats[]  = { /* ...*/ };
+        constexpr const PtpObjectFormatCode SupportedPlaybackFormats[] = { /* ...*/ };
 
-        constexpr StorageId SupportedStorageIds[] = {
+        constexpr const StorageId SupportedStorageIds[] = {
             StorageId_SdmcFs,
         };
 
@@ -391,7 +391,7 @@ namespace haze {
         R_TRY(db.AddDataHeader(m_request_header, sizeof(u32) + (entry_count * sizeof(u32))));
         R_TRY(db.Add(static_cast<u32>(entry_count)));
 
-        /* Enumerate the directory, writing results to the data builder as we progres. */
+        /* Enumerate the directory, writing results to the data builder as we progress. */
         /* TODO: How should we handle the directory contents changing during enumeration? */
         /* Is this even feasible to handle? */
         while (true) {
@@ -442,7 +442,7 @@ namespace haze {
             FsDirEntryType entry_type;
             R_TRY(m_fs.GetEntryType(fileobj->GetName(), std::addressof(entry_type)));
 
-            /* Get the size of the file. */
+            /* Get the size, if we are requesting info about a file. */
             s64 size = 0;
             if (entry_type == FsDirEntryType_File) {
                 FsFile file;

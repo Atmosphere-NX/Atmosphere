@@ -33,7 +33,7 @@ namespace haze {
         }
 
         /* Estimate how much memory we can reserve. */
-        HAZE_R_ABORT_UNLESS(svcGetInfo(std::addressof(mem_used), InfoType_UsedMemorySize, CUR_PROCESS_HANDLE, 0));
+        HAZE_R_ABORT_UNLESS(svcGetInfo(std::addressof(mem_used), InfoType_UsedMemorySize, svc::CurrentProcess, 0));
         HAZE_ASSERT(mem_used > LibnxReservedMemorySize);
         mem_used -= LibnxReservedMemorySize;
 
