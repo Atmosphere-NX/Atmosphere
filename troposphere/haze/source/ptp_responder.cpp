@@ -309,7 +309,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -330,7 +330,7 @@ namespace haze {
         /* Register the root storages. */
         m_object_database.RegisterObject(object, StorageId_SdmcFs);
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -339,7 +339,7 @@ namespace haze {
 
         this->ForceCloseSession();
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -353,7 +353,7 @@ namespace haze {
             R_RETURN(db.AddArray(SupportedStorageIds, util::size(SupportedStorageIds)));
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -398,7 +398,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -465,7 +465,7 @@ namespace haze {
         /* Flush the data response. */
         R_TRY(db.Commit());
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -544,7 +544,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -595,7 +595,7 @@ namespace haze {
         /* Flush the data response. */
         R_TRY(db.Commit());
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -672,7 +672,7 @@ namespace haze {
             m_send_object_id = new_object_info.object_id;
         }
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok, new_object_info));
     }
 
@@ -725,7 +725,7 @@ namespace haze {
             R_TRY(read_res);
         }
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -756,7 +756,7 @@ namespace haze {
         /* Remove the object from the database. */
         m_object_database.DeleteObject(obj);
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -770,7 +770,7 @@ namespace haze {
             R_RETURN(db.AddArray(SupportedObjectProperties, util::size(SupportedObjectProperties)));
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -840,7 +840,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -862,21 +862,31 @@ namespace haze {
         auto * const obj = m_object_database.GetObjectById(object_id);
         R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
 
-        /* Get the object type. */
-        FsDirEntryType entry_type;
-        R_TRY(m_fs.GetEntryType(obj->GetName(), std::addressof(entry_type)));
+        /* Define helper for getting the object type. */
+        const auto GetObjectType = [&] (FsDirEntryType *out_entry_type) {
+            R_RETURN(m_fs.GetEntryType(obj->GetName(), out_entry_type));
+        };
 
-        /* Get the object size. */
-        s64 size = 0;
-        if (entry_type == FsDirEntryType_File) {
+        /* Define helper for getting the object size. */
+        const auto GetObjectSize = [&] (s64 *out_size) {
+            *out_size = 0;
+
+            /* Check if this is a directory. */
+            FsDirEntryType entry_type;
+            R_TRY(GetObjectType(std::addressof(entry_type)));
+
+            /* If it is, we're done. */
+            R_SUCCEED_IF(entry_type == FsDirEntryType_Dir);
+
+            /* Otherwise, open as a file. */
             FsFile file;
             R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Read, std::addressof(file)));
 
             /* Ensure we maintain a clean state on exit. */
             ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
 
-            R_TRY(m_fs.GetFileSize(std::addressof(file), std::addressof(size)));
-        }
+            R_RETURN(m_fs.GetFileSize(std::addressof(file), out_size));
+        };
 
         /* Begin writing the requested object property. */
         PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
@@ -884,19 +894,33 @@ namespace haze {
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
             switch (property_code) {
                 case PtpObjectPropertyCode_PersistentUniqueObjectIdentifier:
-                    R_TRY(db.Add<u128>(object_id));
+                    {
+                        R_TRY(db.Add<u128>(object_id));
+                    }
                     break;
                 case PtpObjectPropertyCode_ObjectSize:
-                    R_TRY(db.Add<u64>(size));
+                    {
+                        s64 size;
+                        R_TRY(GetObjectSize(std::addressof(size)));
+                        R_TRY(db.Add<u64>(size));
+                    }
                     break;
                 case PtpObjectPropertyCode_StorageId:
-                    R_TRY(db.Add(StorageId_SdmcFs));
+                    {
+                        R_TRY(db.Add(StorageId_SdmcFs));
+                    }
                     break;
                 case PtpObjectPropertyCode_ObjectFormat:
-                    R_TRY(db.Add(entry_type == FsDirEntryType_File ? PtpObjectFormatCode_Undefined : PtpObjectFormatCode_Association));
+                    {
+                        FsDirEntryType entry_type;
+                        R_TRY(GetObjectType(std::addressof(entry_type)));
+                        R_TRY(db.Add(entry_type == FsDirEntryType_File ? PtpObjectFormatCode_Undefined : PtpObjectFormatCode_Association));
+                    }
                     break;
                 case PtpObjectPropertyCode_ObjectFileName:
-                    R_TRY(db.AddString(std::strrchr(obj->GetName(), '/') + 1));
+                    {
+                        R_TRY(db.AddString(std::strrchr(obj->GetName(), '/') + 1));
+                    }
                     break;
                 HAZE_UNREACHABLE_DEFAULT_CASE();
             }
@@ -904,7 +928,7 @@ namespace haze {
             R_SUCCEED();
         }));
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 
@@ -983,7 +1007,7 @@ namespace haze {
         /* Register the new object. */
         m_object_database.RegisterObject(newobj, object_id);
 
-        /* Write the the success response. */
+        /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
     }
 }
