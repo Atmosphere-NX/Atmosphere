@@ -120,11 +120,11 @@ namespace haze {
 
                 /* Determine units to use for printing to the console. */
                 const char *used_unit = "B";
-                if (heap_used >= 1_KB) { heap_used >>= 10; used_unit = "KiB"; }
-                if (heap_used >= 1_KB) { heap_used >>= 10; used_unit = "MiB"; }
+                if (heap_used >= 1_KB)          { heap_used >>= 10; used_unit = "KiB"; }
+                if (heap_used >= (1_MB / 1_KB)) { heap_used >>= 10; used_unit = "MiB"; }
 
                 const char *total_unit = "B";
-                if (heap_total >= (1_MB / 1_KB)) { heap_total >>= 10; total_unit = "KiB"; }
+                if (heap_total >= 1_KB)          { heap_total >>= 10; total_unit = "KiB"; }
                 if (heap_total >= (1_MB / 1_KB)) { heap_total >>= 10; total_unit = "MiB"; }
 
                 /* Draw the console UI. */
