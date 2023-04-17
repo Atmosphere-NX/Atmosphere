@@ -25,11 +25,11 @@ namespace haze {
     constexpr inline u32 PtpStringMaxLength = 255;
 
     enum PtpUsbBulkContainerType : u16 {
-        PtpUsbBulkContainerType_Undefined = 0,
-        PtpUsbBulkContainerType_Command   = 1,
-        PtpUsbBulkContainerType_Data      = 2,
-        PtpUsbBulkContainerType_Response  = 3,
-        PtpUsbBulkContainerType_Event     = 4,
+        PtpUsbBulkContainerType_Undefined = 0x0000,
+        PtpUsbBulkContainerType_Command   = 0x0001,
+        PtpUsbBulkContainerType_Data      = 0x0002,
+        PtpUsbBulkContainerType_Response  = 0x0003,
+        PtpUsbBulkContainerType_Event     = 0x0004,
     };
 
     enum PtpOperationCode : u16 {
@@ -427,13 +427,13 @@ namespace haze {
     };
 
     enum PtpAssociationType : u16 {
-        PtpAssociationType_Undefined     = 0x0,
-        PtpAssociationType_GenericFolder = 0x1,
+        PtpAssociationType_Undefined     = 0x0000,
+        PtpAssociationType_GenericFolder = 0x0001,
     };
 
     enum PtpGetObjectHandles : u32 {
-        PtpGetObjectHandles_AllFormats = 0x0,
-        PtpGetObjectHandles_AllAssocs  = 0x0,
+        PtpGetObjectHandles_AllFormats = 0x00000000,
+        PtpGetObjectHandles_AllAssocs  = 0x00000000,
         PtpGetObjectHandles_AllStorage = 0xffffffff,
         PtpGetObjectHandles_RootParent = 0xffffffff,
     };

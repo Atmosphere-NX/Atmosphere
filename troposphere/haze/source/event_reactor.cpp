@@ -53,6 +53,7 @@ namespace haze {
         HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= svc::ArgumentHandleCountMax);
 
         while (true) {
+            /* Check if we should wait for an event. */
             R_TRY(m_result);
 
             /* Insert waiters from argument list. */

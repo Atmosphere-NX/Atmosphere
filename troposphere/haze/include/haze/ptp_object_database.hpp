@@ -56,7 +56,7 @@ namespace haze {
                 }
             };
 
-            struct IdComparator {
+            struct ObjectIdComparator {
                 struct RedBlackKeyType {
                     u32 m_object_id;
 
@@ -80,7 +80,7 @@ namespace haze {
             using ObjectNameTree       = ObjectNameTreeTraits::TreeType<PtpObject::NameComparator>;
 
             using ObjectIdTreeTraits   = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&PtpObject::m_object_id_node>;
-            using ObjectIdTree         = ObjectIdTreeTraits::TreeType<PtpObject::IdComparator>;
+            using ObjectIdTree         = ObjectIdTreeTraits::TreeType<PtpObject::ObjectIdComparator>;
 
             PtpObjectHeap *m_object_heap;
             ObjectNameTree m_name_tree;
