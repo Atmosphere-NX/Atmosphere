@@ -191,6 +191,25 @@ namespace haze {
         m_fs.Finalize();
     }
 
+    Result PtpResponder::LoopProcess() {
+        while (true) {
+            /* Try to handle a request. */
+            R_TRY_CATCH(this->HandleRequest()) {
+                R_CATCH(haze::ResultStopRequested, haze::ResultFocusLost) {
+                    /* If we encountered a stop condition, we're done.*/
+                    R_THROW(R_CURRENT_RESULT);
+                }
+                R_CATCH_ALL() {
+                    /* On other failures, try to handle another request. */
+                    continue;
+                }
+            } R_END_TRY_CATCH;
+
+            /* Otherwise, handle the next request. */
+            /* ... */
+        }
+    }
+
     Result PtpResponder::HandleRequest() {
         ON_RESULT_FAILURE {
             /* For general failure modes, the failure is unrecoverable. Close the session. */
@@ -222,9 +241,6 @@ namespace haze {
             R_CATCH_MODULE(fs) {
                 /* Errors from fs are typically recoverable. */
                 R_TRY(this->WriteResponse(PtpResponseCode_GeneralError));
-            }
-            R_CATCH_ALL() {
-                R_THROW(haze::ResultGeneralFailure());
             }
         } R_END_TRY_CATCH;
 

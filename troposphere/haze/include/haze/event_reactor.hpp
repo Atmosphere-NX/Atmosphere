@@ -30,15 +30,15 @@ namespace haze {
             EventConsumer *m_consumers[svc::ArgumentHandleCountMax];
             Waiter m_waiters[svc::ArgumentHandleCountMax];
             s32 m_num_wait_objects;
-            bool m_stop_requested;
+            Result m_result;
         public:
-            constexpr explicit EventReactor() : m_consumers(), m_waiters(), m_num_wait_objects(), m_stop_requested() { /* ... */ }
+            constexpr explicit EventReactor() : m_consumers(), m_waiters(), m_num_wait_objects(), m_result(ResultSuccess()) { /* ... */ }
 
             bool AddConsumer(EventConsumer *consumer, Waiter waiter);
             void RemoveConsumer(EventConsumer *consumer);
         public:
-            void RequestStop()            { m_stop_requested = true; }
-            bool GetStopRequested() const { return m_stop_requested; }
+            void SetResult(Result r) { m_result = r; }
+            Result GetResult() const { return m_result; }
         public:
             template <typename... Args>
             Result WaitFor(s32 *out_arg_waiter, Args &&... arg_waiters) {

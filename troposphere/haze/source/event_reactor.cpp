@@ -53,7 +53,7 @@ namespace haze {
         HAZE_ASSERT(m_num_wait_objects + num_arg_waiters <= svc::ArgumentHandleCountMax);
 
         while (true) {
-            R_UNLESS(!m_stop_requested, haze::ResultStopRequested());
+            R_TRY(m_result);
 
             /* Insert waiters from argument list. */
             for (s32 i = 0; i < num_arg_waiters; i++) {

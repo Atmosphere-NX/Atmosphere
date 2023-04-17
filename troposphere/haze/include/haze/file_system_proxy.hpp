@@ -45,7 +45,7 @@ namespace haze {
                 const Result rc = func(std::forward<Args>(args)...);
 
                 /* If the event loop was stopped, return that here. */
-                R_UNLESS(!m_reactor->GetStopRequested(), haze::ResultStopRequested());
+                R_TRY(m_reactor->GetResult());
 
                 /* Otherwise, return the call result. */
                 R_RETURN(rc);

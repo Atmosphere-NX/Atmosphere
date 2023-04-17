@@ -45,12 +45,16 @@ namespace haze {
                 int idx;
 
                 while (true) {
+                    /* Wait for up to 1 frame delay time to be cancelled. */
                     Waiter cancel_waiter = waiterForUEvent(std::addressof(m_cancel_event));
                     Result rc = waitObjects(std::addressof(idx), std::addressof(cancel_waiter), 1, FrameDelayNs);
 
+                    /* Finish if we were cancelled. */
                     if (R_SUCCEEDED(rc)) {
                         break;
                     }
+
+                    /* Otherwise, signal the console update event. */
                     if (svc::ResultTimedOut::Includes(rc)) {
                         ueventSignal(std::addressof(m_event));
                     }
@@ -154,13 +158,91 @@ namespace haze {
 
                 /* If the plus button is held, request immediate exit. */
                 if (padGetButtonsDown(std::addressof(m_pad)) & HidNpadButton_Plus) {
-                    m_reactor->RequestStop();
+                    m_reactor->SetResult(haze::ResultStopRequested());
                 }
 
-                /* Pump applet event loop. */
+                /* Pump applet events, and check if exit was requested. */
                 if (!appletMainLoop()) {
-                    m_reactor->RequestStop();
+                    m_reactor->SetResult(haze::ResultStopRequested());
                 }
+
+                /* Check if focus was lost. */
+                if (appletGetFocusState() == AppletFocusState_Background) {
+                    m_reactor->SetResult(haze::ResultFocusLost());
+                }
+            }
+        private:
+            static bool SuspendAndWaitForFocus() {
+                /* Enable suspension with resume notification. */
+                appletSetFocusHandlingMode(AppletFocusHandlingMode_SuspendHomeSleepNotify);
+
+                /* Pump applet events. */
+                while (appletMainLoop()) {
+                    /* Check if focus was regained. */
+                    if (appletGetFocusState() != AppletFocusState_Background) {
+                        return true;
+                    }
+                }
+
+                /* Exit was requested. */
+                return false;
+            }
+        public:
+            static void RunApplication() {
+                /* Declare the object heap, to hold the database for an active session. */
+                PtpObjectHeap ptp_object_heap;
+
+                /* Declare the event reactor, and components which use it. */
+                EventReactor event_reactor;
+                PtpResponder ptp_responder;
+                ConsoleMainLoop console_main_loop;
+
+                /* Initialize the console.*/
+                consoleInit(nullptr);
+
+                while (true) {
+                    /* Disable suspension. */
+                    appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
+
+                    /* Declare result from serving to use. */
+                    Result rc;
+                    {
+                        /* Ensure we don't go to sleep while transferring files. */
+                        appletSetAutoSleepDisabled(true);
+
+                        /* Clear the event reactor. */
+                        event_reactor.SetResult(ResultSuccess());
+
+                        /* Configure the PTP responder and console main loop. */
+                        ptp_responder.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap));
+                        console_main_loop.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap));
+
+                        /* Ensure we maintain a clean state on exit. */
+                        ON_SCOPE_EXIT {
+                            /* Finalize the console main loop and PTP responder. */
+                            console_main_loop.Finalize();
+                            ptp_responder.Finalize();
+
+                            /* Restore auto sleep setting. */
+                            appletSetAutoSleepDisabled(false);
+                        };
+
+                        /* Begin processing requests. */
+                        rc = ptp_responder.LoopProcess();
+                    }
+
+                    /* If focus was lost, try to pump the applet main loop until we receive focus again. */
+                    if (haze::ResultFocusLost::Includes(rc) && SuspendAndWaitForFocus()) {
+                        continue;
+                    }
+
+                    /* Otherwise, enable suspension and finish. */
+                    appletSetFocusHandlingMode(AppletFocusHandlingMode_SuspendHomeSleep);
+                    break;
+                }
+
+                /* Finalize the console. */
+                consoleExit(nullptr);
             }
     };
 

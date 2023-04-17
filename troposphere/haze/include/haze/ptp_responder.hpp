@@ -40,9 +40,10 @@ namespace haze {
             Result Initialize(EventReactor *reactor, PtpObjectHeap *object_heap);
             void Finalize();
         public:
-            Result HandleRequest();
+            Result LoopProcess();
         private:
             /* Request handling. */
+            Result HandleRequest();
             Result HandleRequestImpl();
             Result HandleCommandRequest(PtpDataParser &dp);
             void ForceCloseSession();

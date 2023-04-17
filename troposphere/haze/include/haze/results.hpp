@@ -26,16 +26,16 @@ namespace haze {
     R_DEFINE_ERROR_RESULT(NotConfigured,          2);
     R_DEFINE_ERROR_RESULT(TransferFailed,         3);
     R_DEFINE_ERROR_RESULT(StopRequested,          4);
-    R_DEFINE_ERROR_RESULT(EndOfTransmission,      5);
-    R_DEFINE_ERROR_RESULT(UnknownPacketType,      6);
-    R_DEFINE_ERROR_RESULT(SessionNotOpen,         7);
-    R_DEFINE_ERROR_RESULT(OutOfMemory,            8);
-    R_DEFINE_ERROR_RESULT(InvalidObjectId,        9);
-    R_DEFINE_ERROR_RESULT(InvalidStorageId,      10);
-    R_DEFINE_ERROR_RESULT(OperationNotSupported, 11);
-    R_DEFINE_ERROR_RESULT(UnknownRequestType,    12);
-    R_DEFINE_ERROR_RESULT(UnknownPropertyCode,   13);
-    R_DEFINE_ERROR_RESULT(InvalidPropertyValue,  14);
-    R_DEFINE_ERROR_RESULT(GeneralFailure,        15);
+    R_DEFINE_ERROR_RESULT(FocusLost,              5);
+    R_DEFINE_ERROR_RESULT(EndOfTransmission,      6);
+    R_DEFINE_ERROR_RESULT(UnknownPacketType,      7);
+    R_DEFINE_ERROR_RESULT(SessionNotOpen,         8);
+    R_DEFINE_ERROR_RESULT(OutOfMemory,            9);
+    R_DEFINE_ERROR_RESULT(InvalidObjectId,       10);
+    R_DEFINE_ERROR_RESULT(InvalidStorageId,      11);
+    R_DEFINE_ERROR_RESULT(OperationNotSupported, 12);
+    R_DEFINE_ERROR_RESULT(UnknownRequestType,    13);
+    R_DEFINE_ERROR_RESULT(UnknownPropertyCode,   14);
+    R_DEFINE_ERROR_RESULT(InvalidPropertyValue,  15);
 
 }
