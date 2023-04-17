@@ -102,13 +102,21 @@ namespace haze {
             .bEndpointAddress = USB_ENDPOINT_IN,
             .bmAttributes     = USB_TRANSFER_TYPE_INTERRUPT,
             .wMaxPacketSize   = 0x18,
-            .bInterval        = 0x4,
+            .bInterval        = 0x6,
         };
 
         struct usb_ss_endpoint_companion_descriptor endpoint_companion = {
             .bLength           = sizeof(struct usb_ss_endpoint_companion_descriptor),
             .bDescriptorType   = USB_DT_SS_ENDPOINT_COMPANION,
-            .bMaxBurst         = 0x0F,
+            .bMaxBurst         = 0x0f,
+            .bmAttributes      = 0x00,
+            .wBytesPerInterval = 0x00,
+        };
+
+        struct usb_ss_endpoint_companion_descriptor endpoint_companion_interrupt = {
+            .bLength           = sizeof(struct usb_ss_endpoint_companion_descriptor),
+            .bDescriptorType   = USB_DT_SS_ENDPOINT_COMPANION,
+            .bMaxBurst         = 0x00,
             .bmAttributes      = 0x00,
             .wBytesPerInterval = 0x00,
         };
@@ -131,13 +139,15 @@ namespace haze {
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_High, std::addressof(endpoint_descriptor_interrupt), USB_DT_ENDPOINT_SIZE));
 
         /* Super speed config. */
+        endpoint_descriptor_in.wMaxPacketSize = PtpUsbBulkSuperSpeedMaxPacketLength;
+        endpoint_descriptor_out.wMaxPacketSize = PtpUsbBulkSuperSpeedMaxPacketLength;
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(interface_descriptor), USB_DT_INTERFACE_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_descriptor_in), USB_DT_ENDPOINT_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_companion), USB_DT_SS_ENDPOINT_COMPANION_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_descriptor_out), USB_DT_ENDPOINT_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_companion), USB_DT_SS_ENDPOINT_COMPANION_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_descriptor_interrupt), USB_DT_ENDPOINT_SIZE));
-        R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_companion), USB_DT_SS_ENDPOINT_COMPANION_SIZE));
+        R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_companion_interrupt), USB_DT_SS_ENDPOINT_COMPANION_SIZE));
 
         /* Set up endpoints. */
         R_TRY(usbDsInterface_RegisterEndpoint(m_interface, std::addressof(m_endpoints[UsbSessionEndpoint_Write]), endpoint_descriptor_in.bEndpointAddress));
@@ -190,28 +200,29 @@ namespace haze {
                 0x02,       /* .bNumDeviceCaps */
 
                 /* USB 2.0 */
-                0x07,                       /* .bLength */
-                USB_DT_DEVICE_CAPABILITY,   /* .bDescriptorType */
-                0x02,                       /* .bDevCapabilityType */
-                0x02, 0x00, 0x00, 0x00,     /* .bmAttributes */
+                0x07,                     /* .bLength */
+                USB_DT_DEVICE_CAPABILITY, /* .bDescriptorType */
+                0x02,                     /* .bDevCapabilityType */
+                0x02, 0x00, 0x00, 0x00,   /* .bmAttributes */
 
                 /* USB 3.0 */
-                0x0A,                       /* .bLength */
-                USB_DT_DEVICE_CAPABILITY,   /* .bDescriptorType */
-                0x03,                       /* .bDevCapabilityType */
-                0x00,                       /* .bmAttributes */
-                0x0C, 0x00,                 /* .wSpeedSupported */
-                0x03,                       /* .bFunctionalitySupport */
-                0x00,                       /* .bU1DevExitLat */
-                0x00, 0x00                  /* .bU2DevExitLat */
+                0x0a,                     /* .bLength */
+                USB_DT_DEVICE_CAPABILITY, /* .bDescriptorType */
+                0x03,                     /* .bDevCapabilityType */
+                0x00,                     /* .bmAttributes */
+                0x0c, 0x00,               /* .wSpeedSupported */
+                0x03,                     /* .bFunctionalitySupport */
+                0x00,                     /* .bU1DevExitLat */
+                0x00, 0x00                /* .bU2DevExitLat */
             };
             R_TRY(usbDsSetBinaryObjectStore(bos, sizeof(bos)));
         }
 
-        R_TRY(hosversionAtLeast(5, 0, 0) ? this->Initialize5x(info) : this->Initialize1x(info));
-
         if (hosversionAtLeast(5, 0, 0)) {
+            R_TRY(this->Initialize5x(info));
             R_TRY(usbDsEnable());
+        } else {
+            R_TRY(this->Initialize1x(info));
         }
 
         R_SUCCEED();
@@ -245,10 +256,6 @@ namespace haze {
         R_TRY(usbDsParseReportData(std::addressof(report_data), urb_id, nullptr, out_transferred_size));
 
         R_SUCCEED();
-    }
-
-    Result UsbSession::SetZeroLengthTermination(bool enable) {
-        R_RETURN(usbDsEndpoint_SetZlt(m_endpoints[UsbSessionEndpoint_Write], enable));
     }
 
 }

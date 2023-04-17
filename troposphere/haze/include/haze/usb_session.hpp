@@ -43,7 +43,6 @@ namespace haze {
             Event *GetCompletionEvent(UsbSessionEndpoint ep) const;
             Result TransferAsync(UsbSessionEndpoint ep, void *buffer, u32 size, u32 *out_urb_id);
             Result GetTransferResult(UsbSessionEndpoint ep, u32 urb_id, u32 *out_transferred_size);
-            Result SetZeroLengthTermination(bool enable);
     };
 
 }

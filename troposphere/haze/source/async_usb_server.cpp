@@ -28,7 +28,6 @@ namespace haze {
 
         /* Set up a new USB session. */
         R_TRY(g_usb_session.Initialize(interface_info, id_vendor, id_product));
-        R_TRY(g_usb_session.SetZeroLengthTermination(false));
 
         R_SUCCEED();
     }

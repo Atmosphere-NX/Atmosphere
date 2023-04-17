@@ -20,7 +20,8 @@
 
 namespace haze {
 
-    constexpr inline u32 PtpUsbBulkHighSpeedMaxPacketLength = 0x200;
+    constexpr inline u32 PtpUsbBulkHighSpeedMaxPacketLength  = 0x200;
+    constexpr inline u32 PtpUsbBulkSuperSpeedMaxPacketLength = 0x400;
     constexpr inline u32 PtpUsbBulkHeaderLength = 2 * sizeof(u32) + 2 * sizeof(u16);
     constexpr inline u32 PtpStringMaxLength = 255;
 
