@@ -56,7 +56,7 @@ namespace haze {
                 }
             }
 
-            Result ReadBuffer(u8 *buffer, size_t count, size_t *out_read_count) {
+            Result ReadBuffer(u8 *buffer, u32 count, u32 *out_read_count) {
                 *out_read_count = 0;
 
                 while (count > 0) {
@@ -80,7 +80,7 @@ namespace haze {
 
             template <typename T>
             Result Read(T *out_t) {
-                size_t read_count;
+                u32 read_count;
                 u8 bytes[sizeof(T)];
 
                 R_TRY(this->ReadBuffer(bytes, sizeof(T), std::addressof(read_count)));

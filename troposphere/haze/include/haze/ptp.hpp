@@ -20,9 +20,9 @@
 
 namespace haze {
 
-    constexpr inline size_t PtpUsbBulkHighSpeedMaxPacketLength = 0x200;
-    constexpr inline size_t PtpUsbBulkHeaderLength = 2 * sizeof(u32) + 2 * sizeof(u16);
-    constexpr inline size_t PtpStringMaxLength = 255;
+    constexpr inline u32 PtpUsbBulkHighSpeedMaxPacketLength = 0x200;
+    constexpr inline u32 PtpUsbBulkHeaderLength = 2 * sizeof(u32) + 2 * sizeof(u16);
+    constexpr inline u32 PtpStringMaxLength = 255;
 
     enum PtpUsbBulkContainerType : u16 {
         PtpUsbBulkContainerType_Undefined = 0,

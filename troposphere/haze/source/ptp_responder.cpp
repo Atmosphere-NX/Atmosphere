@@ -595,7 +595,7 @@ namespace haze {
         s64 offset = 0;
         while (true) {
             /* Get the next batch. */
-            size_t bytes_read;
+            u64 bytes_read;
             R_TRY(m_fs.ReadFile(std::addressof(file), offset, g_fs_buffer, FsBufferSize, FsReadOption_None, std::addressof(bytes_read)));
 
             offset += bytes_read;
@@ -726,7 +726,7 @@ namespace haze {
         /* Begin writing to the filesystem. */
         while (true) {
             /* Read as many bytes as we can. */
-            size_t bytes_received;
+            u32 bytes_received;
             const Result read_res = dp.ReadBuffer(g_fs_buffer, FsBufferSize, std::addressof(bytes_received));
 
             /* Write to the file. */

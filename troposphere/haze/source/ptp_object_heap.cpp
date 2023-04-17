@@ -25,19 +25,18 @@ namespace haze {
     }
 
     void PtpObjectHeap::Initialize() {
-        size_t mem_used = 0;
-
         /* If we're already initialized, skip re-initialization. */
         if (m_heap_block_size != 0) {
             return;
         }
 
         /* Estimate how much memory we can reserve. */
+        size_t mem_used = 0;
         HAZE_R_ABORT_UNLESS(svcGetInfo(std::addressof(mem_used), InfoType_UsedMemorySize, svc::CurrentProcess, 0));
         HAZE_ASSERT(mem_used > LibnxReservedMemorySize);
         mem_used -= LibnxReservedMemorySize;
 
-        /* Take the rest for ourselves. */
+        /* Calculate size of blocks. */
         m_heap_block_size = mem_used / NumHeapBlocks;
         HAZE_ASSERT(m_heap_block_size > 0);
 

@@ -233,7 +233,7 @@ namespace haze {
         return std::addressof(m_endpoints[ep]->CompletionEvent);
     }
 
-    Result UsbSession::TransferAsync(UsbSessionEndpoint ep, void *buffer, size_t size, u32 *out_urb_id) {
+    Result UsbSession::TransferAsync(UsbSessionEndpoint ep, void *buffer, u32 size, u32 *out_urb_id) {
         R_RETURN(usbDsEndpoint_PostBufferAsync(m_endpoints[ep], buffer, size, out_urb_id));
     }
 

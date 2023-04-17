@@ -24,8 +24,8 @@ namespace haze {
     class PtpDataBuilder final {
         private:
             AsyncUsbServer *m_server;
-            size_t m_transmitted_size;
-            size_t m_offset;
+            u32 m_transmitted_size;
+            u32 m_offset;
             u8 *m_data;
             bool m_disabled;
         private:
@@ -110,7 +110,7 @@ namespace haze {
                 HAZE_ASSERT(m_offset == 0 && m_transmitted_size == 0);
 
                 /* Declare how many bytes the data will require to write. */
-                size_t data_size = 0;
+                u32 data_size = 0;
                 {
                     /* Temporarily disable writing to calculate the size.*/
                     m_disabled = true;
