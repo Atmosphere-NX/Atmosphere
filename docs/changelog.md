@@ -3,7 +3,7 @@
 + A homebrew application (`haze`) was added for performing USB file transfer (with thanks to @liamwhite for both design and implementation).
   + `haze` is included with atmosphère, and provides access to the SD card via the PTP/MTP protocol.
     + **Please note**: haze will show inside the homebrew menu under the name "USB File Transfer".
-  + **Please note**: Atmosphère still cannot be updated at runtime, and trying to install an atmosphère update via haze will fail as usual.
+  + **Please note**: Atmosphère cannot be updated at runtime, and trying to install an atmosphère update via haze will fail as usual.
 + General system stability improvements to enhance the user's experience.
 ## 1.5.1
 + `fatal` was updated to reduce memory footprint.
