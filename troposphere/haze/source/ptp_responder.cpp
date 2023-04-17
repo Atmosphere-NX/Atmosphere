@@ -77,6 +77,7 @@ namespace haze {
             PtpObjectPropertyCode_ObjectFormat,
             PtpObjectPropertyCode_ObjectSize,
             PtpObjectPropertyCode_ObjectFileName,
+            PtpObjectPropertyCode_ParentObject,
             PtpObjectPropertyCode_PersistentUniqueObjectIdentifier,
         };
 
@@ -808,6 +809,7 @@ namespace haze {
                     }
                     break;
                 case PtpObjectPropertyCode_StorageId:
+                case PtpObjectPropertyCode_ParentObject:
                     {
                         R_TRY(db.Add(PtpDataTypeCode_U32));
                         R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
@@ -816,7 +818,7 @@ namespace haze {
                     break;
                 case PtpObjectPropertyCode_ObjectFormat:
                     {
-                        R_TRY(db.Add(PtpDataTypeCode_U32));
+                        R_TRY(db.Add(PtpDataTypeCode_U16));
                         R_TRY(db.Add(PtpPropertyGetSetFlag_Get));
                         R_TRY(db.Add(PtpObjectFormatCode_Undefined));
                     }
@@ -908,6 +910,11 @@ namespace haze {
                 case PtpObjectPropertyCode_StorageId:
                     {
                         R_TRY(db.Add(StorageId_SdmcFs));
+                    }
+                    break;
+                case PtpObjectPropertyCode_ParentObject:
+                    {
+                        R_TRY(db.Add(obj->GetParentId()));
                     }
                     break;
                 case PtpObjectPropertyCode_ObjectFormat:
