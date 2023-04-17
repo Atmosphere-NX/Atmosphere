@@ -161,14 +161,21 @@ namespace haze {
         R_TRY(usbDsInitialize());
 
         if (hosversionAtLeast(5, 0, 0)) {
+            /* Report language as US English. */
             static const u16 supported_langs[1] = { 0x0409 };
-
             R_TRY(usbDsAddUsbLanguageStringDescriptor(nullptr, supported_langs, util::size(supported_langs)));
 
+            /* Get the device serial number. */
+            SetSysSerialNumber serial;
+            R_TRY(setsysInitialize());
+            R_TRY(setsysGetSerialNumber(std::addressof(serial)));
+            setsysExit();
+
+            /* Report strings. */
             u8 iManufacturer, iProduct, iSerialNumber;
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iManufacturer), "Nintendo"));
             R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iProduct), "Nintendo Switch"));
-            R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iSerialNumber), "SerialNumber"));
+            R_TRY(usbDsAddUsbStringDescriptor(std::addressof(iSerialNumber), serial.number));
 
             /* Send device descriptors */
             struct usb_device_descriptor device_descriptor = {
