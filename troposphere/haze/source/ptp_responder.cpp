@@ -723,6 +723,9 @@ namespace haze {
         s64 offset = 0;
         R_TRY(m_fs.SetFileSize(std::addressof(file), 0));
 
+        /* Expand to the needed size. */
+        R_TRY(m_fs.SetFileSize(std::addressof(file), data_header.length));
+
         /* Begin writing to the filesystem. */
         while (true) {
             /* Read as many bytes as we can. */
