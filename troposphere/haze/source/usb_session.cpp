@@ -139,7 +139,7 @@ namespace haze {
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_High, std::addressof(endpoint_descriptor_interrupt), USB_DT_ENDPOINT_SIZE));
 
         /* Super speed config. */
-        endpoint_descriptor_in.wMaxPacketSize = PtpUsbBulkSuperSpeedMaxPacketLength;
+        endpoint_descriptor_in.wMaxPacketSize  = PtpUsbBulkSuperSpeedMaxPacketLength;
         endpoint_descriptor_out.wMaxPacketSize = PtpUsbBulkSuperSpeedMaxPacketLength;
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(interface_descriptor), USB_DT_INTERFACE_SIZE));
         R_TRY(usbDsInterface_AppendConfigurationData(m_interface, UsbDeviceSpeed_Super, std::addressof(endpoint_descriptor_in), USB_DT_ENDPOINT_SIZE));
