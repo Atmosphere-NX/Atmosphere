@@ -17,6 +17,7 @@
 
 #include <haze/async_usb_server.hpp>
 #include <haze/common.hpp>
+#include <haze/device_properties.hpp>
 #include <haze/event_reactor.hpp>
 #include <haze/file_system_proxy.hpp>
 #include <haze/ptp.hpp>
