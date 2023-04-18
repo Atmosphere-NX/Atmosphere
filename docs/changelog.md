@@ -1,4 +1,10 @@
 # Changelog
+## 1.5.2
++ A homebrew application (`haze`) was added for performing USB file transfer (with thanks to @liamwhite for both design and implementation).
+  + `haze` is included with atmosphère, and provides access to the SD card via the PTP/MTP protocol.
+    + **Please note**: haze will show inside the homebrew menu under the name "USB File Transfer".
+  + **Please note**: Atmosphère cannot be updated at runtime, and trying to install an atmosphère update via haze will fail as usual.
++ General system stability improvements to enhance the user's experience.
 ## 1.5.1
 + `fatal` was updated to reduce memory footprint.
   + Starting in 16.0.0, official `fatal` has no framebuffer or rendering logic, and instead calls other system service commands to draw the screen.
@@ -34,6 +40,7 @@
   + The additional memory here is taken from the applet pool; no issues are expected to arise from this, but please report anything you may run into.
   + As usual, if you encounter a game that exhausts ams.mitm's memory (crashing it) when loading layeredfs mods, please contact `SciresM#0524`.
     + I am jinxing myself by saying this, but it's really hard to imagine any game being worse than Fire Emblem: Engage, but if it happens again I will drop everything to fix it as usual.
++ General system stability improvements to enhance the user's experience.
 ## 1.4.0
 + Support was added for 15.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.

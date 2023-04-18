@@ -15,12 +15,12 @@
  */
 #pragma once
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    4
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    0
-
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
-
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 16
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 2
+#include <haze/async_usb_server.hpp>
+#include <haze/common.hpp>
+#include <haze/event_reactor.hpp>
+#include <haze/file_system_proxy.hpp>
+#include <haze/ptp.hpp>
+#include <haze/ptp_object_database.hpp>
+#include <haze/ptp_object_heap.hpp>
+#include <haze/ptp_responder.hpp>
+#include <haze/usb_session.hpp>

@@ -15,12 +15,33 @@
  */
 #pragma once
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    4
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    0
+#define ATMOSPHERE_OS_HORIZON
+#define ATMOSPHERE_ARCH_ARM64
+#define ATMOSPHERE_ARCH_ARM_V8A
 
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
+#include <algorithm>
+#include <cstring>
+#include <bit>
+#include <memory>
+#include <stdint.h>
+#include <stdio.h>
+#include <stddef.h>
 
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 16
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 2
+#include <switch.h>
+#include <haze/results.hpp>
+#include <haze/assert.hpp>
+
+#include <vapours/literals.hpp>
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_types_common.hpp>
+
+namespace haze {
+
+    using namespace ::ams::literals;
+    using namespace ::ams;
+
+    using Result = ::ams::Result;
+
+    static constexpr u32 UsbBulkPacketBufferSize = 1_MB;
+
+}

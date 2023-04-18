@@ -13,14 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <haze.hpp>
+#include <haze/console_main_loop.hpp>
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    4
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    0
+int main(int argc, char **argv) {
+    /* Run the application. */
+    haze::ConsoleMainLoop::RunApplication();
 
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
-
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 16
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 2
+    /* Return to the loader. */
+    return 0;
+}
