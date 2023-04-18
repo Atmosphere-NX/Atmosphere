@@ -37,9 +37,7 @@ namespace haze {
         constexpr auto MtpVendorExtensionDesc  = "microsoft.com: 1.0;";
         constexpr u16 MtpFunctionalModeDefault = 0;
         constexpr auto MtpDeviceManufacturer   = "Nintendo";
-        constexpr auto MtpDeviceModel          = "Switch";
-        constexpr auto MtpDeviceVersion        = "1.0.0";
-        constexpr auto MtpDeviceSerialNumber   = "SerialNumber";
+        constexpr auto MtpDeviceModel          = "Nintendo Switch";
 
         enum StorageId : u32 {
             StorageId_SdmcFs = 0xffffffffu - 1,
@@ -306,6 +304,16 @@ namespace haze {
     Result PtpResponder::GetDeviceInfo(PtpDataParser &dp) {
         PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
+        /* Initialize set:sys, ensuring we clean up on exit. */
+        R_TRY(setsysInitialize());
+        ON_SCOPE_EXIT { setsysExit(); };
+
+        /* Get the device version and serial number. */
+        SetSysFirmwareVersion version;
+        SetSysSerialNumber serial;
+        R_TRY(setsysGetFirmwareVersion(std::addressof(version)));
+        R_TRY(setsysGetSerialNumber(std::addressof(serial)));
+
         /* Write the device info data. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(MtpStandardVersion));
@@ -320,8 +328,8 @@ namespace haze {
             R_TRY(db.AddArray(SupportedPlaybackFormats, util::size(SupportedPlaybackFormats)));
             R_TRY(db.AddString(MtpDeviceManufacturer));
             R_TRY(db.AddString(MtpDeviceModel));
-            R_TRY(db.AddString(MtpDeviceVersion));
-            R_TRY(db.AddString(MtpDeviceSerialNumber));
+            R_TRY(db.AddString(version.display_version));
+            R_TRY(db.AddString(serial.number));
 
             R_SUCCEED();
         }));
