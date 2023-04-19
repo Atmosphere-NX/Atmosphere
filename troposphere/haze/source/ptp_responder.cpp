@@ -722,7 +722,9 @@ namespace haze {
         R_TRY(m_fs.SetFileSize(std::addressof(file), 0));
 
         /* Expand to the needed size. */
-        R_TRY(m_fs.SetFileSize(std::addressof(file), data_header.length));
+        if (data_header.length > sizeof(PtpUsbBulkContainer)) {
+            R_TRY(m_fs.SetFileSize(std::addressof(file), data_header.length - sizeof(PtpUsbBulkContainer)));
+        }
 
         /* Begin writing to the filesystem. */
         while (true) {
@@ -742,6 +744,9 @@ namespace haze {
 
             R_TRY(read_res);
         }
+
+        /* Truncate the file to the received size. */
+        R_TRY(m_fs.SetFileSize(std::addressof(file), offset));
 
         /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
