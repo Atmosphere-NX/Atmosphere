@@ -13,16 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <haze.hpp>
-#include <haze/console_main_loop.hpp>
+#pragma once
 
-int main(int argc, char **argv) {
-    /* Load device firmware version and serial number. */
-    HAZE_R_ABORT_UNLESS(haze::LoadDeviceProperties());
+namespace haze {
 
-    /* Run the application. */
-    haze::ConsoleMainLoop::RunApplication();
+    Result LoadDeviceProperties();
 
-    /* Return to the loader. */
-    return 0;
+    const char *GetSerialNumber();
+
+    const char *GetFirmwareVersion();
+
 }

@@ -304,16 +304,6 @@ namespace haze {
     Result PtpResponder::GetDeviceInfo(PtpDataParser &dp) {
         PtpDataBuilder db(g_bulk_write_buffer, std::addressof(m_usb_server));
 
-        /* Initialize set:sys, ensuring we clean up on exit. */
-        R_TRY(setsysInitialize());
-        ON_SCOPE_EXIT { setsysExit(); };
-
-        /* Get the device version and serial number. */
-        SetSysFirmwareVersion version;
-        SetSysSerialNumber serial;
-        R_TRY(setsysGetFirmwareVersion(std::addressof(version)));
-        R_TRY(setsysGetSerialNumber(std::addressof(serial)));
-
         /* Write the device info data. */
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] () {
             R_TRY(db.Add(MtpStandardVersion));
@@ -328,8 +318,8 @@ namespace haze {
             R_TRY(db.AddArray(SupportedPlaybackFormats, util::size(SupportedPlaybackFormats)));
             R_TRY(db.AddString(MtpDeviceManufacturer));
             R_TRY(db.AddString(MtpDeviceModel));
-            R_TRY(db.AddString(version.display_version));
-            R_TRY(db.AddString(serial.number));
+            R_TRY(db.AddString(GetFirmwareVersion()));
+            R_TRY(db.AddString(GetSerialNumber()));
 
             R_SUCCEED();
         }));
@@ -732,7 +722,9 @@ namespace haze {
         R_TRY(m_fs.SetFileSize(std::addressof(file), 0));
 
         /* Expand to the needed size. */
-        R_TRY(m_fs.SetFileSize(std::addressof(file), data_header.length));
+        if (data_header.length > sizeof(PtpUsbBulkContainer)) {
+            R_TRY(m_fs.SetFileSize(std::addressof(file), data_header.length - sizeof(PtpUsbBulkContainer)));
+        }
 
         /* Begin writing to the filesystem. */
         while (true) {
@@ -752,6 +744,9 @@ namespace haze {
 
             R_TRY(read_res);
         }
+
+        /* Truncate the file to the received size. */
+        R_TRY(m_fs.SetFileSize(std::addressof(file), offset));
 
         /* Write the success response. */
         R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
