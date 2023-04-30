@@ -74,8 +74,18 @@ namespace ams::kern {
 
     }
 
+    void KPageTableBase::MemoryRange::Open() {
+        /* If the range contains heap pages, open them. */
+        if (this->IsHeap()) {
+            Kernel::GetMemoryManager().Open(this->GetAddress(), this->GetSize() / PageSize);
+        }
+    }
+
     void KPageTableBase::MemoryRange::Close() {
-        Kernel::GetMemoryManager().Close(address, size / PageSize);
+        /* If the range contains heap pages, close them. */
+        if (this->IsHeap()) {
+            Kernel::GetMemoryManager().Close(this->GetAddress(), this->GetSize() / PageSize);
+        }
     }
 
     Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
@@ -1504,16 +1514,13 @@ namespace ams::kern {
 
         /* Check that the memory is contiguous (modulo the reference count bit). */
         const u32 test_state_mask = state_mask | KMemoryState_FlagReferenceCounted;
-        if (R_FAILED(this->CheckMemoryStateContiguous(address, size, test_state_mask, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr))) {
+        const bool is_heap = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, test_state_mask, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+        if (!is_heap) {
             R_TRY(this->CheckMemoryStateContiguous(address, size, test_state_mask, state, perm_mask, perm, attr_mask, attr));
         }
 
         /* The memory is contiguous, so set the output range. */
-        *out = {
-            .address = phys_address,
-            .size    = size,
-        };
-
+        out->Set(phys_address, size, is_heap);
         R_SUCCEED();
     }
 
@@ -2932,7 +2939,7 @@ namespace ams::kern {
                                                       KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None));
 
         /* We got the range, so open it. */
-        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
+        out->Open();
 
         R_SUCCEED();
     }
@@ -2949,7 +2956,7 @@ namespace ams::kern {
                                                       KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
         /* We got the range, so open it. */
-        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
+        out->Open();
 
         R_SUCCEED();
     }
@@ -3020,7 +3027,7 @@ namespace ams::kern {
                                                       KMemoryAttribute_Uncached, KMemoryAttribute_None));
 
         /* We got the range, so open it. */
-        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
+        out->Open();
 
         R_SUCCEED();
     }

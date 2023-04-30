@@ -36,15 +36,15 @@ namespace ams::kern::svc {
             size_t remaining = size;
             while (remaining > 0) {
                 /* Get a contiguous range to operate on. */
-                KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
+                KPageTableBase::MemoryRange contig_range;
                 R_TRY(page_table.OpenMemoryRangeForProcessCacheOperation(std::addressof(contig_range), cur_address, aligned_end - cur_address));
 
                 /* Close the range when we're done operating on it. */
                 ON_SCOPE_EXIT { contig_range.Close(); };
 
                 /* Adjust to remain within range. */
-                KVirtualAddress operate_address = KMemoryLayout::GetLinearVirtualAddress(contig_range.address);
-                size_t operate_size             = contig_range.size;
+                KVirtualAddress operate_address = KMemoryLayout::GetLinearVirtualAddress(contig_range.GetAddress());
+                size_t operate_size             = contig_range.GetSize();
                 if (cur_address < address) {
                     operate_address += (address - cur_address);
                     operate_size    -= (address - cur_address);
@@ -57,7 +57,7 @@ namespace ams::kern::svc {
                 operation.Operate(GetVoidPointer(operate_address), operate_size);
 
                 /* Advance. */
-                cur_address += contig_range.size;
+                cur_address += contig_range.GetSize();
                 remaining   -= operate_size;
             }
             MESOSPHERE_ASSERT(remaining == 0);

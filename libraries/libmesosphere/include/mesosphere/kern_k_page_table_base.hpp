@@ -57,11 +57,26 @@ namespace ams::kern {
             using TraversalEntry   = KPageTableImpl::TraversalEntry;
             using TraversalContext = KPageTableImpl::TraversalContext;
 
-            struct MemoryRange {
-                KPhysicalAddress address;
-                size_t size;
+            class MemoryRange {
+                private:
+                    KPhysicalAddress m_address;
+                    size_t m_size;
+                    bool m_heap;
+                public:
+                    constexpr MemoryRange() : m_address(Null<KPhysicalAddress>), m_size(0), m_heap(false) { /* ... */ }
 
-                void Close();
+                    void Set(KPhysicalAddress address, size_t size, bool heap) {
+                        m_address = address;
+                        m_size    = size;
+                        m_heap    = heap;
+                    }
+
+                    constexpr KPhysicalAddress GetAddress() const { return m_address; }
+                    constexpr size_t GetSize() const { return m_size; }
+                    constexpr bool IsHeap() const { return m_heap; }
+
+                    void Open();
+                    void Close();
             };
         protected:
             enum MemoryFillValue {

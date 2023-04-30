@@ -1133,17 +1133,17 @@ namespace ams::kern::board::nintendo::nx {
             size_t cur_size;
             {
                 /* Get the current contiguous range. */
-                KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
+                KPageTableBase::MemoryRange contig_range;
                 R_TRY(page_table->OpenMemoryRangeForMapDeviceAddressSpace(std::addressof(contig_range), process_address + mapped_size, size - mapped_size, ConvertToKMemoryPermission(device_perm), is_aligned));
 
                 /* Ensure we close the range when we're done. */
                 ON_SCOPE_EXIT { contig_range.Close(); };
 
                 /* Get the current size. */
-                cur_size = contig_range.size;
+                cur_size = contig_range.GetSize();
 
                 /* Map the device page. */
-                R_TRY(this->MapDevicePage(contig_range.address, contig_range.size, cur_addr, device_perm));
+                R_TRY(this->MapDevicePage(contig_range.GetAddress(), cur_size, cur_addr, device_perm));
             }
 
             /* Advance. */
@@ -1288,7 +1288,7 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
 
         /* We need to traverse the ranges that make up our mapping, to make sure they're all good. Start by getting a contiguous range. */
-        KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
+        KPageTableBase::MemoryRange contig_range;
         if (R_FAILED(page_table->OpenMemoryRangeForUnmapDeviceAddressSpace(std::addressof(contig_range), process_address, size))) {
             return false;
         }
@@ -1300,8 +1300,8 @@ namespace ams::kern::board::nintendo::nx {
         /* Walk the directory. */
         KProcessAddress cur_process_address = process_address;
         size_t remaining_size               = size;
-        KPhysicalAddress cur_phys_address   = contig_range.address;
-        size_t remaining_in_range           = contig_range.size;
+        KPhysicalAddress cur_phys_address   = contig_range.GetAddress();
+        size_t remaining_in_range           = contig_range.GetSize();
         bool first                          = true;
         u32  first_attr                     = 0;
         while (remaining_size > 0) {
@@ -1347,8 +1347,8 @@ namespace ams::kern::board::nintendo::nx {
                         }
                         range_open = true;
 
-                        cur_phys_address   = contig_range.address;
-                        remaining_in_range = contig_range.size;
+                        cur_phys_address   = contig_range.GetAddress();
+                        remaining_in_range = contig_range.GetSize();
                     }
 
                     /* Check that the physical address is expected. */
@@ -1390,8 +1390,8 @@ namespace ams::kern::board::nintendo::nx {
                     }
                     range_open = true;
 
-                    cur_phys_address   = contig_range.address;
-                    remaining_in_range = contig_range.size;
+                    cur_phys_address   = contig_range.GetAddress();
+                    remaining_in_range = contig_range.GetSize();
                 }
 
                 /* Check that the physical address is expected, and there's enough in the range. */
