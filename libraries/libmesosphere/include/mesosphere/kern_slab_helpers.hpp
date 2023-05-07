@@ -164,8 +164,9 @@ namespace ams::kern {
     };
 
 
-    template<typename Derived, typename Base, bool SupportDynamicExpansion = false> requires std::derived_from<Base, KAutoObjectWithList>
+    template<typename Derived, typename Base, bool SupportDynamicExpansion = false>
     class KAutoObjectWithSlabHeapAndContainer : public KAutoObjectWithSlabHeapBase<Derived, Base, SupportDynamicExpansion> {
+        static_assert(std::derived_from<Base, KAutoObjectWithList>);
         private:
             static constinit inline KAutoObjectWithListContainer<Derived> s_container;
         public:

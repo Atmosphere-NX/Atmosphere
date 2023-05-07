@@ -251,12 +251,11 @@ namespace ams::mitm::fs {
             using DirectoryTableWriter = TableWriter<DirectoryEntry>;
             using FileTableWriter      = TableWriter<FileEntry>;
 
-            constexpr inline u32 CalculatePathHash(u32 parent, const char *_path, u32 start, size_t path_len) {
-                const unsigned char *path = reinterpret_cast<const unsigned char *>(_path);
+            constexpr inline u32 CalculatePathHash(u32 parent, const char *path, u32 start, size_t path_len) {
                 u32 hash = parent ^ 123456789;
                 for (size_t i = 0; i < path_len; i++) {
                     hash = (hash >> 5) | (hash << 27);
-                    hash ^= path[start + i];
+                    hash ^= static_cast<unsigned char>(path[start + i]);
                 }
                 return hash;
             }
