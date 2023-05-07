@@ -48,7 +48,7 @@ namespace ams::sf::hipc {
                         AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
 
                         /* Clone the forward service. */
-                        std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
+                        std::shared_ptr<::Service> new_forward_service = ServerSession::CreateForwardService();
                         R_ABORT_UNLESS(serviceClone(util::GetReference(m_session->m_forward_service).get(), new_forward_service.get()));
                         R_ABORT_UNLESS(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
@@ -168,7 +168,7 @@ namespace ams::sf::hipc {
                         R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                         /* Register. */
-                        std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
+                        std::shared_ptr<::Service> new_forward_service = ServerSession::CreateForwardService();
                         serviceCreate(new_forward_service.get(), new_forward_target);
                         R_ABORT_UNLESS(m_manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
 
