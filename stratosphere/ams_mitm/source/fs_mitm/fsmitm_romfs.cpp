@@ -25,6 +25,27 @@ namespace ams::mitm::fs {
 
         namespace {
 
+            /* TODO: Fancy Dynamic allocation globals. */
+
+        }
+
+        void *AllocateTracked(AllocationType type, size_t size) {
+            AMS_UNUSED(type);
+
+            /* TODO: Fancy dynamic allocation with memory stealing from application pool. */
+            return std::malloc(size);
+        }
+
+        void FreeTracked(AllocationType type, void *p, size_t size) {
+            AMS_UNUSED(type);
+            AMS_UNUSED(size);
+
+            /* TODO: Fancy dynamic allocation with memory stealing from application pool. */
+            return std::free(p);
+        }
+
+        namespace {
+
             constexpr u32 EmptyEntry = 0xFFFFFFFF;
             constexpr size_t FilePartitionOffset = 0x200;
 
@@ -71,22 +92,23 @@ namespace ams::mitm::fs {
                     static constexpr size_t MaxCachedSize = (1_MB / 4);
                 private:
                     size_t m_cache_bitsize;
+                    size_t m_cache_size;
                 protected:
                     void *m_cache;
                 protected:
                     DynamicTableCache(size_t sz) {
-                        size_t cache_size = util::CeilingPowerOfTwo(std::min(sz, MaxCachedSize));
-                        m_cache = std::malloc(cache_size);
+                        m_cache_size = util::CeilingPowerOfTwo(std::min(sz, MaxCachedSize));
+                        m_cache = AllocateTracked(AllocationType_TableCache, m_cache_size);
                         while (m_cache == nullptr) {
-                            cache_size >>= 1;
-                            AMS_ABORT_UNLESS(cache_size >= 16_KB);
-                            m_cache = std::malloc(cache_size);
+                            m_cache_size  >>= 1;
+                            AMS_ABORT_UNLESS(m_cache_size  >= 16_KB);
+                            m_cache = AllocateTracked(AllocationType_TableCache, m_cache_size);
                         }
-                        m_cache_bitsize = util::CountTrailingZeros(cache_size);
+                        m_cache_bitsize = util::CountTrailingZeros(m_cache_size);
                     }
 
                     ~DynamicTableCache() {
-                        std::free(m_cache);
+                        FreeTracked(AllocationType_TableCache, m_cache, m_cache_size);
                     }
 
                     ALWAYS_INLINE size_t GetCacheSize() const { return static_cast<size_t>(1) << m_cache_bitsize; }
@@ -293,7 +315,7 @@ namespace ams::mitm::fs {
         }
 
         Builder::Builder(ncm::ProgramId pr_id) : m_program_id(pr_id), m_num_dirs(0), m_num_files(0), m_dir_table_size(0), m_file_table_size(0), m_dir_hash_table_size(0), m_file_hash_table_size(0), m_file_partition_size(0) {
-            auto res = m_directories.emplace(std::make_unique<BuildDirectoryContext>(BuildDirectoryContext::RootTag{}));
+            auto res = m_directories.emplace(std::unique_ptr<BuildDirectoryContext>(AllocateTyped<BuildDirectoryContext>(AllocationType_BuildDirContext, BuildDirectoryContext::RootTag{})));
             AMS_ABORT_UNLESS(res.second);
             m_root = res.first->get();
             m_num_dirs = 1;
@@ -347,9 +369,9 @@ namespace ams::mitm::fs {
             AMS_ABORT_UNLESS(num_child_dirs >= 0);
 
             {
-                BuildDirectoryContext **child_dirs = num_child_dirs != 0 ? reinterpret_cast<BuildDirectoryContext **>(std::malloc(sizeof(BuildDirectoryContext *) * num_child_dirs)) : nullptr;
+                BuildDirectoryContext **child_dirs = num_child_dirs != 0 ? reinterpret_cast<BuildDirectoryContext **>(AllocateTracked(AllocationType_DirPointerArray, sizeof(BuildDirectoryContext *) * num_child_dirs)) : nullptr;
                 AMS_ABORT_UNLESS(num_child_dirs == 0 || child_dirs != nullptr);
-                ON_SCOPE_EXIT { std::free(child_dirs); };
+                ON_SCOPE_EXIT { if (child_dirs != nullptr) { FreeTracked(AllocationType_DirPointerArray, child_dirs, sizeof(BuildDirectoryContext *) * num_child_dirs); } };
 
                 s64 cur_child_dir_ind = 0;
                 {
@@ -368,12 +390,12 @@ namespace ams::mitm::fs {
                             AMS_ABORT_UNLESS(child_dirs != nullptr);
 
                             BuildDirectoryContext *real_child = nullptr;
-                            this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(m_dir_entry.name, strlen(m_dir_entry.name)));
+                            this->AddDirectory(std::addressof(real_child), parent, std::unique_ptr<BuildDirectoryContext>(AllocateTyped<BuildDirectoryContext>(AllocationType_BuildDirContext, m_dir_entry.name, strlen(m_dir_entry.name))));
                             AMS_ABORT_UNLESS(real_child != nullptr);
                             child_dirs[cur_child_dir_ind++] = real_child;
                             AMS_ABORT_UNLESS(cur_child_dir_ind <= num_child_dirs);
                         } else /* if (m_dir_entry.type == FsDirEntryType_File) */ {
-                            this->AddFile(parent, std::make_unique<BuildFileContext>(m_dir_entry.name, strlen(m_dir_entry.name), m_dir_entry.file_size, 0, m_cur_source_type));
+                            this->AddFile(parent, std::unique_ptr<BuildFileContext>(AllocateTyped<BuildFileContext>(AllocationType_BuildFileContext, m_dir_entry.name, strlen(m_dir_entry.name), m_dir_entry.file_size, 0, m_cur_source_type)));
                         }
                     }
                 }
@@ -403,7 +425,7 @@ namespace ams::mitm::fs {
             while (cur_file_offset != EmptyEntry) {
                 const FileEntry *cur_file = file_table.GetEntry(cur_file_offset);
 
-                this->AddFile(parent, std::make_unique<BuildFileContext>(cur_file->name, cur_file->name_size, cur_file->size, cur_file->offset, m_cur_source_type));
+                this->AddFile(parent, std::unique_ptr<BuildFileContext>(AllocateTyped<BuildFileContext>(AllocationType_BuildFileContext, cur_file->name, cur_file->name_size, cur_file->size, cur_file->offset, m_cur_source_type)));
 
                 cur_file_offset = cur_file->sibling;
             }
@@ -415,7 +437,7 @@ namespace ams::mitm::fs {
                 {
                     const DirectoryEntry *cur_child = dir_table.GetEntry(cur_child_offset);
 
-                    this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(cur_child->name, cur_child->name_size));
+                    this->AddDirectory(std::addressof(real_child), parent, std::unique_ptr<BuildDirectoryContext>(AllocateTyped<BuildDirectoryContext>(AllocationType_BuildDirContext, cur_child->name, cur_child->name_size)));
                     AMS_ABORT_UNLESS(real_child != nullptr);
 
                     next_child_offset = cur_child->sibling;
@@ -438,7 +460,7 @@ namespace ams::mitm::fs {
             /* If there is no romfs folder on the SD, don't bother continuing. */
             {
                 FsDir dir;
-                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), m_program_id, m_root->path.get(), OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
+                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), m_program_id, m_root->path, OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
                     return;
                 }
                 fsDirClose(std::addressof(dir));
@@ -461,7 +483,7 @@ namespace ams::mitm::fs {
             this->VisitDirectory(m_root, 0x0, dir_table, file_table);
         }
 
-        void Builder::Build(std::vector<SourceInfo> *out_infos) {
+        void Builder::Build(SourceInfoVector *out_infos) {
             /* Clear output. */
             out_infos->clear();
 
@@ -477,7 +499,7 @@ namespace ams::mitm::fs {
             m_file_hash_table_size = sizeof(u32) * num_file_hash_table_entries;
 
             /* Allocate metadata, make pointers. */
-            Header *header = reinterpret_cast<Header *>(std::malloc(sizeof(Header)));
+            Header *header = reinterpret_cast<Header *>(AllocateTracked(AllocationType_Memory, sizeof(Header)));
             std::memset(header, 0x00, sizeof(*header));
 
             /* Open metadata file. */
@@ -552,13 +574,13 @@ namespace ams::mitm::fs {
             /* Set all files' hash value = hash index. */
             for (const auto &it : m_files) {
                 BuildFileContext *cur_file = it.get();
-                cur_file->hash_value = CalculatePathHash(cur_file->parent->entry_offset, cur_file->path.get(), 0, cur_file->path_len) % num_file_hash_table_entries;
+                cur_file->hash_value = CalculatePathHash(cur_file->parent->entry_offset, cur_file->path, 0, cur_file->path_len) % num_file_hash_table_entries;
             }
 
             /* Set all directories' hash value = hash index. */
             for (const auto &it : m_directories) {
                 BuildDirectoryContext *cur_dir = it.get();
-                cur_dir->hash_value = CalculatePathHash(cur_dir == m_root ? 0 : cur_dir->parent->entry_offset, cur_dir->path.get(), 0, cur_dir->path_len) % num_dir_hash_table_entries;
+                cur_dir->hash_value = CalculatePathHash(cur_dir == m_root ? 0 : cur_dir->parent->entry_offset, cur_dir->path, 0, cur_dir->path_len) % num_dir_hash_table_entries;
             }
 
             /* Write hash tables. */
@@ -661,7 +683,7 @@ namespace ams::mitm::fs {
                     const u32 name_size = cur_file->path_len;
                     cur_entry->name_size = name_size;
                     if (name_size) {
-                        std::memcpy(cur_entry->name, cur_file->path.get(), name_size);
+                        std::memcpy(cur_entry->name, cur_file->path, name_size);
                         for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
                             cur_entry->name[i] = 0;
                         }
@@ -688,9 +710,10 @@ namespace ams::mitm::fs {
                                 AMS_ABORT_UNLESS(path_needed_size <= sizeof(full_path));
                                 cur_file->GetPath(full_path);
 
-                                cur_file->path.reset();
+                                FreeTracked(AllocationType_FileName, cur_file->path, cur_file->path_len + 1);
+                                cur_file->path = nullptr;
 
-                                char *new_path = new char[path_needed_size];
+                                char *new_path = static_cast<char *>(AllocateTracked(AllocationType_FullPath, path_needed_size));
                                 std::memcpy(new_path, full_path, path_needed_size);
                                 out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
                             }
@@ -719,7 +742,7 @@ namespace ams::mitm::fs {
                     const u32 name_size = cur_dir->path_len;
                     cur_entry->name_size = name_size;
                     if (name_size) {
-                        std::memcpy(cur_entry->name, cur_dir->path.get(), name_size);
+                        std::memcpy(cur_entry->name, cur_dir->path, name_size);
                         for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
                             cur_entry->name[i] = 0;
                         }

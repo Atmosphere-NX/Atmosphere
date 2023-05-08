@@ -22,7 +22,7 @@ namespace ams::mitm::fs {
 
     class LayeredRomfsStorageImpl {
         private:
-            std::vector<romfs::SourceInfo> m_source_infos;
+            romfs::Builder::SourceInfoVector m_source_infos;
             std::unique_ptr<ams::fs::IStorage> m_storage_romfs;
             std::unique_ptr<ams::fs::IStorage> m_file_romfs;
             os::Event m_initialize_event;
