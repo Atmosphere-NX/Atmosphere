@@ -1,4 +1,15 @@
 # Changelog
+## 1.5.3
++ Support was added for 16.0.3.
++ Atmosphère was updated to use GCC 13/newlib (latest devkitA64/devkitARM releases).
+  + **Please note**: This introduces a known issue, which is currently being worked on.
+    + As you may recall from the 1.4.1 changelog, Fire Emblem: Engage requires enormous amounts of memory to support using layeredfs mods with the game.
+    + Latest GCC/newlib slightly increases malloc overhead size, which makes the previous memory increase insufficient.
+    + A general-case solution to this is in the works, which should hopefully fix the problem in a way that doesn't jinx me for the future.
++ A number of minor issues were fixed and improvements were made, including:
+  + An issue was fixed that caused system font replacement to not work on 16.0.0+.
+  + An minor accuracy issue was addressed in mesosphere's management of certain memory ranges; this issue would have had zero visible impact to the end-user.
++ General system stability improvements to enhance the user's experience.
 ## 1.5.2
 + A homebrew application (`haze`) was added for performing USB file transfer (with thanks to @liamwhite for both design and implementation).
   + `haze` is included with atmosphère, and provides access to the SD card via the PTP/MTP protocol.
