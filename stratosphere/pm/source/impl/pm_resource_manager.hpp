@@ -24,6 +24,8 @@ namespace ams::pm::resource {
     Result BoostApplicationThreadResourceLimit();
     Result BoostSystemThreadResourceLimit();
 
+    Result BoostSystemMemoryResourceLimitForMitm(u64 boost_size);
+
     os::NativeHandle GetResourceLimitHandle(ResourceLimitGroup group);
     os::NativeHandle GetResourceLimitHandle(const ldr::ProgramInfo *info);
 

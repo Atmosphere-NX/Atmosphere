@@ -90,3 +90,9 @@ Result pmdmntAtmosphereGetCurrentLimitInfo(u64 *out_cur, u64 *out_lim, u32 group
 
     return rc;
 }
+
+Result pmshellAtmosphereBoostSystemMemoryResourceLimitForMitm(u64 size) {
+    return serviceDispatchIn(pmshellGetServiceSession(), 65000, size);
+}
+
+

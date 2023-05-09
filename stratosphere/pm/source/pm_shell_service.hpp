@@ -34,6 +34,9 @@ namespace ams::pm {
             Result BoostApplicationThreadResourceLimit();
             void   GetBootFinishedEventHandle(sf::OutCopyHandle out);
             Result BoostSystemThreadResourceLimit();
+
+            /* Atmosphere extension command implementations. */
+            Result AtmosphereBoostSystemMemoryResourceLimitForMitm(u64 boost_size);
     };
     static_assert(pm::impl::IsIShellInterface<ShellService>);
 

@@ -713,4 +713,8 @@ namespace ams::pm::impl {
         R_RETURN(resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource)));
     }
 
+    Result BoostSystemMemoryResourceLimitForMitm(u64 boost_size) {
+        R_RETURN(resource::BoostSystemMemoryResourceLimitForMitm(boost_size));
+    }
+
 }

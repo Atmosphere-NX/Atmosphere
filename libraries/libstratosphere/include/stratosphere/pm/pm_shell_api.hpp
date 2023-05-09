@@ -32,4 +32,6 @@ namespace ams::pm::shell {
     Result BoostApplicationThreadResourceLimit();
     Result BoostSystemThreadResourceLimit();
 
+    Result AtmosphereBoostSystemMemoryResourceLimitForMitm(u64 size);
+
 }

@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "pm_ams.os.horizon.h"
 
 namespace ams::pm::shell {
 
@@ -56,6 +57,10 @@ namespace ams::pm::shell {
 
     Result BoostSystemThreadResourceLimit() {
         R_RETURN(::pmshellBoostSystemThreadResourceLimit());
+    }
+
+    Result AtmosphereBoostSystemMemoryResourceLimitForMitm(u64 size) {
+       R_RETURN(pmshellAtmosphereBoostSystemMemoryResourceLimitForMitm(size));
     }
     #endif
 

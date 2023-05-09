@@ -26,6 +26,8 @@ Result pminfoAtmosphereGetProcessInfo(NcmProgramLocation *loc_out, CfgOverrideSt
 Result pmdmntAtmosphereGetProcessInfo(Handle *out, NcmProgramLocation *loc_out, CfgOverrideStatus *status_out, u64 pid);
 Result pmdmntAtmosphereGetCurrentLimitInfo(u64 *out_cur, u64 *out_lim, u32 group, u32 resource);
 
+Result pmshellAtmosphereBoostSystemMemoryResourceLimitForMitm(u64 size);
+
 #ifdef __cplusplus
 }
 #endif
