@@ -58,10 +58,6 @@ namespace ams::pm::shell {
     Result BoostSystemThreadResourceLimit() {
         R_RETURN(::pmshellBoostSystemThreadResourceLimit());
     }
-
-    Result AtmosphereBoostSystemMemoryResourceLimitForMitm(u64 size) {
-       R_RETURN(pmshellAtmosphereBoostSystemMemoryResourceLimitForMitm(size));
-    }
     #endif
 
 }

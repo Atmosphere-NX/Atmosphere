@@ -15,21 +15,15 @@
  */
 
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_program_id.hpp>
 
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
+namespace ams::mitm::pm {
 
-namespace ams::pm::shell {
+    /* PM API. */
+    void Initialize();
+    void Finalize();
 
-    /* Shell API. */
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags);
-    Result TerminateProcess(os::ProcessId process_id);
-    Result GetProcessEventEvent(os::SystemEvent *out);
-    Result GetProcessEventInfo(ProcessEventInfo *out);
-    Result GetApplicationProcessIdForShell(os::ProcessId *out);
-    Result BoostSystemMemoryResourceLimit(u64 size);
-    Result BoostApplicationThreadResourceLimit();
-    Result BoostSystemThreadResourceLimit();
+    Result PrepareLaunchProgram(u64 *out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, bool is_application);
 
 }

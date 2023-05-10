@@ -87,8 +87,4 @@ namespace ams::pm {
         R_RETURN(impl::BoostSystemThreadResourceLimit());
     }
 
-    Result ShellService::AtmosphereBoostSystemMemoryResourceLimitForMitm(u64 boost_size) {
-        R_RETURN(impl::BoostSystemMemoryResourceLimitForMitm(boost_size));
-    }
-
 }

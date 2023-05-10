@@ -15,21 +15,13 @@
  */
 
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_program_id.hpp>
+#include <stratosphere/cfg/cfg_types.hpp>
+#include <stratosphere/sf.hpp>
 
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
+#define AMS_MITM_PM_IMPL_I_PM_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 65000, Result, PrepareLaunchProgram, (sf::Out<u64> out_boost_size, ncm::ProgramId program_id, const cfg::OverrideStatus &override_status, bool is_application), (out_boost_size, program_id, override_status, is_application))
 
-namespace ams::pm::shell {
+AMS_SF_DEFINE_INTERFACE(ams::mitm::pm::impl, IPmInterface, AMS_MITM_PM_IMPL_I_PM_INTERFACE_INFO, 0xEA88789C)
 
-    /* Shell API. */
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags);
-    Result TerminateProcess(os::ProcessId process_id);
-    Result GetProcessEventEvent(os::SystemEvent *out);
-    Result GetProcessEventInfo(ProcessEventInfo *out);
-    Result GetApplicationProcessIdForShell(os::ProcessId *out);
-    Result BoostSystemMemoryResourceLimit(u64 size);
-    Result BoostApplicationThreadResourceLimit();
-    Result BoostSystemThreadResourceLimit();
-
-}

@@ -26,6 +26,18 @@ namespace ams::mitm::fs {
         namespace {
 
             /* TODO: Fancy Dynamic allocation globals. */
+            constinit os::SdkMutex g_romfs_build_lock;
+            //constinit size_t g_dynamic_heap_size = 0;
+
+            void InitializeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
+                /* TODO */
+                AMS_UNUSED(program_id);
+            }
+
+            void FinalizeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
+                /* TODO */
+                AMS_UNUSED(program_id);
+            }
 
         }
 
@@ -315,12 +327,27 @@ namespace ams::mitm::fs {
         }
 
         Builder::Builder(ncm::ProgramId pr_id) : m_program_id(pr_id), m_num_dirs(0), m_num_files(0), m_dir_table_size(0), m_file_table_size(0), m_dir_hash_table_size(0), m_file_hash_table_size(0), m_file_partition_size(0) {
+            /* Ensure only one romfs is built at any time. */
+            g_romfs_build_lock.Lock();
+
+            /* If we should be using dynamic heap, turn it on. */
+            InitializeDynamicHeapForBuildRomfs(m_program_id);
+
             auto res = m_directories.emplace(std::unique_ptr<BuildDirectoryContext>(AllocateTyped<BuildDirectoryContext>(AllocationType_BuildDirContext, BuildDirectoryContext::RootTag{})));
             AMS_ABORT_UNLESS(res.second);
             m_root = res.first->get();
             m_num_dirs = 1;
             m_dir_table_size = 0x18;
         }
+
+        Builder::~Builder() {
+            /* If we have nothing remaining in dynamic heap, release it. */
+            FinalizeDynamicHeapForBuildRomfs(m_program_id);
+
+            /* Release the romfs build lock. */
+            g_romfs_build_lock.Unlock();
+        }
+
 
         void Builder::AddDirectory(BuildDirectoryContext **out, BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildDirectoryContext> child_ctx) {
             /* Set parent context member. */

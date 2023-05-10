@@ -13,23 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <stratosphere.hpp>
+#include "../amsmitm_module.hpp"
 
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
+namespace ams::mitm::pm {
 
-namespace ams::pm::shell {
-
-    /* Shell API. */
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags);
-    Result TerminateProcess(os::ProcessId process_id);
-    Result GetProcessEventEvent(os::SystemEvent *out);
-    Result GetProcessEventInfo(ProcessEventInfo *out);
-    Result GetApplicationProcessIdForShell(os::ProcessId *out);
-    Result BoostSystemMemoryResourceLimit(u64 size);
-    Result BoostApplicationThreadResourceLimit();
-    Result BoostSystemThreadResourceLimit();
+    DEFINE_MITM_MODULE_CLASS(0x1000, AMS_GET_SYSTEM_THREAD_PRIORITY(fs, WorkerThreadPool) - 2);
 
 }

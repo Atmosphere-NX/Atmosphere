@@ -32,7 +32,7 @@ namespace ams::mitm::settings {
     SetMitmService::SetMitmService(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : sf::MitmServiceImplBase(std::forward<std::shared_ptr<::Service>>(s), c) {
         if (m_client_info.program_id == ncm::SystemProgramId::Ns) {
             os::ProcessId application_process_id;
-            if (R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(std::addressof(application_process_id))) && g_application_process_id == application_process_id) {
+            if (R_SUCCEEDED(ams::pm::dmnt::GetApplicationProcessId(std::addressof(application_process_id))) && g_application_process_id == application_process_id) {
                 m_locale = g_application_locale;
                 m_is_valid_language = g_valid_language;
                 m_is_valid_region   = g_valid_region;
@@ -61,8 +61,8 @@ namespace ams::mitm::settings {
 
             if (is_ns) {
                 /* When NS asks for a locale, refresh to get the current application locale. */
-                R_TRY(pm::dmnt::GetApplicationProcessId(std::addressof(application_process_id)));
-                R_TRY(pm::info::GetProgramId(std::addressof(program_id), application_process_id));
+                R_TRY(ams::pm::dmnt::GetApplicationProcessId(std::addressof(application_process_id)));
+                R_TRY(ams::pm::info::GetProgramId(std::addressof(program_id), application_process_id));
             }
             m_locale            = cfg::GetOverrideLocale(program_id);
             m_is_valid_language = settings::IsValidLanguageCode(m_locale.language_code);

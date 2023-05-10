@@ -71,7 +71,7 @@ namespace ams::mitm::fs {
         Result OpenHblWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id) {
             /* Verify eligibility. */
             bool is_hbl;
-            R_UNLESS(R_SUCCEEDED(pm::info::IsHblProgramId(std::addressof(is_hbl), program_id)), sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(R_SUCCEEDED(ams::pm::info::IsHblProgramId(std::addressof(is_hbl), program_id)), sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(is_hbl,                                                     sm::mitm::ResultShouldForwardToSession());
 
             /* Hbl html directory must exist. */

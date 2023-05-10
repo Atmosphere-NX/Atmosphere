@@ -15,21 +15,23 @@
  */
 
 #pragma once
+#include <switch.h>
 
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-namespace ams::pm::shell {
+typedef struct {
+    u64 keys_down;
+    u64 flags;
+} CfgOverrideStatus;
 
-    /* Shell API. */
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags);
-    Result TerminateProcess(os::ProcessId process_id);
-    Result GetProcessEventEvent(os::SystemEvent *out);
-    Result GetProcessEventInfo(ProcessEventInfo *out);
-    Result GetApplicationProcessIdForShell(os::ProcessId *out);
-    Result BoostSystemMemoryResourceLimit(u64 size);
-    Result BoostApplicationThreadResourceLimit();
-    Result BoostSystemThreadResourceLimit();
+Result amsMitmPmInitialize(void);
+void amsMitmPmExit(void);
+Service *amsMitmPmGetServiceSession(void);
 
+Result amsMitmPmPrepareLaunchProgram(u64 *out, u64 program_id, const CfgOverrideStatus *status, bool is_application);
+
+#ifdef __cplusplus
 }
+#endif

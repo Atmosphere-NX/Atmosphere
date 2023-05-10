@@ -366,6 +366,7 @@ namespace ams::mitm::fs::romfs {
             void AddFile(BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildFileContext> file_ctx);
         public:
             Builder(ncm::ProgramId pr_id);
+            ~Builder();
 
             void AddSdFiles();
             void AddStorageFiles(ams::fs::IStorage *storage, DataSourceType source_type);

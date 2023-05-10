@@ -29,7 +29,7 @@ namespace ams::mitm::settings {
             PortIndex_Count,
         };
 
-        constexpr sm::ServiceName SetMitmServiceName = sm::ServiceName::Encode("set");
+        constexpr sm::ServiceName SetMitmServiceName    = sm::ServiceName::Encode("set");
         constexpr sm::ServiceName SetSysMitmServiceName = sm::ServiceName::Encode("set:sys");
 
         struct ServerOptions {
