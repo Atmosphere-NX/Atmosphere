@@ -45,11 +45,12 @@ namespace ams::mitm::fs {
                 return 0;
             }
 
-            /* TODO: Fancy Dynamic allocation globals. */
+            /* Dynamic allocation globals. */
             constinit os::SdkMutex g_romfs_build_lock;
             constinit ncm::ProgramId g_dynamic_heap_program_id{};
             constinit size_t g_dynamic_heap_size = 0;
 
+            constinit os::SdkMutex g_release_dynamic_heap_lock;
             constinit bool g_building_from_dynamic_heap = false;
             constinit uintptr_t g_dynamic_heap_address = 0;
             constinit size_t g_dynamic_heap_outstanding_allocations = 0;
@@ -68,6 +69,8 @@ namespace ams::mitm::fs {
                     g_building_from_dynamic_heap = true;
 
                     if (g_dynamic_heap_address == 0) {
+                        /* NOTE: Lock not necessary, because this is the only location which do 0 -> non-zero. */
+
                         /* Map application memory as heap. */
                         R_ABORT_UNLESS(os::AllocateUnsafeMemory(std::addressof(g_dynamic_heap_address), g_dynamic_heap_size));
                         AMS_ABORT_UNLESS(g_dynamic_heap_address != 0);
@@ -78,9 +81,26 @@ namespace ams::mitm::fs {
                 }
             }
 
+            void ReleaseDynamicHeap() {
+                std::scoped_lock lk(g_release_dynamic_heap_lock);
+
+                if (g_dynamic_heap_address != 0) {
+                    util::DestroyAt(g_dynamic_heap);
+                    g_dynamic_heap = {};
+
+                    R_ABORT_UNLESS(os::FreeUnsafeMemory(g_dynamic_heap_address, g_dynamic_heap_size));
+
+                    g_dynamic_heap_address = 0;
+                }
+            }
+
             void FinalizeDynamicHeapForBuildRomfs() {
                 /* We are definitely no longer building out of dynamic heap. */
                 g_building_from_dynamic_heap = false;
+
+                if (g_dynamic_heap_outstanding_allocations == 0) {
+                    ReleaseDynamicHeap();
+                }
             }
 
         }
@@ -107,6 +127,10 @@ namespace ams::mitm::fs {
             if (IsAllocatedFromDynamicHeap(p)) {
                 --g_dynamic_heap_outstanding_allocations;
                 util::GetReference(g_dynamic_heap).Free(p);
+
+                if (!g_building_from_dynamic_heap && g_dynamic_heap_outstanding_allocations == 0) {
+                    ReleaseDynamicHeap();
+                }
             } else {
                 std::free(p);
             }
@@ -873,10 +897,7 @@ namespace ams::mitm::fs {
 
                 /* Free the heap. */
                 if (g_dynamic_heap_address != 0) {
-                    util::DestroyAt(g_dynamic_heap);
-                    g_dynamic_heap = {};
-
-                    R_ABORT_UNLESS(os::FreeUnsafeMemory(g_dynamic_heap_address, g_dynamic_heap_size));
+                    ReleaseDynamicHeap();
                 }
 
                 /* Clear the heap globals. */
