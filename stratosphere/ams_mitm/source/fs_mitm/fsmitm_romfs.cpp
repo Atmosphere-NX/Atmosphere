@@ -32,6 +32,7 @@ namespace ams::mitm::fs {
             };
 
             constexpr const ApplicationWithDynamicHeapInfo ApplicationsWithDynamicHeap[] = {
+                { 0x01006F8002326000,  32_MB }, /* Animal Crossing: New Horizons. */
                 { 0x0100A6301214E000,  40_MB }, /* Fire Emblem: Engage. */
             };
 
