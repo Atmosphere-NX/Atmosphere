@@ -259,8 +259,8 @@ namespace ams::mitm::fs {
     }
 
     void FinalizeLayeredRomfsStorage(ncm::ProgramId program_id) {
-        std::scoped_lock lk(g_storage_set_mutex);
-        std::scoped_lock lk2(g_initialization_mutex);
+        std::scoped_lock lk(g_initialization_mutex);
+        std::scoped_lock lk2(g_storage_set_mutex);
 
         /* Find an existing storage. */
         if (auto it = g_storage_set.find_key(program_id.value); it != g_storage_set.end()) {

@@ -228,21 +228,33 @@ namespace ams::mitm::fs {
                     size_t m_cache_idx;
                     u8 m_fallback_cache[FallbackCacheSize];
                 private:
-                    ALWAYS_INLINE void Read(size_t ofs, void *dst, size_t size) {
-                        R_ABORT_UNLESS(m_storage->Read(m_offset + ofs, dst, size));
+                    ALWAYS_INLINE bool Read(size_t ofs, void *dst, size_t size) {
+                        R_TRY_CATCH(m_storage->Read(m_offset + ofs, dst, size)) {
+                            R_CATCH(fs::ResultNcaExternalKeyNotFound) { return false; }
+                        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+                        return true;
                     }
-                    ALWAYS_INLINE void ReloadCacheImpl(size_t idx) {
+                    ALWAYS_INLINE bool ReloadCacheImpl(size_t idx) {
                         const size_t rel_ofs = idx * this->GetCacheSize();
                         AMS_ABORT_UNLESS(rel_ofs < m_size);
                         const size_t new_cache_size = std::min(m_size - rel_ofs, this->GetCacheSize());
-                        this->Read(rel_ofs, m_cache, new_cache_size);
+                        if (!this->Read(rel_ofs, m_cache, new_cache_size)) {
+                            return false;
+                        }
+
                         m_cache_idx = idx;
+                        return true;
                     }
 
-                    ALWAYS_INLINE void ReloadCache(size_t idx) {
+                    ALWAYS_INLINE bool ReloadCache(size_t idx) {
                         if (m_cache_idx != idx) {
-                            this->ReloadCacheImpl(idx);
+                            if (!this->ReloadCacheImpl(idx)) {
+                                return false;
+                            }
                         }
+
+                        return true;
                     }
 
                     ALWAYS_INLINE size_t GetCacheIndex(u32 ofs) {
@@ -255,13 +267,18 @@ namespace ams::mitm::fs {
                     }
 
                     const Entry *GetEntry(u32 entry_offset) {
-                        this->ReloadCache(this->GetCacheIndex(entry_offset));
+                        if (!this->ReloadCache(this->GetCacheIndex(entry_offset))) {
+                            return nullptr;
+                        }
 
                         const size_t ofs = entry_offset % this->GetCacheSize();
 
                         const Entry *entry = reinterpret_cast<const Entry *>(reinterpret_cast<uintptr_t>(m_cache) + ofs);
                         if (AMS_UNLIKELY(this->GetCacheIndex(entry_offset) != this->GetCacheIndex(entry_offset + sizeof(Entry) + entry->name_size + sizeof(u32)))) {
-                            this->Read(entry_offset, m_fallback_cache, std::min(m_size - entry_offset, FallbackCacheSize));
+                            if (!this->Read(entry_offset, m_fallback_cache, std::min(m_size - entry_offset, FallbackCacheSize))) {
+                                return nullptr;
+                            }
+
                             entry = reinterpret_cast<const Entry *>(m_fallback_cache);
                         }
                         return entry;
@@ -528,10 +545,16 @@ namespace ams::mitm::fs {
 
         void Builder::VisitDirectory(BuildDirectoryContext *parent, u32 parent_offset, DirectoryTableReader &dir_table, FileTableReader &file_table) {
             const DirectoryEntry *parent_entry = dir_table.GetEntry(parent_offset);
+            if (AMS_UNLIKELY(parent_entry == nullptr)) {
+                return;
+            }
 
             u32 cur_file_offset = parent_entry->file;
             while (cur_file_offset != EmptyEntry) {
                 const FileEntry *cur_file = file_table.GetEntry(cur_file_offset);
+                if (AMS_UNLIKELY(cur_file == nullptr)) {
+                    return;
+                }
 
                 this->AddFile(parent, std::unique_ptr<BuildFileContext>(AllocateTyped<BuildFileContext>(AllocationType_BuildFileContext, cur_file->name, cur_file->name_size, cur_file->size, cur_file->offset, m_cur_source_type)));
 
@@ -544,6 +567,9 @@ namespace ams::mitm::fs {
                 u32 next_child_offset = 0;
                 {
                     const DirectoryEntry *cur_child = dir_table.GetEntry(cur_child_offset);
+                    if (AMS_UNLIKELY(cur_child == nullptr)) {
+                        return;
+                    }
 
                     this->AddDirectory(std::addressof(real_child), parent, std::unique_ptr<BuildDirectoryContext>(AllocateTyped<BuildDirectoryContext>(AllocationType_BuildDirContext, cur_child->name, cur_child->name_size)));
                     AMS_ABORT_UNLESS(real_child != nullptr);

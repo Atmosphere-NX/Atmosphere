@@ -41,8 +41,9 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(MountNameAlreadyExists, 60);
 
     R_DEFINE_ERROR_RANGE(HandledBySystemProcess, 1000, 2999);
-        R_DEFINE_ERROR_RESULT(PartitionNotFound,    1001);
-        R_DEFINE_ERROR_RESULT(TargetNotFound,       1002);
+        R_DEFINE_ERROR_RESULT(PartitionNotFound,      1001);
+        R_DEFINE_ERROR_RESULT(TargetNotFound,         1002);
+        R_DEFINE_ERROR_RESULT(NcaExternalKeyNotFound, 1004);
 
         R_DEFINE_ERROR_RANGE(SdCardAccessFailed, 2000, 2499);
             R_DEFINE_ERROR_RESULT(SdCardNotPresent, 2001);
