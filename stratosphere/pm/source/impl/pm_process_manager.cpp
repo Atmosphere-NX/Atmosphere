@@ -257,8 +257,10 @@ namespace ams::pm::impl {
                 u64 mitm_boost_size = 0;
                 R_TRY(mitm::pm::PrepareLaunchProgram(std::addressof(mitm_boost_size), program_info.program_id, override_status, is_application));
 
-                R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(mitm_boost_size));
-                ON_RESULT_FAILURE_2 { R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(0)); };
+                if (mitm_boost_size > 0 || is_application) {
+                    R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(mitm_boost_size));
+                    ON_RESULT_FAILURE_2 { R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(0)); };
+                }
 
                 /* Ensure resources are available. */
                 resource::WaitResourceAvailable(std::addressof(program_info));

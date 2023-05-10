@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "../amsmitm_fs_utils.hpp"
 #include "fsmitm_romfs.hpp"
+#include "fsmitm_layered_romfs_storage.hpp"
 
 namespace ams::mitm::fs {
 
@@ -25,18 +26,61 @@ namespace ams::mitm::fs {
 
         namespace {
 
-            /* TODO: Fancy Dynamic allocation globals. */
-            constinit os::SdkMutex g_romfs_build_lock;
-            //constinit size_t g_dynamic_heap_size = 0;
+            struct ApplicationWithDynamicHeapInfo {
+                ncm::ProgramId program_id;
+                size_t dynamic_heap_size;
+            };
 
-            void InitializeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
-                /* TODO */
-                AMS_UNUSED(program_id);
+            constexpr const ApplicationWithDynamicHeapInfo ApplicationsWithDynamicHeap[] = {
+                { 0x0100A6301214E000,  40_MB }, /* Fire Emblem: Engage. */
+            };
+
+            constexpr size_t GetDynamicHeapSize(ncm::ProgramId program_id) {
+                for (const auto &info : ApplicationsWithDynamicHeap) {
+                    if (info.program_id == program_id) {
+                        return info.dynamic_heap_size;
+                    }
+                }
+
+                return 0;
             }
 
-            void FinalizeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
-                /* TODO */
-                AMS_UNUSED(program_id);
+            /* TODO: Fancy Dynamic allocation globals. */
+            constinit os::SdkMutex g_romfs_build_lock;
+            constinit ncm::ProgramId g_dynamic_heap_program_id{};
+            constinit size_t g_dynamic_heap_size = 0;
+
+            constinit bool g_building_from_dynamic_heap = false;
+            constinit uintptr_t g_dynamic_heap_address = 0;
+            constinit size_t g_dynamic_heap_outstanding_allocations = 0;
+
+            constinit util::TypedStorage<mem::StandardAllocator> g_dynamic_heap{};
+
+            bool IsAllocatedFromDynamicHeap(void *p) {
+                const uintptr_t address = reinterpret_cast<uintptr_t>(p);
+
+                return g_dynamic_heap_address != 0 && (g_dynamic_heap_address <= address && address < g_dynamic_heap_address + g_dynamic_heap_size);
+            }
+
+            void InitializeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
+                if (program_id == g_dynamic_heap_program_id && g_dynamic_heap_size > 0) {
+                    /* This romfs will build out of dynamic heap. */
+                    g_building_from_dynamic_heap = true;
+
+                    if (g_dynamic_heap_address == 0) {
+                        /* Map application memory as heap. */
+                        R_ABORT_UNLESS(os::AllocateUnsafeMemory(std::addressof(g_dynamic_heap_address), g_dynamic_heap_size));
+                        AMS_ABORT_UNLESS(g_dynamic_heap_address != 0);
+
+                        /* Create exp heap. */
+                        util::ConstructAt(g_dynamic_heap, reinterpret_cast<void *>(g_dynamic_heap_address), g_dynamic_heap_size);
+                    }
+                }
+            }
+
+            void FinalizeDynamicHeapForBuildRomfs() {
+                /* We are definitely no longer building out of dynamic heap. */
+                g_building_from_dynamic_heap = false;
             }
 
         }
@@ -44,16 +88,28 @@ namespace ams::mitm::fs {
         void *AllocateTracked(AllocationType type, size_t size) {
             AMS_UNUSED(type);
 
-            /* TODO: Fancy dynamic allocation with memory stealing from application pool. */
-            return std::malloc(size);
+            if (g_building_from_dynamic_heap) {
+                void * const ret = util::GetReference(g_dynamic_heap).Allocate(size);
+                AMS_ABORT_UNLESS(ret != nullptr);
+
+                ++g_dynamic_heap_outstanding_allocations;
+
+                return ret;
+            } else {
+                return std::malloc(size);
+            }
         }
 
         void FreeTracked(AllocationType type, void *p, size_t size) {
             AMS_UNUSED(type);
             AMS_UNUSED(size);
 
-            /* TODO: Fancy dynamic allocation with memory stealing from application pool. */
-            return std::free(p);
+            if (IsAllocatedFromDynamicHeap(p)) {
+                --g_dynamic_heap_outstanding_allocations;
+                util::GetReference(g_dynamic_heap).Free(p);
+            } else {
+                std::free(p);
+            }
         }
 
         namespace {
@@ -342,7 +398,7 @@ namespace ams::mitm::fs {
 
         Builder::~Builder() {
             /* If we have nothing remaining in dynamic heap, release it. */
-            FinalizeDynamicHeapForBuildRomfs(m_program_id);
+            FinalizeDynamicHeapForBuildRomfs();
 
             /* Release the romfs build lock. */
             g_romfs_build_lock.Unlock();
@@ -799,6 +855,49 @@ namespace ams::mitm::fs {
                 R_ABORT_UNLESS(fsFileFlush(std::addressof(metadata_file)));
                 out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, DataSourceType::Metadata, new RemoteFile(metadata_file));
             }
+        }
+
+        Result ConfigureDynamicHeap(u64 *out_size, ncm::ProgramId program_id, const cfg::OverrideStatus &status, bool is_application) {
+            /* Baseline: use no dynamic heap. */
+            *out_size = 0;
+
+            /* If the process is not an application, we do not care about dynamic heap. */
+            R_SUCCEED_IF(!is_application);
+
+            /* First, we need to ensure that, if the game used dynamic heap, we clear it. */
+            if (g_dynamic_heap_size > 0) {
+                mitm::fs::FinalizeLayeredRomfsStorage(g_dynamic_heap_program_id);
+
+                /* This should have freed any remaining allocations. */
+                AMS_ABORT_UNLESS(g_dynamic_heap_outstanding_allocations == 0);
+
+                /* Free the heap. */
+                if (g_dynamic_heap_address != 0) {
+                    util::DestroyAt(g_dynamic_heap);
+                    g_dynamic_heap = {};
+
+                    R_ABORT_UNLESS(os::FreeUnsafeMemory(g_dynamic_heap_address, g_dynamic_heap_size));
+                }
+
+                /* Clear the heap globals. */
+                g_dynamic_heap_address = 0;
+                g_dynamic_heap_size    = 0;
+            }
+
+            /* Next, if we aren't going to end up building a romfs, we can ignore dynamic heap. */
+            R_SUCCEED_IF(!status.IsProgramSpecific());
+
+            /* Only mitm if there is actually an override romfs. */
+            R_SUCCEED_IF(!mitm::fs::HasSdRomfsContent(program_id));
+
+            /* Next, set the new program id for dynamic heap. */
+            g_dynamic_heap_program_id = program_id;
+            g_dynamic_heap_size       = GetDynamicHeapSize(g_dynamic_heap_program_id);
+
+            /* Set output. */
+            *out_size = g_dynamic_heap_size;
+
+            R_SUCCEED();
         }
 
     }

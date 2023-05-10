@@ -79,7 +79,7 @@
 				"svcReplyAndReceiveWithUserBuffer":	"0x44",
 				"svcCreateEvent":	"0x45",
 				"svcMapPhysicalMemoryUnsafe":	"0x48",
-				"svcUnmapPhysicalMemoryUnsafe":	"0x48",
+				"svcUnmapPhysicalMemoryUnsafe":	"0x49",
 				"svcSetUnsafeLimit":	"0x4A",
 				"svcReadWriteRegister":	"0x4E",
                 "svcDebugActiveProcess": "0x60",

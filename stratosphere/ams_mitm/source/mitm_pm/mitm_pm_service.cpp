@@ -16,13 +16,19 @@
 #include <stratosphere.hpp>
 #include "../amsmitm_initialization.hpp"
 #include "mitm_pm_service.hpp"
+#include "mitm_pm_service.hpp"
+#include "../fs_mitm/fsmitm_romfs.hpp"
 
 namespace ams::mitm::pm {
 
     Result PmService::PrepareLaunchProgram(sf::Out<u64> out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, bool is_application) {
-        /* TODO */
+        /* Default to zero heap. */
         *out = 0;
-        AMS_UNUSED(program_id, status, is_application);
+
+        /* Actually configure the required boost size for romfs. */
+        R_TRY(mitm::fs::romfs::ConfigureDynamicHeap(out.GetPointer(), program_id, status, is_application));
+
+        /* TODO: Is there anything else we should do, while we have the opportunity? */
         R_SUCCEED();
     }
 

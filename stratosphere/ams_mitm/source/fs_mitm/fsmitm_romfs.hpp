@@ -374,4 +374,6 @@ namespace ams::mitm::fs::romfs {
             void Build(SourceInfoVector *out_infos);
     };
 
+    Result ConfigureDynamicHeap(u64 *out_size, ncm::ProgramId program_id, const cfg::OverrideStatus &status, bool is_application);
+
 }

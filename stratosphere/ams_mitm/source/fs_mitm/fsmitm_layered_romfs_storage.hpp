@@ -51,4 +51,6 @@ namespace ams::mitm::fs {
 
     std::shared_ptr<ams::fs::IStorage> GetLayeredRomfsStorage(ncm::ProgramId program_id, ::FsStorage &data_storage, bool is_process_romfs);
 
+    void FinalizeLayeredRomfsStorage(ncm::ProgramId program_id);
+
 }
