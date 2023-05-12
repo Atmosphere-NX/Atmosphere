@@ -33,7 +33,7 @@ namespace ams::pm::resource {
         constexpr size_t ReservedMemorySize600       = 5_MB;
 
         /* Atmosphere always allocates extra memory for system usage. */
-        constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24_MB;
+        constexpr size_t ExtraSystemMemorySizeAtmosphere    = 32_MB;
 
         /* Desired extra threads. */
         constexpr u64 BaseApplicationThreads  = 96;

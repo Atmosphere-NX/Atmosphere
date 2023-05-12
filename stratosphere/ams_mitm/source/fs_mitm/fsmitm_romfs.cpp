@@ -28,70 +28,153 @@ namespace ams::mitm::fs {
 
             struct ApplicationWithDynamicHeapInfo {
                 ncm::ProgramId program_id;
-                size_t dynamic_heap_size;
+                size_t dynamic_app_heap_size;
+                size_t dynamic_system_heap_size;
             };
 
             constexpr const ApplicationWithDynamicHeapInfo ApplicationsWithDynamicHeap[] = {
-                { 0x01006F8002326000,  32_MB }, /* Animal Crossing: New Horizons. */
-                { 0x0100A6301214E000,  40_MB }, /* Fire Emblem: Engage. */
+                /* Animal Crossing: New Horizons. */
+                /* Requirement ~24 MB. */
+                /* No particular heap sensitivity. */
+                { 0x01006F8002326000,  16_MB, 0_MB },
+
+                /* Fire Emblem: Engage. */
+                /* Requirement ~32+ MB. */
+                /* No particular heap sensitivity. */
+                { 0x0100A6301214E000,  16_MB, 0_MB },
+
+                /* The Legend of Zelda: Tears of the Kingdom. */
+                /* Requirement ~48 MB. */
+                /* Game is highly sensitive to memory stolen from application heap. */
+                /* 1.0.0 tolerates no more than 16 MB stolen. 1.1.0 no more than 12 MB. */
+                { 0x0100F2C0115B6000,  10_MB, 8_MB },
             };
 
-            constexpr size_t GetDynamicHeapSize(ncm::ProgramId program_id) {
+            constexpr size_t GetDynamicAppHeapSize(ncm::ProgramId program_id) {
                 for (const auto &info : ApplicationsWithDynamicHeap) {
                     if (info.program_id == program_id) {
-                        return info.dynamic_heap_size;
+                        return info.dynamic_app_heap_size;
                     }
                 }
 
                 return 0;
             }
 
+            constexpr size_t GetDynamicSysHeapSize(ncm::ProgramId program_id) {
+                for (const auto &info : ApplicationsWithDynamicHeap) {
+                    if (info.program_id == program_id) {
+                        return info.dynamic_system_heap_size;
+                    }
+                }
+
+                return 0;
+            }
+
+            template<auto MapImpl, auto UnmapImpl>
+            struct DynamicHeap {
+                uintptr_t heap_address{};
+                size_t heap_size{};
+                size_t outstanding_allocations{};
+                util::TypedStorage<mem::StandardAllocator> heap{};
+                os::SdkMutex release_heap_lock{};
+
+                constexpr DynamicHeap() = default;
+
+                void Map() {
+                    if (this->heap_address == 0) {
+                        /* NOTE: Lock not necessary, because this is the only location which do 0 -> non-zero. */
+
+                        R_ABORT_UNLESS(MapImpl(std::addressof(this->heap_address), this->heap_size));
+                        AMS_ABORT_UNLESS(this->heap_address != 0);
+
+                        /* Create heap. */
+                        util::ConstructAt(this->heap, reinterpret_cast<void *>(this->heap_address), this->heap_size);
+                    }
+                }
+
+                void TryRelease() {
+                    if (this->outstanding_allocations == 0) {
+                        std::scoped_lock lk(this->release_heap_lock);
+
+                        if (this->heap_address != 0) {
+                            util::DestroyAt(this->heap);
+                            this->heap = {};
+
+                            R_ABORT_UNLESS(UnmapImpl(this->heap_address, this->heap_size));
+
+                            this->heap_address = 0;
+                        }
+                    }
+                }
+
+                void *Allocate(size_t size) {
+                    void * const ret = util::GetReference(this->heap).Allocate(size);
+                    if (AMS_LIKELY(ret != nullptr)) {
+                        ++this->outstanding_allocations;
+                    }
+                    return ret;
+                }
+
+                bool TryFree(void *p) {
+                    if (this->IsAllocated(p)) {
+                        --this->outstanding_allocations;
+
+                        util::GetReference(this->heap).Free(p);
+
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+
+                bool IsAllocated(void *p) const {
+                    const uintptr_t address = reinterpret_cast<uintptr_t>(p);
+
+                    return this->heap_address != 0 && (this->heap_address <= address && address < this->heap_address + this->heap_size);
+                }
+
+                void Reset() {
+                    /* This should require no remaining allocations. */
+                    AMS_ABORT_UNLESS(this->outstanding_allocations == 0);
+
+                    /* Free the heap. */
+                    this->TryRelease();
+                    AMS_ABORT_UNLESS(this->heap_address == 0);
+
+                    /* Clear the heap size. */
+                    this->heap_size = 0;
+                }
+            };
+
+            Result MapByHeap(uintptr_t *out, size_t size) {
+                R_TRY(os::SetMemoryHeapSize(size));
+                R_RETURN(os::AllocateMemoryBlock(out, size));
+            }
+
+            Result UnmapByHeap(uintptr_t address, size_t size) {
+                os::FreeMemoryBlock(address, size);
+                R_RETURN(os::SetMemoryHeapSize(0));
+            }
+
             /* Dynamic allocation globals. */
             constinit os::SdkMutex g_romfs_build_lock;
             constinit ncm::ProgramId g_dynamic_heap_program_id{};
-            constinit size_t g_dynamic_heap_size = 0;
 
-            constinit os::SdkMutex g_release_dynamic_heap_lock;
             constinit bool g_building_from_dynamic_heap = false;
-            constinit uintptr_t g_dynamic_heap_address = 0;
-            constinit size_t g_dynamic_heap_outstanding_allocations = 0;
 
-            constinit util::TypedStorage<mem::StandardAllocator> g_dynamic_heap{};
-
-            bool IsAllocatedFromDynamicHeap(void *p) {
-                const uintptr_t address = reinterpret_cast<uintptr_t>(p);
-
-                return g_dynamic_heap_address != 0 && (g_dynamic_heap_address <= address && address < g_dynamic_heap_address + g_dynamic_heap_size);
-            }
+            constinit DynamicHeap<os::AllocateUnsafeMemory, os::FreeUnsafeMemory> g_dynamic_app_heap;
+            constinit DynamicHeap<MapByHeap, UnmapByHeap> g_dynamic_sys_heap;
 
             void InitializeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
-                if (program_id == g_dynamic_heap_program_id && g_dynamic_heap_size > 0) {
+                if (program_id == g_dynamic_heap_program_id && g_dynamic_app_heap.heap_size > 0) {
                     /* This romfs will build out of dynamic heap. */
                     g_building_from_dynamic_heap = true;
 
-                    if (g_dynamic_heap_address == 0) {
-                        /* NOTE: Lock not necessary, because this is the only location which do 0 -> non-zero. */
+                    g_dynamic_app_heap.Map();
 
-                        /* Map application memory as heap. */
-                        R_ABORT_UNLESS(os::AllocateUnsafeMemory(std::addressof(g_dynamic_heap_address), g_dynamic_heap_size));
-                        AMS_ABORT_UNLESS(g_dynamic_heap_address != 0);
-
-                        /* Create exp heap. */
-                        util::ConstructAt(g_dynamic_heap, reinterpret_cast<void *>(g_dynamic_heap_address), g_dynamic_heap_size);
+                    if (g_dynamic_sys_heap.heap_size > 0) {
+                        g_dynamic_sys_heap.Map();
                     }
-                }
-            }
-
-            void ReleaseDynamicHeap() {
-                std::scoped_lock lk(g_release_dynamic_heap_lock);
-
-                if (g_dynamic_heap_address != 0) {
-                    util::DestroyAt(g_dynamic_heap);
-                    g_dynamic_heap = {};
-
-                    R_ABORT_UNLESS(os::FreeUnsafeMemory(g_dynamic_heap_address, g_dynamic_heap_size));
-
-                    g_dynamic_heap_address = 0;
                 }
             }
 
@@ -99,9 +182,7 @@ namespace ams::mitm::fs {
                 /* We are definitely no longer building out of dynamic heap. */
                 g_building_from_dynamic_heap = false;
 
-                if (g_dynamic_heap_outstanding_allocations == 0) {
-                    ReleaseDynamicHeap();
-                }
+                g_dynamic_app_heap.TryRelease();
             }
 
         }
@@ -110,10 +191,15 @@ namespace ams::mitm::fs {
             AMS_UNUSED(type);
 
             if (g_building_from_dynamic_heap) {
-                void * const ret = util::GetReference(g_dynamic_heap).Allocate(size);
-                AMS_ABORT_UNLESS(ret != nullptr);
+                void *ret = g_dynamic_app_heap.Allocate(size);
 
-                ++g_dynamic_heap_outstanding_allocations;
+                if (ret == nullptr && g_dynamic_sys_heap.heap_address != 0) {
+                    ret = g_dynamic_sys_heap.Allocate(size);
+                }
+
+                if (ret == nullptr) {
+                    ret = std::malloc(size);
+                }
 
                 return ret;
             } else {
@@ -125,12 +211,13 @@ namespace ams::mitm::fs {
             AMS_UNUSED(type);
             AMS_UNUSED(size);
 
-            if (IsAllocatedFromDynamicHeap(p)) {
-                --g_dynamic_heap_outstanding_allocations;
-                util::GetReference(g_dynamic_heap).Free(p);
-
-                if (!g_building_from_dynamic_heap && g_dynamic_heap_outstanding_allocations == 0) {
-                    ReleaseDynamicHeap();
+            if (g_dynamic_app_heap.TryFree(p)) {
+                if (!g_building_from_dynamic_heap) {
+                    g_dynamic_app_heap.TryRelease();
+                }
+            } else if (g_dynamic_sys_heap.TryFree(p)) {
+                if (!g_building_from_dynamic_heap) {
+                    g_dynamic_sys_heap.TryRelease();
                 }
             } else {
                 std::free(p);
@@ -916,20 +1003,12 @@ namespace ams::mitm::fs {
             R_SUCCEED_IF(!is_application);
 
             /* First, we need to ensure that, if the game used dynamic heap, we clear it. */
-            if (g_dynamic_heap_size > 0) {
+            if (g_dynamic_app_heap.heap_size > 0) {
                 mitm::fs::FinalizeLayeredRomfsStorage(g_dynamic_heap_program_id);
 
-                /* This should have freed any remaining allocations. */
-                AMS_ABORT_UNLESS(g_dynamic_heap_outstanding_allocations == 0);
-
                 /* Free the heap. */
-                if (g_dynamic_heap_address != 0) {
-                    ReleaseDynamicHeap();
-                }
-
-                /* Clear the heap globals. */
-                g_dynamic_heap_address = 0;
-                g_dynamic_heap_size    = 0;
+                g_dynamic_app_heap.Reset();
+                g_dynamic_sys_heap.Reset();
             }
 
             /* Next, if we aren't going to end up building a romfs, we can ignore dynamic heap. */
@@ -939,11 +1018,12 @@ namespace ams::mitm::fs {
             R_SUCCEED_IF(!mitm::fs::HasSdRomfsContent(program_id));
 
             /* Next, set the new program id for dynamic heap. */
-            g_dynamic_heap_program_id = program_id;
-            g_dynamic_heap_size       = GetDynamicHeapSize(g_dynamic_heap_program_id);
+            g_dynamic_heap_program_id    = program_id;
+            g_dynamic_app_heap.heap_size = GetDynamicAppHeapSize(g_dynamic_heap_program_id);
+            g_dynamic_sys_heap.heap_size = GetDynamicSysHeapSize(g_dynamic_heap_program_id);
 
             /* Set output. */
-            *out_size = g_dynamic_heap_size;
+            *out_size = g_dynamic_app_heap.heap_size;
 
             R_SUCCEED();
         }

@@ -259,8 +259,8 @@ namespace ams::pm::impl {
 
                 if (mitm_boost_size > 0 || is_application) {
                     R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(mitm_boost_size));
-                    ON_RESULT_FAILURE_2 { R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(0)); };
                 }
+                ON_RESULT_FAILURE_2 { if (mitm_boost_size > 0 || is_application) { R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(0)); } };
 
                 /* Ensure resources are available. */
                 resource::WaitResourceAvailable(std::addressof(program_info));
