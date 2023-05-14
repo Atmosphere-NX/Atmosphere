@@ -52,8 +52,15 @@ namespace ams::pm::resource {
         constinit os::SdkMutex g_resource_limit_lock;
         constinit os::NativeHandle g_resource_limit_handles[ResourceLimitGroup_Count];
         constinit spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
-        constinit u64 g_system_memory_boost_size = 0;
         constinit u64 g_extra_threads_available[ResourceLimitGroup_Count];
+
+        constinit os::SdkMutex g_system_memory_boost_lock;
+        constinit u64 g_system_memory_boost_size          = 0;
+        constinit u64 g_system_memory_boost_size_for_mitm = 0;
+
+        ALWAYS_INLINE u64 GetCurrentSystemMemoryBoostSize() {
+            return g_system_memory_boost_size + g_system_memory_boost_size_for_mitm;
+        }
 
         constinit u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
             [ResourceLimitGroup_System] = {
@@ -220,6 +227,47 @@ namespace ams::pm::resource {
             R_SUCCEED();
         }
 
+        Result BoostSystemMemoryResourceLimitLocked(u64 normal_boost, u64 mitm_boost) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(g_system_memory_boost_lock.IsLockedByCurrentThread());
+
+            /* Determine total boost. */
+            const u64 boost_size = normal_boost + mitm_boost;
+
+            /* Don't allow all application memory to be taken away. */
+            R_UNLESS(boost_size <= g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application], pm::ResultInvalidSize());
+
+            const u64 new_app_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application] - boost_size;
+            {
+                std::scoped_lock lk(g_resource_limit_lock);
+
+                if (hos::GetVersion() >= hos::Version_5_0_0) {
+                    /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
+                    if (boost_size < GetCurrentSystemMemoryBoostSize()) {
+                        R_TRY(svc::SetUnsafeLimit(boost_size));
+                        R_ABORT_UNLESS(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                    } else {
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                        R_ABORT_UNLESS(svc::SetUnsafeLimit(boost_size));
+                    }
+                } else {
+                    const u64 new_sys_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_System] + boost_size;
+                    if (boost_size < GetCurrentSystemMemoryBoostSize()) {
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                    } else {
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
+                    }
+                }
+
+                g_system_memory_boost_size         = normal_boost;
+                g_system_memory_boost_size_for_mitm = mitm_boost;
+            }
+
+            R_SUCCEED();
+        }
+
     }
 
     /* Resource API. */
@@ -352,37 +400,19 @@ namespace ams::pm::resource {
     }
 
     Result BoostSystemMemoryResourceLimit(u64 boost_size) {
-        /* Don't allow all application memory to be taken away. */
-        R_UNLESS(boost_size <= g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application], pm::ResultInvalidSize());
+        /* Ensure only one boost change happens at a time. */
+        std::scoped_lock lk(g_system_memory_boost_lock);
 
-        const u64 new_app_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application] - boost_size;
-        {
-            std::scoped_lock lk(g_resource_limit_lock);
+        /* Boost to the appropriate total amount. */
+        R_RETURN(BoostSystemMemoryResourceLimitLocked(boost_size, g_system_memory_boost_size_for_mitm));
+    }
 
-            if (hos::GetVersion() >= hos::Version_5_0_0) {
-                /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
-                if (boost_size < g_system_memory_boost_size) {
-                    R_TRY(svc::SetUnsafeLimit(boost_size));
-                    R_ABORT_UNLESS(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                } else {
-                    R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                    R_ABORT_UNLESS(svc::SetUnsafeLimit(boost_size));
-                }
-            } else {
-                const u64 new_sys_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_System] + boost_size;
-                if (boost_size < g_system_memory_boost_size) {
-                    R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
-                    R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                } else {
-                    R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                    R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
-                }
-            }
+    Result BoostSystemMemoryResourceLimitForMitm(u64 boost_size) {
+        /* Ensure only one boost change happens at a time. */
+        std::scoped_lock lk(g_system_memory_boost_lock);
 
-            g_system_memory_boost_size = boost_size;
-        }
-
-        R_SUCCEED();
+        /* Boost to the appropriate total amount. */
+        R_RETURN(BoostSystemMemoryResourceLimitLocked(g_system_memory_boost_size, boost_size));
     }
 
     Result BoostApplicationThreadResourceLimit() {

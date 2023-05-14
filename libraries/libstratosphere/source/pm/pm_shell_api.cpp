@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "pm_ams.os.horizon.h"
 
 namespace ams::pm::shell {
 

@@ -27,6 +27,52 @@ namespace ams::mitm::fs::romfs {
         Memory,
     };
 
+    enum AllocationType {
+        AllocationType_FileName,
+        AllocationType_DirName,
+        AllocationType_FullPath,
+        AllocationType_SourceInfo,
+        AllocationType_BuildFileContext,
+        AllocationType_BuildDirContext,
+        AllocationType_TableCache,
+        AllocationType_DirPointerArray,
+        AllocationType_DirContextSet,
+        AllocationType_FileContextSet,
+        AllocationType_Memory,
+
+        AllocationType_Count,
+    };
+
+    void *AllocateTracked(AllocationType type, size_t size);
+    void FreeTracked(AllocationType type, void *p, size_t size);
+
+    template<typename T, typename... Args>
+    T *AllocateTyped(AllocationType type, Args &&... args) {
+        void *mem = AllocateTracked(type, sizeof(T));
+        return std::construct_at(static_cast<T *>(mem), std::forward<Args>(args)...);
+    }
+
+    template<AllocationType AllocType, typename T>
+    class TrackedAllocator {
+        public:
+            using value_type = T;
+
+            template<typename U>
+            struct rebind {
+                using other = TrackedAllocator<AllocType, U>;
+            };
+        public:
+            TrackedAllocator() = default;
+
+            T *allocate(size_t n) {
+                return static_cast<T *>(AllocateTracked(AllocType, sizeof(T) * n));
+            }
+
+            void deallocate(T *p, size_t n) {
+                FreeTracked(AllocType, p, sizeof(T) * n);
+            }
+    };
+
     struct SourceInfo {
         s64 virtual_offset;
         s64 size;
@@ -89,10 +135,10 @@ namespace ams::mitm::fs::romfs {
                     delete this->metadata_source_info.file;
                     break;
                 case DataSourceType::LooseSdFile:
-                    delete[] this->loose_source_info.path;
+                    FreeTracked(AllocationType_FullPath, this->loose_source_info.path, std::strlen(this->loose_source_info.path) + 1);
                     break;
                 case DataSourceType::Memory:
-                    std::free(static_cast<void *>(this->memory_source_info.data));
+                    FreeTracked(AllocationType_Memory, this->memory_source_info.data, this->size);
                     break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -113,7 +159,7 @@ namespace ams::mitm::fs::romfs {
         NON_COPYABLE(BuildDirectoryContext);
         NON_MOVEABLE(BuildDirectoryContext);
 
-        std::unique_ptr<char[]> path;
+        char *path;
         union {
             BuildDirectoryContext *parent;
         };
@@ -139,14 +185,26 @@ namespace ams::mitm::fs::romfs {
         struct RootTag{};
 
         BuildDirectoryContext(RootTag) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), path_len(0), entry_offset(0), hash_value(0xFFFFFFFF) {
-            this->path = std::make_unique<char[]>(1);
+            this->path = static_cast<char *>(AllocateTracked(AllocationType_DirName, 1));
+            this->path[0] = '\x00';
         }
 
         BuildDirectoryContext(const char *entry_name, size_t entry_name_len) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), entry_offset(0) {
             this->path_len = entry_name_len;
-            this->path = std::unique_ptr<char[]>(new char[this->path_len + 1]);
-            std::memcpy(this->path.get(), entry_name, entry_name_len);
+            this->path = static_cast<char *>(AllocateTracked(AllocationType_DirName, this->path_len + 1));
+            std::memcpy(this->path, entry_name, entry_name_len);
             this->path[this->path_len] = '\x00';
+        }
+
+        ~BuildDirectoryContext() {
+            if (this->path != nullptr) {
+                FreeTracked(AllocationType_DirName, this->path, this->path_len + 1);
+                this->path = nullptr;
+            }
+        }
+
+        void operator delete(void *p) {
+            FreeTracked(AllocationType_BuildDirContext, p, sizeof(BuildDirectoryContext));
         }
 
         size_t GetPathLength() const {
@@ -165,7 +223,7 @@ namespace ams::mitm::fs::romfs {
 
             const size_t parent_len = this->parent->GetPath(dst);
             dst[parent_len] = '/';
-            std::memcpy(dst + parent_len + 1, this->path.get(), this->path_len);
+            std::memcpy(dst + parent_len + 1, this->path, this->path_len);
             dst[parent_len + 1 + this->path_len] = '\x00';
             return parent_len + 1 + this->path_len;
         }
@@ -187,7 +245,7 @@ namespace ams::mitm::fs::romfs {
         NON_COPYABLE(BuildFileContext);
         NON_MOVEABLE(BuildFileContext);
 
-        std::unique_ptr<char[]> path;
+        char *path;
         BuildDirectoryContext *parent;
         union {
             BuildFileContext *sibling;
@@ -203,9 +261,20 @@ namespace ams::mitm::fs::romfs {
 
         BuildFileContext(const char *entry_name, size_t entry_name_len, s64 sz, s64 o_o, DataSourceType type) : parent(nullptr), sibling(nullptr), offset(0), size(sz), orig_offset(o_o), entry_offset(0), hash_value(0xFFFFFFFF), source_type(type) {
             this->path_len = entry_name_len;
-            this->path = std::unique_ptr<char[]>(new char[this->path_len + 1]);
-            std::memcpy(this->path.get(), entry_name, entry_name_len);
+            this->path = static_cast<char *>(AllocateTracked(AllocationType_FileName, this->path_len + 1));
+            std::memcpy(this->path, entry_name, entry_name_len);
             this->path[this->path_len] = 0;
+        }
+
+        ~BuildFileContext() {
+            if (this->path != nullptr) {
+                FreeTracked(AllocationType_FileName, this->path, this->path_len + 1);
+                this->path = nullptr;
+            }
+        }
+
+        void operator delete(void *p) {
+            FreeTracked(AllocationType_BuildFileContext, p, sizeof(BuildFileContext));
         }
 
         size_t GetPathLength() const {
@@ -224,7 +293,7 @@ namespace ams::mitm::fs::romfs {
 
             const size_t parent_len = this->parent->GetPath(dst);
             dst[parent_len] = '/';
-            std::memcpy(dst + parent_len + 1, this->path.get(), this->path_len);
+            std::memcpy(dst + parent_len + 1, this->path, this->path_len);
             dst[parent_len + 1 + this->path_len] = '\x00';
             return parent_len + 1 + this->path_len;
         }
@@ -248,6 +317,8 @@ namespace ams::mitm::fs::romfs {
     class Builder {
         NON_COPYABLE(Builder);
         NON_MOVEABLE(Builder);
+        public:
+            using SourceInfoVector = std::vector<SourceInfo, TrackedAllocator<AllocationType_SourceInfo, SourceInfo>>;
         private:
             template<typename T>
             struct Comparator {
@@ -270,13 +341,13 @@ namespace ams::mitm::fs::romfs {
                 }
             };
 
-            template<typename T>
-            using ContextSet = std::set<std::unique_ptr<T>, Comparator<T>>;
+            template<AllocationType AllocType, typename T>
+            using ContextSet = std::set<std::unique_ptr<T>, Comparator<T>, TrackedAllocator<AllocType, std::unique_ptr<T>>>;
         private:
             ncm::ProgramId m_program_id;
             BuildDirectoryContext *m_root;
-            ContextSet<BuildDirectoryContext> m_directories;
-            ContextSet<BuildFileContext> m_files;
+            ContextSet<AllocationType_DirContextSet, BuildDirectoryContext> m_directories;
+            ContextSet<AllocationType_FileContextSet, BuildFileContext> m_files;
             size_t m_num_dirs;
             size_t m_num_files;
             size_t m_dir_table_size;
@@ -295,11 +366,14 @@ namespace ams::mitm::fs::romfs {
             void AddFile(BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildFileContext> file_ctx);
         public:
             Builder(ncm::ProgramId pr_id);
+            ~Builder();
 
             void AddSdFiles();
             void AddStorageFiles(ams::fs::IStorage *storage, DataSourceType source_type);
 
-            void Build(std::vector<SourceInfo> *out_infos);
+            void Build(SourceInfoVector *out_infos);
     };
+
+    Result ConfigureDynamicHeap(u64 *out_size, ncm::ProgramId program_id, const cfg::OverrideStatus &status, bool is_application);
 
 }
