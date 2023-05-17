@@ -244,6 +244,24 @@ namespace ams::pm::impl {
                 /* If we fail after now, unpin. */
                 ON_RESULT_FAILURE { ldr::pm::UnpinProgram(pin_id); };
 
+                /* Ensure we can talk to mitm services. */
+                {
+                    AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_initialized_mitm, false);
+                    if (!s_initialized_mitm) {
+                        mitm::pm::Initialize();
+                        s_initialized_mitm = true;
+                    }
+                }
+
+                /* Determine boost size for mitm. */
+                u64 mitm_boost_size = 0;
+                R_TRY(mitm::pm::PrepareLaunchProgram(std::addressof(mitm_boost_size), program_info.program_id, override_status, is_application));
+
+                if (mitm_boost_size > 0 || is_application) {
+                    R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(mitm_boost_size));
+                }
+                ON_RESULT_FAILURE_2 { if (mitm_boost_size > 0 || is_application) { R_ABORT_UNLESS(BoostSystemMemoryResourceLimitForMitm(0)); } };
+
                 /* Ensure resources are available. */
                 resource::WaitResourceAvailable(std::addressof(program_info));
 
@@ -711,6 +729,10 @@ namespace ams::pm::impl {
 
     Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource) {
         R_RETURN(resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource)));
+    }
+
+    Result BoostSystemMemoryResourceLimitForMitm(u64 boost_size) {
+        R_RETURN(resource::BoostSystemMemoryResourceLimitForMitm(boost_size));
     }
 
 }

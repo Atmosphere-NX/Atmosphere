@@ -27,7 +27,7 @@ namespace ams::kern::svc {
             R_UNLESS(size < ams::kern::MainMemorySizeMax,                svc::ResultInvalidSize());
 
             /* Set the heap size. */
-            KProcessAddress address;
+            KProcessAddress address = Null<KProcessAddress>;
             R_TRY(GetCurrentProcess().GetPageTable().SetHeapSize(std::addressof(address), size));
 
             /* Set the output. */

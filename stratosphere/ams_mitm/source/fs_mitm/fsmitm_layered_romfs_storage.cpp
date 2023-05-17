@@ -78,6 +78,7 @@ namespace ams::mitm::fs {
 
         constinit os::SdkRecursiveMutex g_storage_set_mutex;
         constinit LayeredRomfsStorageSet g_storage_set;
+        constinit os::SdkMutex g_initialization_mutex;
 
         void OpenReference(LayeredRomfsStorageImpl *impl) {
             std::scoped_lock lk(g_storage_set_mutex);
@@ -105,6 +106,8 @@ namespace ams::mitm::fs {
                 g_req_mq.Receive(std::addressof(storage_uptr));
                 auto *impl = reinterpret_cast<LayeredRomfsStorageImpl *>(storage_uptr);
                 g_ack_mq.Send(storage_uptr);
+
+                std::scoped_lock lk(g_initialization_mutex);
 
                 impl->InitializeImpl();
 
@@ -253,6 +256,21 @@ namespace ams::mitm::fs {
 
         /* Return a new shared storage for the impl. */
         return std::make_shared<LayeredRomfsStorage>(impl);
+    }
+
+    void FinalizeLayeredRomfsStorage(ncm::ProgramId program_id) {
+        std::scoped_lock lk(g_initialization_mutex);
+        std::scoped_lock lk2(g_storage_set_mutex);
+
+        /* Find an existing storage. */
+        if (auto it = g_storage_set.find_key(program_id.value); it != g_storage_set.end()) {
+            /* We need to delete the process romfs. Require invariant that it is unreferenced, by this point. */
+            AMS_ABORT_UNLESS(it->GetReferenceCount() == 0);
+
+            auto *holder = std::addressof(*it);
+            it = g_storage_set.erase(it);
+            delete holder;
+        }
     }
 
     LayeredRomfsStorageImpl::LayeredRomfsStorageImpl(std::unique_ptr<IStorage> s_r, std::unique_ptr<IStorage> f_r, ncm::ProgramId pr_id) : m_storage_romfs(std::move(s_r)), m_file_romfs(std::move(f_r)), m_initialize_event(os::EventClearMode_ManualClear), m_program_id(std::move(pr_id)), m_is_initialized(false), m_started_initialize(false) {

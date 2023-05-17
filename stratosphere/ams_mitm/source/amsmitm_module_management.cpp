@@ -24,6 +24,7 @@
 #include "ns_mitm/nsmitm_module.hpp"
 #include "dns_mitm/dnsmitm_module.hpp"
 #include "sysupdater/sysupdater_module.hpp"
+#include "mitm_pm/mitm_pm_module.hpp"
 
 namespace ams::mitm {
 
@@ -37,6 +38,7 @@ namespace ams::mitm {
             ModuleId_NsMitm,
             ModuleId_DnsMitm,
             ModuleId_Sysupdater,
+            ModuleId_PmService,
 
             ModuleId_Count,
         };
@@ -70,6 +72,7 @@ namespace ams::mitm {
             GetModuleDefinition<ns::MitmModule>(),
             GetModuleDefinition<socket::resolver::MitmModule>(),
             GetModuleDefinition<sysupdater::MitmModule>(),
+            GetModuleDefinition<pm::MitmModule>(),
         };
 
     }

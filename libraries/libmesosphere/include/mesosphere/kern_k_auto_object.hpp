@@ -257,7 +257,7 @@ namespace ams::kern {
     class KScopedAutoObject {
         NON_COPYABLE(KScopedAutoObject);
         private:
-            template<typename U>
+            template<typename U> requires std::derived_from<U, KAutoObject>
             friend class KScopedAutoObject;
         private:
             T *m_obj;

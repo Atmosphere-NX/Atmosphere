@@ -94,10 +94,6 @@ namespace ams::util {
                             return m_node == rhs.m_node;
                         }
 
-                        constexpr ALWAYS_INLINE bool operator!=(const Iterator &rhs) const {
-                            return !(*this == rhs);
-                        }
-
                         constexpr ALWAYS_INLINE pointer operator->() const {
                             return m_node;
                         }
@@ -302,10 +298,6 @@ namespace ams::util {
                 public:
                     constexpr ALWAYS_INLINE bool operator==(const Iterator &rhs) const {
                         return m_impl == rhs.m_impl;
-                    }
-
-                    constexpr ALWAYS_INLINE bool operator!=(const Iterator &rhs) const {
-                        return !(*this == rhs);
                     }
 
                     constexpr ALWAYS_INLINE pointer operator->() const {

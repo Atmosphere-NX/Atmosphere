@@ -55,5 +55,6 @@ namespace ams::pm::impl {
     Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out);
     Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out);
     Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource);
+    Result BoostSystemMemoryResourceLimitForMitm(u64 boost_size);
 
 }

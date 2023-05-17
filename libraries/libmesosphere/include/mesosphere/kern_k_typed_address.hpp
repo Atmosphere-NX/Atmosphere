@@ -120,10 +120,6 @@ namespace ams::kern {
                 return m_address == rhs;
             }
 
-            constexpr ALWAYS_INLINE bool operator!=(uintptr_t rhs) const {
-                return m_address != rhs;
-            }
-
             /* Allow getting the address explicitly, for use in accessors. */
             constexpr ALWAYS_INLINE uintptr_t GetValue() const {
                 return m_address;

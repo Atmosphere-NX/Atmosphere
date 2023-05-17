@@ -69,7 +69,7 @@ namespace ams::fatal::srv {
             /* Neither heap nor insecure is available, so we're going to have to try to raid the unsafe pool. */
             {
                 /* First, increase the limit to an extremely high value. */
-                size_t large_size = std::max(64_MB, FrameBufferRequiredSizeHeapAligned);
+                size_t large_size = std::max(128_MB, FrameBufferRequiredSizeHeapAligned);
                 while (svc::ResultLimitReached::Includes(svc::SetUnsafeLimit(large_size))) {
                     large_size *= 2;
                 }

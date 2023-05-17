@@ -54,7 +54,8 @@ namespace ams::mitm::fs {
                 }
 
                 /* We want to mitm sdb, to support sd-romfs redirection of common system archives (like system font, etc). */
-                if (program_id == ncm::SystemProgramId::Sdb) {
+                /* NOTE: In 16.0.0+, this was moved to glue. */
+                if (program_id == ncm::SystemProgramId::Sdb || program_id == ncm::SystemProgramId::Glue) {
                     return true;
                 }
 
