@@ -2375,7 +2375,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.09 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.09c address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2527,10 +2527,10 @@ namespace ams::dmnt {
             // }
             for (auto i = 0; i < m_watch_data.count; i++) {
                 if (m_watch_data.read || m_watch_data.write) {
-                    get_region(m_watch_data.fromU.from[i].address);
-                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.fromU.from[i].address, m_watch_data.fromU.from[i].count, m_watch_data.module_name, m_watch_data.offset);
+                    get_region(m_watch_data.fromU.from2[i].from_stack.address&0xFFFFFFFFFF);
+                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.fromU.from2[i].from_stack.address&0xFFFFFFFFFF, m_watch_data.fromU.from2[i].count, m_watch_data.module_name, m_watch_data.offset);
                 } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.fromU.from2[i].from_stack.address, m_watch_data.fromU.from2[i].count);
+                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.fromU.from[i].address&0xFFFFFFFFFF, m_watch_data.fromU.from[i].count);
                 }
             }
             m_watch_data.intercepted = false;
