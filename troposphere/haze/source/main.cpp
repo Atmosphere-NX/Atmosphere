@@ -17,6 +17,9 @@
 #include <haze/console_main_loop.hpp>
 
 int main(int argc, char **argv) {
+    /* Lock exit so that cleanup is ensured. */
+    HAZE_R_ABORT_UNLESS(appletLockExit());
+
     /* Load device firmware version and serial number. */
     HAZE_R_ABORT_UNLESS(haze::LoadDeviceProperties());
 
@@ -24,5 +27,6 @@ int main(int argc, char **argv) {
     haze::ConsoleMainLoop::RunApplication();
 
     /* Return to the loader. */
+    appletUnlockExit();
     return 0;
 }

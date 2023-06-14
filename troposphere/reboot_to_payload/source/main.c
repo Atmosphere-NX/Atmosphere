@@ -8,11 +8,17 @@
 #define IRAM_PAYLOAD_MAX_SIZE 0x24000
 static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
 
+void userAppInit(void)
+{
+    appletLockExit();
+}
+
 void userAppExit(void)
 {
     amsBpcExit();
     setsysExit();
     spsmExit();
+    appletUnlockExit();
 }
 
 static void reboot_to_payload(void) {
