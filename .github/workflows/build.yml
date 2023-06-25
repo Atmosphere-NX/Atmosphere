@@ -1,0 +1,64 @@
+---
+name: Build
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  Linux:
+    container:
+      image: devkitpro/devkita64:latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          apt-get --yes update
+          apt-get --yes install build-essential python-pip zstd
+
+      - name: Install `python` dependencies
+        run: |
+          pip install lz4 pycryptodome
+
+      - name: Build & Install `hactool`
+        run: |
+          echo 'MAKEFLAGS="-j'$(($(nproc) + 1))'"' >> /opt/devkitpro/pacman/etc/makepkg.conf
+          usermod --home=/home/nobody --root=/home/nobody --shell=/bin/bash nobody
+          mkdir --parents /home/nobody
+          chown nobody:nogroup /home/nobody
+          curl --silent https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=hactool | sudo --user nobody --login tee /home/nobody/PKGBUILD
+          sudo --user nobody --login dkp-makepkg
+          dkp-pacman --upgrade --noconfirm /home/nobody/hactool*.zst
+
+      - name: Ensure GITHUB_WORKSPACE directory is considered safe
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+
+      - name: Make
+        run: |
+          make -j$(($(nproc) + 1))
+
+      - name: Move Debug package
+        run: |
+          mv out/nintendo_nx_arm64_armv8a/release/atmosphere*-debug.zip /tmp/
+
+      - name: Upload Fusée
+        uses: actions/upload-artifact@v3
+        with:
+          name: Fusée
+          path: out/nintendo_nx_arm64_armv8a/release/fusee.bin
+
+      - name: Upload Atmosphère Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: Atmosphère
+          path: out/nintendo_nx_arm64_armv8a/release/atmosphere*.zip
+
+      - name: Upload Atmosphère Archive (Debug)
+        uses: actions/upload-artifact@v3
+        with:
+          name: Atmosphère-Debug
+          path: /tmp/atmosphere*.zip
