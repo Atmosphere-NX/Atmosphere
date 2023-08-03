@@ -113,7 +113,7 @@ namespace ams::fssystem {
                         AMS_ASSERT(m_header == nullptr);
                     }
 
-                    NodeBuffer(NodeBuffer &&rhs) : m_allocator(rhs.m_allocator), m_header(rhs.m_allocator) {
+                    NodeBuffer(NodeBuffer &&rhs) : m_allocator(rhs.m_allocator), m_header(rhs.m_header) {
                         rhs.m_allocator = nullptr;
                         rhs.m_header = nullptr;
                     }
