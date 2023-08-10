@@ -143,7 +143,7 @@ namespace ams::fssystem {
         /* Check if we have a rights id. */
         constexpr const u8 ZeroRightsId[NcaHeader::RightsIdSize] = {};
         if (crypto::IsSameBytes(ZeroRightsId, m_header.rights_id, NcaHeader::RightsIdSize)) {
-            /* If we do, then we don't have an external key, so we need to generate decryption keys if software keys are available. */
+            /* If we don't, then we don't have an external key, so we need to generate decryption keys if software keys are available. */
             if (crypto_cfg.is_available_sw_key) {
                 crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtr], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtr * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()));
 
