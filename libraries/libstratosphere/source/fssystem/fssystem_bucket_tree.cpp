@@ -191,7 +191,7 @@ namespace ams::fssystem {
         m_offset_cache.offsets.end_offset   = end_offset;
         m_offset_cache.is_initialized       = true;
 
-        /* Cancel guard. */
+        /* We succeeded. */
         R_SUCCEED();
     }
 
