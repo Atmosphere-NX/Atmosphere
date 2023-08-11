@@ -492,7 +492,7 @@ namespace ams::fssystem {
                         AMS_ASSERT(offset >= 0);
                         AMS_ASSERT(this->IsInitialized());
 
-                        /* Succeed immediately, if we hvae nothing to read. */
+                        /* Succeed immediately, if we have nothing to read. */
                         R_SUCCEED_IF(size == 0);
 
                         /* Declare read lambda. */
@@ -734,7 +734,7 @@ namespace ams::fssystem {
                                 }
                                 required_access_physical_size += physical_size + gap_from_prev;
 
-                                /* Create an entry. to access the data storage. */
+                                /* Create an entry to access the data storage. */
                                 entries[entry_count++] = {
                                     .compression_type = entry.compression_type,
                                     .gap_from_prev    = static_cast<u32>(gap_from_prev),
@@ -758,7 +758,7 @@ namespace ams::fssystem {
                                         .virtual_size     = static_cast<u32>(read_size),
                                     };
                                 } else {
-                                    /* We have no entries, we we can just perform the read. */
+                                    /* We have no entries, so we can just perform the read. */
                                     R_TRY(read_func(static_cast<size_t>(read_size), util::MakeIFunction([&] (void *dst, size_t dst_size) -> Result {
                                         /* Check the space we should zero is correct. */
                                         AMS_ASSERT(dst_size == static_cast<size_t>(read_size));

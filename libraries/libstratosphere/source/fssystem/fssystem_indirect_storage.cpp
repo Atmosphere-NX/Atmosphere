@@ -78,7 +78,7 @@ namespace ams::fssystem {
 
         auto cur_entry = *visitor.Get<Entry>();
         while (cur_entry.GetVirtualOffset() < end_offset) {
-            /* Try to write the entry to the out list */
+            /* Try to write the entry to the out list. */
             if (entry_count != 0) {
                 if (count >= entry_count) {
                     break;
