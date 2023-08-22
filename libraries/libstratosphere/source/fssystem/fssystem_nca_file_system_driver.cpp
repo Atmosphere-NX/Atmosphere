@@ -256,7 +256,7 @@ namespace ams::fssystem {
 
         /* Process indirect layer. */
         if (patch_info.HasIndirectTable()) {
-            /* Create the indirect meta storage */
+            /* Create the indirect meta storage. */
             std::shared_ptr<fs::IStorage> indirect_storage_meta_storage = patch_meta_indirect_meta_storage;
             if (indirect_storage_meta_storage == nullptr) {
                 /* If we don't have a meta storage, we must not have a patch meta hash layer. */

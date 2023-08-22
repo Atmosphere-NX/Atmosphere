@@ -191,7 +191,7 @@ namespace ams::fssystem {
         m_offset_cache.offsets.end_offset   = end_offset;
         m_offset_cache.is_initialized       = true;
 
-        /* Cancel guard. */
+        /* We succeeded. */
         R_SUCCEED();
     }
 
@@ -326,7 +326,7 @@ namespace ams::fssystem {
 
             entry_index = 0;
         } else {
-            m_entry_index = 1;
+            m_entry_index = -1;
         }
 
         /* Read the new entry. */

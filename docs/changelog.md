@@ -1,4 +1,7 @@
 # Changelog
+## 1.5.5
++ Support was added for 16.1.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.5.4
 + Experimental new functionality was implemented to prevent crashing when building romfs for certain games with obscene file counts.
   + This includes both Fire Emblem: Engage (~190000 files), and The Legend of Zelda: Tears of the Kingdom (~300000) files.

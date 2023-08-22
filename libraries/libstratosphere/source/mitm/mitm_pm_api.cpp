@@ -14,7 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#if defined(ATMOSPHERE_OS_HORIZON)
 #include "mitm_pm.os.horizon.h"
+#endif
 
 namespace ams::mitm::pm {
 
