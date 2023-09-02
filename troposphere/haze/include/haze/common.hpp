@@ -42,6 +42,4 @@ namespace haze {
 
     using Result = ::ams::Result;
 
-    static constexpr u32 UsbBulkPacketBufferSize = 1_MB;
-
 }
