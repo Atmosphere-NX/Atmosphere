@@ -57,6 +57,11 @@ namespace haze {
         PtpOperationCode_MtpGetObjectPropDesc,
         PtpOperationCode_MtpGetObjectPropValue,
         PtpOperationCode_MtpSetObjectPropValue,
+        PtpOperationCode_AndroidGetPartialObject64,
+        PtpOperationCode_AndroidSendPartialObject,
+        PtpOperationCode_AndroidTruncateObject,
+        PtpOperationCode_AndroidBeginEditObject,
+        PtpOperationCode_AndroidEndEditObject,
     };
 
     constexpr const PtpEventCode SupportedEventCodes[]                = { /* ... */ };
