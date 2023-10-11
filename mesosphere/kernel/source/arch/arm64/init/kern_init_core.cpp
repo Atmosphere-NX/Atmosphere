@@ -33,6 +33,7 @@ namespace ams::kern::init {
     void IdentityMappedFunctionAreaEnd();
 
     size_t GetMiscUnknownDebugRegionSize();
+    size_t GetSecureUnknownRegionSize();
 
     void InitializeDebugRegisters();
     void InitializeExceptionVectors();
@@ -488,14 +489,21 @@ namespace ams::kern::init {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), KSystemControl::SecureAppletMemorySize, KMemoryRegionType_DramKernelSecureAppletMemory));
         }
 
+        /* Insert a physical region for the unknown debug2 region. */
+        const size_t secure_unknown_size = GetSecureUnknownRegionSize();
+        const auto secure_unknown_end_phys_addr = secure_applet_end_phys_addr + secure_unknown_size;
+        if (secure_unknown_size > 0) {
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_applet_end_phys_addr), secure_unknown_size, KMemoryRegionType_DramKernelSecureUnknown));
+        }
+
         /* Determine size available for kernel page table heaps. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
         g_phase2_resource_end_phys_addr = resource_end_phys_addr;
 
-        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_applet_end_phys_addr);
+        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_unknown_end_phys_addr);
 
         /* Insert a physical region for the kernel page table heap region */
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_applet_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_unknown_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
@@ -723,6 +731,10 @@ namespace ams::kern::init {
     }
 
     size_t GetMiscUnknownDebugRegionSize() {
+        return 0;
+    }
+
+    size_t GetSecureUnknownRegionSize() {
         return 0;
     }
 
