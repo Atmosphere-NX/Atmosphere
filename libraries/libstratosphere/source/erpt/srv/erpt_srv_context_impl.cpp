@@ -38,7 +38,7 @@ namespace ams::erpt::srv {
         R_RETURN(Context::SubmitContext(ctx, data, data_size));
     }
 
-    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result) {
+    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result, erpt::CreateReportOptionFlagSet flags) {
         const   ContextEntry *ctx  = reinterpret_cast<const   ContextEntry *>( ctx_buffer.GetPointer());
         const             u8 *data = reinterpret_cast<const             u8 *>(data_buffer.GetPointer());
         const ReportMetaData *meta = reinterpret_cast<const ReportMetaData *>(meta_buffer.GetPointer());
@@ -50,15 +50,19 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0));
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, flags));
 
         ManagerImpl::NotifyAll();
 
         R_SUCCEED();
     }
 
+    Result ContextImpl::CreateReportV1(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result) {
+        R_RETURN(this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, result, erpt::srv::MakeNoCreateReportOptionFlags()));
+    }
+
     Result ContextImpl::CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
-        R_RETURN(this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess()));
+        R_RETURN(this->CreateReportV1(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess()));
     }
 
     Result ContextImpl::SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) {
@@ -138,7 +142,7 @@ namespace ams::erpt::srv {
         R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size));
     }
 
-    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result) {
+    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result, erpt::CreateReportOptionFlagSet flags) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
         const u32 ctx_size  = static_cast<u32>(ctx_buffer.GetSize());
@@ -150,15 +154,19 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments));
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments, flags));
 
         ManagerImpl::NotifyAll();
 
         R_SUCCEED();
     }
 
+    Result ContextImpl::CreateReportWithAttachmentsDeprecated2(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result) {
+        R_RETURN(this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, result, erpt::srv::MakeNoCreateReportOptionFlags()));
+    }
+
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
-        R_RETURN(this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess()));
+        R_RETURN(this->CreateReportWithAttachmentsDeprecated2(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess()));
     }
 
     Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
