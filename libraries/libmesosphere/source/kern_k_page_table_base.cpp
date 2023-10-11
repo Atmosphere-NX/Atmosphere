@@ -527,16 +527,11 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
+    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KMemoryBlockManager::const_iterator it, KProcessAddress last_addr, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Get information about the first block. */
-        const KProcessAddress last_addr = addr + size - 1;
-        KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(addr);
         KMemoryInfo info = it->GetMemoryInfo();
-
-        /* If the start address isn't aligned, we need a block. */
-        const size_t blocks_for_start_align = (util::AlignDown(GetInteger(addr), PageSize) != info.GetAddress()) ? 1 : 0;
 
         /* Validate all blocks in the range have correct state. */
         const KMemoryState      first_state = info.m_state;
@@ -562,9 +557,6 @@ namespace ams::kern {
             info = it->GetMemoryInfo();
         }
 
-        /* If the end address isn't aligned, we need a block. */
-        const size_t blocks_for_end_align = (util::AlignUp(GetInteger(addr) + size, PageSize) != info.GetEndAddress()) ? 1 : 0;
-
         /* Write output state. */
         if (out_state != nullptr) {
             *out_state = first_state;
@@ -575,9 +567,29 @@ namespace ams::kern {
         if (out_attr != nullptr) {
             *out_attr = static_cast<KMemoryAttribute>(first_attr & ~ignore_attr);
         }
+
+        /* If the end address isn't aligned, we need a block. */
         if (out_blocks_needed != nullptr) {
-            *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
+            const size_t blocks_for_end_align = (util::AlignDown(GetInteger(last_addr), PageSize) + PageSize != info.GetEndAddress()) ? 1 : 0;
+            *out_blocks_needed = blocks_for_end_align;
         }
+
+        R_SUCCEED();
+    }
+
+    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Check memory state. */
+        const KProcessAddress last_addr = addr + size - 1;
+        KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(addr);
+        R_TRY(this->CheckMemoryState(out_state, out_perm, out_attr, out_blocks_needed, it, last_addr, state_mask, state, perm_mask, perm, attr_mask, attr, ignore_attr))
+
+        /* If the start address isn't aligned, we need a block. */
+        if (out_blocks_needed != nullptr && util::AlignDown(GetInteger(addr), PageSize) != it->GetAddress()) {
+            ++(*out_blocks_needed);
+        }
+
         R_SUCCEED();
     }
 
