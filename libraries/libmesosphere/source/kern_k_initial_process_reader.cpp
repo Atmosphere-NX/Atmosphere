@@ -129,7 +129,8 @@ namespace ams::kern {
                         /* It is guaranteed by pre-condition that only the very first block can overlap with the physical binary, so we can simply memmove it at the end. */
                         if (last_block != Null<KVirtualAddress>) {
                             /* This is guaranteed by pre-condition, but for ease of debugging, check for no overlap. */
-                            AMS_ASSERT(!util::HasOverlap(GetInteger(binary_phys), binary_size, GetInteger(block_addr), cur_size));
+                            MESOSPHERE_ASSERT(!util::HasOverlap(GetInteger(binary_phys), binary_size, GetInteger(block_addr), cur_size));
+                            MESOSPHERE_UNUSED(binary_phys);
 
                             /* We need to copy. */
                             std::memcpy(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block_addr)), GetVoidPointer(data), cur_size);
