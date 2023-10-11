@@ -491,7 +491,7 @@ namespace ams::kern {
             MESOSPHERE_LOG("KProcess::Exit() pid=%ld name=%-12s\n", m_process_id, m_name);
 
             /* Register the process as a work task. */
-            KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+            KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_ExitProcess, this);
         }
 
         /* Exit the current thread. */
@@ -536,7 +536,7 @@ namespace ams::kern {
                 MESOSPHERE_LOG("KProcess::Terminate() FAIL pid=%ld name=%-12s\n", m_process_id, m_name);
 
                 /* Register the process as a work task. */
-                KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+                KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_ExitProcess, this);
             }
         }
 
