@@ -130,4 +130,4 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
-    eret
+    ERET_WITH_SPECULATION_BARRIER

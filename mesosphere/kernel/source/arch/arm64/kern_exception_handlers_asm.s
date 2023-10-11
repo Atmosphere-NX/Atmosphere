@@ -64,7 +64,7 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
     add     sp, sp, #(8 * 24)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 /* ams::kern::arch::arm64::EL0A64IrqExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv, "ax", %progbits
@@ -150,7 +150,7 @@ _ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 /* ams::kern::arch::arm64::EL0A32IrqExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv, "ax", %progbits
@@ -218,7 +218,7 @@ _ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 /* ams::kern::arch::arm64::EL0SynchronousExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv, "ax", %progbits
@@ -331,7 +331,7 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 4:  /* SVC from aarch32. */
     ldp x16, x17, [sp], 16
@@ -377,7 +377,7 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     ldp x16, x17, [sp], 16
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 
 /* ams::kern::arch::arm64::EL1SynchronousExceptionHandler() */
@@ -441,7 +441,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     /* Return false. */
     mov     x0, #0x0
     msr     elr_el1, x30
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 2:  /* The exception wasn't an triggered by copying memory from userspace. */
     ldr     x0, [sp, #8]
@@ -519,7 +519,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     mrs     x0, tpidr_el1
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 
 /* ams::kern::arch::arm64::FpuAccessExceptionHandler() */
@@ -542,7 +542,7 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 /* ams::kern::arch::arm64::EL1SystemErrorHandler() */
 .section    .text._ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv, "ax", %progbits
@@ -680,5 +680,5 @@ _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
     /* Return from the exception. */
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
