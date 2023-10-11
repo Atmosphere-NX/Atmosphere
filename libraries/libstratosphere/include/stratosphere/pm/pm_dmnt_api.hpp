@@ -28,6 +28,7 @@ namespace ams::pm::dmnt {
     Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id);
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
     Result HookToCreateApplicationProcess(os::NativeHandle *out_handle);
+    Result HookToCreateProcess(os::NativeHandle *out_handle, const ncm::ProgramId program_id);
     Result AtmosphereGetProcessInfo(os::NativeHandle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
 
     #if defined(ATMOSPHERE_OS_HORIZON)
