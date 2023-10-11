@@ -25,7 +25,8 @@ namespace ams::kern {
             static constexpr s32 ExitWorkerPriority = 11;
 
             enum WorkerType {
-                WorkerType_Exit,
+                WorkerType_ExitThread,
+                WorkerType_ExitProcess,
 
                 WorkerType_Count,
             };
