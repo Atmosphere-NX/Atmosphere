@@ -59,7 +59,9 @@ namespace ams::kern::arch::arm64 {
             EsrEc_BrkInstruction            = 0b111100,
         };
 
-        constexpr u32 GetInstructionData(const KExceptionContext *context, u64 esr) {
+
+
+        u32 GetInstructionDataSupervisorMode(const KExceptionContext *context, u64 esr) {
             /* Check for THUMB usermode */
             if ((context->psr & 0x3F) == 0x30) {
                 u32 insn = *reinterpret_cast<u16 *>(context->pc & ~0x1);
@@ -72,6 +74,37 @@ namespace ams::kern::arch::arm64 {
                 /* Not thumb, so just get the instruction. */
                 return *reinterpret_cast<u32 *>(context->pc);
             }
+        }
+
+        u32 GetInstructionDataUserMode(const KExceptionContext *context) {
+            /* Check for THUMB usermode */
+            u32 insn = 0;
+            if ((context->psr & 0x3F) == 0x30) {
+                u16 insn_high = 0;
+                if (UserspaceAccess::CopyMemoryFromUser(std::addressof(insn_high), reinterpret_cast<u16 *>(context->pc & ~0x1), sizeof(insn_high))) {
+                    insn = insn_high;
+
+                    /* Check if the instruction was a THUMB mode branch prefix. */
+                    if (((insn >> 11) & 0b11110) == 0b11110) {
+                        u16 insn_low = 0;
+                        if (UserspaceAccess::CopyMemoryFromUser(std::addressof(insn_low), reinterpret_cast<u16 *>((context->pc & ~0x1) + sizeof(u16)), sizeof(insn_low))) {
+                            insn = (static_cast<u32>(insn_high) << 16) | (static_cast<u32>(insn_low) << 0);
+                        } else {
+                            insn = 0;
+                        }
+                    }
+                } else {
+                    insn = 0;
+                }
+            } else {
+                u32 insn_value = 0;
+                if (UserspaceAccess::CopyMemoryFromUser(std::addressof(insn_value), reinterpret_cast<u32 *>(context->pc), sizeof(insn_value))) {
+                    insn = insn_value;
+                } else {
+                    insn = 0;
+                }
+            }
+            return insn;
         }
 
         void HandleUserException(KExceptionContext *context, u64 esr, u64 far, u64 afsr0, u64 afsr1, u32 data) {
@@ -501,9 +534,10 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
 
         /* Retrieve information about the exception. */
-        const u64 esr   = cpu::GetEsrEl1();
-        const u64 afsr0 = cpu::GetAfsr0El1();
-        const u64 afsr1 = cpu::GetAfsr1El1();
+        const bool is_user_mode = (context->psr & 0xF) == 0;
+        const u64 esr           = cpu::GetEsrEl1();
+        const u64 afsr0         = cpu::GetAfsr0El1();
+        const u64 afsr1         = cpu::GetAfsr1El1();
         u64 far  = 0;
         u32 data = 0;
 
@@ -514,7 +548,12 @@ namespace ams::kern::arch::arm64 {
             case EsrEc_BkptInstruction:
             case EsrEc_BrkInstruction:
                 far   = context->pc;
-                data = GetInstructionData(context, esr);
+                /* NOTE: Nintendo always calls GetInstructionDataUserMode. */
+                if (is_user_mode) {
+                    data = GetInstructionDataUserMode(context);
+                } else {
+                    data = GetInstructionDataSupervisorMode(context, esr);
+                }
                 break;
             case EsrEc_Svc32:
                 if (context->psr & 0x20) {
@@ -543,7 +582,6 @@ namespace ams::kern::arch::arm64 {
 
         /* Verify that spsr's M is allowable (EL0t). */
         {
-            const bool is_user_mode = (context->psr & 0xF) == 0;
             if (is_user_mode) {
                 /* If the user disable count is set, we may need to pin the current thread. */
                 if (GetCurrentThread().GetUserDisableCount() != 0 && GetCurrentProcess().GetPinnedThread(GetCurrentCoreId()) == nullptr) {
