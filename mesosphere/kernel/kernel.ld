@@ -16,9 +16,25 @@ SECTIONS
 	. = __start__;
 	__code_start = . ;
 
-	.crt0 :
+	.start :
 	{
-		KEEP (*(.crt0 .crt0.*))
+		KEEP (*(.start .start.*))
+		. = ALIGN(8);
+	} :code
+
+	/* .sleep. */
+    .sleep :
+	{
+		KEEP( *(.sleep .sleep.*) )
+		. = ALIGN(8);
+	} :code
+
+	/* .vectors. */
+	. = ALIGN(2K);
+	__vectors_start__ = . ;
+    .vectors :
+	{
+		KEEP( *(.vectors) )
 		. = ALIGN(8);
 	} :code
 
@@ -51,27 +67,15 @@ SECTIONS
 		. = ALIGN(8);
 	} :code
 
-	/* .sleep. */
-	. = ALIGN(4K);
-	__sleep_start__ = . ;
-    .sleep :
-	{
-		KEEP( *(.sleep .sleep.*) )
-		. = ALIGN(8);
-	} :code
-
-	/* .vectors. */
-	. = ALIGN(2K);
-	__vectors_start__ = . ;
-    .vectors :
-	{
-		KEEP( *(.vectors) )
-		. = ALIGN(8);
-	} :code
-
 	/* =========== RODATA section =========== */
 	. = ALIGN(0x1000);
 	__rodata_start = . ;
+
+	.rodata.text.crt0 :
+	{
+		KEEP (*(.crt0 .crt0.*))
+		. = ALIGN(8);
+	} :code
 
 	.rodata :
 	{

@@ -17,11 +17,16 @@ def main(argc, argv):
         kernel_ldr = f.read()
     with open(argv[2], 'rb') as f:
         kernel = f.read()
-    kernel_metadata_offset = 4
+    kernel_metaptr_offset = 4
+    assert (kernel_metaptr_offset <= len(kernel) - 0x40)
+    assert (kernel[kernel_metaptr_offset:kernel_metaptr_offset + 4] == b'MSS1')
+    kernel_metadata_offset = up('<I', kernel[kernel_metaptr_offset+4:kernel_metaptr_offset+8])[0]
     assert (kernel_metadata_offset <= len(kernel) - 0x40)
-    assert (kernel[kernel_metadata_offset:kernel_metadata_offset + 4] == b'MSS0')
 
-    bss_start, bss_end, kernel_end = up('<III', kernel[kernel_metadata_offset + 0x30:kernel_metadata_offset + 0x3C])
+    bss_start, bss_end, kernel_end = up('<III', kernel[kernel_metadata_offset + 0x2C:kernel_metadata_offset + 0x38])
+    bss_start  += kernel_metadata_offset + 0x14
+    bss_end    += kernel_metadata_offset + 0x14
+    kernel_end += kernel_metadata_offset + 0x14
     assert (bss_end >= bss_start)
     assert (bss_end == kernel_end)
 
@@ -53,9 +58,9 @@ def main(argc, argv):
     mesosphere_end    = align_up(kernel_ldr_end, 0x1000)
 
     with open(argv[3], 'wb') as f:
-        f.write(kernel[:kernel_metadata_offset + 4])
-        f.write(pk('<QQI', embedded_ini_offset, kernel_ldr_offset, atmosphere_target_firmware(13, 0, 0)))
-        f.write(kernel[kernel_metadata_offset + 0x18:])
+        f.write(kernel[:kernel_metadata_offset])
+        f.write(pk('<QQI', embedded_ini_offset - (kernel_metadata_offset), kernel_ldr_offset  - (kernel_metadata_offset + 8), atmosphere_target_firmware(17, 0, 0)))
+        f.write(kernel[kernel_metadata_offset + 0x14:])
         f.seek(embedded_ini_offset)
         f.write(embedded_ini_header)
         f.write(embedded_kips)
