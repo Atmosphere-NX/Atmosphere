@@ -88,8 +88,8 @@ namespace ams::kern {
 
             enum OperationType {
                 OperationType_Map                                 = 0,
-                OperationType_MapGroup                            = 2,
-                OperationType_MapFirstGroup                       = 1,
+                OperationType_MapGroup                            = 1,
+                OperationType_MapFirstGroup                       = 2,
                 OperationType_Unmap                               = 3,
                 OperationType_ChangePermissions                   = 4,
                 OperationType_ChangePermissionsAndRefresh         = 5,
