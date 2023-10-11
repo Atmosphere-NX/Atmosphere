@@ -29,15 +29,6 @@ SECTIONS
 		. = ALIGN(8);
 	} :code
 
-	/* .vectors. */
-	. = ALIGN(2K);
-	__vectors_start__ = . ;
-    .vectors :
-	{
-		KEEP( *(.vectors) )
-		. = ALIGN(8);
-	} :code
-
 	.init :
 	{
 		KEEP( *(.init) )
@@ -64,6 +55,15 @@ SECTIONS
 	.fini :
 	{
 		KEEP( *(.fini) )
+		. = ALIGN(8);
+	} :code
+
+	/* .vectors. */
+	. = ALIGN(2K);
+	__vectors_start__ = . ;
+    .vectors :
+	{
+		KEEP( *(.vectors) )
 		. = ALIGN(8);
 	} :code
 
