@@ -45,7 +45,7 @@ namespace ams::kern::init::loader {
         constinit KInitialPageAllocator g_initial_page_allocator;
 
         constinit KInitialPageAllocator::State g_final_page_allocator_state;
-        constinit InitialProcessBinaryLayout g_initial_process_binary_layout;
+        constinit InitialProcessBinaryLayoutWithSize g_initial_process_binary_meta;
 
         constinit void *g_final_state[2];
 
@@ -165,19 +165,31 @@ namespace ams::kern::init::loader {
         const uintptr_t resource_end_address  = base_address + resource_offset + resource_region_size;
 
         /* Setup the INI1 header in memory for the kernel. */
-        KSystemControl::Init::GetInitialProcessBinaryLayout(std::addressof(g_initial_process_binary_layout));
-        MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_layout.address != 0);
+        {
+            /* Get the kernel layout. */
+            KSystemControl::Init::GetInitialProcessBinaryLayout(std::addressof(g_initial_process_binary_meta.layout));
 
-        if (ini_base_address != g_initial_process_binary_layout.address) {
-            /* The INI is not at the correct address, so we need to relocate it. */
+            /* If there's no desired base address, use the ini in place. */
+            if (g_initial_process_binary_meta.layout.address == 0) {
+                g_initial_process_binary_meta.layout.address = ini_base_address;
+            }
+
+
+            /* Validate and potentially relocate the INI. */
             const InitialProcessBinaryHeader *ini_header = reinterpret_cast<const InitialProcessBinaryHeader *>(ini_base_address);
-            if (ini_header->magic == InitialProcessBinaryMagic && ini_header->size <= InitialProcessBinarySizeMax) {
-                /* INI is valid, relocate it. */
-                std::memmove(reinterpret_cast<void *>(g_initial_process_binary_layout.address), ini_header, ini_header->size);
+            size_t ini_size = 0;
+            if (ini_header->magic == InitialProcessBinaryMagic && (ini_size = ini_header->size) <= InitialProcessBinarySizeMax) {
+                /* INI is valid, relocate it if necessary. */
+                if (ini_base_address != g_initial_process_binary_meta.layout.address) {
+                    std::memmove(reinterpret_cast<void *>(g_initial_process_binary_meta.layout.address), ini_header, ini_size);
+                }
             } else {
                 /* INI is invalid. Make the destination header invalid. */
-                std::memset(reinterpret_cast<void *>(g_initial_process_binary_layout.address), 0, sizeof(InitialProcessBinaryHeader));
+                std::memset(reinterpret_cast<void *>(g_initial_process_binary_meta.layout.address), 0, sizeof(InitialProcessBinaryHeader));
             }
+
+            /* Set the INI size in layout. */
+            g_initial_process_binary_meta.size = util::AlignUp(ini_size, PageSize);
         }
 
         /* We want to start allocating page tables at the end of the resource region. */
@@ -238,7 +250,7 @@ namespace ams::kern::init::loader {
 
         /* Setup final kernel loader state. */
         g_final_state[0] = std::addressof(g_final_page_allocator_state);
-        g_final_state[1] = std::addressof(g_initial_process_binary_layout);
+        g_final_state[1] = std::addressof(g_initial_process_binary_meta);
 
         return g_final_state;
     }
