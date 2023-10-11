@@ -207,10 +207,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-        /* The input ID isn't actually used. */
-        MESOSPHERE_UNUSED(id);
-
+    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Get an ASID */
         m_asid = g_asid_manager.Reserve();
         ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };

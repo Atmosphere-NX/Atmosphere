@@ -28,8 +28,8 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-                R_RETURN(m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
+            Result Initialize(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+                R_RETURN(m_page_table.InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
             }
 
             void Finalize() { m_page_table.Finalize(); }
