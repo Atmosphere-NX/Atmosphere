@@ -377,7 +377,7 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     mov x0, #0xC5
     msr spsr_el2, x0
 
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 #endif
 
 /* ams::kern::init::DisableMmuAndCaches() */

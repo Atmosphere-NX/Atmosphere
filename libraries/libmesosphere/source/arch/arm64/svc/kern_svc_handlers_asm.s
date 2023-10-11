@@ -194,7 +194,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 5:  /* Return from SVC. */
 
@@ -297,7 +297,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 /* ams::kern::arch::arm64::SvcHandler32() */
 .section    .text._ZN3ams4kern4arch5arm6412SvcHandler32Ev, "ax", %progbits
@@ -467,7 +467,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
-    eret
+    ERET_WITH_SPECULATION_BARRIER
 
 5:  /* Return from SVC. */
 
@@ -547,4 +547,4 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
-    eret
+    ERET_WITH_SPECULATION_BARRIER

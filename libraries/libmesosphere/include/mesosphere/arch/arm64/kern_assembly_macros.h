@@ -94,3 +94,8 @@ label_done:
     ENABLE_FPU(xtmp1)                                                           \
     GET_THREAD_CONTEXT_AND_RESTORE_FPCR_FPSR(ctx, xtmp1, xtmp2, wtmp1, wtmp2) \
     RESTORE_FPU32_ALL_REGISTERS(ctx, xtmp1)
+
+#define ERET_WITH_SPECULATION_BARRIER \
+    eret;                             \
+    dsb nsh;                          \
+    isb
