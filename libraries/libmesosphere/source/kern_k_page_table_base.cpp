@@ -987,7 +987,7 @@ namespace ams::kern {
 
         /* Verify that the destination memory is aliasable code. */
         size_t num_dst_allocator_blocks;
-        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_FlagCanCodeAlias, KMemoryState_FlagCanCodeAlias, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_FlagCanCodeAlias, KMemoryState_FlagCanCodeAlias, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All & ~KMemoryAttribute_PermissionLocked, KMemoryAttribute_None));
 
         /* Determine whether any pages being unmapped are code. */
         bool any_code_pages = false;
@@ -1649,9 +1649,10 @@ namespace ams::kern {
         KMemoryAttribute old_attr;
         size_t num_allocator_blocks;
         constexpr u32 AttributeTestMask = ~(KMemoryAttribute_SetMask | KMemoryAttribute_DeviceShared);
+        const u32 state_test_mask = ((mask & KMemoryAttribute_Uncached) ? static_cast<u32>(KMemoryState_FlagCanChangeAttribute) : 0) | ((mask & KMemoryAttribute_PermissionLocked) ? static_cast<u32>(KMemoryState_FlagCanPermissionLock) : 0);
         R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks),
                                      addr, size,
-                                     KMemoryState_FlagCanChangeAttribute, KMemoryState_FlagCanChangeAttribute,
+                                     state_test_mask, state_test_mask,
                                      KMemoryPermission_None, KMemoryPermission_None,
                                      AttributeTestMask, KMemoryAttribute_None, ~AttributeTestMask));
 
@@ -1663,15 +1664,18 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
-        /* Determine the new attribute. */
-        const KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(((old_attr & ~mask) | (attr & mask)));
+        /* If we need to, perform a change attribute operation. */
+        if ((mask & KMemoryAttribute_Uncached) != 0) {
+            /* Determine the new attribute. */
+            const KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(((old_attr & ~mask) | (attr & mask)));
 
-        /* Perform operation. */
-        const KPageProperties properties = { old_perm, false, (new_attr & KMemoryAttribute_Uncached) != 0, DisableMergeAttribute_None };
-        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefreshAndFlush, false));
+            /* Perform operation. */
+            const KPageProperties properties = { old_perm, false, (new_attr & KMemoryAttribute_Uncached) != 0, DisableMergeAttribute_None };
+            R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefreshAndFlush, false));
+        }
 
         /* Update the blocks. */
-        m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, old_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
+        m_memory_block_manager.UpdateAttribute(std::addressof(allocator), addr, num_pages, mask, attr);
 
         R_SUCCEED();
     }
@@ -1957,10 +1961,16 @@ namespace ams::kern {
 
         /* Select an address to map at. */
         KProcessAddress addr = Null<KProcessAddress>;
-        const size_t phys_alignment = std::min(std::min(util::GetAlignment(GetInteger(phys_addr)), util::GetAlignment(size)), MaxPhysicalMapAlignment);
         for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
             const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
-            if (alignment > phys_alignment) {
+
+            const KPhysicalAddress aligned_phys = util::AlignUp(GetInteger(phys_addr), alignment) + alignment - 1;
+            if (aligned_phys <= phys_addr) {
+                continue;
+            }
+
+            const KPhysicalAddress last_aligned_paddr = util::AlignDown(GetInteger(last) + 1, alignment) - 1;
+            if (!(last_aligned_paddr <= last && aligned_phys <= last_aligned_paddr)) {
                 continue;
             }
 
@@ -2142,10 +2152,16 @@ namespace ams::kern {
 
         /* Select an address to map at. */
         KProcessAddress addr = Null<KProcessAddress>;
-        const size_t phys_alignment = std::min(std::min(util::GetAlignment(GetInteger(phys_addr)), util::GetAlignment(size)), MaxPhysicalMapAlignment);
         for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
             const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
-            if (alignment > phys_alignment) {
+
+            const KPhysicalAddress aligned_phys = util::AlignUp(GetInteger(phys_addr), alignment) + alignment - 1;
+            if (aligned_phys <= phys_addr) {
+                continue;
+            }
+
+            const KPhysicalAddress last_aligned_paddr = util::AlignDown(GetInteger(last) + 1, alignment) - 1;
+            if (!(last_aligned_paddr <= last && aligned_phys <= last_aligned_paddr)) {
                 continue;
             }
 
@@ -4467,7 +4483,9 @@ namespace ams::kern {
                     /* Update the relevant memory blocks. */
                     m_memory_block_manager.UpdateIfMatch(std::addressof(allocator), address, size / PageSize,
                                                              KMemoryState_Free,   KMemoryPermission_None,          KMemoryAttribute_None,
-                                                             KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+                                                             KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None,
+                                                             address == this->GetAliasRegionStart() ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None,
+                                                             KMemoryBlockDisableMergeAttribute_None);
 
                     R_SUCCEED();
                 }
@@ -4562,6 +4580,9 @@ namespace ams::kern {
 
         /* Iterate over the memory, unmapping as we go. */
         auto it = m_memory_block_manager.FindIterator(cur_address);
+
+        const auto clear_merge_attr = (it->GetState() == KMemoryState_Normal && it->GetAddress() == this->GetAliasRegionStart() && it->GetAddress() == address) ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None;
+
         while (true) {
             /* Check that the iterator is valid. */
             MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
@@ -4594,7 +4615,7 @@ namespace ams::kern {
         m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, mapped_size);
 
         /* Update memory blocks. */
-        m_memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
+        m_memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, clear_merge_attr);
 
         /* We succeeded. */
         R_SUCCEED();

@@ -191,7 +191,7 @@ namespace ams::kern {
         KMemoryAttribute_Uncached         = ams::svc::MemoryAttribute_Uncached,
         KMemoryAttribute_PermissionLocked = ams::svc::MemoryAttribute_PermissionLocked,
 
-        KMemoryAttribute_SetMask          = KMemoryAttribute_Uncached,
+        KMemoryAttribute_SetMask          = KMemoryAttribute_Uncached | KMemoryAttribute_PermissionLocked,
     };
 
     enum KMemoryBlockDisableMergeAttribute : u8 {
@@ -331,6 +331,10 @@ namespace ams::kern {
                 return this->GetEndAddress() - 1;
             }
 
+            constexpr KMemoryState GetState() const {
+                return m_memory_state;
+            }
+
             constexpr u16 GetIpcLockCount() const {
                 return m_ipc_lock_count;
             }
@@ -448,6 +452,14 @@ namespace ams::kern {
                 if (clear_mask != 0) {
                     m_disable_merge_attribute = static_cast<KMemoryBlockDisableMergeAttribute>(m_disable_merge_attribute & ~clear_mask);
                 }
+            }
+
+            constexpr void UpdateAttribute(u32 mask, u32 attr) {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT((mask & KMemoryAttribute_IpcLocked) == 0);
+                MESOSPHERE_ASSERT((mask & KMemoryAttribute_DeviceShared) == 0);
+
+                m_attribute = static_cast<KMemoryAttribute>((m_attribute & ~mask) | attr);
             }
 
             constexpr void Split(KMemoryBlock *block, KProcessAddress addr) {
