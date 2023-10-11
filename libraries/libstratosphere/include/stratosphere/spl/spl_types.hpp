@@ -98,6 +98,7 @@ namespace ams::spl {
         enum class EsDeviceUniqueKeyType {
             TitleKey   = 0,
             ArchiveKey = 1,
+            Unknown2   = 2,
         };
 
         struct AsyncOperationKey {

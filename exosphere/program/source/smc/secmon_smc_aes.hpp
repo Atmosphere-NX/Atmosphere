@@ -22,6 +22,7 @@ namespace ams::secmon::smc {
     enum EsCommonKeyType {
         EsCommonKeyType_TitleKey   = 0,
         EsCommonKeyType_ArchiveKey = 1,
+        EsCommonKeyType_Unknown2   = 2,
 
         EsCommonKeyType_Count,
     };
