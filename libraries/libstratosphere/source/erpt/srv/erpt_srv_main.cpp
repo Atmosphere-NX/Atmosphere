@@ -135,7 +135,7 @@ namespace ams::erpt::srv {
         auto record = std::make_unique<ContextRecord>(CategoryId_ProductModelInfo);
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
-        R_TRY(record->Add(FieldId_ProductModel, model, model_len));
+        R_TRY(record->Add(ERPT_FIELD_ID(ProductModel), model, model_len));
         R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         R_SUCCEED();
@@ -146,7 +146,7 @@ namespace ams::erpt::srv {
         auto record = std::make_unique<ContextRecord>(CategoryId_RegionSettingInfo);
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
-        R_TRY(record->Add(FieldId_RegionSetting, region, region_len));
+        R_TRY(record->Add(ERPT_FIELD_ID(RegionSetting), region, region_len));
         R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         R_SUCCEED();

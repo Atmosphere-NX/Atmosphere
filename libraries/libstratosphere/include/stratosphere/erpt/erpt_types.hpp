@@ -18,6 +18,7 @@
 #include <stratosphere/os.hpp>
 #include <stratosphere/time/time_posix_time.hpp>
 #include <stratosphere/erpt/erpt_ids.autogen.hpp>
+#include <stratosphere/erpt/erpt_ids_deprecated.autogen.hpp>
 
 namespace ams::erpt {
 
@@ -47,6 +48,17 @@ namespace ams::erpt {
     };
 
     #undef GENERATE_ENUM
+
+    #define GENERATE_ENUM(NAME, ID, ...) DeprecatedFieldId_##NAME = ID,
+
+    enum DeprecatedFieldId {
+        AMS_ERPT_FOREACH_DEPRECATED_FIELD(GENERATE_ENUM)
+        DeprecatedFieldId_Count,
+    };
+
+    #undef GENERATE_ENUM
+
+    #define ERPT_FIELD_ID(NAME) (::ams::hos::GetVersion() >= ::ams::hos::Version_17_0_0 ? ::ams::erpt::FieldId_##NAME : static_cast<::ams::erpt::FieldId>(::ams::util::ToUnderlying(::ams::erpt::DeprecatedFieldId_##NAME)))
 
     constexpr inline u32 ArrayBufferSizeDefault = 0x100;
     constexpr inline u32 ArrayBufferSizeMax     = 96_KB;
@@ -110,6 +122,14 @@ namespace ams::erpt {
     using ReportFlagSet = util::BitFlagSet<BITSIZEOF(u32), ReportFlag>;
     static_assert(util::is_pod<ReportFlagSet>::value);
     static_assert(sizeof(ReportFlagSet) == sizeof(u32));
+
+    struct CreateReportOptionFlag {
+        using SubmitFsInfo = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>::Flag<0>;
+    };
+
+    using CreateReportOptionFlagSet = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>;
+    static_assert(util::is_pod<CreateReportOptionFlagSet>::value);
+    static_assert(sizeof(CreateReportOptionFlagSet) == sizeof(u32));
 
     struct ReportInfo {
         ReportType      type;

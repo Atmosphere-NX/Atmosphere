@@ -49,6 +49,10 @@ namespace ams::erpt::srv {
         AMS_ERPT_FOREACH_FIELD(STRINGIZE_HANDLER)
     };
 
+    constexpr inline const char * const DeprecatedFieldString[] = {
+        AMS_ERPT_FOREACH_DEPRECATED_FIELD(STRINGIZE_HANDLER)
+    };
+
     constexpr inline const char * const CategoryString[] = {
         AMS_ERPT_FOREACH_CATEGORY(STRINGIZE_HANDLER)
     };
@@ -76,8 +80,57 @@ namespace ams::erpt::srv {
     };
     #undef GET_FIELD_FLAG
 
+    #define GET_FIELD_CATEGORY(FIELD, ID, CATEGORY, TYPE, FLAG) [DeprecatedFieldId_##FIELD] = CategoryId_##CATEGORY,
+    constexpr inline const CategoryId DeprecatedFieldToCategoryMap[] = {
+        AMS_ERPT_FOREACH_DEPRECATED_FIELD(GET_FIELD_CATEGORY)
+    };
+    #undef GET_FIELD_CATEGORY
+
+    #define GET_FIELD_TYPE(FIELD, ID, CATEGORY, TYPE, FLAG) [DeprecatedFieldId_##FIELD] = TYPE,
+    constexpr inline const FieldType DeprecatedFieldToTypeMap[] = {
+        AMS_ERPT_FOREACH_DEPRECATED_FIELD(GET_FIELD_TYPE)
+    };
+    #undef GET_FIELD_TYPE
+
+    #define GET_FIELD_FLAG(FIELD, ID, CATEGORY, TYPE, FLAG) [DeprecatedFieldId_##FIELD] = FLAG,
+    constexpr inline const FieldFlag DeprecatedFieldToFlagMap[] = {
+        AMS_ERPT_FOREACH_DEPRECATED_FIELD(GET_FIELD_FLAG)
+    };
+    #undef GET_FIELD_FLAG
+
+    inline CategoryId ConvertFieldToCategory(FieldId id) {
+        if (hos::GetVersion() >= hos::Version_17_0_0) {
+            return FieldToCategoryMap[id];
+        } else {
+            AMS_ABORT_UNLESS(util::ToUnderlying(id) < util::ToUnderlying(DeprecatedFieldId_Count));
+            return DeprecatedFieldToCategoryMap[id];
+        }
+    }
+
+    inline FieldType ConvertFieldToType(FieldId id) {
+        if (hos::GetVersion() >= hos::Version_17_0_0) {
+            return FieldToTypeMap[id];
+        } else {
+            AMS_ABORT_UNLESS(util::ToUnderlying(id) < util::ToUnderlying(DeprecatedFieldId_Count));
+            return DeprecatedFieldToTypeMap[id];
+        }
+    }
+
+    inline FieldFlag ConvertFieldToFlag(FieldId id) {
+        if (hos::GetVersion() >= hos::Version_17_0_0) {
+            return FieldToFlagMap[id];
+        } else {
+            AMS_ABORT_UNLESS(util::ToUnderlying(id) < util::ToUnderlying(DeprecatedFieldId_Count));
+            return DeprecatedFieldToFlagMap[id];
+        }
+    }
+
     constexpr inline ReportFlagSet MakeNoReportFlags() {
         return util::MakeBitFlagSet<32, ReportFlag>();
+    }
+
+    constexpr inline CreateReportOptionFlagSet MakeNoCreateReportOptionFlags() {
+        return util::MakeBitFlagSet<32, CreateReportOptionFlag>();
     }
 
     constexpr inline AttachmentFlagSet MakeNoAttachmentFlags() {
