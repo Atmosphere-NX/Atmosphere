@@ -45,7 +45,7 @@ namespace ams::kern::init {
         constinit KInitArguments g_init_arguments[cpu::NumCores];
 
         /* Globals for passing data between InitializeCorePhase1 and InitializeCorePhase2. */
-        constinit InitialProcessBinaryLayout g_phase2_initial_process_binary_layout{};
+        constinit InitialProcessBinaryLayoutWithSize g_phase2_initial_process_binary_meta{};
         constinit KPhysicalAddress g_phase2_resource_end_phys_addr = Null<KPhysicalAddress>;
         constinit u64 g_phase2_linear_region_phys_to_virt_diff = 0;
 
@@ -246,7 +246,7 @@ namespace ams::kern::init {
 
         /* Decode the initial state. */
         const auto initial_page_allocator_state = *static_cast<KInitialPageAllocator::State *>(initial_state[0]);
-        g_phase2_initial_process_binary_layout  = *static_cast<InitialProcessBinaryLayout *>(initial_state[1]);
+        g_phase2_initial_process_binary_meta   = *static_cast<InitialProcessBinaryLayoutWithSize *>(initial_state[1]);
 
         /* Restore the page allocator state setup by kernel loader. */
         g_initial_page_allocator.InitializeFromState(std::addressof(initial_page_allocator_state));
@@ -565,9 +565,6 @@ namespace ams::kern::init {
             }
         }
 
-        /* Clear the slab region. */
-        std::memset(GetVoidPointer(slab_region_start), 0, slab_region_size);
-
         /* NOTE: Unknown function is called here which is ifdef'd out on retail kernel. */
         /* The unknown function is immediately before the function which gets an unknown debug region size, inside this translation unit. */
         /* It's likely that this is some kind of initializer for this unknown debug region. */
@@ -624,9 +621,10 @@ namespace ams::kern::init {
         /* Set the initial process binary physical address. */
         /* NOTE: Nintendo does this after pool partition setup, but it's a requirement that we do it before */
         /* to retain compatibility with < 5.0.0. */
-        const KPhysicalAddress ini_address = g_phase2_initial_process_binary_layout.address;
+        const KPhysicalAddress ini_address = g_phase2_initial_process_binary_meta.layout.address;
+        const size_t ini_size              = g_phase2_initial_process_binary_meta.size;
         MESOSPHERE_INIT_ABORT_UNLESS(ini_address != Null<KPhysicalAddress>);
-        SetInitialProcessBinaryPhysicalAddress(ini_address);
+        SetInitialProcessBinaryPhysicalAddress(ini_address, ini_size);
 
         /* Setup all other memory regions needed to arrange the pool partitions. */
         SetupPoolPartitionMemoryRegions();
@@ -640,7 +638,7 @@ namespace ams::kern::init {
 
             /* Check that the region contains the ini. */
             MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetAddress() <= GetInteger(ini_address));
-            MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(ini_address) + InitialProcessBinarySizeMax <= ini_region->GetEndAddress());
+            MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(ini_address) + ini_size <= ini_region->GetEndAddress());
             MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetEndAddress() != 0);
         }
 

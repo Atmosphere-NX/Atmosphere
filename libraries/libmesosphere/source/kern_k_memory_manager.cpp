@@ -108,7 +108,8 @@ namespace ams::kern {
         /* Free each region to its corresponding heap. */
         size_t reserved_sizes[MaxManagerCount] = {};
         const KPhysicalAddress ini_start = GetInitialProcessBinaryPhysicalAddress();
-        const KPhysicalAddress ini_end   = ini_start + InitialProcessBinarySizeMax;
+        const size_t ini_size            = GetInitialProcessBinarySize();
+        const KPhysicalAddress ini_end   = ini_start + ini_size;
         const KPhysicalAddress ini_last  = ini_end - 1;
         for (const auto &it : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             if (it.IsDerivedFrom(KMemoryRegionType_DramUserPool)) {
@@ -126,13 +127,13 @@ namespace ams::kern {
                     }
 
                     /* Open/reserve the ini memory. */
-                    manager.OpenFirst(ini_start, InitialProcessBinarySizeMax / PageSize);
-                    reserved_sizes[it.GetAttributes()] += InitialProcessBinarySizeMax;
+                    manager.OpenFirst(ini_start, ini_size / PageSize);
+                    reserved_sizes[it.GetAttributes()] += ini_size;
 
                     /* Free memory after the ini to the heap. */
                     if (ini_last != cur_last) {
                         MESOSPHERE_ABORT_UNLESS(cur_end != Null<KPhysicalAddress>);
-                        manager.Free(ini_end, cur_end - ini_end);
+                        manager.Free(ini_end, (cur_end - ini_end) / PageSize);
                     }
                 } else {
                     /* Ensure there's no partial overlap with the ini image. */

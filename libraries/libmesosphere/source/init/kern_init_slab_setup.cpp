@@ -171,6 +171,9 @@ namespace ams::kern::init {
         const KMemoryRegion &slab_region = KMemoryLayout::GetSlabRegion();
         KVirtualAddress address = slab_region.GetAddress();
 
+        /* Clear the slab region. */
+        std::memset(GetVoidPointer(address), 0, slab_region.GetSize());
+
         /* Initialize slab type array to be in sorted order. */
         KSlabType slab_types[KSlabType_Count];
         for (size_t i = 0; i < util::size(slab_types); i++) { slab_types[i] = static_cast<KSlabType>(i); }

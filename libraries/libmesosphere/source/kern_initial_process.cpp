@@ -27,6 +27,7 @@ namespace ams::kern {
 
         constinit KPhysicalAddress g_initial_process_binary_phys_addr = Null<KPhysicalAddress>;
         constinit KVirtualAddress g_initial_process_binary_address = Null<KVirtualAddress>;
+        constinit size_t g_initial_process_binary_size = 0;
         constinit InitialProcessBinaryHeader g_initial_process_binary_header = {};
         constinit size_t g_initial_process_secure_memory_size = 0;
         constinit u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
@@ -275,16 +276,23 @@ namespace ams::kern {
 
     }
 
-    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr) {
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
         MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr == Null<KPhysicalAddress>);
 
         g_initial_process_binary_phys_addr = phys_addr;
+        g_initial_process_binary_size      = size;
     }
 
     KPhysicalAddress GetInitialProcessBinaryPhysicalAddress() {
         MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
 
         return g_initial_process_binary_phys_addr;
+    }
+
+    size_t GetInitialProcessBinarySize() {
+        MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
+
+        return g_initial_process_binary_size;
     }
 
     u64 GetInitialProcessIdMin() {
@@ -305,14 +313,17 @@ namespace ams::kern {
         LoadInitialProcessBinaryHeader();
 
         if (g_initial_process_binary_header.num_processes > 0) {
-            /* Reserve pages for the initial process binary from the system resource limit. */
-            const size_t total_size = util::AlignUp(g_initial_process_binary_header.size, PageSize);
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, total_size));
+            /* Ensure that we have a non-zero size. */
+            const size_t expected_size = g_initial_process_binary_size;
+            MESOSPHERE_INIT_ABORT_UNLESS(expected_size != 0);
 
-            /* The initial process binary is potentially over-allocated, so free any extra pages. */
-            if (total_size < InitialProcessBinarySizeMax) {
-                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(g_initial_process_binary_address + total_size), (InitialProcessBinarySizeMax - total_size) / PageSize);
-            }
+            /* Ensure that the size we need to reserve is as we expect it to be. */
+            const size_t total_size = util::AlignUp(g_initial_process_binary_header.size, PageSize);
+            MESOSPHERE_ABORT_UNLESS(total_size == expected_size);
+            MESOSPHERE_ABORT_UNLESS(total_size <= InitialProcessBinarySizeMax);
+
+            /* Reserve pages for the initial process binary from the system resource limit. */
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, total_size));
 
             return total_size;
         } else {
