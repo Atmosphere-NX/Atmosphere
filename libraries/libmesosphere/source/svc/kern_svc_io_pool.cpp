@@ -127,7 +127,7 @@ namespace ams::kern::svc {
                 R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
 
                 /* Verify that the mapping is in range. */
-                R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_Io), svc::ResultInvalidMemoryRegion());
+                R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, ams::svc::MemoryState_Io), svc::ResultInvalidMemoryRegion());
 
                 /* Validate the map permission. */
                 R_UNLESS(IsValidIoRegionPermission(map_perm), svc::ResultInvalidNewMemoryPermission());
@@ -156,7 +156,7 @@ namespace ams::kern::svc {
                 R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
 
                 /* Verify that the mapping is in range. */
-                R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_Io), svc::ResultInvalidMemoryRegion());
+                R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, ams::svc::MemoryState_Io), svc::ResultInvalidMemoryRegion());
 
                 /* Get the io region. */
                 KScopedAutoObject io_region = GetCurrentProcess().GetHandleTable().GetObject<KIoRegion>(io_region_handle);
