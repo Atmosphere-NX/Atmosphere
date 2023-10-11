@@ -87,9 +87,8 @@ namespace ams::kern::arch::arm64::init {
 
             template<IsInitialPageAllocator PageAllocator>
             static ALWAYS_INLINE KPhysicalAddress AllocateNewPageTable(PageAllocator &allocator, u64 phys_to_virt_offset) {
-                auto address = allocator.Allocate(PageSize);
-                ClearNewPageTable(address, phys_to_virt_offset);
-                return address;
+                MESOSPHERE_UNUSED(phys_to_virt_offset);
+                return allocator.Allocate(PageSize);
             }
 
             static ALWAYS_INLINE void ClearNewPageTable(KPhysicalAddress address, u64 phys_to_virt_offset) {
@@ -883,6 +882,12 @@ namespace ams::kern::arch::arm64::init {
                 const size_t ind_max = ((aligned_end - aligned_start) / align) - 1;
                 while (true) {
                     if (const uintptr_t random_address = aligned_start + (KSystemControl::Init::GenerateRandomRange(0, ind_max) * align); this->TryAllocate(random_address, size)) {
+                        /* Clear the allocated pages. */
+                        volatile u64 *ptr = reinterpret_cast<volatile u64 *>(random_address);
+                        for (size_t i = 0; i < size / sizeof(u64); ++i) {
+                            ptr[i] = 0;
+                        }
+
                         return random_address;
                     }
                 }
