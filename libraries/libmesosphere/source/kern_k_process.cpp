@@ -282,7 +282,7 @@ namespace ams::kern {
             const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
             const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit));
         }
         ON_RESULT_FAILURE { m_page_table.Finalize(); };
 
@@ -362,7 +362,7 @@ namespace ams::kern {
             const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
             const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, m_system_resource, res_limit));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
