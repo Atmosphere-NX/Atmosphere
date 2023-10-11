@@ -102,7 +102,11 @@ namespace ams::kern::svc {
             R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Invalidate the cache. */
-            R_TRY(process->GetPageTable().InvalidateProcessDataCache(address, size));
+            if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
+                R_TRY(process->GetPageTable().InvalidateCurrentProcessDataCache(address, size));
+            } else {
+                R_TRY(process->GetPageTable().InvalidateProcessDataCache(address, size));
+            }
 
             R_SUCCEED();
         }
