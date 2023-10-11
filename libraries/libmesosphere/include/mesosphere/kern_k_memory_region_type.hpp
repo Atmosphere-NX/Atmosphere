@@ -212,7 +212,9 @@ namespace ams::kern {
     static_assert(KMemoryRegionType_DramKernelInitPt.GetValue() == (0x44E | KMemoryRegionAttr_CarveoutProtected | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped));
 
     constexpr inline const auto KMemoryRegionType_DramKernelSecureAppletMemory = KMemoryRegionType_DramKernelBase.DeriveSparse(1, 3, 0).SetAttribute(KMemoryRegionAttr_LinearMapped);
+    constexpr inline const auto KMemoryRegionType_DramKernelSecureUnknown      = KMemoryRegionType_DramKernelBase.DeriveSparse(1, 3, 1).SetAttribute(KMemoryRegionAttr_LinearMapped);
     static_assert(KMemoryRegionType_DramKernelSecureAppletMemory.GetValue() == (0x18E  | KMemoryRegionAttr_CarveoutProtected | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped));
+    static_assert(KMemoryRegionType_DramKernelSecureUnknown.GetValue()      == (0x28E  | KMemoryRegionAttr_CarveoutProtected | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped));
 
     constexpr inline const auto KMemoryRegionType_DramReservedEarly = KMemoryRegionType_DramReservedBase.DeriveAttribute(KMemoryRegionAttr_NoUserMap);
     static_assert(KMemoryRegionType_DramReservedEarly.GetValue() == (0x16 | KMemoryRegionAttr_NoUserMap));
@@ -228,53 +230,55 @@ namespace ams::kern {
     constexpr inline const auto KMemoryRegionType_DramPoolPartition = KMemoryRegionType_DramHeapBase.DeriveAttribute(KMemoryRegionAttr_NoUserMap);
     static_assert(KMemoryRegionType_DramPoolPartition.GetValue() == (0x26 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
 
-    constexpr inline const auto KMemoryRegionType_DramPoolManagement = KMemoryRegionType_DramPoolPartition.DeriveTransition(0, 2).DeriveTransition().SetAttribute(KMemoryRegionAttr_CarveoutProtected);
-    constexpr inline const auto KMemoryRegionType_DramUserPool       = KMemoryRegionType_DramPoolPartition.DeriveTransition(1, 2).DeriveTransition();
-    static_assert(KMemoryRegionType_DramPoolManagement.GetValue() == (0x166 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected));
-    static_assert(KMemoryRegionType_DramUserPool.GetValue()       == (0x1A6 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
+    constexpr inline const auto KMemoryRegionType_DramPoolManagement = KMemoryRegionType_DramPoolPartition.Derive(4, 0).SetAttribute(KMemoryRegionAttr_CarveoutProtected);
+                                                                                               /* UNUSED: .Derive(4, 1); */
+                                                                                               /* UNUSED: .Derive(4, 2); */
+    constexpr inline const auto KMemoryRegionType_DramUserPool       = KMemoryRegionType_DramPoolPartition.Derive(4, 3);
+    static_assert(KMemoryRegionType_DramPoolManagement.GetValue() == (0xE6  | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected));
+    static_assert(KMemoryRegionType_DramUserPool      .GetValue() == (0x266 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
 
     constexpr inline const auto KMemoryRegionType_DramApplicationPool     = KMemoryRegionType_DramUserPool.Derive(4, 0);
     constexpr inline const auto KMemoryRegionType_DramAppletPool          = KMemoryRegionType_DramUserPool.Derive(4, 1);
     constexpr inline const auto KMemoryRegionType_DramSystemNonSecurePool = KMemoryRegionType_DramUserPool.Derive(4, 2);
     constexpr inline const auto KMemoryRegionType_DramSystemPool          = KMemoryRegionType_DramUserPool.Derive(4, 3).SetAttribute(KMemoryRegionAttr_CarveoutProtected);
-    static_assert(KMemoryRegionType_DramApplicationPool    .GetValue()   == (0x7A6  | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
-    static_assert(KMemoryRegionType_DramAppletPool         .GetValue()   == (0xBA6  | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
-    static_assert(KMemoryRegionType_DramSystemNonSecurePool.GetValue()   == (0xDA6  | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
-    static_assert(KMemoryRegionType_DramSystemPool         .GetValue()   == (0x13A6 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected));
+    static_assert(KMemoryRegionType_DramApplicationPool    .GetValue()   == (0xE66  | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
+    static_assert(KMemoryRegionType_DramAppletPool         .GetValue()   == (0x1666 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
+    static_assert(KMemoryRegionType_DramSystemNonSecurePool.GetValue()   == (0x1A66 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
+    static_assert(KMemoryRegionType_DramSystemPool         .GetValue()   == (0x2666 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected));
 
-    constexpr inline const auto KMemoryRegionType_VirtualDramHeapBase          = KMemoryRegionType_Dram.DeriveSparse(1, 3, 0);
-    constexpr inline const auto KMemoryRegionType_VirtualDramKernelPtHeap      = KMemoryRegionType_Dram.DeriveSparse(1, 3, 1);
-    constexpr inline const auto KMemoryRegionType_VirtualDramKernelTraceBuffer = KMemoryRegionType_Dram.DeriveSparse(1, 3, 2);
+    constexpr inline const auto KMemoryRegionType_VirtualDramHeapBase          = KMemoryRegionType_Dram.DeriveSparse(1, 4, 0);
+    constexpr inline const auto KMemoryRegionType_VirtualDramKernelPtHeap      = KMemoryRegionType_Dram.DeriveSparse(1, 4, 1);
+    constexpr inline const auto KMemoryRegionType_VirtualDramKernelTraceBuffer = KMemoryRegionType_Dram.DeriveSparse(1, 4, 2);
     static_assert(KMemoryRegionType_VirtualDramHeapBase         .GetValue() == 0x1A);
     static_assert(KMemoryRegionType_VirtualDramKernelPtHeap     .GetValue() == 0x2A);
     static_assert(KMemoryRegionType_VirtualDramKernelTraceBuffer.GetValue() == 0x4A);
 
                                                                                        /* UNUSED: .DeriveSparse(2, 2, 0); */
-    constexpr inline const auto KMemoryRegionType_VirtualDramUnknownDebug = KMemoryRegionType_Dram.DeriveSparse(2, 2, 1);
-    static_assert(KMemoryRegionType_VirtualDramUnknownDebug.GetValue() == (0x52));
+    constexpr inline const auto KMemoryRegionType_VirtualDramUnknownDebug             = KMemoryRegionType_Dram.Advance(2).Derive(4, 0);
+    constexpr inline const auto KMemoryRegionType_VirtualDramKernelSecureAppletMemory = KMemoryRegionType_Dram.Advance(2).Derive(4, 1);
+                                                                                                              /* UNUSED: .Derive(4, 2); */
+    constexpr inline const auto KMemoryRegionType_VirtualDramKernelSecureUnknown      = KMemoryRegionType_Dram.Advance(2).Derive(4, 3);
+    static_assert(KMemoryRegionType_VirtualDramUnknownDebug            .GetValue() == (0x32));
+    static_assert(KMemoryRegionType_VirtualDramKernelSecureAppletMemory.GetValue() == (0x52));
+    static_assert(KMemoryRegionType_VirtualDramKernelSecureUnknown     .GetValue() == (0x92));
 
-    constexpr inline const auto KMemoryRegionType_VirtualDramKernelSecureAppletMemory = KMemoryRegionType_Dram.DeriveSparse(3, 1, 0);
-    static_assert(KMemoryRegionType_VirtualDramKernelSecureAppletMemory.GetValue() == (0x62));
 
-    constexpr inline const auto KMemoryRegionType_VirtualDramKernelInitPt   = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 0);
-    constexpr inline const auto KMemoryRegionType_VirtualDramPoolManagement = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 1);
-    constexpr inline const auto KMemoryRegionType_VirtualDramUserPool       = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 2);
-    static_assert(KMemoryRegionType_VirtualDramKernelInitPt  .GetValue() == 0x19A);
-    static_assert(KMemoryRegionType_VirtualDramPoolManagement.GetValue() == 0x29A);
-    static_assert(KMemoryRegionType_VirtualDramUserPool      .GetValue() == 0x31A);
+    constexpr inline const auto KMemoryRegionType_VirtualDramKernelInitPt   = KMemoryRegionType_VirtualDramHeapBase.Derive(4, 0);
+    constexpr inline const auto KMemoryRegionType_VirtualDramPoolManagement = KMemoryRegionType_VirtualDramHeapBase.Derive(4, 1);
+    constexpr inline const auto KMemoryRegionType_VirtualDramUserPool       = KMemoryRegionType_VirtualDramHeapBase.Derive(4, 2);
+                                                                                                        /* UNUSED: .Derive(4, 3); */
+    static_assert(KMemoryRegionType_VirtualDramKernelInitPt  .GetValue() == 0x31A);
+    static_assert(KMemoryRegionType_VirtualDramPoolManagement.GetValue() == 0x51A);
+    static_assert(KMemoryRegionType_VirtualDramUserPool      .GetValue() == 0x61A);
 
-    /* NOTE: For unknown reason, the pools are derived out-of-order here. */
-    /* It's worth eventually trying to understand why Nintendo made this choice. */
-                                                                                                             /* UNUSED: .Derive(6, 0); */
-                                                                                                             /* UNUSED: .Derive(6, 1); */
-    constexpr inline const auto KMemoryRegionType_VirtualDramAppletPool          = KMemoryRegionType_VirtualDramUserPool.Derive(6, 2);
-    constexpr inline const auto KMemoryRegionType_VirtualDramApplicationPool     = KMemoryRegionType_VirtualDramUserPool.Derive(6, 3);
-    constexpr inline const auto KMemoryRegionType_VirtualDramSystemNonSecurePool = KMemoryRegionType_VirtualDramUserPool.Derive(6, 4);
-    constexpr inline const auto KMemoryRegionType_VirtualDramSystemPool          = KMemoryRegionType_VirtualDramUserPool.Derive(6, 5);
-    static_assert(KMemoryRegionType_VirtualDramAppletPool         .GetValue()   == 0x1B1A);
-    static_assert(KMemoryRegionType_VirtualDramApplicationPool    .GetValue()   == 0x271A);
-    static_assert(KMemoryRegionType_VirtualDramSystemNonSecurePool.GetValue()   == 0x2B1A);
-    static_assert(KMemoryRegionType_VirtualDramSystemPool         .GetValue()   == 0x331A);
+    constexpr inline const auto KMemoryRegionType_VirtualDramApplicationPool     = KMemoryRegionType_VirtualDramUserPool.Derive(4, 0);
+    constexpr inline const auto KMemoryRegionType_VirtualDramAppletPool          = KMemoryRegionType_VirtualDramUserPool.Derive(4, 1);
+    constexpr inline const auto KMemoryRegionType_VirtualDramSystemNonSecurePool = KMemoryRegionType_VirtualDramUserPool.Derive(4, 2);
+    constexpr inline const auto KMemoryRegionType_VirtualDramSystemPool          = KMemoryRegionType_VirtualDramUserPool.Derive(4, 3);
+    static_assert(KMemoryRegionType_VirtualDramApplicationPool    .GetValue()   == 0x361A);
+    static_assert(KMemoryRegionType_VirtualDramAppletPool         .GetValue()   == 0x561A);
+    static_assert(KMemoryRegionType_VirtualDramSystemNonSecurePool.GetValue()   == 0x661A);
+    static_assert(KMemoryRegionType_VirtualDramSystemPool         .GetValue()   == 0x961A);
 
     constexpr inline const auto KMemoryRegionType_ArchDeviceBase  = KMemoryRegionType_Kernel.DeriveTransition(0, 1).SetSparseOnly();
     constexpr inline const auto KMemoryRegionType_BoardDeviceBase = KMemoryRegionType_Kernel.DeriveTransition(0, 2).SetDenseOnly();
@@ -328,12 +332,14 @@ namespace ams::kern {
     static_assert(KMemoryRegionType_KernelTemp.GetValue() == 0x31);
 
     constexpr ALWAYS_INLINE KMemoryRegionType GetTypeForVirtualLinearMapping(u32 type_id) {
-        if (KMemoryRegionType_KernelTraceBuffer.IsAncestorOf(type_id)) {
-            return KMemoryRegionType_VirtualDramKernelTraceBuffer;
-        } else if (KMemoryRegionType_DramKernelPtHeap.IsAncestorOf(type_id)) {
+        if (KMemoryRegionType_DramKernelPtHeap.IsAncestorOf(type_id)) {
             return KMemoryRegionType_VirtualDramKernelPtHeap;
         } else if (KMemoryRegionType_DramKernelSecureAppletMemory.IsAncestorOf(type_id)) {
             return KMemoryRegionType_VirtualDramKernelSecureAppletMemory;
+        } else if (KMemoryRegionType_DramKernelSecureUnknown.IsAncestorOf(type_id)) {
+            return KMemoryRegionType_VirtualDramKernelSecureUnknown;
+        } else if (KMemoryRegionType_KernelTraceBuffer.IsAncestorOf(type_id)) {
+            return KMemoryRegionType_VirtualDramKernelTraceBuffer;
         } else if ((type_id | KMemoryRegionAttr_ShouldKernelMap) == type_id) {
             return KMemoryRegionType_VirtualDramUnknownDebug;
         } else {
