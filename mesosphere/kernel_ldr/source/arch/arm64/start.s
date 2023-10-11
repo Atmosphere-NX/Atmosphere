@@ -116,13 +116,29 @@ _main:
     /* X0 is now the saved state. */
     /* We will return this to the kernel. */
 
-    /* Return to the newly-relocated kernel. */
+    /* Adjust return address to point to the relocated kernel. */
     ldr x1, [sp, #0x18] /* Return address to Kernel */
     ldr x2, [sp, #0x00] /* Relocated kernel base address diff. */
     add x1, x2, x1
+
+    /* Translate the relocated address back to a physical address. */
+    and x4, x1, #0xFFF
+    sub x3, x1, x4
+    at  s1e1r, x3
+    isb
+    mrs x3, par_el1
+1:
+    tbnz w3, #0, 1b
+    and x3, x3, #0xFFFFFFFFF000
+    add x3, x3, x4
+
+    /* Return the difference between relocated and physical in x1. */
+    sub x1, x1, x3
+
+    /* Setup stack, and return to the kernel. */
     ldr x2, [sp, #0x20]
     mov sp, x2
-    br  x1
+    br  x3
 
 #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
 .global     _ZN3ams4kern17GetTargetFirmwareEv

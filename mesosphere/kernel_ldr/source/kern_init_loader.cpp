@@ -50,6 +50,25 @@ namespace ams::kern::init::loader {
         constinit void *g_final_state[2];
 
         void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
+            /* Adjust layout to be correct. */
+            {
+                const ptrdiff_t layout_offset = reinterpret_cast<uintptr_t>(layout) - base_address;
+                layout->rx_offset             += layout_offset;
+                layout->rx_end_offset         += layout_offset;
+                layout->ro_offset             += layout_offset;
+                layout->ro_end_offset         += layout_offset;
+                layout->rw_offset             += layout_offset;
+                layout->rw_end_offset         += layout_offset;
+                layout->bss_offset            += layout_offset;
+                layout->bss_end_offset        += layout_offset;
+                layout->resource_offset       += layout_offset;
+                layout->dynamic_offset        += layout_offset;
+                layout->init_array_offset     += layout_offset;
+                layout->init_array_end_offset += layout_offset;
+                layout->sysreg_offset         += layout_offset;
+            }
+
+            /* Relocate the kernel if necessary. */
             KPhysicalAddress correct_base = KSystemControl::Init::GetKernelPhysicalBaseAddress(base_address);
             if (correct_base != base_address) {
                 const uintptr_t diff = GetInteger(correct_base) - base_address;
@@ -62,7 +81,7 @@ namespace ams::kern::init::loader {
             }
         }
 
-        void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageAllocator &allocator) {
+        void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageAllocator &allocator, KernelSystemRegisters *sysregs) {
             /* Map in an RWX identity mapping for the kernel. */
             constexpr PageTableEntry KernelRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
             init_pt.Map(base_address, kernel_size, base_address, KernelRWXIdentityAttribute, allocator, 0);
@@ -96,9 +115,17 @@ namespace ams::kern::init::loader {
 
             /* Setup SCTLR_EL1. */
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
-            constexpr u64 SctlrValue = 0x0000000034D5D925ul;
+            constexpr u64 SctlrValue = 0x0000000034D5D92Dul;
             cpu::SetSctlrEl1(SctlrValue);
             cpu::InstructionMemoryBarrier();
+
+            /* Setup the system registers for other cores. */
+            /* NOTE: sctlr_el1 on other cores has the WXN bit set (0x80000); this will be set before KernelMain() on this core. */
+            sysregs->ttbr0_el1 = init_pt.GetTtbr0L1TableAddress();
+            sysregs->ttbr1_el1 = init_pt.GetTtbr1L1TableAddress();
+            sysregs->tcr_el1   = TcrValue;
+            sysregs->mair_el1  = MairValue;
+            sysregs->sctlr_el1 = SctlrValue | 0x80000;
         }
 
         KVirtualAddress GetRandomKernelBaseAddress(KInitialPageTable &page_table, KPhysicalAddress phys_base_address, size_t kernel_size) {
@@ -159,6 +186,7 @@ namespace ams::kern::init::loader {
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
+        const uintptr_t sysreg_offset         = layout->sysreg_offset;
 
         /* Determine the size of the resource region. */
         const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit(KSystemControl::Init::ShouldIncreaseThreadResourceLimit());
@@ -199,7 +227,7 @@ namespace ams::kern::init::loader {
         KInitialPageTable init_pt(KernelBaseRangeStart, KernelBaseRangeLast, g_initial_page_allocator);
 
         /* Setup initial identity mapping. TTBR1 table passed by reference. */
-        SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, resource_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
+        SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, resource_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator, reinterpret_cast<KernelSystemRegisters *>(base_address + sysreg_offset));
 
         /* Generate a random slide for the kernel's base address. */
         const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(init_pt, base_address, bss_end_offset);

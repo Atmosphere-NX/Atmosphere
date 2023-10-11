@@ -24,6 +24,9 @@ namespace ams::nxboot {
 
     namespace {
 
+        constexpr u32 MesoshereMetadataLayout0Magic = util::FourCC<'M','S','S','0'>::Code;
+        constexpr u32 MesoshereMetadataLayout1Magic = util::FourCC<'M','S','S','1'>::Code;
+
         struct InitialProcessBinaryHeader {
             static constexpr u32 Magic = util::FourCC<'I','N','I','1'>::Code;
 
@@ -1011,7 +1014,20 @@ namespace ams::nxboot {
         }
 
         /* Set the embedded ini pointer. */
-        std::memcpy(payload_data + 8, std::addressof(meso_size), sizeof(meso_size));
+        const u32 magic = *reinterpret_cast<const u32 *>(payload_data + 4);
+        if (magic == MesoshereMetadataLayout0Magic) {
+            std::memcpy(payload_data + 8, std::addressof(meso_size), sizeof(meso_size));
+        } else if (magic == MesoshereMetadataLayout1Magic) {
+            if (const u32 meta_offset = *reinterpret_cast<const u32 *>(payload_data + 8); meta_offset <= meso_size - sizeof(meso_size)) {
+                s64 relative_offset = meso_size - meta_offset;
+                std::memcpy(payload_data + meta_offset, std::addressof(relative_offset), sizeof(relative_offset));
+            } else {
+                ShowFatalError("Invalid mesosphere metadata layout!\n");
+            }
+        } else {
+            ShowFatalError("Unknown mesosphere metadata version!\n");
+        }
+
 
         /* Get the ini pointer. */
         InitialProcessBinaryHeader * const ini = reinterpret_cast<InitialProcessBinaryHeader *>(payload_data + meso_size);
