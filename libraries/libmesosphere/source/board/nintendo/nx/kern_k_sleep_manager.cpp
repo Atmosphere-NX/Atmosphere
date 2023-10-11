@@ -32,7 +32,6 @@ namespace ams::kern::board::nintendo::nx {
         class SavedSystemRegisters {
             private:
                 u64 ttbr0_el1;
-                u64 tcr_el1;
                 u64 elr_el1;
                 u64 sp_el0;
                 u64 spsr_el1;
@@ -92,7 +91,6 @@ namespace ams::kern::board::nintendo::nx {
         void SavedSystemRegisters::Save() {
             /* Save system registers. */
             this->ttbr0_el1     = cpu::GetTtbr0El1();
-            this->tcr_el1       = cpu::GetTcrEl1();
             this->tpidr_el0     = cpu::GetTpidrEl0();
             this->elr_el1       = cpu::GetElrEl1();
             this->sp_el0        = cpu::GetSpEl0();
@@ -408,7 +406,6 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Restore system registers. */
             cpu::SetTtbr0El1   (this->ttbr0_el1);
-            cpu::SetTcrEl1     (this->tcr_el1);
             cpu::SetTpidrEl0   (this->tpidr_el0);
             cpu::SetElrEl1     (this->elr_el1);
             cpu::SetSpEl0      (this->sp_el0);
@@ -515,24 +512,6 @@ namespace ams::kern::board::nintendo::nx {
                 /* Save the system registers for the current core. */
                 g_sleep_system_registers[core_id].Save();
 
-                /* Change the translation tables to use the kernel table. */
-                {
-                    /* Get the current value of the translation control register. */
-                    const u64 tcr = cpu::GetTcrEl1();
-
-                    /* Disable translation table walks on tlb miss. */
-                    cpu::TranslationControlRegisterAccessor(tcr).SetEpd0(true).Store();
-                    cpu::EnsureInstructionConsistency();
-
-                    /* Change the translation table base (ttbr0) to use the kernel table. */
-                    cpu::SetTtbr0El1(Kernel::GetKernelPageTable().GetIdentityMapTtbr0(core_id));
-                    cpu::EnsureInstructionConsistency();
-
-                    /* Enable translation table walks on tlb miss. */
-                    cpu::TranslationControlRegisterAccessor(tcr).SetEpd0(false).Store();
-                    cpu::EnsureInstructionConsistency();
-                }
-
                 /* Invalidate the entire tlb. */
                 cpu::InvalidateEntireTlb();
 
@@ -552,13 +531,14 @@ namespace ams::kern::board::nintendo::nx {
 
                 /* Setup the initial arguments. */
                 {
-                    init_args->ttbr0      = cpu::GetTtbr0El1();
-                    init_args->ttbr1      = cpu::GetTtbr1El1();
-                    init_args->tcr        = cpu::GetTcrEl1();
-                    init_args->mair       = cpu::GetMairEl1();
-                    init_args->cpuactlr   = cpu::GetCpuActlrEl1();
-                    init_args->cpuectlr   = cpu::GetCpuEctlrEl1();
-                    init_args->sctlr      = cpu::GetSctlrEl1();
+                    /* Determine whether we're running on a cortex-a53 or a-57. */
+                    cpu::MainIdRegisterAccessor midr_el1;
+                    const auto implementer  = midr_el1.GetImplementer();
+                    const auto primary_part = midr_el1.GetPrimaryPartNumber();
+                    const bool needs_cpu_ctlr = (implementer == cpu::MainIdRegisterAccessor::Implementer::ArmLimited) && (primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA57 || primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA53);
+
+                    init_args->cpuactlr   = needs_cpu_ctlr ? cpu::GetCpuActlrEl1() : 0;
+                    init_args->cpuectlr   = needs_cpu_ctlr ? cpu::GetCpuEctlrEl1() : 0;
                     init_args->sp         = 0;
                     init_args->entrypoint = reinterpret_cast<uintptr_t>(::ams::kern::board::nintendo::nx::KSleepManager::ResumeEntry);
                     init_args->argument   = sleep_buffer;
