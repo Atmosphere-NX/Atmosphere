@@ -21,7 +21,8 @@ namespace ams::kern {
 
         constexpr const std::pair<KMemoryState, const char *> MemoryStateNames[] = {
             {KMemoryState_Free               , "----- Free -----"},
-            {KMemoryState_Io                 , "Io              "},
+            {KMemoryState_IoMemory           , "IoMemory        "},
+            {KMemoryState_IoRegister         , "IoRegister      "},
             {KMemoryState_Static             , "Static          "},
             {KMemoryState_Code               , "Code            "},
             {KMemoryState_CodeData           , "CodeData        "},

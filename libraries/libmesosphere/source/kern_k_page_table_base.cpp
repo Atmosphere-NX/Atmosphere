@@ -368,77 +368,77 @@ namespace ams::kern {
         cpu::InvalidateEntireInstructionCache();
     }
 
-    KProcessAddress KPageTableBase::GetRegionAddress(KMemoryState state) const {
+    KProcessAddress KPageTableBase::GetRegionAddress(ams::svc::MemoryState state) const {
         switch (state) {
-            case KMemoryState_Free:
-            case KMemoryState_Kernel:
+            case ams::svc::MemoryState_Free:
+            case ams::svc::MemoryState_Kernel:
                 return m_address_space_start;
-            case KMemoryState_Normal:
+            case ams::svc::MemoryState_Normal:
                 return m_heap_region_start;
-            case KMemoryState_Ipc:
-            case KMemoryState_NonSecureIpc:
-            case KMemoryState_NonDeviceIpc:
+            case ams::svc::MemoryState_Ipc:
+            case ams::svc::MemoryState_NonSecureIpc:
+            case ams::svc::MemoryState_NonDeviceIpc:
                 return m_alias_region_start;
-            case KMemoryState_Stack:
+            case ams::svc::MemoryState_Stack:
                 return m_stack_region_start;
-            case KMemoryState_Static:
-            case KMemoryState_ThreadLocal:
+            case ams::svc::MemoryState_Static:
+            case ams::svc::MemoryState_ThreadLocal:
                 return m_kernel_map_region_start;
-            case KMemoryState_Io:
-            case KMemoryState_Shared:
-            case KMemoryState_AliasCode:
-            case KMemoryState_AliasCodeData:
-            case KMemoryState_Transfered:
-            case KMemoryState_SharedTransfered:
-            case KMemoryState_SharedCode:
-            case KMemoryState_GeneratedCode:
-            case KMemoryState_CodeOut:
-            case KMemoryState_Coverage:
-            case KMemoryState_Insecure:
+            case ams::svc::MemoryState_Io:
+            case ams::svc::MemoryState_Shared:
+            case ams::svc::MemoryState_AliasCode:
+            case ams::svc::MemoryState_AliasCodeData:
+            case ams::svc::MemoryState_Transfered:
+            case ams::svc::MemoryState_SharedTransfered:
+            case ams::svc::MemoryState_SharedCode:
+            case ams::svc::MemoryState_GeneratedCode:
+            case ams::svc::MemoryState_CodeOut:
+            case ams::svc::MemoryState_Coverage:
+            case ams::svc::MemoryState_Insecure:
                 return m_alias_code_region_start;
-            case KMemoryState_Code:
-            case KMemoryState_CodeData:
+            case ams::svc::MemoryState_Code:
+            case ams::svc::MemoryState_CodeData:
                 return m_code_region_start;
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    size_t KPageTableBase::GetRegionSize(KMemoryState state) const {
+    size_t KPageTableBase::GetRegionSize(ams::svc::MemoryState state) const {
         switch (state) {
-            case KMemoryState_Free:
-            case KMemoryState_Kernel:
+            case ams::svc::MemoryState_Free:
+            case ams::svc::MemoryState_Kernel:
                 return m_address_space_end - m_address_space_start;
-            case KMemoryState_Normal:
+            case ams::svc::MemoryState_Normal:
                 return m_heap_region_end - m_heap_region_start;
-            case KMemoryState_Ipc:
-            case KMemoryState_NonSecureIpc:
-            case KMemoryState_NonDeviceIpc:
+            case ams::svc::MemoryState_Ipc:
+            case ams::svc::MemoryState_NonSecureIpc:
+            case ams::svc::MemoryState_NonDeviceIpc:
                 return m_alias_region_end - m_alias_region_start;
-            case KMemoryState_Stack:
+            case ams::svc::MemoryState_Stack:
                 return m_stack_region_end - m_stack_region_start;
-            case KMemoryState_Static:
-            case KMemoryState_ThreadLocal:
+            case ams::svc::MemoryState_Static:
+            case ams::svc::MemoryState_ThreadLocal:
                 return m_kernel_map_region_end - m_kernel_map_region_start;
-            case KMemoryState_Io:
-            case KMemoryState_Shared:
-            case KMemoryState_AliasCode:
-            case KMemoryState_AliasCodeData:
-            case KMemoryState_Transfered:
-            case KMemoryState_SharedTransfered:
-            case KMemoryState_SharedCode:
-            case KMemoryState_GeneratedCode:
-            case KMemoryState_CodeOut:
-            case KMemoryState_Coverage:
-            case KMemoryState_Insecure:
+            case ams::svc::MemoryState_Io:
+            case ams::svc::MemoryState_Shared:
+            case ams::svc::MemoryState_AliasCode:
+            case ams::svc::MemoryState_AliasCodeData:
+            case ams::svc::MemoryState_Transfered:
+            case ams::svc::MemoryState_SharedTransfered:
+            case ams::svc::MemoryState_SharedCode:
+            case ams::svc::MemoryState_GeneratedCode:
+            case ams::svc::MemoryState_CodeOut:
+            case ams::svc::MemoryState_Coverage:
+            case ams::svc::MemoryState_Insecure:
                 return m_alias_code_region_end - m_alias_code_region_start;
-            case KMemoryState_Code:
-            case KMemoryState_CodeData:
+            case ams::svc::MemoryState_Code:
+            case ams::svc::MemoryState_CodeData:
                 return m_code_region_end - m_code_region_start;
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    bool KPageTableBase::CanContain(KProcessAddress addr, size_t size, KMemoryState state) const {
+    bool KPageTableBase::CanContain(KProcessAddress addr, size_t size, ams::svc::MemoryState state) const {
         const KProcessAddress end = addr + size;
         const KProcessAddress last = end - 1;
 
@@ -449,32 +449,32 @@ namespace ams::kern {
         const bool is_in_heap   = !(end <= m_heap_region_start || m_heap_region_end <= addr || m_heap_region_start == m_heap_region_end);
         const bool is_in_alias  = !(end <= m_alias_region_start || m_alias_region_end <= addr || m_alias_region_start == m_alias_region_end);
         switch (state) {
-            case KMemoryState_Free:
-            case KMemoryState_Kernel:
+            case ams::svc::MemoryState_Free:
+            case ams::svc::MemoryState_Kernel:
                 return is_in_region;
-            case KMemoryState_Io:
-            case KMemoryState_Static:
-            case KMemoryState_Code:
-            case KMemoryState_CodeData:
-            case KMemoryState_Shared:
-            case KMemoryState_AliasCode:
-            case KMemoryState_AliasCodeData:
-            case KMemoryState_Stack:
-            case KMemoryState_ThreadLocal:
-            case KMemoryState_Transfered:
-            case KMemoryState_SharedTransfered:
-            case KMemoryState_SharedCode:
-            case KMemoryState_GeneratedCode:
-            case KMemoryState_CodeOut:
-            case KMemoryState_Coverage:
-            case KMemoryState_Insecure:
+            case ams::svc::MemoryState_Io:
+            case ams::svc::MemoryState_Static:
+            case ams::svc::MemoryState_Code:
+            case ams::svc::MemoryState_CodeData:
+            case ams::svc::MemoryState_Shared:
+            case ams::svc::MemoryState_AliasCode:
+            case ams::svc::MemoryState_AliasCodeData:
+            case ams::svc::MemoryState_Stack:
+            case ams::svc::MemoryState_ThreadLocal:
+            case ams::svc::MemoryState_Transfered:
+            case ams::svc::MemoryState_SharedTransfered:
+            case ams::svc::MemoryState_SharedCode:
+            case ams::svc::MemoryState_GeneratedCode:
+            case ams::svc::MemoryState_CodeOut:
+            case ams::svc::MemoryState_Coverage:
+            case ams::svc::MemoryState_Insecure:
                 return is_in_region && !is_in_heap && !is_in_alias;
-            case KMemoryState_Normal:
+            case ams::svc::MemoryState_Normal:
                 MESOSPHERE_ASSERT(is_in_heap);
                 return is_in_region && !is_in_alias;
-            case KMemoryState_Ipc:
-            case KMemoryState_NonSecureIpc:
-            case KMemoryState_NonDeviceIpc:
+            case ams::svc::MemoryState_Ipc:
+            case ams::svc::MemoryState_NonSecureIpc:
+            case ams::svc::MemoryState_NonDeviceIpc:
                 MESOSPHERE_ASSERT(is_in_alias);
                 return is_in_region && !is_in_heap;
             default:
@@ -705,7 +705,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, KMemoryState state) const {
+    Result KPageTableBase::QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, ams::svc::MemoryState state) const {
         MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(out != nullptr);
 
@@ -739,7 +739,7 @@ namespace ams::kern {
                 if (cur_valid && cur_entry.phys_addr <= address && address + size <= cur_entry.phys_addr + cur_entry.block_size) {
                     /* Check if this region is valid. */
                     const KProcessAddress mapped_address = (region_start + tot_size) + (address - cur_entry.phys_addr);
-                    if (R_SUCCEEDED(this->CheckMemoryState(mapped_address, size, KMemoryState_All, state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                    if (R_SUCCEEDED(this->CheckMemoryState(mapped_address, size, KMemoryState_Mask, static_cast<KMemoryState>(util::ToUnderlying(state)), KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
                         /* It is! */
                         *out = mapped_address;
                         R_SUCCEED();
@@ -1899,7 +1899,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
+    Result KPageTableBase::MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryState state, KMemoryPermission perm) {
         /* Check pre-conditions. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
@@ -1915,7 +1915,7 @@ namespace ams::kern {
         const size_t          region_size      = m_kernel_map_region_end - m_kernel_map_region_start;
         const size_t          region_num_pages = region_size / PageSize;
 
-        MESOSPHERE_ASSERT(this->CanContain(region_start, region_size, KMemoryState_Io));
+        MESOSPHERE_ASSERT(this->CanContain(region_start, region_size, state));
 
         /* Locate the memory region. */
         const KMemoryRegion *region = KMemoryLayout::Find(phys_addr);
@@ -1960,11 +1960,11 @@ namespace ams::kern {
         R_UNLESS(addr != Null<KProcessAddress>, svc::ResultOutOfMemory());
 
         /* Check that we can map IO here. */
-        MESOSPHERE_ASSERT(this->CanContain(addr, size, KMemoryState_Io));
+        MESOSPHERE_ASSERT(this->CanContain(addr, size, state));
         MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Perform mapping operation. */
-        const KPageProperties properties = { perm, true, false, DisableMergeAttribute_DisableHead };
+        const KPageProperties properties = { perm, state == KMemoryState_IoRegister, false, DisableMergeAttribute_DisableHead };
         R_TRY(this->Operate(page_list, addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
 
         /* Set the output address. */
@@ -1987,10 +1987,10 @@ namespace ams::kern {
 
         /* Map the io memory. */
         KProcessAddress addr;
-        R_TRY(this->MapIoImpl(std::addressof(addr), updater.GetPageList(), phys_addr, size, perm));
+        R_TRY(this->MapIoImpl(std::addressof(addr), updater.GetPageList(), phys_addr, size, KMemoryState_IoRegister, perm));
 
         /* Update the blocks. */
-        m_memory_block_manager.Update(std::addressof(allocator), addr, size / PageSize, KMemoryState_Io, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
+        m_memory_block_manager.Update(std::addressof(allocator), addr, size / PageSize, KMemoryState_IoRegister, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         R_SUCCEED();
@@ -2020,7 +2020,8 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, phys_addr, true, properties, OperationType_Map, false));
 
         /* Update the blocks. */
-        m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Io, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
+        const auto state = mapping == ams::svc::MemoryMapping_Memory ? KMemoryState_IoMemory : KMemoryState_IoRegister;
+        m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, state, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         R_SUCCEED();
@@ -2039,7 +2040,7 @@ namespace ams::kern {
         size_t num_allocator_blocks;
         R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks),
                                      dst_address, size,
-                                     KMemoryState_All, KMemoryState_Io,
+                                     KMemoryState_All, mapping == ams::svc::MemoryMapping_Memory ? KMemoryState_IoMemory : KMemoryState_IoRegister,
                                      KMemoryPermission_None, KMemoryPermission_None,
                                      KMemoryAttribute_All, KMemoryAttribute_Locked));
 
@@ -2308,7 +2309,7 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Perform mapping operation. */
-        const KPageProperties properties = { perm, state == KMemoryState_Io, false, DisableMergeAttribute_DisableHead };
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
         R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
 
         /* Update the blocks. */
@@ -2343,7 +2344,7 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Perform mapping operation. */
-        const KPageProperties properties = { perm, state == KMemoryState_Io, false, DisableMergeAttribute_DisableHead };
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
         R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
 
         /* Update the blocks. */
@@ -2653,7 +2654,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size) {
+    Result KPageTableBase::ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size, KMemoryState state) {
         /* Check pre-conditions. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
@@ -2667,7 +2668,7 @@ namespace ams::kern {
 
         /* Temporarily map the io memory. */
         KProcessAddress io_addr;
-        R_TRY(this->MapIoImpl(std::addressof(io_addr), updater.GetPageList(), map_start, map_size, KMemoryPermission_UserRead));
+        R_TRY(this->MapIoImpl(std::addressof(io_addr), updater.GetPageList(), map_start, map_size, state, KMemoryPermission_UserRead));
 
         /* Ensure we unmap the io memory when we're done with it. */
         ON_SCOPE_EXIT {
@@ -2698,7 +2699,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size) {
+    Result KPageTableBase::WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size, KMemoryState state) {
         /* Check pre-conditions. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
@@ -2712,7 +2713,7 @@ namespace ams::kern {
 
         /* Temporarily map the io memory. */
         KProcessAddress io_addr;
-        R_TRY(this->MapIoImpl(std::addressof(io_addr), updater.GetPageList(), map_start, map_size, KMemoryPermission_UserReadWrite));
+        R_TRY(this->MapIoImpl(std::addressof(io_addr), updater.GetPageList(), map_start, map_size, state, KMemoryPermission_UserReadWrite));
 
         /* Ensure we unmap the io memory when we're done with it. */
         ON_SCOPE_EXIT {
@@ -2743,7 +2744,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size) {
+    Result KPageTableBase::ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state) {
         /* Lightly validate the range before doing anything else. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
@@ -2755,7 +2756,7 @@ namespace ams::kern {
         KScopedLightLockPair lk(src_page_table.m_general_lock, dst_page_table.m_general_lock);
 
         /* Check that the desired range is readable io memory. */
-        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_All, KMemoryState_Io, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_All, state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Read the memory. */
         u8 *dst = static_cast<u8 *>(buffer);
@@ -2769,7 +2770,7 @@ namespace ams::kern {
             const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
 
             /* Read. */
-            R_TRY(dst_page_table.ReadIoMemoryImpl(dst, phys_addr, cur_size));
+            R_TRY(dst_page_table.ReadIoMemoryImpl(dst, phys_addr, cur_size, state));
 
             /* Advance. */
             address += cur_size;
@@ -2779,7 +2780,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size) {
+    Result KPageTableBase::WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size, KMemoryState state) {
         /* Lightly validate the range before doing anything else. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
@@ -2791,7 +2792,7 @@ namespace ams::kern {
         KScopedLightLockPair lk(src_page_table.m_general_lock, dst_page_table.m_general_lock);
 
         /* Check that the desired range is writable io memory. */
-        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_All, KMemoryState_Io, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_All, state, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Read the memory. */
         const u8 *src = static_cast<const u8 *>(buffer);
@@ -2805,7 +2806,7 @@ namespace ams::kern {
             const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
 
             /* Read. */
-            R_TRY(dst_page_table.WriteIoMemoryImpl(phys_addr, src, cur_size));
+            R_TRY(dst_page_table.WriteIoMemoryImpl(phys_addr, src, cur_size, state));
 
             /* Advance. */
             address += cur_size;
@@ -2838,7 +2839,7 @@ namespace ams::kern {
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
 
         /* Set whether the locked memory was io. */
-        *out_is_io = old_state == KMemoryState_Io;
+        *out_is_io = static_cast<ams::svc::MemoryState>(old_state & KMemoryState_Mask) == ams::svc::MemoryState_Io;
 
         R_SUCCEED();
     }
