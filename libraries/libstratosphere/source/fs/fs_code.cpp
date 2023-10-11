@@ -79,7 +79,7 @@ namespace ams::fs {
             R_TRY(fsp->SetCurrentProcess({}));
 
             sf::SharedPointer<fssrv::sf::IFileSystem> fs;
-            R_TRY(fsp->OpenCodeFileSystem(std::addressof(fs), out_verification_data, sf_path, attr, program_id));
+            R_TRY(fsp->OpenCodeFileSystem(std::addressof(fs), ams::sf::OutBuffer(out_verification_data, sizeof(*out_verification_data)), sf_path, attr, program_id));
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
