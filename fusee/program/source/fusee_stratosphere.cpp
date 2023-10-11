@@ -257,7 +257,18 @@ namespace ams::nxboot {
         };
 
         const InitialProcessBinaryHeader *FindInitialProcessBinary(const pkg2::Package2Header *header, const u8 *data, ams::TargetFirmware target_firmware) {
-            if (target_firmware >= ams::TargetFirmware_8_0_0) {
+            if (target_firmware >= ams::TargetFirmware_17_0_0) {
+                const u32 *data_32 = reinterpret_cast<const u32 *>(data);
+                const u32 branch_target = (data_32[0] & 0x00FFFFFF);
+                for (size_t i = branch_target; i < branch_target + 0x1000 / sizeof(u32); ++i) {
+                    const u32 ini_offset = (i * sizeof(u32)) + data_32[i];
+                    if (data_32[i + 1] == 0 && ini_offset <= header->meta.payload_sizes[0] && std::memcmp(data + ini_offset, "INI1", 4) == 0) {
+                        return reinterpret_cast<const InitialProcessBinaryHeader *>(data + ini_offset);
+                    }
+                }
+
+                return nullptr;
+            } else if (target_firmware >= ams::TargetFirmware_8_0_0) {
                 /* Try to find initial process binary. */
                 const u32 *data_32 = reinterpret_cast<const u32 *>(data);
                 for (size_t i = 0; i < 0x1000 / sizeof(u32); ++i) {
