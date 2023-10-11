@@ -236,8 +236,14 @@ namespace ams::kern::arch::arm64 {
         /* Only process tables should be finalized. */
         MESOSPHERE_ASSERT(!this->IsKernel());
 
+        /* NOTE: Here Nintendo calls an unknown OnFinalize function. */
+        /* this->OnFinalize(); */
+
         /* Note that we've updated (to ensure we're synchronized). */
         this->NoteUpdated();
+
+        /* NOTE: Here Nintendo calls a second unknown OnFinalize function. */
+        /* this->OnFinalize2(); */
 
         /* Free all pages in the table. */
         {
