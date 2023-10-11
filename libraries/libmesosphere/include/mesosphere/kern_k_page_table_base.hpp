@@ -412,6 +412,7 @@ namespace ams::kern {
             Result MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
 
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
+            Result InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size);
 
             Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size);
             Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state);

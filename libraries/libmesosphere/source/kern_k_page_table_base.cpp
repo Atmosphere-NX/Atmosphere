@@ -2508,6 +2508,23 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
+    Result KPageTableBase::InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size) {
+        /* Check pre-condition: this is being called on the current process. */
+        MESOSPHERE_ASSERT(this == std::addressof(GetCurrentProcess().GetPageTable().GetBasePageTable()));
+
+        /* Check that the region is in range. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_Uncached, KMemoryAttribute_None));
+
+        /* Invalidate the data cache. */
+        R_RETURN(cpu::InvalidateDataCache(GetVoidPointer(address), size));
+    }
+
     Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
         /* Lightly validate the region is in range. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());

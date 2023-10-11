@@ -150,6 +150,10 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.InvalidateProcessDataCache(address, size));
             }
 
+            Result InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.InvalidateCurrentProcessDataCache(address, size));
+            }
+
             Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
                 R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size));
             }
