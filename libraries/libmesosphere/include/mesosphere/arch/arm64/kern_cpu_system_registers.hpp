@@ -372,6 +372,10 @@ namespace ams::kern::arch::arm64::cpu {
                 this->SetBit(19, en);
                 return *this;
             }
+
+            constexpr ALWAYS_INLINE bool GetWxn() const {
+                return this->GetBits(19, 1) != 0;
+            }
     };
 
     /* Accessors for timer registers. */

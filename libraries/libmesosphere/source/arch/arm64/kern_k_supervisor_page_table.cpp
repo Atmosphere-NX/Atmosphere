@@ -18,12 +18,8 @@
 namespace ams::kern::arch::arm64 {
 
     void KSupervisorPageTable::Initialize(s32 core_id) {
-        /* Get the identity mapping ttbr0. */
-        m_ttbr0_identity[core_id] = cpu::GetTtbr0El1();
-
-        /* Set sctlr_el1 */
-        cpu::SystemControlRegisterAccessor().SetWxn(true).Store();
-        cpu::EnsureInstructionConsistency();
+        /* Verify that sctlr_el1 has the wxn bit set. */
+        MESOSPHERE_ABORT_UNLESS(cpu::SystemControlRegisterAccessor().GetWxn());
 
         /* Invalidate the entire TLB. */
         cpu::InvalidateEntireTlb();
