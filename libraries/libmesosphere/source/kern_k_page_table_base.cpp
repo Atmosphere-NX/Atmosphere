@@ -4435,32 +4435,44 @@ namespace ams::kern {
                         /* If it's unmapped, we need to map it. */
                         if (info.GetState() == KMemoryState_Free) {
                             /* Determine the range to map. */
-                            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_None };
+                            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, cur_address == this->GetAliasRegionStart() ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
                             size_t map_pages                     = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_address + 1 - cur_address) / PageSize;
 
                             /* While we have pages to map, map them. */
-                            while (map_pages > 0) {
-                                /* Check if we're at the end of the physical block. */
-                                if (pg_pages == 0) {
-                                    /* Ensure there are more pages to map. */
-                                    MESOSPHERE_ASSERT(pg_it != pg.end());
+                            {
+                                /* Create a page group for the current mapping range. */
+                                KPageGroup cur_pg(m_block_info_manager);
+                                {
+                                    ON_RESULT_FAILURE {
+                                        cur_pg.OpenFirst();
+                                        cur_pg.Close();
+                                    };
 
-                                    /* Advance our physical block. */
-                                    ++pg_it;
-                                    pg_phys_addr = pg_it->GetAddress();
-                                    pg_pages     = pg_it->GetNumPages();
+                                    size_t remain_pages = map_pages;
+                                    while (remain_pages > 0) {
+                                        /* Check if we're at the end of the physical block. */
+                                        if (pg_pages == 0) {
+                                            /* Ensure there are more pages to map. */
+                                            MESOSPHERE_ASSERT(pg_it != pg.end());
+
+                                            /* Advance our physical block. */
+                                            ++pg_it;
+                                            pg_phys_addr = pg_it->GetAddress();
+                                            pg_pages     = pg_it->GetNumPages();
+                                        }
+
+                                        /* Add whatever we can to the current block. */
+                                        const size_t cur_pages = std::min(pg_pages, remain_pages);
+                                        R_TRY(cur_pg.AddBlock(pg_phys_addr + ((pg_pages - cur_pages) * PageSize), cur_pages));
+
+                                        /* Advance. */
+                                        remain_pages -= cur_pages;
+                                        pg_pages     -= cur_pages;
+                                    }
                                 }
 
-                                /* Map whatever we can. */
-                                const size_t cur_pages = std::min(pg_pages, map_pages);
-                                R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_pages, pg_phys_addr, true, map_properties, OperationType_MapFirst, false));
-
-                                /* Advance. */
-                                cur_address += cur_pages * PageSize;
-                                map_pages   -= cur_pages;
-
-                                pg_phys_addr += cur_pages * PageSize;
-                                pg_pages     -= cur_pages;
+                                /* Map the papges. */
+                                R_TRY(this->Operate(updater.GetPageList(), cur_address, map_pages, cur_pg, map_properties, OperationType_MapFirstGroup, false));
                             }
                         }
 
