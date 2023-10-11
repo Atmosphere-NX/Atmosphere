@@ -158,8 +158,16 @@ namespace ams::kern {
         private:
             const KPageGroup *m_pg;
         public:
-            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup *gp) : m_pg(gp) { if (m_pg) { m_pg->Open(); } }
-            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup &gp) : KScopedPageGroup(std::addressof(gp)) { /* ... */ }
+            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup *gp, bool not_first = true) : m_pg(gp) {
+                if (m_pg) {
+                    if (not_first) {
+                        m_pg->Open();
+                    } else {
+                        m_pg->OpenFirst();
+                    }
+                }
+            }
+            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup &gp, bool not_first = true) : KScopedPageGroup(std::addressof(gp), not_first) { /* ... */ }
             ALWAYS_INLINE ~KScopedPageGroup() { if (m_pg) { m_pg->Close(); } }
 
             ALWAYS_INLINE void CancelClose() {
