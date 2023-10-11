@@ -224,4 +224,27 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
+    Result HostContentStorageImpl::GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Get the content path. */
+        Path path;
+        R_TRY(m_registered_content->GetPath(std::addressof(path), content_id));
+
+        /* Check for correct extension. */
+        const auto path_len = std::strlen(path.str);
+        const char *extension = path.str + path_len - 1;
+        if (*extension == '/') {
+            --extension;
+        }
+        R_UNLESS(path_len >= 4 && std::memcmp(extension - 4, ".ncd", 4) == 0, ncm::ResultInvalidContentMetaDirectory());
+
+        /* Obtain the program id for the content. */
+        ncm::ProgramId program_id;
+        R_TRY(fs::GetProgramId(std::addressof(program_id), path.str, attr));
+
+        out.SetValue(program_id);
+        R_SUCCEED();
+    }
+
 }

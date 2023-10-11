@@ -54,6 +54,8 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RESULT(InvalidContentMetaFileSize,               390);
     R_DEFINE_ERROR_RESULT(InvalidAddOnContentMetaExtendedHeader,    400);
 
+    R_DEFINE_ERROR_RESULT(InvalidContentMetaDirectory,              430);
+
     R_DEFINE_ERROR_RANGE(ContentStorageNotActive, 250, 258);
         R_DEFINE_ERROR_RESULT(GameCardContentStorageNotActive,              251);
         R_DEFINE_ERROR_RESULT(BuiltInSystemContentStorageNotActive,         252);

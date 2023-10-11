@@ -518,4 +518,20 @@ namespace ams::ncm {
         R_RETURN(this->GetContentInfoImpl(out_content_info.GetPointer(), key, type, util::make_optional(id_offset)));
     }
 
+    Result ContentMetaDatabaseImpl::GetPlatform(sf::Out<ncm::ContentMetaPlatform> out, const ContentMetaKey &key) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Obtain the content meta for the key. */
+        const void *meta;
+        size_t meta_size;
+        R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
+
+        /* Create a reader. */
+        ContentMetaReader reader(meta, meta_size);
+
+        /* Set the ouput value. */
+        out.SetValue(reader.GetHeader()->platform);
+        R_SUCCEED();
+    }
+
 }

@@ -26,6 +26,7 @@ namespace ams::ncm {
                 .content_count        = src.content_count,
                 .content_meta_count   = src.content_meta_count,
                 .attributes           = src.attributes,
+                .platform             = src.platform,
             };
         }
 
@@ -42,6 +43,7 @@ namespace ams::ncm {
                 .content_count        = src.content_count,
                 .content_meta_count   = src.content_meta_count,
                 .attributes           = src.attributes,
+                .platform             = src.platform,
             };
         }
 

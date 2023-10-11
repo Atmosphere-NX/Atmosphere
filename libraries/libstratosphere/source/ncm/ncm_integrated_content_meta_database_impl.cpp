@@ -446,4 +446,21 @@ namespace ams::ncm {
         }));
     }
 
+    Result IntegratedContentMetaDatabaseImpl::GetPlatform(sf::Out<ncm::ContentMetaPlatform> out, const ContentMetaKey &key) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Check that we're enabled. */
+        R_TRY(this->EnsureEnabled());
+
+        /* Check that our list has interfaces to check. */
+        R_UNLESS(m_list.GetCount() > 0, ncm::ResultContentMetaNotFound());
+
+        /* Check each interface in turn. */
+        R_RETURN(m_list.TryEach([&](const auto &data) {
+            /* Try the current interface. */
+            R_RETURN(data.interface->GetPlatform(out, key));
+        }));
+    }
+
 }

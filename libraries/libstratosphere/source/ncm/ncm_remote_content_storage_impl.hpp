@@ -219,6 +219,11 @@ namespace ams::ncm {
                 R_RETURN(ncmContentStorageClearRegisteredPath(std::addressof(m_srv)));
             }
 
+            Result GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) {
+                static_assert(sizeof(ncm::ProgramId) == sizeof(u64));
+                R_RETURN(ncmContentStorageGetProgramId(std::addressof(m_srv), reinterpret_cast<u64 *>(out.GetPointer()), Convert(content_id), Convert(attr)));
+            }
+
             /* 16.0.0 Alignment change hacks. */
             Result CreatePlaceHolder_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id, s64 size) { R_RETURN(this->CreatePlaceHolder(placeholder_id, content_id, size)); }
             Result Register_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id) { R_RETURN(this->Register(placeholder_id, content_id)); }
