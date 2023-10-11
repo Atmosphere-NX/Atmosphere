@@ -221,6 +221,11 @@ namespace ams::ncm {
                 AMS_ASSERT(m_interface != nullptr);
                 R_RETURN(m_interface->GetContentInfoByTypeAndIdOffset(out_content_info, key, type, id_offset));
             }
+
+            Result GetPlatform(ContentMetaPlatform *out, const ContentMetaKey &key) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->GetPlatform(out, key));
+            }
     };
 
 }

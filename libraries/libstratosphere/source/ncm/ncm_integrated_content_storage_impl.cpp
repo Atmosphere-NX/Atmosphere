@@ -326,4 +326,31 @@ namespace ams::ncm {
         R_THROW(ncm::ResultInvalidOperation());
     }
 
+    Result IntegratedContentStorageImpl::GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Check that we're enabled. */
+        R_TRY(this->EnsureEnabled());
+
+        /* Check that our list has interfaces to check. */
+        R_UNLESS(m_list.GetCount() > 0, ncm::ResultContentNotFound());
+
+        /* Check each interface in turn. */
+        R_TRY(m_list.TryEach([&](const auto &data) {
+            /* Check if the current interface has it. */
+            bool has;
+            R_TRY(data.interface->Has(std::addressof(has), content_id));
+
+            /* If it doesn't, continue on. */
+            R_UNLESS(has, ncm::ResultContentNotFound());
+
+
+            /* If it does, read the file. */
+            R_RETURN(data.interface->GetProgramId(out, content_id, attr));
+        }));
+
+        R_SUCCEED();
+    }
+
 }

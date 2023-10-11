@@ -79,6 +79,7 @@ namespace ams::ncm {
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) = 0;
             virtual Result RegisterPath(const ContentId &content_id, const Path &path) = 0;
             virtual Result ClearRegisteredPath() = 0;
+            virtual Result GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) = 0;
 
             /* 16.0.0 Alignment change hacks. */
             Result CreatePlaceHolder_AtmosphereAlignmentFix(ContentId content_id, PlaceHolderId placeholder_id, s64 size) { R_RETURN(this->CreatePlaceHolder(placeholder_id, content_id, size)); }

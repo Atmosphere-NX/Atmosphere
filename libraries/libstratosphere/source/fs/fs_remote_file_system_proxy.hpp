@@ -320,6 +320,10 @@ namespace ams::fs {
                 AMS_ABORT("TODO");
             }
 
+            Result GetProgramId(ams::sf::Out<ncm::ProgramId> out, const fssrv::sf::FspPath &path, fs::ContentAttributes attr) {
+                static_assert(sizeof(ncm::ProgramId) == sizeof(u64));
+                R_RETURN(fsGetProgramId(reinterpret_cast<u64 *>(out.GetPointer()), path.str, static_cast<::FsContentAttributes>(static_cast<u8>(attr))));
+            }
 
             Result GetRightsIdByPath(ams::sf::Out<fs::RightsId> out, const fssrv::sf::FspPath &path) {
                 static_assert(sizeof(RightsId) == sizeof(::FsRightsId));

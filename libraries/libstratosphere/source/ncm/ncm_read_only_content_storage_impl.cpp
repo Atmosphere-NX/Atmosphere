@@ -297,4 +297,19 @@ namespace ams::ncm {
         R_THROW(ncm::ResultInvalidOperation());
     }
 
+    Result ReadOnlyContentStorageImpl::GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Get the path of the content. */
+        Path path;
+        R_TRY(this->GetPath(std::addressof(path), content_id));
+
+        /* Obtain the program id for the content. */
+        ncm::ProgramId program_id;
+        R_TRY(fs::GetProgramId(std::addressof(program_id), path.str, attr));
+
+        out.SetValue(program_id);
+        R_SUCCEED();
+    }
+
 }
