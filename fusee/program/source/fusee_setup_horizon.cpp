@@ -257,6 +257,8 @@ namespace ams::nxboot {
                         return ams::TargetFirmware_15_0_0;
                     } else if (std::memcmp(package1 + 0x10, "20230111", 8) == 0) {
                         return ams::TargetFirmware_16_0_0;
+                    } else if (std::memcmp(package1 + 0x10, "20230906", 8) == 0) {
+                        return ams::TargetFirmware_17_0_0;
                     }
                     break;
                 default:
