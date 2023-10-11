@@ -86,27 +86,23 @@ namespace ams::kern::init {
         }
 
         void SetupInitialArguments() {
+            /* Determine whether we're running on a cortex-a53 or a-57. */
+            cpu::MainIdRegisterAccessor midr_el1;
+            const auto implementer  = midr_el1.GetImplementer();
+            const auto primary_part = midr_el1.GetPrimaryPartNumber();
+            const bool needs_cpu_ctlr = (implementer == cpu::MainIdRegisterAccessor::Implementer::ArmLimited) && (primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA57 || primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA53);
+
             /* Get parameters for initial arguments. */
-            const u64 ttbr0    = cpu::GetTtbr0El1();
-            const u64 ttbr1    = cpu::GetTtbr1El1();
-            const u64 tcr      = cpu::GetTcrEl1();
-            const u64 mair     = cpu::GetMairEl1();
-            const u64 cpuactlr = cpu::GetCpuActlrEl1();
-            const u64 cpuectlr = cpu::GetCpuEctlrEl1();
-            const u64 sctlr    = cpu::GetSctlrEl1();
+            const u64 cpuactlr = needs_cpu_ctlr ? cpu::GetCpuActlrEl1() : 0;
+            const u64 cpuectlr = needs_cpu_ctlr ? cpu::GetCpuEctlrEl1() : 0;
 
             for (s32 i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
                 /* Get the arguments. */
                 KInitArguments *init_args = g_init_arguments + i;
 
                 /* Set the arguments. */
-                init_args->ttbr0           = ttbr0;
-                init_args->ttbr1           = ttbr1;
-                init_args->tcr             = tcr;
-                init_args->mair            = mair;
                 init_args->cpuactlr        = cpuactlr;
                 init_args->cpuectlr        = cpuectlr;
-                init_args->sctlr           = sctlr;
                 init_args->sp              = GetInteger(KMemoryLayout::GetMainStackTopAddress(i)) - sizeof(KThread::StackParameters);
                 init_args->entrypoint      = reinterpret_cast<uintptr_t>(::ams::kern::init::InvokeMain);
                 init_args->argument        = static_cast<u64>(i);

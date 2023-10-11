@@ -246,17 +246,12 @@
 #define THREAD_LOCAL_REGION_SIZE           0x200
 
 /* ams::kern::init::KInitArguments, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/init/kern_k_init_arguments.hpp */
-#define INIT_ARGUMENTS_SIZE            0x50
-#define INIT_ARGUMENTS_TTBR0           0x00
-#define INIT_ARGUMENTS_TTBR1           0x08
-#define INIT_ARGUMENTS_TCR             0x10
-#define INIT_ARGUMENTS_MAIR            0x18
-#define INIT_ARGUMENTS_CPUACTLR        0x20
-#define INIT_ARGUMENTS_CPUECTLR        0x28
-#define INIT_ARGUMENTS_SCTLR           0x30
-#define INIT_ARGUMENTS_SP              0x38
-#define INIT_ARGUMENTS_ENTRYPOINT      0x40
-#define INIT_ARGUMENTS_ARGUMENT        0x48
+#define INIT_ARGUMENTS_SIZE            0x28
+#define INIT_ARGUMENTS_CPUACTLR        0x00
+#define INIT_ARGUMENTS_CPUECTLR        0x08
+#define INIT_ARGUMENTS_SP              0x10
+#define INIT_ARGUMENTS_ENTRYPOINT      0x18
+#define INIT_ARGUMENTS_ARGUMENT        0x20
 
 /* ams::kern::KScheduler (::SchedulingState), https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_scheduler.hpp */
 /* NOTE: Due to constraints on ldarb relative offsets, KSCHEDULER_NEEDS_SCHEDULING cannot trivially be changed, and will require assembly edits. */
