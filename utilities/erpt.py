@@ -61,6 +61,9 @@ else:
  DT_RELAENT, DT_STRSZ, DT_SYMENT, DT_INIT, DT_FINI, DT_SONAME, DT_RPATH, DT_SYMBOLIC, DT_REL,
  DT_RELSZ, DT_RELENT, DT_PLTREL, DT_DEBUG, DT_TEXTREL, DT_JMPREL, DT_BIND_NOW, DT_INIT_ARRAY,
  DT_FINI_ARRAY, DT_INIT_ARRAYSZ, DT_FINI_ARRAYSZ, DT_RUNPATH, DT_FLAGS) = iter_range(31)
+
+DT_RELRSZ, DT_RELR, DT_RELRENT = 0x23, 0x24, 0x25
+
 DT_GNU_HASH = 0x6ffffef5
 DT_VERSYM = 0x6ffffff0
 DT_RELACOUNT = 0x6ffffff9
@@ -83,6 +86,8 @@ R_ARM_TLS_DESC = 13
 R_ARM_GLOB_DAT = 21
 R_ARM_JUMP_SLOT = 22
 R_ARM_RELATIVE = 23
+
+R_FAKE_RELR = -1
 
 R_AARCH64_ABS64 = 257
 R_AARCH64_GLOB_DAT = 1025
@@ -231,6 +236,8 @@ CATEGORIES = {
     137 : 'BuiltInWirelessOUIInfo',
     138 : 'WirelessAPOUIInfo',
     139 : 'EthernetAdapterOUIInfo',
+    140 : 'NANDTypeInfo',
+    141 : 'MicroSDTypeInfo',
 }
 
 FIELD_TYPES = {
@@ -258,15 +265,7 @@ FIELD_FLAGS = {
 }
 
 def get_full(nxo):
-    full = nxo.text[0]
-    if nxo.ro[2] >= len(full):
-        full += b'\x00' * (nxo.ro[2] - len(full))
-    else:
-        full = full[:nxo.ro[2]]
-    full += nxo.ro[0]
-    if nxo.data[2] > len(full):
-        full += b'\x00' * (nxo.data[2] - len(full))
-    full += nxo.data[0]
+    full = nxo.full[:]
 
     undef_count = 0
     for s in nxo.symbols:
@@ -303,6 +302,8 @@ def get_full(nxo):
         return z[:target] + pk('<Q', val) + z[target+8:]
     def get_dword(z, target):
         return up('<I', z[target:target+4])[0]
+    def get_qword(z, target):
+        return up('<Q', z[target:target+8])[0]
 
     for offset, r_type, sym, addend in nxo.relocations:
         #print offset, r_type, sym, addend
@@ -318,15 +319,30 @@ def get_full(nxo):
             full = put_qword(full, target, sym.resolved + addend)
         elif r_type == R_AARCH64_RELATIVE:
             full = put_qword(full, target, LOAD_BASE + addend)
+        elif r_type == R_FAKE_RELR:
+            addend = get_qword(full, offset)
+            #print '%X %X %x' % (offset, target, addend)
+            full = put_qword(full, offset, addend + LOAD_BASE)
         else:
             print('TODO r_type %d' % (r_type,))
+    with open('E:\\full.bin', 'wb') as f:
+        f.write(full)
     return full
 
 def locate_fields(full):
     start = ['TestU64', 'TestU32', 'TestI64', 'TestI32']
-    inds = [LOAD_BASE + full.index('%s\x00' % s) for s in start]
-    target = pk('<QQQQ', inds[0], inds[1], inds[2], inds[3])
-    return full.index(target)
+    inds = [full.index('%s\x00' % s) for s in start]
+    target = pk('<QQQQ', LOAD_BASE + inds[0], LOAD_BASE + inds[1], LOAD_BASE + inds[2], LOAD_BASE + inds[3])
+    if target in full:
+        return 0, full.index(target)
+    else:
+        # 17.0.0
+        ofs = 0
+        while ofs < len(full) - 0x10:
+            test = full[ofs:ofs + 0x10]
+            if test == pk('<IIII', *[((x - ofs) & 0xFFFFFFFF) for x in inds]):
+                return 1, ofs
+            ofs += 4
 
 def read_string(full, ofs):
     s = ''
@@ -348,18 +364,27 @@ def is_valid_field_name(s):
             return False
     return True
 
-def parse_fields(full, table):
+def parse_fields(full, table, format_version):
     fields = []
     ofs = 0
-    while True:
-        val = up('<Q', full[table + ofs:table + ofs + 8])[0]
-        if (val & 0xFFFFFFFF00000000) != LOAD_BASE:
-            break
-        s = read_string(full, val - LOAD_BASE)
-        if not is_valid_field_name(s):
-            break
-        fields.append(s)
-        ofs += 8
+    if format_version == 0:
+        while True:
+            val = up('<Q', full[table + ofs:table + ofs + 8])[0]
+            if (val & 0xFFFFFFFF00000000) != LOAD_BASE:
+                break
+            s = read_string(full, val - LOAD_BASE)
+            if not is_valid_field_name(s):
+                break
+            fields.append(s)
+            ofs += 8
+    elif format_version == 1:
+        while True:
+            val = up('<I', full[table + ofs:table + ofs + 4])[0]
+            s = read_string(full, (table + val) & 0xFFFFFFFF)
+            if not is_valid_field_name(s):
+                break
+            fields.append(s)
+            ofs += 4
     return fields
 
 def find_categories(full, num_fields):
@@ -376,11 +401,11 @@ def find_types(full, num_fields):
         ind = full.index(''.join(pk('<I', i) for i in KNOWN_OLD))
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
-def find_flags(full, num_fields):
+def find_flags(full, num_fields, magic_idx):
     KNOWN = '\x00' + ('\x01'*6) + '\x00\x01\x01\x00'
-    if num_fields < 443 + len(KNOWN):
+    if num_fields < magic_idx + len(KNOWN):
         return [0] * num_fields
-    ind = full.index(KNOWN) - 443
+    ind = full.index(KNOWN) - magic_idx
     return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
 
 def cat_to_string(c):
@@ -399,12 +424,12 @@ def main(argc, argv):
     f = open(argv[-1], 'rb')
     nxo = nxo64.load_nxo(f)
     full = get_full(nxo)
-    field_table = locate_fields(full)
-    fields = parse_fields(full, field_table)
+    table_format, field_table = locate_fields(full)
+    fields = parse_fields(full, field_table, table_format)
     NUM_FIELDS = len(fields)
     cats = find_categories(full, NUM_FIELDS)
     types = find_types(full, NUM_FIELDS)
-    flags = find_flags(full, NUM_FIELDS)
+    flags = find_flags(full, NUM_FIELDS, fields.index('TestStringEncrypt') - 1)
     print 'Identified %d fields.' % NUM_FIELDS
     mf = max(len(s) for s in fields)
     mc = max(len(cat_to_string(c)) for c in cats)
@@ -436,7 +461,8 @@ def main(argc, argv):
 if __name__ == '__main__':
     try:
         ret = main(len(sys.argv), sys.argv)
-    except:
+    except Exception as e:
+        print e
         ret = 1
         print 'exception'
     sys.exit(ret)
