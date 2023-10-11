@@ -2105,9 +2105,24 @@ namespace ams::dmnt {
             ParsePrefix(command, "0x");
 
             /* Decode program id. */
-            const u64 program_id = DecodeHex(command);
+            const ncm::ProgramId program_id(DecodeHex(command));
 
-            AppendReplyFormat(reply_cur, reply_end, "[TODO] wait for program id 0x%lx\n", program_id);
+            /* Wait for the process to be created. */
+            {
+                /* Get hook to creation of process with program id. */
+                os::NativeHandle h;
+                R_ABORT_UNLESS(pm::dmnt::HookToCreateProcess(std::addressof(h), program_id));
+
+                /* Wait for event. */
+                os::SystemEvent hook_event(h, true, os::InvalidNativeHandle, false, os::EventClearMode_AutoClear);
+                hook_event.Wait();
+            }
+
+            /* Get process id. */
+            R_ABORT_UNLESS(pm::dmnt::GetProcessId(std::addressof(m_wait_process_id), program_id));
+
+            /* Note that we're attaching. */
+            AppendReplyFormat(reply_cur, reply_end, "Send `attach 0x%lx` to attach.\n", m_wait_process_id.value);
         } else {
             std::memcpy(m_reply_cur, command, std::strlen(command) + 1);
             AppendReplyFormat(reply_cur, reply_end, "Unknown command `%s`\n", m_reply_cur);
