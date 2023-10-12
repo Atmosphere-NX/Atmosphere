@@ -27,6 +27,7 @@ namespace ams::kern {
 
         constinit KPhysicalAddress g_initial_process_binary_phys_addr = Null<KPhysicalAddress>;
         constinit KVirtualAddress g_initial_process_binary_address = Null<KVirtualAddress>;
+        constinit size_t g_initial_process_binary_size = 0;
         constinit InitialProcessBinaryHeader g_initial_process_binary_header = {};
         constinit size_t g_initial_process_secure_memory_size = 0;
         constinit u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
@@ -155,40 +156,14 @@ namespace ams::kern {
                     KPageGroup *process_pg = std::addressof(pg);
                     ON_SCOPE_EXIT { process_pg->Close(); };
 
-                    /* Get the temporary region. */
-                    const auto &temp_region = KMemoryLayout::GetTempRegion();
-                    MESOSPHERE_ABORT_UNLESS(temp_region.GetEndAddress() != 0);
-
-                    /* Map the process's memory into the temporary region. */
-                    KProcessAddress temp_address = Null<KProcessAddress>;
-                    MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().MapPageGroup(std::addressof(temp_address), pg, temp_region.GetAddress(), temp_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
-
-                    /* Setup the new page group's memory, so that we can load the process. */
-                    {
-                        /* Copy the unaligned ending of the compressed binary. */
-                        if (const size_t unaligned_size = binary_size - util::AlignDown(binary_size, PageSize); unaligned_size != 0) {
-                            std::memcpy(GetVoidPointer(temp_address + process_size - unaligned_size), GetVoidPointer(data + binary_size - unaligned_size), unaligned_size);
-                        }
-
-                        /* Copy the aligned part of the compressed binary. */
-                        if (const size_t aligned_size = util::AlignDown(binary_size, PageSize); aligned_size != 0 && src_pool == dst_pool) {
-                            std::memmove(GetVoidPointer(temp_address + process_size - binary_size), GetVoidPointer(temp_address), aligned_size);
-                        } else {
-                            if (src_pool != dst_pool) {
-                                std::memcpy(GetVoidPointer(temp_address + process_size - binary_size), GetVoidPointer(data), aligned_size);
-                                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(data), aligned_size / PageSize);
-                            }
-                        }
-
-                        /* Clear the first part of the memory. */
-                        std::memset(GetVoidPointer(temp_address), 0, process_size - binary_size);
-                    }
-
                     /* Load the process. */
-                    MESOSPHERE_R_ABORT_UNLESS(reader.Load(temp_address, params, temp_address + process_size - binary_size));
+                    reader.Load(pg, data);
 
-                    /* Unmap the temporary mapping. */
-                    MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPageGroup(temp_address, pg, KMemoryState_Kernel));
+                    /* If necessary, close/release the aligned part of the data we just loaded. */
+                    if (const size_t aligned_bin_size = util::AlignDown(binary_size, PageSize); aligned_bin_size != 0 && src_pool != dst_pool) {
+                        Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(data), aligned_bin_size / PageSize);
+                        Kernel::GetSystemResourceLimit().Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_bin_size);
+                    }
 
                     /* Create a KProcess object. */
                     new_process = KProcess::Create();
@@ -241,11 +216,6 @@ namespace ams::kern {
                     MESOSPHERE_R_ABORT_UNLESS(new_process->Initialize(params, *process_pg, reader.GetCapabilities(), reader.GetNumCapabilities(), std::addressof(Kernel::GetSystemResourceLimit()), dst_pool, reader.IsImmortal()));
                 }
 
-                /* Release the memory that was previously reserved. */
-                if (const size_t aligned_bin_size = util::AlignDown(binary_size, PageSize); aligned_bin_size != 0 && src_pool != dst_pool) {
-                    Kernel::GetSystemResourceLimit().Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_bin_size);
-                }
-
                 /* Set the process's memory permissions. */
                 MESOSPHERE_R_ABORT_UNLESS(reader.SetMemoryPermissions(new_process->GetPageTable(), params));
 
@@ -275,16 +245,23 @@ namespace ams::kern {
 
     }
 
-    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr) {
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
         MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr == Null<KPhysicalAddress>);
 
         g_initial_process_binary_phys_addr = phys_addr;
+        g_initial_process_binary_size      = size;
     }
 
     KPhysicalAddress GetInitialProcessBinaryPhysicalAddress() {
         MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
 
         return g_initial_process_binary_phys_addr;
+    }
+
+    size_t GetInitialProcessBinarySize() {
+        MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
+
+        return g_initial_process_binary_size;
     }
 
     u64 GetInitialProcessIdMin() {
@@ -305,14 +282,17 @@ namespace ams::kern {
         LoadInitialProcessBinaryHeader();
 
         if (g_initial_process_binary_header.num_processes > 0) {
-            /* Reserve pages for the initial process binary from the system resource limit. */
-            const size_t total_size = util::AlignUp(g_initial_process_binary_header.size, PageSize);
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, total_size));
+            /* Ensure that we have a non-zero size. */
+            const size_t expected_size = g_initial_process_binary_size;
+            MESOSPHERE_INIT_ABORT_UNLESS(expected_size != 0);
 
-            /* The initial process binary is potentially over-allocated, so free any extra pages. */
-            if (total_size < InitialProcessBinarySizeMax) {
-                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(g_initial_process_binary_address + total_size), (InitialProcessBinarySizeMax - total_size) / PageSize);
-            }
+            /* Ensure that the size we need to reserve is as we expect it to be. */
+            const size_t total_size = util::AlignUp(g_initial_process_binary_header.size, PageSize);
+            MESOSPHERE_ABORT_UNLESS(total_size == expected_size);
+            MESOSPHERE_ABORT_UNLESS(total_size <= InitialProcessBinarySizeMax);
+
+            /* Reserve pages for the initial process binary from the system resource limit. */
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, total_size));
 
             return total_size;
         } else {

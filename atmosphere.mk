@@ -84,7 +84,7 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000034
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000036
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000037
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c
+	#mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000042
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000420
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240
@@ -98,7 +98,7 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp stratosphere/fatal/$(ATMOSPHERE_OUT_DIR)/fatal.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000034/exefs.nsp
 	cp stratosphere/creport/$(ATMOSPHERE_OUT_DIR)/creport.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000036/exefs.nsp
 	cp stratosphere/ro/$(ATMOSPHERE_OUT_DIR)/ro.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000037/exefs.nsp
-	cp stratosphere/jpegdec/$(ATMOSPHERE_OUT_DIR)/jpegdec.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c/exefs.nsp
+	#cp stratosphere/jpegdec/$(ATMOSPHERE_OUT_DIR)/jpegdec.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c/exefs.nsp
 	cp stratosphere/pgl/$(ATMOSPHERE_OUT_DIR)/pgl.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
 	cp stratosphere/LogManager/$(ATMOSPHERE_OUT_DIR)/LogManager.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000420/exefs.nsp
 	cp stratosphere/htc/$(ATMOSPHERE_OUT_DIR)/htc.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240/exefs.nsp

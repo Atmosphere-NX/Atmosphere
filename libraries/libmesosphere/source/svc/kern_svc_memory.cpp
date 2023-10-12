@@ -58,9 +58,12 @@ namespace ams::kern::svc {
             R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
 
             /* Validate the attribute and mask. */
-            constexpr u32 SupportedMask = ams::svc::MemoryAttribute_Uncached;
+            constexpr u32 SupportedMask = ams::svc::MemoryAttribute_Uncached | ams::svc::MemoryAttribute_PermissionLocked;
             R_UNLESS((mask | attr) == mask,                          svc::ResultInvalidCombination());
             R_UNLESS((mask | attr | SupportedMask) == SupportedMask, svc::ResultInvalidCombination());
+
+            /* Check that permission locked is either being set or not masked. */
+            R_UNLESS((mask & ams::svc::MemoryAttribute_PermissionLocked) == (attr & ams::svc::MemoryAttribute_PermissionLocked), svc::ResultInvalidCombination());
 
             /* Validate that the region is in range for the current process. */
             auto &page_table = GetCurrentProcess().GetPageTable();

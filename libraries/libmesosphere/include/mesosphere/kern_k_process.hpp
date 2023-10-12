@@ -76,6 +76,7 @@ namespace ams::kern {
             bool                        m_is_signaled;
             bool                        m_is_initialized;
             bool                        m_is_application;
+            bool                        m_is_default_application_system_resource;
             char                        m_name[13];
             util::Atomic<u16>           m_num_running_threads;
             u32                         m_flags;
@@ -177,6 +178,8 @@ namespace ams::kern {
             constexpr u64 GetRandomEntropy(size_t i) const { return m_entropy[i]; }
 
             constexpr bool IsApplication() const { return m_is_application; }
+
+            constexpr bool IsDefaultApplicationSystemResource() const { return m_is_default_application_system_resource; }
 
             constexpr bool IsSuspended() const { return m_is_suspended; }
             constexpr void SetSuspended(bool suspended) { m_is_suspended = suspended; }
@@ -280,12 +283,20 @@ namespace ams::kern {
             void IncrementRunningThreadCount();
             void DecrementRunningThreadCount();
 
+            size_t GetRequiredSecureMemorySizeNonDefault() const {
+                return (!this->IsDefaultApplicationSystemResource() && m_system_resource->IsSecureResource()) ? static_cast<KSecureSystemResource *>(m_system_resource)->CalculateRequiredSecureMemorySize() : 0;
+            }
+
+            size_t GetRequiredSecureMemorySize() const {
+                return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->CalculateRequiredSecureMemorySize() : 0;
+            }
+
             size_t GetTotalSystemResourceSize() const {
-                return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->GetSize() : 0;
+                return (!this->IsDefaultApplicationSystemResource() && m_system_resource->IsSecureResource()) ? static_cast<KSecureSystemResource *>(m_system_resource)->GetSize() : 0;
             }
 
             size_t GetUsedSystemResourceSize() const {
-                return m_system_resource->IsSecureResource() ? static_cast<KSecureSystemResource *>(m_system_resource)->GetUsedSize() : 0;
+                return (!this->IsDefaultApplicationSystemResource() && m_system_resource->IsSecureResource()) ? static_cast<KSecureSystemResource *>(m_system_resource)->GetUsedSize() : 0;
             }
 
             void SetRunningThread(s32 core, KThread *thread, u64 idle_count, u64 switch_count) {

@@ -24,6 +24,9 @@ namespace ams::nxboot {
 
     namespace {
 
+        constexpr u32 MesoshereMetadataLayout0Magic = util::FourCC<'M','S','S','0'>::Code;
+        constexpr u32 MesoshereMetadataLayout1Magic = util::FourCC<'M','S','S','1'>::Code;
+
         struct InitialProcessBinaryHeader {
             static constexpr u32 Magic = util::FourCC<'I','N','I','1'>::Code;
 
@@ -165,6 +168,9 @@ namespace ams::nxboot {
             FsVersion_16_0_3,
             FsVersion_16_0_3_Exfat,
 
+            FsVersion_17_0_0,
+            FsVersion_17_0_0_Exfat,
+
             FsVersion_Count,
         };
 
@@ -245,10 +251,24 @@ namespace ams::nxboot {
 
             { 0x39, 0xEE, 0x1F, 0x1E, 0x0E, 0xA7, 0x32, 0x5D }, /* FsVersion_16_0_3 */
             { 0x62, 0xC6, 0x5E, 0xFD, 0x9A, 0xBF, 0x7C, 0x43 }, /* FsVersion_16_0_3_Exfat */
+
+            { 0x27, 0x07, 0x3B, 0xF0, 0xA1, 0xB8, 0xCE, 0x61 }, /* FsVersion_17_0_0 */
+            { 0xEE, 0x0F, 0x4B, 0xAC, 0x6D, 0x1F, 0xFC, 0x4B }, /* FsVersion_17_0_0_Exfat */
         };
 
         const InitialProcessBinaryHeader *FindInitialProcessBinary(const pkg2::Package2Header *header, const u8 *data, ams::TargetFirmware target_firmware) {
-            if (target_firmware >= ams::TargetFirmware_8_0_0) {
+            if (target_firmware >= ams::TargetFirmware_17_0_0) {
+                const u32 *data_32 = reinterpret_cast<const u32 *>(data);
+                const u32 branch_target = (data_32[0] & 0x00FFFFFF);
+                for (size_t i = branch_target; i < branch_target + 0x1000 / sizeof(u32); ++i) {
+                    const u32 ini_offset = (i * sizeof(u32)) + data_32[i];
+                    if (data_32[i + 1] == 0 && ini_offset <= header->meta.payload_sizes[0] && std::memcmp(data + ini_offset, "INI1", 4) == 0) {
+                        return reinterpret_cast<const InitialProcessBinaryHeader *>(data + ini_offset);
+                    }
+                }
+
+                return nullptr;
+            } else if (target_firmware >= ams::TargetFirmware_8_0_0) {
                 /* Try to find initial process binary. */
                 const u32 *data_32 = reinterpret_cast<const u32 *>(data);
                 for (size_t i = 0; i < 0x1000 / sizeof(u32); ++i) {
@@ -670,6 +690,14 @@ namespace ams::nxboot {
                     AddPatch(fs_meta, 0x191409, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x16B9A0, NogcPatch1, sizeof(NogcPatch1));
                     break;
+                case FsVersion_17_0_0:
+                    AddPatch(fs_meta, 0x18B149, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x165200, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_17_0_0_Exfat:
+                    AddPatch(fs_meta, 0x195FA9, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x170060, NogcPatch1, sizeof(NogcPatch1));
+                    break;
                 default:
                     break;
             }
@@ -1011,7 +1039,20 @@ namespace ams::nxboot {
         }
 
         /* Set the embedded ini pointer. */
-        std::memcpy(payload_data + 8, std::addressof(meso_size), sizeof(meso_size));
+        const u32 magic = *reinterpret_cast<const u32 *>(payload_data + 4);
+        if (magic == MesoshereMetadataLayout0Magic) {
+            std::memcpy(payload_data + 8, std::addressof(meso_size), sizeof(meso_size));
+        } else if (magic == MesoshereMetadataLayout1Magic) {
+            if (const u32 meta_offset = *reinterpret_cast<const u32 *>(payload_data + 8); meta_offset <= meso_size - sizeof(meso_size)) {
+                s64 relative_offset = meso_size - meta_offset;
+                std::memcpy(payload_data + meta_offset, std::addressof(relative_offset), sizeof(relative_offset));
+            } else {
+                ShowFatalError("Invalid mesosphere metadata layout!\n");
+            }
+        } else {
+            ShowFatalError("Unknown mesosphere metadata version!\n");
+        }
+
 
         /* Get the ini pointer. */
         InitialProcessBinaryHeader * const ini = reinterpret_cast<InitialProcessBinaryHeader *>(payload_data + meso_size);

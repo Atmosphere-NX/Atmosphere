@@ -207,6 +207,11 @@ namespace ams::ncm {
                     R_RETURN(m_interface->GetRightsIdFromPlaceHolderIdWithCacheDeprecated(out_rights_id, cache_content_id, placeholder_id));
                 }
             }
+
+            Result GetProgramId(ncm::ProgramId *out, ContentId content_id, fs::ContentAttributes attr) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->GetProgramId(out, content_id, attr));
+            }
     };
 
 }

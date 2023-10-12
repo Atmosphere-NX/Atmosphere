@@ -44,6 +44,7 @@ namespace ams::kern {
         KMemoryState_FlagCanChangeAttribute     = (1 << 24),
         KMemoryState_FlagCanCodeMemory          = (1 << 25),
         KMemoryState_FlagLinearMapped           = (1 << 26),
+        KMemoryState_FlagCanPermissionLock      = (1 << 27),
 
         KMemoryState_FlagsData = KMemoryState_FlagCanReprotect          | KMemoryState_FlagCanUseIpc            |
                                  KMemoryState_FlagCanUseNonDeviceIpc    | KMemoryState_FlagCanUseNonSecureIpc   |
@@ -66,18 +67,22 @@ namespace ams::kern {
 
 
         KMemoryState_Free               = ams::svc::MemoryState_Free,
-        KMemoryState_Io                 = ams::svc::MemoryState_Io                  | KMemoryState_FlagMapped | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap,
-        KMemoryState_Static             = ams::svc::MemoryState_Static              | KMemoryState_FlagMapped | KMemoryState_FlagCanQueryPhysical,
+
+        KMemoryState_IoMemory           = ams::svc::MemoryState_Io                  | KMemoryState_FlagMapped | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap,
+        KMemoryState_IoRegister         = ams::svc::MemoryState_Io                                            | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap,
+
+
+        KMemoryState_Static             = ams::svc::MemoryState_Static              | KMemoryState_FlagCanQueryPhysical,
         KMemoryState_Code               = ams::svc::MemoryState_Code                | KMemoryState_FlagsCode  | KMemoryState_FlagCanMapProcess,
-        KMemoryState_CodeData           = ams::svc::MemoryState_CodeData            | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeMemory,
+        KMemoryState_CodeData           = ams::svc::MemoryState_CodeData            | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeMemory      | KMemoryState_FlagCanPermissionLock,
         KMemoryState_Normal             = ams::svc::MemoryState_Normal              | KMemoryState_FlagsData  | KMemoryState_FlagCanCodeMemory,
         KMemoryState_Shared             = ams::svc::MemoryState_Shared              | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped,
 
         /* KMemoryState_Alias was removed after 1.0.0. */
 
         KMemoryState_AliasCode          = ams::svc::MemoryState_AliasCode           | KMemoryState_FlagsCode  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeAlias,
-        KMemoryState_AliasCodeData      = ams::svc::MemoryState_AliasCodeData       | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeAlias       | KMemoryState_FlagCanCodeMemory,
-
+        KMemoryState_AliasCodeData      = ams::svc::MemoryState_AliasCodeData       | KMemoryState_FlagsData  | KMemoryState_FlagCanMapProcess       | KMemoryState_FlagCanCodeAlias       | KMemoryState_FlagCanCodeMemory
+                                                                                                              | KMemoryState_FlagCanPermissionLock,
 
         KMemoryState_Ipc                = ams::svc::MemoryState_Ipc                 | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap
                                                                                                               | KMemoryState_FlagCanUseIpc           | KMemoryState_FlagCanUseNonSecureIpc | KMemoryState_FlagCanUseNonDeviceIpc,
@@ -85,7 +90,7 @@ namespace ams::kern {
         KMemoryState_Stack              = ams::svc::MemoryState_Stack               | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap
                                                                                                               | KMemoryState_FlagCanUseIpc           | KMemoryState_FlagCanUseNonSecureIpc | KMemoryState_FlagCanUseNonDeviceIpc,
 
-        KMemoryState_ThreadLocal        = ams::svc::MemoryState_ThreadLocal         | KMemoryState_FlagMapped | KMemoryState_FlagLinearMapped,
+        KMemoryState_ThreadLocal        = ams::svc::MemoryState_ThreadLocal         | KMemoryState_FlagLinearMapped,
 
         KMemoryState_Transfered         = ams::svc::MemoryState_Transfered          | KMemoryState_FlagsMisc  | KMemoryState_FlagCanAlignedDeviceMap | KMemoryState_FlagCanChangeAttribute
                                                                                                               | KMemoryState_FlagCanUseIpc           | KMemoryState_FlagCanUseNonSecureIpc | KMemoryState_FlagCanUseNonDeviceIpc,
@@ -104,43 +109,44 @@ namespace ams::kern {
         KMemoryState_NonDeviceIpc       = ams::svc::MemoryState_NonDeviceIpc        | KMemoryState_FlagsMisc  | KMemoryState_FlagCanUseNonDeviceIpc,
 
 
-        KMemoryState_Kernel             = ams::svc::MemoryState_Kernel              | KMemoryState_FlagMapped,
+        KMemoryState_Kernel             = ams::svc::MemoryState_Kernel,
 
         KMemoryState_GeneratedCode      = ams::svc::MemoryState_GeneratedCode       | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagCanDebug           | KMemoryState_FlagLinearMapped,
         KMemoryState_CodeOut            = ams::svc::MemoryState_CodeOut             | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped,
 
         KMemoryState_Coverage           = ams::svc::MemoryState_Coverage            | KMemoryState_FlagMapped,
 
-        KMemoryState_Insecure           = ams::svc::MemoryState_Insecure            | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped       | KMemoryState_FlagCanChangeAttribute
-                                                                                                              | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap
+        KMemoryState_Insecure           = ams::svc::MemoryState_Insecure            | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagLinearMapped        | KMemoryState_FlagCanChangeAttribute
+                                                                                                              | KMemoryState_FlagCanDeviceMap        | KMemoryState_FlagCanAlignedDeviceMap | KMemoryState_FlagCanQueryPhysical
                                                                                                               | KMemoryState_FlagCanUseNonSecureIpc  | KMemoryState_FlagCanUseNonDeviceIpc,
     };
 
 #if 1
     static_assert(KMemoryState_Free             == 0x00000000);
-    static_assert(KMemoryState_Io               == 0x00182001);
-    static_assert(KMemoryState_Static           == 0x00042002);
+    static_assert(KMemoryState_IoMemory         == 0x00182001);
+    static_assert(KMemoryState_IoRegister       == 0x00180001);
+    static_assert(KMemoryState_Static           == 0x00040002);
     static_assert(KMemoryState_Code             == 0x04DC7E03);
-    static_assert(KMemoryState_CodeData         == 0x07FEBD04);
+    static_assert(KMemoryState_CodeData         == 0x0FFEBD04);
     static_assert(KMemoryState_Normal           == 0x077EBD05);
     static_assert(KMemoryState_Shared           == 0x04402006);
 
     static_assert(KMemoryState_AliasCode        == 0x04DD7E08);
-    static_assert(KMemoryState_AliasCodeData    == 0x07FFBD09);
+    static_assert(KMemoryState_AliasCodeData    == 0x0FFFBD09);
     static_assert(KMemoryState_Ipc              == 0x045C3C0A);
     static_assert(KMemoryState_Stack            == 0x045C3C0B);
-    static_assert(KMemoryState_ThreadLocal      == 0x0400200C);
+    static_assert(KMemoryState_ThreadLocal      == 0x0400000C);
     static_assert(KMemoryState_Transfered       == 0x055C3C0D);
     static_assert(KMemoryState_SharedTransfered == 0x045C380E);
     static_assert(KMemoryState_SharedCode       == 0x0440380F);
     static_assert(KMemoryState_Inaccessible     == 0x00000010);
     static_assert(KMemoryState_NonSecureIpc     == 0x045C3811);
     static_assert(KMemoryState_NonDeviceIpc     == 0x044C2812);
-    static_assert(KMemoryState_Kernel           == 0x00002013);
+    static_assert(KMemoryState_Kernel           == 0x00000013);
     static_assert(KMemoryState_GeneratedCode    == 0x04402214);
     static_assert(KMemoryState_CodeOut          == 0x04402015);
-    static_assert(KMemoryState_Coverage         == 0x00002016);
-    static_assert(KMemoryState_Insecure         == 0x05583817);
+    static_assert(KMemoryState_Coverage         == 0x00002016); /* TODO: Is this correct? */
+    static_assert(KMemoryState_Insecure         == 0x055C3817);
 #endif
 
     enum KMemoryPermission : u8 {
@@ -175,16 +181,17 @@ namespace ams::kern {
     }
 
     enum KMemoryAttribute : u8 {
-        KMemoryAttribute_None           = 0x00,
-        KMemoryAttribute_All            = 0xFF,
-        KMemoryAttribute_UserMask       = KMemoryAttribute_All,
+        KMemoryAttribute_None             = 0x00,
+        KMemoryAttribute_All              = 0xFF,
+        KMemoryAttribute_UserMask         = KMemoryAttribute_All,
 
-        KMemoryAttribute_Locked         = ams::svc::MemoryAttribute_Locked,
-        KMemoryAttribute_IpcLocked      = ams::svc::MemoryAttribute_IpcLocked,
-        KMemoryAttribute_DeviceShared   = ams::svc::MemoryAttribute_DeviceShared,
-        KMemoryAttribute_Uncached       = ams::svc::MemoryAttribute_Uncached,
+        KMemoryAttribute_Locked           = ams::svc::MemoryAttribute_Locked,
+        KMemoryAttribute_IpcLocked        = ams::svc::MemoryAttribute_IpcLocked,
+        KMemoryAttribute_DeviceShared     = ams::svc::MemoryAttribute_DeviceShared,
+        KMemoryAttribute_Uncached         = ams::svc::MemoryAttribute_Uncached,
+        KMemoryAttribute_PermissionLocked = ams::svc::MemoryAttribute_PermissionLocked,
 
-        KMemoryAttribute_SetMask        = KMemoryAttribute_Uncached,
+        KMemoryAttribute_SetMask          = KMemoryAttribute_Uncached | KMemoryAttribute_PermissionLocked,
     };
 
     enum KMemoryBlockDisableMergeAttribute : u8 {
@@ -258,6 +265,10 @@ namespace ams::kern {
             return m_state;
         }
 
+        constexpr ams::svc::MemoryState GetSvcState() const {
+            return static_cast<ams::svc::MemoryState>(m_state & KMemoryState_Mask);
+        }
+
         constexpr KMemoryPermission GetPermission() const {
             return m_permission;
         }
@@ -318,6 +329,10 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetLastAddress() const {
                 return this->GetEndAddress() - 1;
+            }
+
+            constexpr KMemoryState GetState() const {
+                return m_memory_state;
             }
 
             constexpr u16 GetIpcLockCount() const {
@@ -437,6 +452,14 @@ namespace ams::kern {
                 if (clear_mask != 0) {
                     m_disable_merge_attribute = static_cast<KMemoryBlockDisableMergeAttribute>(m_disable_merge_attribute & ~clear_mask);
                 }
+            }
+
+            constexpr void UpdateAttribute(u32 mask, u32 attr) {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT((mask & KMemoryAttribute_IpcLocked) == 0);
+                MESOSPHERE_ASSERT((mask & KMemoryAttribute_DeviceShared) == 0);
+
+                m_attribute = static_cast<KMemoryAttribute>((m_attribute & ~mask) | attr);
             }
 
             constexpr void Split(KMemoryBlock *block, KProcessAddress addr) {

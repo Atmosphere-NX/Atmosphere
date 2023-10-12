@@ -118,12 +118,12 @@ namespace ams::kern {
             const size_t cur_size = std::min(remaining, info.GetEndAddress() - GetInteger(cur_address));
 
             /* Read the memory. */
-            if (info.GetState() != KMemoryState_Io) {
+            if (info.GetSvcState() != ams::svc::MemoryState_Io) {
                 /* The memory is normal memory. */
                 R_TRY(target_pt.ReadDebugMemory(GetVoidPointer(buffer), cur_address, cur_size));
             } else {
                 /* The memory is IO memory. */
-                R_TRY(target_pt.ReadDebugIoMemory(GetVoidPointer(buffer), cur_address, cur_size));
+                R_TRY(target_pt.ReadDebugIoMemory(GetVoidPointer(buffer), cur_address, cur_size, info.GetState()));
             }
 
             /* Advance. */
@@ -181,12 +181,12 @@ namespace ams::kern {
             const size_t cur_size = std::min(remaining, info.GetEndAddress() - GetInteger(cur_address));
 
             /* Read the memory. */
-            if (info.GetState() != KMemoryState_Io) {
+            if (info.GetSvcState() != ams::svc::MemoryState_Io) {
                 /* The memory is normal memory. */
                 R_TRY(target_pt.WriteDebugMemory(cur_address, GetVoidPointer(buffer), cur_size));
             } else {
                 /* The memory is IO memory. */
-                R_TRY(target_pt.WriteDebugIoMemory(cur_address, GetVoidPointer(buffer), cur_size));
+                R_TRY(target_pt.WriteDebugIoMemory(cur_address, GetVoidPointer(buffer), cur_size, info.GetState()));
             }
 
             /* Advance. */

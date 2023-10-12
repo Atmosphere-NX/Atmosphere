@@ -78,8 +78,8 @@ namespace ams::erpt::srv {
             R_UNLESS(0 <= m_ctx.fields[i].id   && m_ctx.fields[i].id   < FieldId_Count,   erpt::ResultInvalidArgument());
             R_UNLESS(0 <= m_ctx.fields[i].type && m_ctx.fields[i].type < FieldType_Count, erpt::ResultInvalidArgument());
 
-            R_UNLESS(m_ctx.fields[i].type == FieldToTypeMap[m_ctx.fields[i].id],     erpt::ResultFieldTypeMismatch());
-            R_UNLESS(m_ctx.category       == FieldToCategoryMap[m_ctx.fields[i].id], erpt::ResultFieldCategoryMismatch());
+            R_UNLESS(m_ctx.fields[i].type == ConvertFieldToType(m_ctx.fields[i].id),     erpt::ResultFieldTypeMismatch());
+            R_UNLESS(m_ctx.category       == ConvertFieldToCategory(m_ctx.fields[i].id), erpt::ResultFieldCategoryMismatch());
 
             if (IsArrayFieldType(m_ctx.fields[i].type)) {
                 const u32 start_idx = m_ctx.fields[i].value_array.start_idx;

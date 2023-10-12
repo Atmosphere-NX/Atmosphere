@@ -207,10 +207,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-        /* The input ID isn't actually used. */
-        MESOSPHERE_UNUSED(id);
-
+    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Get an ASID */
         m_asid = g_asid_manager.Reserve();
         ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
@@ -239,8 +236,14 @@ namespace ams::kern::arch::arm64 {
         /* Only process tables should be finalized. */
         MESOSPHERE_ASSERT(!this->IsKernel());
 
+        /* NOTE: Here Nintendo calls an unknown OnFinalize function. */
+        /* this->OnFinalize(); */
+
         /* Note that we've updated (to ensure we're synchronized). */
         this->NoteUpdated();
+
+        /* NOTE: Here Nintendo calls a second unknown OnFinalize function. */
+        /* this->OnFinalize2(); */
 
         /* Free all pages in the table. */
         {
@@ -348,7 +351,7 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
         MESOSPHERE_ASSERT(this->ContainsPages(virt_addr, num_pages));
 
-        if (operation == OperationType_Map || operation == OperationType_MapFirst) {
+        if (operation == OperationType_Map) {
             MESOSPHERE_ABORT_UNLESS(is_pa_valid);
             MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
         } else {
@@ -375,8 +378,7 @@ namespace ams::kern::arch::arm64 {
 
             switch (operation) {
                 case OperationType_Map:
-                case OperationType_MapFirst:
-                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, operation != OperationType_MapFirst, page_list, reuse_ll));
+                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
                     R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, false, page_list, reuse_ll));
                 case OperationType_ChangePermissionsAndRefresh:
@@ -399,7 +401,8 @@ namespace ams::kern::arch::arm64 {
         auto entry_template = this->GetEntryTemplate(properties);
         switch (operation) {
             case OperationType_MapGroup:
-                R_RETURN(this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
+            case OperationType_MapFirstGroup:
+                R_RETURN(this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, operation != OperationType_MapFirstGroup, page_list, reuse_ll));
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
@@ -756,7 +759,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, bool not_first, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Cache initial addresses for use on cleanup. */
@@ -827,21 +830,17 @@ namespace ams::kern::arch::arm64 {
 
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
-            if (not_first) {
-                Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
-            } else {
-                Kernel::GetMemoryManager().OpenFirst(orig_phys_addr, num_pages);
-            }
+            Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
         }
 
         R_SUCCEED();
     }
 
-    Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, bool not_first, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* We want to maintain a new reference to every page in the group. */
-        KScopedPageGroup spg(pg);
+        KScopedPageGroup spg(pg, not_first);
 
         /* Cache initial address for use on cleanup. */
         const KProcessAddress  orig_virt_addr = virt_addr;

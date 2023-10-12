@@ -111,6 +111,14 @@ namespace ams::erpt {
     static_assert(util::is_pod<ReportFlagSet>::value);
     static_assert(sizeof(ReportFlagSet) == sizeof(u32));
 
+    struct CreateReportOptionFlag {
+        using SubmitFsInfo = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>::Flag<0>;
+    };
+
+    using CreateReportOptionFlagSet = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>;
+    static_assert(util::is_pod<CreateReportOptionFlagSet>::value);
+    static_assert(sizeof(CreateReportOptionFlagSet) == sizeof(u32));
+
     struct ReportInfo {
         ReportType      type;
         ReportId        id;

@@ -71,6 +71,7 @@ namespace ams::ncm {
             Result GetContentAccessibilities(sf::Out<u8> out_accessibilities, const ContentMetaKey &key);
             Result GetContentInfoByType(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type);
             Result GetContentInfoByTypeAndIdOffset(sf::Out<ContentInfo> out_content_info, const ContentMetaKey &key, ContentType type, u8 id_offset);
+            Result GetPlatform(sf::Out<ncm::ContentMetaPlatform> out, const ContentMetaKey &key);
     };
     static_assert(ncm::IsIContentMetaDatabase<IntegratedContentMetaDatabaseImpl>);
 

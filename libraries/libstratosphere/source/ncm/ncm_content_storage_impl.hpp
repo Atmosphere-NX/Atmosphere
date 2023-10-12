@@ -105,6 +105,7 @@ namespace ams::ncm {
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id, fs::ContentAttributes attr) override;
             virtual Result RegisterPath(const ContentId &content_id, const Path &path) override;
             virtual Result ClearRegisteredPath() override;
+            virtual Result GetProgramId(sf::Out<ncm::ProgramId> out, ContentId content_id, fs::ContentAttributes attr) override;
     };
 
 }

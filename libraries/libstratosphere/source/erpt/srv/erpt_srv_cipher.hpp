@@ -48,7 +48,7 @@ namespace ams::erpt::srv {
                 ON_SCOPE_EXIT { Deallocate(hdr); };
 
                 hdr->magic         = HeaderMagic;
-                hdr->field_type    = static_cast<u32>(FieldToTypeMap[field_id]);
+                hdr->field_type    = static_cast<u32>(ConvertFieldToType(field_id));
                 hdr->element_count = arr_size;
                 hdr->reserved      = 0;
 
@@ -97,7 +97,7 @@ namespace ams::erpt::srv {
             }
 
             static Result AddField(Report *report, FieldId field_id, char *str, u32 len) {
-                if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
+                if (ConvertFieldToFlag(field_id) == FieldFlag_Encrypt) {
                     R_RETURN(EncryptArray<char>(report, field_id, str, len));
                 } else {
                     R_RETURN(Formatter::AddField(report, field_id, str, len));
@@ -105,7 +105,7 @@ namespace ams::erpt::srv {
             }
 
             static Result AddField(Report *report, FieldId field_id, u8 *bin, u32 len) {
-                if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
+                if (ConvertFieldToFlag(field_id) == FieldFlag_Encrypt) {
                     R_RETURN(EncryptArray<u8>(report, field_id, bin, len));
                 } else {
                     R_RETURN(Formatter::AddField(report, field_id, bin, len));
@@ -114,7 +114,7 @@ namespace ams::erpt::srv {
 
             template<typename T>
             static Result AddField(Report *report, FieldId field_id, T *arr, u32 len) {
-                if (FieldToFlagMap[field_id] == FieldFlag_Encrypt) {
+                if (ConvertFieldToFlag(field_id) == FieldFlag_Encrypt) {
                     R_RETURN(EncryptArray<T>(report, field_id, arr, len));
                 } else {
                     R_RETURN(Formatter::AddField<T>(report, field_id, arr, len));

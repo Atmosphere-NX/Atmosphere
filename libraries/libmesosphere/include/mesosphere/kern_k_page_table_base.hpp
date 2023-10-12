@@ -88,8 +88,8 @@ namespace ams::kern {
 
             enum OperationType {
                 OperationType_Map                                 = 0,
-                OperationType_MapFirst                            = 1,
-                OperationType_MapGroup                            = 2,
+                OperationType_MapGroup                            = 1,
+                OperationType_MapFirstGroup                       = 2,
                 OperationType_Unmap                               = 3,
                 OperationType_ChangePermissions                   = 4,
                 OperationType_ChangePermissionsAndRefresh         = 5,
@@ -241,16 +241,20 @@ namespace ams::kern {
 
             bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const {
                 /* Even though Unsafe physical memory is KMemoryState_Normal, it must be mapped inside the alias code region. */
-                return this->CanContain(addr, size, KMemoryState_AliasCode);
+                return this->CanContain(addr, size, ams::svc::MemoryState_AliasCode);
             }
 
             ALWAYS_INLINE KScopedLightLock AcquireDeviceMapLock() {
                 return KScopedLightLock(m_device_map_lock);
             }
 
-            KProcessAddress GetRegionAddress(KMemoryState state) const;
-            size_t GetRegionSize(KMemoryState state) const;
-            bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;
+            KProcessAddress GetRegionAddress(ams::svc::MemoryState state) const;
+            size_t GetRegionSize(ams::svc::MemoryState state) const;
+            bool CanContain(KProcessAddress addr, size_t size, ams::svc::MemoryState state) const;
+
+            ALWAYS_INLINE KProcessAddress GetRegionAddress(KMemoryState state) const { return this->GetRegionAddress(static_cast<ams::svc::MemoryState>(state & KMemoryState_Mask)); }
+            ALWAYS_INLINE size_t GetRegionSize(KMemoryState state) const { return this->GetRegionSize(static_cast<ams::svc::MemoryState>(state & KMemoryState_Mask)); }
+            ALWAYS_INLINE bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->CanContain(addr, size, static_cast<ams::svc::MemoryState>(state & KMemoryState_Mask)); }
         protected:
             /* NOTE: These three functions (Operate, Operate, FinalizeUpdate) are virtual functions */
             /* in Nintendo's kernel. We devirtualize them, since KPageTable is the only derived */
@@ -308,6 +312,7 @@ namespace ams::kern {
             }
 
             Result CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const;
+            Result CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KMemoryBlockManager::const_iterator it, KProcessAddress last_addr, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const;
             Result CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const;
             Result CheckMemoryState(size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const {
                 R_RETURN(this->CheckMemoryState(nullptr, nullptr, nullptr, out_blocks_needed, addr, size, state_mask, state, perm_mask, perm, attr_mask, attr, ignore_attr));
@@ -321,7 +326,7 @@ namespace ams::kern {
 
             Result QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const;
 
-            Result QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, KMemoryState state) const;
+            Result QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, ams::svc::MemoryState state) const;
 
             Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, KMemoryPermission perm);
             Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
@@ -335,9 +340,9 @@ namespace ams::kern {
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
 
-            Result MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
-            Result ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size);
-            Result WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size);
+            Result MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryState state, KMemoryPermission perm);
+            Result ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size, KMemoryState state);
+            Result WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size, KMemoryState state);
 
             Result SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state);
             Result SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send);
@@ -371,8 +376,8 @@ namespace ams::kern {
             Result SetMaxHeapSize(size_t size);
             Result QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const;
             Result QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out, KProcessAddress address) const;
-            Result QueryStaticMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { R_RETURN(this->QueryMappingImpl(out, address, size, KMemoryState_Static)); }
-            Result QueryIoMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { R_RETURN(this->QueryMappingImpl(out, address, size, KMemoryState_Io)); }
+            Result QueryStaticMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { R_RETURN(this->QueryMappingImpl(out, address, size, ams::svc::MemoryState_Static)); }
+            Result QueryIoMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { R_RETURN(this->QueryMappingImpl(out, address, size, ams::svc::MemoryState_Io)); }
             Result MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result UnmapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result MapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
@@ -407,12 +412,13 @@ namespace ams::kern {
             Result MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
 
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
+            Result InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size);
 
             Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size);
-            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size);
+            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state);
 
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);
-            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size);
+            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size, KMemoryState state);
 
             Result LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap);
             Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size, bool check_heap);

@@ -28,8 +28,8 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-                R_RETURN(m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
+            Result Initialize(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+                R_RETURN(m_page_table.InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
             }
 
             void Finalize() { m_page_table.Finalize(); }
@@ -150,20 +150,24 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.InvalidateProcessDataCache(address, size));
             }
 
+            Result InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size) {
+                R_RETURN(m_page_table.InvalidateCurrentProcessDataCache(address, size));
+            }
+
             Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
                 R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size));
             }
 
-            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size) {
-                R_RETURN(m_page_table.ReadDebugIoMemory(buffer, address, size));
+            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state) {
+                R_RETURN(m_page_table.ReadDebugIoMemory(buffer, address, size, state));
             }
 
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
                 R_RETURN(m_page_table.WriteDebugMemory(address, buffer, size));
             }
 
-            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size) {
-                R_RETURN(m_page_table.WriteDebugIoMemory(address, buffer, size));
+            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size, KMemoryState state) {
+                R_RETURN(m_page_table.WriteDebugIoMemory(address, buffer, size, state));
             }
 
             Result LockForMapDeviceAddressSpace(bool *out_is_io, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned, bool check_heap) {
@@ -296,6 +300,7 @@ namespace ams::kern::arch::arm64 {
             bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const { return m_page_table.IsInUnsafeAliasRegion(addr, size); }
 
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return m_page_table.CanContain(addr, size, state); }
+            bool CanContain(KProcessAddress addr, size_t size, ams::svc::MemoryState state) const { return m_page_table.CanContain(addr, size, state); }
 
             KProcessAddress GetAddressSpaceStart()    const { return m_page_table.GetAddressSpaceStart(); }
             KProcessAddress GetHeapRegionStart()      const { return m_page_table.GetHeapRegionStart(); }

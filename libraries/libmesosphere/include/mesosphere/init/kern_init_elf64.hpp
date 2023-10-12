@@ -114,12 +114,33 @@ namespace ams::kern::init::Elf::Elf64 {
             }
     };
 
+    class Relr {
+        private:
+            Xword m_info;
+        public:
+            constexpr ALWAYS_INLINE bool IsLocation() const {
+                return (m_info & 1) == 0;
+            }
+
+            constexpr ALWAYS_INLINE Xword GetLocation() const {
+                return m_info;
+            }
+
+            constexpr ALWAYS_INLINE Xword GetBitmap() const {
+                return m_info >> 1;
+            }
+    };
+
     enum DynamicTag {
         DT_NULL    = 0,
         DT_RELA    = 7,
         DT_RELAENT = 9,
         DT_REL     = 17,
         DT_RELENT  = 19,
+
+        DT_RELRSZ  = 35,
+        DT_RELR    = 36,
+        DT_RELRENT = 37,
 
         DT_RELACOUNT = 0x6ffffff9,
         DT_RELCOUNT  = 0x6ffffffa

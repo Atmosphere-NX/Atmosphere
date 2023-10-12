@@ -76,8 +76,24 @@ namespace ams::erpt::srv {
     };
     #undef GET_FIELD_FLAG
 
+    inline CategoryId ConvertFieldToCategory(FieldId id) {
+        return FieldToCategoryMap[id];
+    }
+
+    inline FieldType ConvertFieldToType(FieldId id) {
+        return FieldToTypeMap[id];
+    }
+
+    inline FieldFlag ConvertFieldToFlag(FieldId id) {
+        return FieldToFlagMap[id];
+    }
+
     constexpr inline ReportFlagSet MakeNoReportFlags() {
         return util::MakeBitFlagSet<32, ReportFlag>();
+    }
+
+    constexpr inline CreateReportOptionFlagSet MakeNoCreateReportOptionFlags() {
+        return util::MakeBitFlagSet<32, CreateReportOptionFlag>();
     }
 
     constexpr inline AttachmentFlagSet MakeNoAttachmentFlags() {

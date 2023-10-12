@@ -73,6 +73,120 @@ namespace ams::kern {
             }
         }
 
+        NOINLINE void LoadInitialProcessSegment(const KPageGroup &pg, size_t seg_offset, size_t seg_size, size_t binary_size, KVirtualAddress data, bool compressed) {
+            /* Save the original binary extents, for later use. */
+            const KPhysicalAddress binary_phys = KMemoryLayout::GetLinearPhysicalAddress(data);
+
+            /* Create a page group representing the segment. */
+            KPageGroup segment_pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
+            if (size_t remaining_size = util::AlignUp(seg_size, PageSize); remaining_size != 0) {
+                /* Find the pages whose data corresponds to the segment. */
+                size_t cur_offset = 0;
+                for (auto it = pg.begin(); it != pg.end() && remaining_size > 0; ++it) {
+                    /* Get the current size. */
+                    const size_t cur_size = it->GetSize();
+
+                    /* Determine if the offset is in range. */
+                    const size_t rel_diff = seg_offset - cur_offset;
+                    const bool is_before  = cur_offset <= seg_offset;
+                    cur_offset += cur_size;
+                    if (is_before && seg_offset < cur_offset) {
+                        /* It is, so add the block. */
+                        const size_t block_size = std::min<size_t>(cur_size - rel_diff, remaining_size);
+                        MESOSPHERE_R_ABORT_UNLESS(segment_pg.AddBlock(it->GetAddress() + rel_diff, block_size / PageSize));
+
+                        /* Advance. */
+                        cur_offset      = seg_offset + block_size;
+                        remaining_size -= block_size;
+                        seg_offset     += block_size;
+                    }
+                }
+            }
+
+            /* Setup the new page group's memory so that we can load the segment. */
+            {
+                KVirtualAddress last_block = Null<KVirtualAddress>;
+                KVirtualAddress last_data  = Null<KVirtualAddress>;
+                size_t last_copy_size      = 0;
+                size_t last_clear_size     = 0;
+                size_t remaining_copy_size = binary_size;
+                for (const auto &block : segment_pg) {
+                    /* Get the current block extents. */
+                    const auto block_addr   = block.GetAddress();
+                    const size_t block_size = block.GetSize();
+                    if (remaining_copy_size > 0) {
+                        /* Determine if we need to copy anything. */
+                        const size_t cur_size = std::min<size_t>(block_size, remaining_copy_size);
+
+                        /* NOTE: The first block may potentially overlap the binary we want to copy to. */
+                        /* Consider e.g. the case where the overall compressed image has size 0x40000, seg_offset is 0x30000, and binary_size is > 0x20000. */
+                        /* Suppose too that data points, say, 0x18000 into the compressed image. */
+                        /* Suppose finally that we simply naively copy in order. */
+                        /* The first iteration of this loop will perform an 0x10000 copy from image+0x18000 to image + 0x30000 (as there is no overlap). */
+                        /* The second iteration will perform a copy from image+0x28000 to <allocated pages>. */
+                        /* However, the first copy will have trashed the data in the second copy. */
+                        /* Thus, we must copy the first block after-the-fact to avoid potentially trashing data in the overlap case. */
+                        /* It is guaranteed by pre-condition that only the very first block can overlap with the physical binary, so we can simply memmove it at the end. */
+                        if (last_block != Null<KVirtualAddress>) {
+                            /* This is guaranteed by pre-condition, but for ease of debugging, check for no overlap. */
+                            MESOSPHERE_ASSERT(!util::HasOverlap(GetInteger(binary_phys), binary_size, GetInteger(block_addr), cur_size));
+                            MESOSPHERE_UNUSED(binary_phys);
+
+                            /* We need to copy. */
+                            std::memcpy(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block_addr)), GetVoidPointer(data), cur_size);
+
+                            /* If we need to, clear past where we're copying. */
+                            if (cur_size != block_size) {
+                                std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block_addr + cur_size)), 0, block_size - cur_size);
+                            }
+
+                            /* Advance. */
+                            remaining_copy_size -= cur_size;
+                            data += cur_size;
+                        } else {
+                            /* Save the first block, which may potentially overlap, so that we can copy it later. */
+                            last_block      = KMemoryLayout::GetLinearVirtualAddress(block_addr);
+                            last_data       = data;
+                            last_copy_size  = cur_size;
+                            last_clear_size = block_size - cur_size;
+
+                            /* Advance. */
+                            remaining_copy_size -= cur_size;
+                            data += cur_size;
+                        }
+                    } else {
+                        /* We don't have data to copy, so we should just clear the pages. */
+                        std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block_addr)), 0, block_size);
+                    }
+                }
+
+                /* Handle a last block. */
+                if (last_copy_size != 0) {
+                    if (last_block != last_data) {
+                        std::memmove(GetVoidPointer(last_block), GetVoidPointer(last_data), last_copy_size);
+                    }
+                    if (last_clear_size != 0) {
+                        std::memset(GetVoidPointer(last_block + last_copy_size), 0, last_clear_size);
+                    }
+                }
+            }
+
+            /* If compressed, uncompress the data. */
+            if (compressed) {
+                /* Get the temporary region. */
+                const auto &temp_region = KMemoryLayout::GetTempRegion();
+                MESOSPHERE_ABORT_UNLESS(temp_region.GetEndAddress() != 0);
+
+                /* Map the process's memory into the temporary region. */
+                KProcessAddress temp_address = Null<KProcessAddress>;
+                MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().MapPageGroup(std::addressof(temp_address), segment_pg, temp_region.GetAddress(), temp_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
+                ON_SCOPE_EXIT { MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPageGroup(temp_address, segment_pg, KMemoryState_Kernel)); };
+
+                /* Uncompress the data. */
+                BlzUncompress(GetVoidPointer(temp_address + binary_size));
+            }
+        }
+
     }
 
     Result KInitialProcessReader::MakeCreateProcessParameter(ams::svc::CreateProcessParameter *out, bool enable_aslr) const {
@@ -113,11 +227,13 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(start_address == 0);
 
         /* Set fields in parameter. */
-        out->code_address   = map_start + start_address;
-        out->code_num_pages = util::AlignUp(end_address - start_address, PageSize) / PageSize;
-        out->program_id     = m_kip_header.GetProgramId();
-        out->version        = m_kip_header.GetVersion();
-        out->flags          = 0;
+        out->code_address              = map_start + start_address;
+        out->code_num_pages            = util::AlignUp(end_address - start_address, PageSize) / PageSize;
+        out->program_id                = m_kip_header.GetProgramId();
+        out->version                   = m_kip_header.GetVersion();
+        out->flags                     = 0;
+        out->reslimit                  = ams::svc::InvalidHandle;
+        out->system_resource_num_pages = 0;
         MESOSPHERE_ABORT_UNLESS((out->code_address / PageSize) + out->code_num_pages <= (map_end / PageSize));
 
         /* Copy name field. */
@@ -146,42 +262,55 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params, KProcessAddress src) const {
+    void KInitialProcessReader::Load(const KPageGroup &pg, KVirtualAddress data) const {
         /* Prepare to layout the data. */
-        const KProcessAddress rx_address = address + m_kip_header.GetRxAddress();
-        const KProcessAddress ro_address = address + m_kip_header.GetRoAddress();
-        const KProcessAddress rw_address = address + m_kip_header.GetRwAddress();
-        const u8 *rx_binary = GetPointer<const u8>(src);
-        const u8 *ro_binary = rx_binary + m_kip_header.GetRxCompressedSize();
-        const u8 *rw_binary = ro_binary + m_kip_header.GetRoCompressedSize();
+        const KVirtualAddress rx_data = data;
+        const KVirtualAddress ro_data = rx_data + m_kip_header.GetRxCompressedSize();
+        const KVirtualAddress rw_data = ro_data + m_kip_header.GetRoCompressedSize();
+        const size_t rx_size  = m_kip_header.GetRxSize();
+        const size_t ro_size  = m_kip_header.GetRoSize();
+        const size_t rw_size  = m_kip_header.GetRwSize();
 
-        /* Copy text. */
-        if (util::AlignUp(m_kip_header.GetRxSize(), PageSize)) {
-            std::memmove(GetVoidPointer(rx_address), rx_binary, m_kip_header.GetRxCompressedSize());
-            if (m_kip_header.IsRxCompressed()) {
-                BlzUncompress(GetVoidPointer(rx_address + m_kip_header.GetRxCompressedSize()));
+        /* If necessary, setup bss. */
+        if (const size_t bss_size = m_kip_header.GetBssSize(); bss_size > 0) {
+            /* Determine how many additional pages are needed for bss. */
+            const u64 rw_end  = util::AlignUp<u64>(m_kip_header.GetRwAddress() + m_kip_header.GetRwSize(), PageSize);
+            const u64 bss_end = util::AlignUp<u64>(m_kip_header.GetBssAddress() + m_kip_header.GetBssSize(), PageSize);
+            if (rw_end != bss_end) {
+                /* Find the pages corresponding to bss. */
+                size_t cur_offset = 0;
+                size_t remaining_size = bss_end - rw_end;
+                size_t bss_offset = rw_end - m_kip_header.GetRxAddress();
+                for (auto it = pg.begin(); it != pg.end() && remaining_size > 0; ++it) {
+                    /* Get the current size. */
+                    const size_t cur_size = it->GetSize();
+
+                    /* Determine if the offset is in range. */
+                    const size_t rel_diff = bss_offset - cur_offset;
+                    const bool is_before  = cur_offset <= bss_offset;
+                    cur_offset += cur_size;
+                    if (is_before && bss_offset < cur_offset) {
+                        /* It is, so clear the bss range. */
+                        const size_t block_size = std::min<size_t>(cur_size - rel_diff, remaining_size);
+                        std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(it->GetAddress() + rel_diff)), 0, block_size);
+
+                        /* Advance. */
+                        cur_offset      = bss_offset + block_size;
+                        remaining_size -= block_size;
+                        bss_offset     += block_size;
+                    }
+                }
             }
         }
 
-        /* Copy rodata. */
-        if (util::AlignUp(m_kip_header.GetRoSize(), PageSize)) {
-            std::memmove(GetVoidPointer(ro_address), ro_binary, m_kip_header.GetRoCompressedSize());
-            if (m_kip_header.IsRoCompressed()) {
-                BlzUncompress(GetVoidPointer(ro_address + m_kip_header.GetRoCompressedSize()));
-            }
-        }
+        /* Load .rwdata. */
+        LoadInitialProcessSegment(pg, m_kip_header.GetRwAddress() - m_kip_header.GetRxAddress(), rw_size, m_kip_header.GetRwCompressedSize(), rw_data, m_kip_header.IsRwCompressed());
 
-        /* Copy rwdata. */
-        if (util::AlignUp(m_kip_header.GetRwSize(), PageSize)) {
-            std::memmove(GetVoidPointer(rw_address), rw_binary, m_kip_header.GetRwCompressedSize());
-            if (m_kip_header.IsRwCompressed()) {
-                BlzUncompress(GetVoidPointer(rw_address + m_kip_header.GetRwCompressedSize()));
-            }
-        }
+        /* Load .rodata. */
+        LoadInitialProcessSegment(pg, m_kip_header.GetRoAddress() - m_kip_header.GetRxAddress(), ro_size, m_kip_header.GetRoCompressedSize(), ro_data, m_kip_header.IsRoCompressed());
 
-        MESOSPHERE_UNUSED(params);
-
-        R_SUCCEED();
+        /* Load .text. */
+        LoadInitialProcessSegment(pg, m_kip_header.GetRxAddress() - m_kip_header.GetRxAddress(), rx_size, m_kip_header.GetRxCompressedSize(), rx_data, m_kip_header.IsRxCompressed());
     }
 
     Result KInitialProcessReader::SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const {

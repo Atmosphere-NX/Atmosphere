@@ -186,6 +186,11 @@ namespace ams::ncm {
                 AMS_UNUSED(out_content_info, key, type, id_offset);
                 AMS_ABORT();
             }
+
+            Result GetPlatform(sf::Out<ncm::ContentMetaPlatform> out, const ContentMetaKey &key) {
+                static_assert(sizeof(ncm::ContentMetaPlatform) == sizeof(u8));
+                R_RETURN(ncmContentMetaDatabaseGetPlatform(std::addressof(m_srv), reinterpret_cast<u8 *>(out.GetPointer()), Convert(key)));
+            }
     };
     static_assert(ncm::IsIContentMetaDatabase<RemoteContentMetaDatabaseImpl>);
     #endif

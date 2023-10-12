@@ -112,10 +112,11 @@ namespace ams::svc {
     };
 
     enum MemoryAttribute : u32 {
-        MemoryAttribute_Locked       = (1 << 0),
-        MemoryAttribute_IpcLocked    = (1 << 1),
-        MemoryAttribute_DeviceShared = (1 << 2),
-        MemoryAttribute_Uncached     = (1 << 3),
+        MemoryAttribute_Locked           = (1 << 0),
+        MemoryAttribute_IpcLocked        = (1 << 1),
+        MemoryAttribute_DeviceShared     = (1 << 2),
+        MemoryAttribute_Uncached         = (1 << 3),
+        MemoryAttribute_PermissionLocked = (1 << 4),
     };
 
     enum MemoryMapping : u32 {

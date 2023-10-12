@@ -32,8 +32,8 @@ namespace ams::secmon::smc {
 
         struct PrepareEsDeviceUniqueKeyOption {
             using KeyGeneration = util::BitPack32::Field<0,  6, int>;
-            using Type          = util::BitPack32::Field<6,  1, EsCommonKeyType>;
-            using Reserved      = util::BitPack32::Field<7, 25, u32>;
+            using Type          = util::BitPack32::Field<6,  2, EsCommonKeyType>;
+            using Reserved      = util::BitPack32::Field<8, 24, u32>;
         };
 
         constexpr const u8 ModularExponentiateByStorageKeyTable[] = {

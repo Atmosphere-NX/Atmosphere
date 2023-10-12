@@ -33,6 +33,7 @@ namespace ams::kern::init {
     void IdentityMappedFunctionAreaEnd();
 
     size_t GetMiscUnknownDebugRegionSize();
+    size_t GetSecureUnknownRegionSize();
 
     void InitializeDebugRegisters();
     void InitializeExceptionVectors();
@@ -45,7 +46,7 @@ namespace ams::kern::init {
         constinit KInitArguments g_init_arguments[cpu::NumCores];
 
         /* Globals for passing data between InitializeCorePhase1 and InitializeCorePhase2. */
-        constinit InitialProcessBinaryLayout g_phase2_initial_process_binary_layout{};
+        constinit InitialProcessBinaryLayoutWithSize g_phase2_initial_process_binary_meta{};
         constinit KPhysicalAddress g_phase2_resource_end_phys_addr = Null<KPhysicalAddress>;
         constinit u64 g_phase2_linear_region_phys_to_virt_diff = 0;
 
@@ -86,27 +87,23 @@ namespace ams::kern::init {
         }
 
         void SetupInitialArguments() {
+            /* Determine whether we're running on a cortex-a53 or a-57. */
+            cpu::MainIdRegisterAccessor midr_el1;
+            const auto implementer  = midr_el1.GetImplementer();
+            const auto primary_part = midr_el1.GetPrimaryPartNumber();
+            const bool needs_cpu_ctlr = (implementer == cpu::MainIdRegisterAccessor::Implementer::ArmLimited) && (primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA57 || primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA53);
+
             /* Get parameters for initial arguments. */
-            const u64 ttbr0    = cpu::GetTtbr0El1();
-            const u64 ttbr1    = cpu::GetTtbr1El1();
-            const u64 tcr      = cpu::GetTcrEl1();
-            const u64 mair     = cpu::GetMairEl1();
-            const u64 cpuactlr = cpu::GetCpuActlrEl1();
-            const u64 cpuectlr = cpu::GetCpuEctlrEl1();
-            const u64 sctlr    = cpu::GetSctlrEl1();
+            const u64 cpuactlr = needs_cpu_ctlr ? cpu::GetCpuActlrEl1() : 0;
+            const u64 cpuectlr = needs_cpu_ctlr ? cpu::GetCpuEctlrEl1() : 0;
 
             for (s32 i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
                 /* Get the arguments. */
                 KInitArguments *init_args = g_init_arguments + i;
 
                 /* Set the arguments. */
-                init_args->ttbr0           = ttbr0;
-                init_args->ttbr1           = ttbr1;
-                init_args->tcr             = tcr;
-                init_args->mair            = mair;
                 init_args->cpuactlr        = cpuactlr;
                 init_args->cpuectlr        = cpuectlr;
-                init_args->sctlr           = sctlr;
                 init_args->sp              = GetInteger(KMemoryLayout::GetMainStackTopAddress(i)) - sizeof(KThread::StackParameters);
                 init_args->entrypoint      = reinterpret_cast<uintptr_t>(::ams::kern::init::InvokeMain);
                 init_args->argument        = static_cast<u64>(i);
@@ -246,7 +243,7 @@ namespace ams::kern::init {
 
         /* Decode the initial state. */
         const auto initial_page_allocator_state = *static_cast<KInitialPageAllocator::State *>(initial_state[0]);
-        g_phase2_initial_process_binary_layout  = *static_cast<InitialProcessBinaryLayout *>(initial_state[1]);
+        g_phase2_initial_process_binary_meta   = *static_cast<InitialProcessBinaryLayoutWithSize *>(initial_state[1]);
 
         /* Restore the page allocator state setup by kernel loader. */
         g_initial_page_allocator.InitializeFromState(std::addressof(initial_page_allocator_state));
@@ -492,14 +489,21 @@ namespace ams::kern::init {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), KSystemControl::SecureAppletMemorySize, KMemoryRegionType_DramKernelSecureAppletMemory));
         }
 
+        /* Insert a physical region for the unknown debug2 region. */
+        const size_t secure_unknown_size = GetSecureUnknownRegionSize();
+        const auto secure_unknown_end_phys_addr = secure_applet_end_phys_addr + secure_unknown_size;
+        if (secure_unknown_size > 0) {
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_applet_end_phys_addr), secure_unknown_size, KMemoryRegionType_DramKernelSecureUnknown));
+        }
+
         /* Determine size available for kernel page table heaps. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
         g_phase2_resource_end_phys_addr = resource_end_phys_addr;
 
-        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_applet_end_phys_addr);
+        const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(secure_unknown_end_phys_addr);
 
         /* Insert a physical region for the kernel page table heap region */
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_applet_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(secure_unknown_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
@@ -565,9 +569,6 @@ namespace ams::kern::init {
             }
         }
 
-        /* Clear the slab region. */
-        std::memset(GetVoidPointer(slab_region_start), 0, slab_region_size);
-
         /* NOTE: Unknown function is called here which is ifdef'd out on retail kernel. */
         /* The unknown function is immediately before the function which gets an unknown debug region size, inside this translation unit. */
         /* It's likely that this is some kind of initializer for this unknown debug region. */
@@ -624,9 +625,10 @@ namespace ams::kern::init {
         /* Set the initial process binary physical address. */
         /* NOTE: Nintendo does this after pool partition setup, but it's a requirement that we do it before */
         /* to retain compatibility with < 5.0.0. */
-        const KPhysicalAddress ini_address = g_phase2_initial_process_binary_layout.address;
+        const KPhysicalAddress ini_address = g_phase2_initial_process_binary_meta.layout.address;
+        const size_t ini_size              = g_phase2_initial_process_binary_meta.size;
         MESOSPHERE_INIT_ABORT_UNLESS(ini_address != Null<KPhysicalAddress>);
-        SetInitialProcessBinaryPhysicalAddress(ini_address);
+        SetInitialProcessBinaryPhysicalAddress(ini_address, ini_size);
 
         /* Setup all other memory regions needed to arrange the pool partitions. */
         SetupPoolPartitionMemoryRegions();
@@ -640,7 +642,7 @@ namespace ams::kern::init {
 
             /* Check that the region contains the ini. */
             MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetAddress() <= GetInteger(ini_address));
-            MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(ini_address) + InitialProcessBinarySizeMax <= ini_region->GetEndAddress());
+            MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(ini_address) + ini_size <= ini_region->GetEndAddress());
             MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetEndAddress() != 0);
         }
 
@@ -729,6 +731,10 @@ namespace ams::kern::init {
     }
 
     size_t GetMiscUnknownDebugRegionSize() {
+        return 0;
+    }
+
+    size_t GetSecureUnknownRegionSize() {
         return 0;
     }
 

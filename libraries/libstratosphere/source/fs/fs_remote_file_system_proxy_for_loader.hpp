@@ -47,7 +47,15 @@ namespace ams::fs {
                 R_SUCCEED();
             }
 
-            Result OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
+            Result OpenCodeFileSystemDeprecated3(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
+                ::FsFileSystem fs;
+                R_TRY(fsldrOpenCodeFileSystem(reinterpret_cast<::FsCodeInfo *>(out_verif.GetPointer()), program_id.value, path.str, static_cast<::FsContentAttributes>(static_cast<u8>(attr)), std::addressof(fs)));
+
+                out_fs.SetValue(ObjectFactory::CreateSharedEmplaced<fssrv::sf::IFileSystem, fssrv::impl::RemoteFileSystem>(fs));
+                R_SUCCEED();
+            }
+
+            Result OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const ams::sf::OutBuffer &out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
                 ::FsFileSystem fs;
                 R_TRY(fsldrOpenCodeFileSystem(reinterpret_cast<::FsCodeInfo *>(out_verif.GetPointer()), program_id.value, path.str, static_cast<::FsContentAttributes>(static_cast<u8>(attr)), std::addressof(fs)));
 

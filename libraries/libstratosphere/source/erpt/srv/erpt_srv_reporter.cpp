@@ -164,7 +164,7 @@ namespace ams::erpt::srv {
                     if (R_FAILED(svc::GetResourceLimitLimitValue(std::addressof(limit_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
-                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                                    \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                             \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
                 } while (0)
@@ -203,7 +203,7 @@ namespace ams::erpt::srv {
                     if (R_FAILED(svc::GetResourceLimitPeakValue(std::addressof(peak_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
                         return;                                                                                                                     \
                     }                                                                                                                               \
-                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                                    \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                             \
                         return;                                                                                                                     \
                     }                                                                                                                               \
                 } while (0)
@@ -413,7 +413,7 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments) {
+    Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags) {
         /* Create a context record for the report. */
         auto record = std::make_unique<ContextRecord>();
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
@@ -422,10 +422,10 @@ namespace ams::erpt::srv {
         R_TRY(record->Initialize(ctx, data, data_size));
 
         /* Create the report. */
-        R_RETURN(CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments));
+        R_RETURN(CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments, flags));
     }
 
-    Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments) {
+    Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags) {
         /* Clear the automatic categories, when we're done with our report. */
         ON_SCOPE_EXIT {
             Context::ClearContext(CategoryId_ErrorInfo);
@@ -457,7 +457,7 @@ namespace ams::erpt::srv {
         SaveSyslogReportIfRequired(ctx, report_id);
 
         /* Submit report contexts. */
-        R_TRY(SubmitReportContexts(report_id, type, ctx_result, std::move(record), timestamp_user, timestamp_network));
+        R_TRY(SubmitReportContexts(report_id, type, ctx_result, std::move(record), timestamp_user, timestamp_network, flags));
 
         /* Link attachments to the report. */
         R_TRY(LinkAttachments(report_id, attachments, num_attachments));
@@ -468,7 +468,7 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result Reporter::SubmitReportContexts(const ReportId &report_id, ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const time::PosixTime &timestamp_user, const time::PosixTime &timestamp_network) {
+    Result Reporter::SubmitReportContexts(const ReportId &report_id, ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const time::PosixTime &timestamp_user, const time::PosixTime &timestamp_network, erpt::CreateReportOptionFlagSet flags) {
         /* Create automatic record. */
         auto auto_record = std::make_unique<ContextRecord>(CategoryId_ErrorInfoAuto, 0x300);
         R_UNLESS(auto_record != nullptr, erpt::ResultOutOfMemory());
@@ -529,6 +529,10 @@ namespace ams::erpt::srv {
         #if defined(ATMOSPHERE_OS_HORIZON)
         SubmitResourceLimitContexts();
         #endif
+
+        if (flags.Test<CreateReportOptionFlag::SubmitFsInfo>()) {
+            /* TODO: 17.0.0 SubmitFsInfo() */
+        }
 
         R_SUCCEED();
     }
