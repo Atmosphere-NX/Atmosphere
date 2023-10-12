@@ -70,6 +70,15 @@ namespace ams::secmon {
 
     }
 
+    void PerformUserRebootByPmic() {
+        /* Ensure that i2c-5 is usable for communicating with the pmic. */
+        clkrst::EnableI2c5Clock();
+        i2c::Initialize(i2c::Port_5);
+
+        /* Reboot. */
+        pmic::ShutdownSystem(true);
+    }
+
     void PerformUserRebootToRcm() {
         /* Configure the bootrom to boot to rcm. */
         reg::Write(PMC + APBDEV_PMC_SCRATCH0, 0x2);
@@ -100,11 +109,20 @@ namespace ams::secmon {
     }
 
     void PerformUserShutDown() {
-        /* Load our reboot stub to iram. */
-        LoadRebootStub(RebootStubAction_ShutDown);
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            /* Ensure that i2c-5 is usable for communicating with the pmic. */
+            clkrst::EnableI2c5Clock();
+            i2c::Initialize(i2c::Port_5);
 
-        /* Reboot. */
-        PerformPmcReboot();
+            /* On Mariko shutdown via pmic. */
+            pmic::ShutdownSystem(false);
+        } else /* if (fuse::GetSocType() == fuse::SocType_Erista) */ {
+            /* Load our reboot stub to iram. */
+            LoadRebootStub(RebootStubAction_ShutDown);
+
+            /* Reboot. */
+            PerformPmcReboot();
+        }
     }
 
 }

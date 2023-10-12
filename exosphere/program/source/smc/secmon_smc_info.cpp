@@ -357,6 +357,9 @@ namespace ams::secmon::smc {
                             case UserRebootType_ToFatalError:
                                 PerformUserRebootToFatalError();
                                 break;
+                            case UserRebootType_ByPmic:
+                                PerformUserRebootByPmic();
+                                break;
                             default:
                                 return SmcResult::InvalidArgument;
                         }
@@ -365,18 +368,17 @@ namespace ams::secmon::smc {
                             case UserRebootType_ToFatalError:
                                 PerformUserRebootToFatalError();
                                 break;
+                            case UserRebootType_ByPmic:
+                                PerformUserRebootByPmic();
+                                break;
                             default:
                                 return SmcResult::InvalidArgument;
                         }
                     }
                     break;
                 case ConfigItem::ExosphereNeedsShutdown:
-                    if (soc_type == fuse::SocType_Erista) {
-                        if (args.r[3] != 0) {
-                            PerformUserShutDown();
-                        }
-                    } else /* if (soc_type == fuse::SocType_Mariko) */ {
-                        return SmcResult::NotSupported;
+                    if (args.r[3] != 0) {
+                        PerformUserShutDown();
                     }
                     break;
                 case ConfigItem::ExospherePayloadAddress:
