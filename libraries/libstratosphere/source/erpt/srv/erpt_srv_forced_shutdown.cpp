@@ -83,7 +83,7 @@ namespace ams::erpt::srv {
             err::GetErrorCodeString(error_code_str, sizeof(error_code_str), err::ConvertResultToErrorCode(err::ResultForcedShutdownDetected()));
 
             /* Add error code to the context. */
-            R_TRY(record->Add(ERPT_FIELD_ID(ErrorCode), error_code_str, std::strlen(error_code_str)));
+            R_TRY(record->Add(FieldId_ErrorCode, error_code_str, std::strlen(error_code_str)));
 
             /* Create report. */
             R_TRY(Reporter::CreateReport(ReportType_Invisible, ResultSuccess(), std::move(record), nullptr, nullptr, 0, erpt::srv::MakeNoCreateReportOptionFlags()));

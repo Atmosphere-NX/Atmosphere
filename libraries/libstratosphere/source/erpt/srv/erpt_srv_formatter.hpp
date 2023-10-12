@@ -62,11 +62,7 @@ namespace ams::erpt::srv {
             static Result AddId(Report *report, FieldId field_id) {
                 static_assert(MaxFieldStringSize < ElementSize_256);
 
-                if (hos::GetVersion() >= hos::Version_17_0_0) {
-                    R_TRY(AddStringValue(report, FieldString[field_id], strnlen(FieldString[field_id], MaxFieldStringSize)));
-                } else {
-                    R_TRY(AddStringValue(report, DeprecatedFieldString[field_id], strnlen(DeprecatedFieldString[field_id], MaxFieldStringSize)));
-                }
+                R_TRY(AddStringValue(report, FieldString[field_id], strnlen(FieldString[field_id], MaxFieldStringSize)));
 
                 R_SUCCEED();
             }
