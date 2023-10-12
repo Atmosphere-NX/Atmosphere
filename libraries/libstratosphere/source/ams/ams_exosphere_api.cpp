@@ -39,6 +39,10 @@ namespace ams::exosphere {
         R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 3));
     }
 
+    void ForceRebootByPmic() {
+        R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 4));
+    }
+
     void ForceShutdown() {
         R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsShutdown, 1));
     }

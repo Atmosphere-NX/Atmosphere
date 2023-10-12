@@ -33,6 +33,7 @@ namespace ams::mitm::bpc {
             Standard,
             ToRcm,
             ToPayload,
+            ByPmic,
         };
 
         /* Globals. */
@@ -93,6 +94,9 @@ namespace ams::mitm::bpc {
 
     void RebootSystem() {
         switch (g_reboot_type) {
+            case RebootType::ByPmic:
+                exosphere::ForceRebootByPmic();
+                break;
             case RebootType::ToRcm:
                 exosphere::ForceRebootToRcm();
                 break;
@@ -113,6 +117,11 @@ namespace ams::mitm::bpc {
     }
 
     void SetRebootPayload(const void *payload, size_t payload_size) {
+        /* Mariko does not support reboot-to-payload. */
+        if (spl::GetSocType() == spl::SocType_Mariko) {
+            return;
+        }
+
         /* Clear payload buffer */
         std::memset(g_reboot_payload, 0xCC, sizeof(g_reboot_payload));
 
@@ -131,6 +140,9 @@ namespace ams::mitm::bpc {
     }
 
     Result LoadRebootPayload() {
+        /* Mariko does not support reboot-to-payload. */
+        R_SUCCEED_IF(spl::GetSocType() == spl::SocType_Mariko)
+
         /* Clear payload buffer */
         std::memset(g_reboot_payload, 0xCC, sizeof(g_reboot_payload));
 
@@ -161,6 +173,11 @@ namespace ams::mitm::bpc {
             g_reboot_type = RebootType::ToRcm;
         } else if (strcasecmp(reboot_type, "payload") == 0) {
             g_reboot_type = RebootType::ToPayload;
+        }
+
+        /* TODO: Should we actually allow control over this on mariko? */
+        if (spl::GetSocType() == spl::SocType_Mariko) {
+            g_reboot_type = RebootType::ByPmic;
         }
 
         R_SUCCEED();
