@@ -1,4 +1,20 @@
 # Changelog
+## 1.6.0
++ Basic support was added for 17.0.0.
+  + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
+    + There shouldn't be anything user visible resulting from this, but it will be addressed in a soon-to-come atmosphère update.
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `ncm` was updated to reflect the latest official behavior.
+  + `erpt` was partially updated to support the latest official behavior.
++ Atmosphere's gdbstub now supports waiting to attach to a specific program id on launch (as opposed to any application).
+  + The monitor command for this is `monitor wait <hex program id>`, where program id can optionally have an `0x` prefix.
++ Support was added to `haze` for editing files in-place and performing 64-bit transfers (files larger than 4 GB).
++ `bpc.mitm` was enabled on Mariko units, and now triggers pmic-based shutdowns/reboots (thanks @CTCaer).
+  + This should cause the console to no longer wake ~15 seconds after shutdown on Mariko.
++ A number of minor issues were fixed and improvements were made, including:
+  + A workaround was added for a change in 17.0.0 that would cause consoles which had previously re-built their SYSTEM partition to brick on update-to-17.0.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.5.5
 + Support was added for 16.1.0.
 + General system stability improvements to enhance the user's experience.
