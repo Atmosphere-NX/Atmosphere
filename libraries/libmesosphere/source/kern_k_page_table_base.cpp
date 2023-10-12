@@ -583,7 +583,7 @@ namespace ams::kern {
         /* Check memory state. */
         const KProcessAddress last_addr = addr + size - 1;
         KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(addr);
-        R_TRY(this->CheckMemoryState(out_state, out_perm, out_attr, out_blocks_needed, it, last_addr, state_mask, state, perm_mask, perm, attr_mask, attr, ignore_attr))
+        R_TRY(this->CheckMemoryState(out_state, out_perm, out_attr, out_blocks_needed, it, last_addr, state_mask, state, perm_mask, perm, attr_mask, attr, ignore_attr));
 
         /* If the start address isn't aligned, we need a block. */
         if (out_blocks_needed != nullptr && util::AlignDown(GetInteger(addr), PageSize) != it->GetAddress()) {
