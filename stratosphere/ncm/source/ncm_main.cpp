@@ -170,15 +170,17 @@ namespace ams {
             fs::SetAllocator(Allocate, Deallocate);
             fs::SetEnabledAutoAbort(false);
 
+            /* Initialize ncm api. */
+            /* NOTE: Nintendo does this after initializing and starting threads. */
+            ncm::InitializeWithObject(g_ncm_manager_service_object.GetShared());
+
             /* Create and initialize the content manager. */
             R_ABORT_UNLESS(g_ncm_manager_service_object.GetImpl().Initialize(ManagerConfig));
+
 
             /* Initialize ncm's server and start threads. */
             R_ABORT_UNLESS(g_ncm_server_manager.Initialize());
             R_ABORT_UNLESS(g_ncm_server_manager.StartThreads());
-
-            /* Initialize ncm api. */
-            ncm::InitializeWithObject(g_ncm_manager_service_object.GetShared());
 
             /* Initialize lr's server and start threads. */
             R_ABORT_UNLESS(g_lr_server_manager.Initialize());

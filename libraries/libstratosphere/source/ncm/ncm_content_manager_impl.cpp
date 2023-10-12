@@ -784,7 +784,8 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
-        if (hos::GetVersion() < hos::Version_5_0_0) {
+        /* NOTE: we build on 17.0.0+, to work around a change in Nintendo save handling behavior. */
+        if (hos::GetVersion() < hos::Version_5_0_0 || hos::GetVersion() >= hos::Version_17_0_0) {
             /* Temporarily activate the database. */
             R_TRY(this->ActivateContentMetaDatabase(storage_id));
             ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
@@ -946,7 +947,8 @@ namespace ams::ncm {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* Try to build or import a database, depending on our configuration. */
-            if (manager_config.ShouldBuildDatabase()) {
+            /* NOTE: To work around a change in save management behavior in 17.0.0+, we build the database if needed. */
+            if (manager_config.ShouldBuildDatabase() || hos::GetVersion() >= hos::Version_17_0_0) {
                 /* If we should build the database, do so. */
                 R_TRY(this->BuildContentMetaDatabase(StorageId::BuiltInSystem));
                 R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
