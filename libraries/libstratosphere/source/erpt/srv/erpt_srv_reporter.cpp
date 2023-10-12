@@ -123,14 +123,14 @@ namespace ams::erpt::srv {
             if (error_context_total_size == 0) {
                 return;
             }
-            record->Add(ERPT_FIELD_ID(ErrorContextTotalSize), error_context_total_size);
+            record->Add(FieldId_ErrorContextTotalSize, error_context_total_size);
 
             /* Set the context. */
             if (error_context_size == 0) {
                 return;
             }
-            record->Add(ERPT_FIELD_ID(ErrorContextSize), error_context_size);
-            record->Add(ERPT_FIELD_ID(ErrorContext), error_context, error_context_size);
+            record->Add(FieldId_ErrorContextSize, error_context_size);
+            record->Add(FieldId_ErrorContext, error_context, error_context_size);
         }
 
         constinit os::SdkMutex g_limit_mutex;
@@ -164,7 +164,7 @@ namespace ams::erpt::srv {
                     if (R_FAILED(svc::GetResourceLimitLimitValue(std::addressof(limit_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
-                    if (R_FAILED(record->Add(ERPT_FIELD_ID(System##__RESOURCE__##Limit), limit_value))) {                                             \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                             \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
                 } while (0)
@@ -203,7 +203,7 @@ namespace ams::erpt::srv {
                     if (R_FAILED(svc::GetResourceLimitPeakValue(std::addressof(peak_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
                         return;                                                                                                                     \
                     }                                                                                                                               \
-                    if (R_FAILED(record->Add(ERPT_FIELD_ID(System##__RESOURCE__##Peak), peak_value))) {                                             \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                             \
                         return;                                                                                                                     \
                     }                                                                                                                               \
                 } while (0)
@@ -234,7 +234,7 @@ namespace ams::erpt::srv {
             R_UNLESS(ctx->field_count <= FieldsPerContext,  erpt::ResultInvalidArgument());
 
             const bool found_error_code = util::range::any_of(MakeSpan(ctx->fields, ctx->field_count), [] (const FieldEntry &entry) {
-                return entry.id == ERPT_FIELD_ID(ErrorCode);
+                return entry.id == FieldId_ErrorCode;
             });
             R_UNLESS(found_error_code, erpt::ResultRequiredFieldMissing());
 
@@ -249,10 +249,10 @@ namespace ams::erpt::srv {
 
             bool found_abort_flag = false, found_syslog_flag = false;
             for (u32 i = 0; i < ctx->field_count; i++) {
-                if (ctx->fields[i].id == ERPT_FIELD_ID(AbortFlag)) {
+                if (ctx->fields[i].id == FieldId_AbortFlag) {
                     found_abort_flag = true;
                 }
-                if (ctx->fields[i].id == ERPT_FIELD_ID(HasSyslogFlag)) {
+                if (ctx->fields[i].id == FieldId_HasSyslogFlag) {
                     found_syslog_flag = true;
                 }
                 if (found_abort_flag && found_syslog_flag) {
@@ -261,11 +261,11 @@ namespace ams::erpt::srv {
             }
 
             if (!found_abort_flag) {
-                record->Add(ERPT_FIELD_ID(AbortFlag), false);
+                record->Add(FieldId_AbortFlag, false);
             }
 
             if (!found_syslog_flag) {
-                record->Add(ERPT_FIELD_ID(HasSyslogFlag), true);
+                record->Add(FieldId_HasSyslogFlag, true);
             }
 
             R_TRY(Context::SubmitContextRecord(std::move(record)));
@@ -277,7 +277,7 @@ namespace ams::erpt::srv {
             bool needs_save_syslog = true;
             for (u32 i = 0; i < ctx->field_count; i++) {
                 static_assert(FieldToTypeMap[FieldId_HasSyslogFlag] == FieldType_Bool);
-                if (ctx->fields[i].id == ERPT_FIELD_ID(HasSyslogFlag) && !ctx->fields[i].value_bool) {
+                if (ctx->fields[i].id == FieldId_HasSyslogFlag && !ctx->fields[i].value_bool) {
                     needs_save_syslog = false;
                     break;
                 }
@@ -299,13 +299,13 @@ namespace ams::erpt::srv {
 
             /* Find the program id entry. */
             const auto fields_span = MakeSpan(error_info_ctx->fields, error_info_ctx->field_count);
-            const auto program_id_entry = util::range::find_if(fields_span, [](const FieldEntry &entry) { return entry.id == ERPT_FIELD_ID(ProgramId); });
+            const auto program_id_entry = util::range::find_if(fields_span, [](const FieldEntry &entry) { return entry.id == FieldId_ProgramId; });
             if (program_id_entry == fields_span.end()) {
                 return;
             }
 
             /* Check that the report has abort flag set. */
-            AMS_ASSERT(util::range::any_of(fields_span, [](const FieldEntry &entry) { return entry.id == ERPT_FIELD_ID(AbortFlag) && entry.value_bool; }));
+            AMS_ASSERT(util::range::any_of(fields_span, [](const FieldEntry &entry) { return entry.id == FieldId_AbortFlag && entry.value_bool; }));
 
             /* Check that the program id's value is a string. */
             AMS_ASSERT(program_id_entry->type  == FieldType_String);
@@ -334,7 +334,7 @@ namespace ams::erpt::srv {
             }
 
             /* Add the active applet time. */
-            const auto result = error_info_auto_record->Add(ERPT_FIELD_ID(AppletTotalActiveTime), (*active_duration).GetSeconds());
+            const auto result = error_info_auto_record->Add(FieldId_AppletTotalActiveTime, (*active_duration).GetSeconds());
             R_ASSERT(result);
         }
 
@@ -489,28 +489,28 @@ namespace ams::erpt::srv {
         R_ABORT_UNLESS(time::GetStandardSteadyClockCurrentTimePoint(std::addressof(steady_clock_current_timepoint)));
 
         /* Add automatic fields. */
-        auto_record->Add(ERPT_FIELD_ID(OsVersion),                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version)));
-        auto_record->Add(ERPT_FIELD_ID(PrivateOsVersion),                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version)));
-        auto_record->Add(ERPT_FIELD_ID(SerialNumber),                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number)));
-        auto_record->Add(ERPT_FIELD_ID(ReportIdentifier),                 identifier_str,                               util::Strnlen(identifier_str, sizeof(identifier_str)));
-        auto_record->Add(ERPT_FIELD_ID(OccurrenceTimestamp),              timestamp_user.value);
-        auto_record->Add(ERPT_FIELD_ID(OccurrenceTimestampNet),           timestamp_network.value);
-        auto_record->Add(ERPT_FIELD_ID(ReportVisibilityFlag),             type == ReportType_Visible);
-        auto_record->Add(ERPT_FIELD_ID(OccurrenceTick),                   occurrence_tick.GetInt64Value());
-        auto_record->Add(ERPT_FIELD_ID(SteadyClockInternalOffset),        steady_clock_internal_offset_seconds);
-        auto_record->Add(ERPT_FIELD_ID(SteadyClockCurrentTimePointValue), steady_clock_current_timepoint.value);
-        auto_record->Add(ERPT_FIELD_ID(ElapsedTimeSincePowerOn),          (occurrence_tick - *s_power_on_time).ToTimeSpan().GetSeconds());
-        auto_record->Add(ERPT_FIELD_ID(ElapsedTimeSinceLastAwake),        (occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds());
+        auto_record->Add(FieldId_OsVersion,                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version)));
+        auto_record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version)));
+        auto_record->Add(FieldId_SerialNumber,                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number)));
+        auto_record->Add(FieldId_ReportIdentifier,                 identifier_str,                               util::Strnlen(identifier_str, sizeof(identifier_str)));
+        auto_record->Add(FieldId_OccurrenceTimestamp,              timestamp_user.value);
+        auto_record->Add(FieldId_OccurrenceTimestampNet,           timestamp_network.value);
+        auto_record->Add(FieldId_ReportVisibilityFlag,             type == ReportType_Visible);
+        auto_record->Add(FieldId_OccurrenceTick,                   occurrence_tick.GetInt64Value());
+        auto_record->Add(FieldId_SteadyClockInternalOffset,        steady_clock_internal_offset_seconds);
+        auto_record->Add(FieldId_SteadyClockCurrentTimePointValue, steady_clock_current_timepoint.value);
+        auto_record->Add(FieldId_ElapsedTimeSincePowerOn,          (occurrence_tick - *s_power_on_time).ToTimeSpan().GetSeconds());
+        auto_record->Add(FieldId_ElapsedTimeSinceLastAwake,        (occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds());
 
         if (s_initial_launch_settings_completion_time) {
             s64 elapsed_seconds;
             if (R_SUCCEEDED(time::GetElapsedSecondsBetween(std::addressof(elapsed_seconds), *s_initial_launch_settings_completion_time, steady_clock_current_timepoint))) {
-                auto_record->Add(ERPT_FIELD_ID(ElapsedTimeSinceInitialLaunch), elapsed_seconds);
+                auto_record->Add(FieldId_ElapsedTimeSinceInitialLaunch, elapsed_seconds);
             }
         }
 
         if (s_application_launch_time) {
-            auto_record->Add(ERPT_FIELD_ID(ApplicationAliveTime), (occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds());
+            auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds());
         }
 
         /* Submit applet active duration information. */

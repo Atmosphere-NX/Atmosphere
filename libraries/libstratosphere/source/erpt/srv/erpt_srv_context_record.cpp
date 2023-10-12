@@ -75,8 +75,8 @@ namespace ams::erpt::srv {
         for (u32 i = 0; i < m_ctx.field_count; i++) {
             m_ctx.fields[i] = ctx_ptr->fields[i];
 
-            R_UNLESS(0 <= m_ctx.fields[i].id   && m_ctx.fields[i].id   < ERPT_FIELD_ID(Count), erpt::ResultInvalidArgument());
-            R_UNLESS(0 <= m_ctx.fields[i].type && m_ctx.fields[i].type < FieldType_Count,      erpt::ResultInvalidArgument());
+            R_UNLESS(0 <= m_ctx.fields[i].id   && m_ctx.fields[i].id   < FieldId_Count,   erpt::ResultInvalidArgument());
+            R_UNLESS(0 <= m_ctx.fields[i].type && m_ctx.fields[i].type < FieldType_Count, erpt::ResultInvalidArgument());
 
             R_UNLESS(m_ctx.fields[i].type == ConvertFieldToType(m_ctx.fields[i].id),     erpt::ResultFieldTypeMismatch());
             R_UNLESS(m_ctx.category       == ConvertFieldToCategory(m_ctx.fields[i].id), erpt::ResultFieldCategoryMismatch());
