@@ -113,9 +113,6 @@ namespace haze {
         R_TRY(dp.Read(std::addressof(property_code)));
         R_TRY(dp.Finalize());
 
-        /* Disallow renaming the storage root. */
-        R_UNLESS(object_id != StorageId_SdmcFs, haze::ResultInvalidObjectId());
-
         /* Ensure we have a valid property code before continuing. */
         R_UNLESS(IsSupportedObjectPropertyCode(property_code), haze::ResultUnknownPropertyCode());
 
@@ -189,6 +186,136 @@ namespace haze {
                     }
                     break;
                 HAZE_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            R_SUCCEED();
+        }));
+
+        /* Write the success response. */
+        R_RETURN(this->WriteResponse(PtpResponseCode_Ok));
+    }
+
+    Result PtpResponder::GetObjectPropList(PtpDataParser &dp) {
+        u32 object_id;
+        u32 object_format;
+        s32 property_code;
+        s32 group_code;
+        s32 depth;
+
+        R_TRY(dp.Read(std::addressof(object_id)));
+        R_TRY(dp.Read(std::addressof(object_format)));
+        R_TRY(dp.Read(std::addressof(property_code)));
+        R_TRY(dp.Read(std::addressof(group_code)));
+        R_TRY(dp.Read(std::addressof(depth)));
+        R_TRY(dp.Finalize());
+
+        /* Ensure format is unspecified. */
+        R_UNLESS(object_format == 0, haze::ResultInvalidArgument());
+
+        /* Ensure we have a valid property code. */
+        R_UNLESS(property_code == -1 || IsSupportedObjectPropertyCode(PtpObjectPropertyCode(property_code)), haze::ResultUnknownPropertyCode());
+
+        /* Ensure group code is the default. */
+        R_UNLESS(group_code == PtpPropertyGroupCode_Default, haze::ResultGroupSpecified());
+
+        /* Ensure depth is 0. */
+        R_UNLESS(depth == 0, haze::ResultDepthSpecified());
+
+        /* Check if we know about the object. If we don't, it's an error. */
+        auto * const obj = m_object_database.GetObjectById(object_id);
+        R_UNLESS(obj != nullptr, haze::ResultInvalidObjectId());
+
+        /* Define helper for getting the object type. */
+        const auto GetObjectType = [&] (FsDirEntryType *out_entry_type) {
+            R_RETURN(m_fs.GetEntryType(obj->GetName(), out_entry_type));
+        };
+
+        /* Define helper for getting the object size. */
+        const auto GetObjectSize = [&] (s64 *out_size) {
+            *out_size = 0;
+
+            /* Check if this is a directory. */
+            FsDirEntryType entry_type;
+            R_TRY(GetObjectType(std::addressof(entry_type)));
+
+            /* If it is, we're done. */
+            R_SUCCEED_IF(entry_type == FsDirEntryType_Dir);
+
+            /* Otherwise, open as a file. */
+            FsFile file;
+            R_TRY(m_fs.OpenFile(obj->GetName(), FsOpenMode_Read, std::addressof(file)));
+
+            /* Ensure we maintain a clean state on exit. */
+            ON_SCOPE_EXIT { m_fs.CloseFile(std::addressof(file)); };
+
+            R_RETURN(m_fs.GetFileSize(std::addressof(file), out_size));
+        };
+
+        /* Define helper for determining if the property should be included. */
+        const auto ShouldIncludeProperty = [&] (PtpObjectPropertyCode code) {
+            /* If all properties were requested, or it was the requested property, we should include the property. */
+            return property_code == -1 || code == property_code;
+        };
+
+        /* Begin writing the requested object properties. */
+        PtpDataBuilder db(m_buffers->usb_bulk_write_buffer, std::addressof(m_usb_server));
+
+        R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+            for (const auto obj_property : SupportedObjectProperties) {
+                if (!ShouldIncludeProperty(obj_property)) {
+                    continue;
+                }
+
+                /* Write the object handle. */
+                R_TRY(db.Add<u32>(object_id));
+
+                /* Write the property code. */
+                R_TRY(db.Add<u16>(obj_property));
+
+                /* Write the property value. */
+                switch (obj_property) {
+                    case PtpObjectPropertyCode_PersistentUniqueObjectIdentifier:
+                        {
+                            R_TRY(db.Add(PtpDataTypeCode_U128));
+                            R_TRY(db.Add<u128>(object_id));
+                        }
+                        break;
+                    case PtpObjectPropertyCode_ObjectSize:
+                        {
+                            s64 size;
+                            R_TRY(GetObjectSize(std::addressof(size)));
+                            R_TRY(db.Add(PtpDataTypeCode_U64));
+                            R_TRY(db.Add<u64>(size));
+                        }
+                        break;
+                    case PtpObjectPropertyCode_StorageId:
+                        {
+                            R_TRY(db.Add(PtpDataTypeCode_U32));
+                            R_TRY(db.Add(StorageId_SdmcFs));
+                        }
+                        break;
+                    case PtpObjectPropertyCode_ParentObject:
+                        {
+                            R_TRY(db.Add(PtpDataTypeCode_U32));
+                            R_TRY(db.Add(obj->GetParentId()));
+                        }
+                        break;
+                    case PtpObjectPropertyCode_ObjectFormat:
+                        {
+                            FsDirEntryType entry_type;
+                            R_TRY(GetObjectType(std::addressof(entry_type)));
+                            R_TRY(db.Add(PtpDataTypeCode_U16));
+                            R_TRY(db.Add(entry_type == FsDirEntryType_File ? PtpObjectFormatCode_Undefined : PtpObjectFormatCode_Association));
+                        }
+                        break;
+                    case PtpObjectPropertyCode_ObjectFileName:
+                        {
+                            R_TRY(db.Add(PtpDataTypeCode_String));
+                            R_TRY(db.AddString(std::strrchr(obj->GetName(), '/') + 1));
+                        }
+                        break;
+                    HAZE_UNREACHABLE_DEFAULT_CASE();
+                }
             }
 
             R_SUCCEED();
