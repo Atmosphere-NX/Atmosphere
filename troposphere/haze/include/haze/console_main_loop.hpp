@@ -143,7 +143,7 @@ namespace haze {
 
                 if (m_is_applet_mode) {
                     /* Print "Applet Mode" in red text. */
-                    printf("\n" CONSOLE_ESC(38;5;196m) "Applet Mode" CONSOLE_ESC(0m) "\n");
+                    printf("\n" CONSOLE_ESC(31;1m) "Applet Mode" CONSOLE_ESC(0m) "\n");
                 }
 
                 consoleUpdate(nullptr);
