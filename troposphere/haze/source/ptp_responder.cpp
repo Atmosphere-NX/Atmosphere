@@ -91,6 +91,12 @@ namespace haze {
             R_CATCH(haze::ResultInvalidPropertyValue) {
                 R_TRY(this->WriteResponse(PtpResponseCode_MtpInvalidObjectPropValue));
             }
+            R_CATCH(haze::ResultGroupSpecified) {
+                R_TRY(this->WriteResponse(PtpResponseCode_MtpSpecificationByGroupUnsupported));
+            }
+            R_CATCH(haze::ResultDepthSpecified) {
+                R_TRY(this->WriteResponse(PtpResponseCode_MtpSpecificationByDepthUnsupported));
+            }
             R_CATCH(haze::ResultInvalidArgument) {
                 R_TRY(this->WriteResponse(PtpResponseCode_GeneralError));
             }
@@ -134,6 +140,7 @@ namespace haze {
             case PtpOperationCode_MtpGetObjectPropDesc:       R_RETURN(this->GetObjectPropDesc(dp));       break;
             case PtpOperationCode_MtpGetObjectPropValue:      R_RETURN(this->GetObjectPropValue(dp));      break;
             case PtpOperationCode_MtpSetObjectPropValue:      R_RETURN(this->SetObjectPropValue(dp));      break;
+            case PtpOperationCode_MtpGetObjPropList:          R_RETURN(this->GetObjectPropList(dp));       break;
             case PtpOperationCode_AndroidGetPartialObject64:  R_RETURN(this->GetPartialObject64(dp));      break;
             case PtpOperationCode_AndroidSendPartialObject:   R_RETURN(this->SendPartialObject(dp));       break;
             case PtpOperationCode_AndroidTruncateObject:      R_RETURN(this->TruncateObject(dp));          break;

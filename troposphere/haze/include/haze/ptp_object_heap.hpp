@@ -111,6 +111,14 @@ namespace haze {
             }
 
             constexpr void Deallocate(void *p, size_t n) {
+                /* Check for overflow in alignment. */
+                if (!util::CanAddWithoutOverflow(n, alignof(u64) - 1)) {
+                    return;
+                }
+
+                /* Align the amount to satisfy allocation for u64. */
+                n = util::AlignUp(n, alignof(u64));
+
                 /* If the pointer was the last allocation, return the memory to the heap. */
                 if (static_cast<u8 *>(p) + n == this->GetNextAddress()) {
                     m_next_address = this->GetNextAddress() - n;

@@ -83,6 +83,7 @@ namespace haze {
             Result GetObjectPropDesc(PtpDataParser &dp);
             Result GetObjectPropValue(PtpDataParser &dp);
             Result SetObjectPropValue(PtpDataParser &dp);
+            Result GetObjectPropList(PtpDataParser &dp);
     };
 
 }
