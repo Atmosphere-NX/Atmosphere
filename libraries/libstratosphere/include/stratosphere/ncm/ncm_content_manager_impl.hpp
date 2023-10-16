@@ -239,8 +239,12 @@ namespace ams::ncm {
             Result InitializeIntegratedContentMetaDatabaseRoot(IntegratedContentMetaDatabaseRoot *out, const IntegratedContentStorageConfig *config, size_t root_idx, size_t root_count);
 
             Result BuildContentMetaDatabase(StorageId storage_id);
+            Result BuildContentMetaDatabaseImpl(StorageId storage_id);
             Result ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition);
             Result ImportContentMetaDatabaseImpl(ContentMetaDatabaseRoot *root, const char *import_mount_name);
+        private:
+            /* Helpers for unofficial functionality. */
+            bool IsNeedRebuildSystemContentMetaDatabase();
         public:
             /* Actual commands. */
             Result CreateContentStorage(StorageId storage_id);
