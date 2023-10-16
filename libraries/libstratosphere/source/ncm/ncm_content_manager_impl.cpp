@@ -850,7 +850,7 @@ namespace ams::ncm {
         }
         ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(StorageId::BuiltInSystem); };
 
-        /* Open the content meta database and storage. */
+        /* Open the content meta db. */
         ContentMetaDatabase meta_db;
         R_ABORT_UNLESS(ncm::OpenContentMetaDatabase(std::addressof(meta_db), StorageId::BuiltInSystem));
 
@@ -978,7 +978,7 @@ namespace ams::ncm {
             /* Clean up the system content meta database, to ensure creation can succeed. */
             this->CleanupContentMetaDatabase(StorageId::BuiltInSystem);
 
-            /* Create the content metadatabase. */
+            /* Create the content meta database. */
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* Rebuild the content meta database. */
