@@ -257,10 +257,21 @@ namespace haze {
             return property_code == -1 || code == property_code;
         };
 
+        /* Determine how many output elements we will report. */
+        u32 num_output_elements = 0;
+        for (const auto obj_property : SupportedObjectProperties) {
+            if (ShouldIncludeProperty(obj_property)) {
+                num_output_elements++;
+            }
+        }
+
         /* Begin writing the requested object properties. */
         PtpDataBuilder db(m_buffers->usb_bulk_write_buffer, std::addressof(m_usb_server));
 
         R_TRY(db.WriteVariableLengthData(m_request_header, [&] {
+            /* Report the number of elements. */
+            R_TRY(db.Add(num_output_elements));
+
             for (const auto obj_property : SupportedObjectProperties) {
                 if (!ShouldIncludeProperty(obj_property)) {
                     continue;
