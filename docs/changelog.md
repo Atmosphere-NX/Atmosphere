@@ -1,4 +1,13 @@
 # Changelog
+## 1.6.1
++ An improved solution to [the problem that would cause consoles which had previously re-built their SYSTEM partition to brick on update-to-17.0.0](https://gist.github.com/SciresM/2ddb708c812ed585c4d99f54e25205ff) was added.
+  + In particular, booting atmosphère will now automatically detect the problem and unbrick any consoles which have fallen into this state.
++ Some improvements were made to `haze`, including:
+  + Performance was greatly improved:
+    + Support was added for GetObjectPropList, which decreases the amount of requests made by ~8x.
+    + Haze now performs rendering on the GPU, freeing up the CPU to respond to requests in a more timely manner.
+  + An issue was fixed with how `haze` configures `bMaxPacketSize0` which improves support for USB3.
++ General system stability improvements to enhance the user's experience.
 ## 1.6.0
 + Basic support was added for 17.0.0.
   + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
