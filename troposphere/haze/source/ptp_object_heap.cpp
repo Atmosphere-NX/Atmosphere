@@ -19,8 +19,8 @@ namespace haze {
 
     namespace {
 
-        /* Allow 20MiB for use by libnx. */
-        static constexpr size_t LibnxReservedMemorySize = 20_MB;
+        /* Allow 30MiB for use by libnx. */
+        static constexpr size_t LibnxReservedMemorySize = 30_MB;
 
     }
 

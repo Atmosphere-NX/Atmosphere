@@ -191,6 +191,7 @@ namespace haze {
             R_TRY(usbDsSetUsbDeviceDescriptor(UsbDeviceSpeed_High, std::addressof(device_descriptor)));
 
             device_descriptor.bcdUSB = 0x0300;
+            device_descriptor.bMaxPacketSize0 = 0x09;
             R_TRY(usbDsSetUsbDeviceDescriptor(UsbDeviceSpeed_Super, std::addressof(device_descriptor)));
 
             /* Binary Object Store */

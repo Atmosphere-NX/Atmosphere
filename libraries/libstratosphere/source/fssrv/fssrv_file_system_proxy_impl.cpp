@@ -307,6 +307,10 @@ namespace ams::fssrv {
         AMS_ABORT("TODO");
     }
 
+    Result FileSystemProxyImpl::GetProgramId(ams::sf::Out<ncm::ProgramId> out_program_id, const fssrv::sf::FspPath &path, fs::ContentAttributes attr) {
+        AMS_ABORT("TODO");
+    }
+
     Result FileSystemProxyImpl::GetRightsIdByPath(ams::sf::Out<fs::RightsId> out, const fssrv::sf::FspPath &path) {
         AMS_ABORT("TODO");
     }

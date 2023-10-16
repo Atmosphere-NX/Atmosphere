@@ -784,25 +784,29 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
-        /* NOTE: we build on 17.0.0+, to work around a change in Nintendo save handling behavior. */
-        if (hos::GetVersion() < hos::Version_5_0_0 || hos::GetVersion() >= hos::Version_17_0_0) {
-            /* Temporarily activate the database. */
-            R_TRY(this->ActivateContentMetaDatabase(storage_id));
-            ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
-
-            /* Open the content meta database and storage. */
-            ContentMetaDatabase meta_db;
-            ContentStorage storage;
-            R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), storage_id));
-            R_TRY(ncm::OpenContentStorage(std::addressof(storage), storage_id));
-
-            /* Create a builder, and build. */
-            ContentMetaDatabaseBuilder builder(std::addressof(meta_db));
-            R_RETURN(builder.BuildFromStorage(std::addressof(storage)));
+        if (hos::GetVersion() < hos::Version_5_0_0) {
+            /* On < 5.0.0, perform an actual build of the database. */
+            R_RETURN(this->BuildContentMetaDatabaseImpl(storage_id));
         } else {
             /* On 5.0.0+, building just performs an import. */
             R_RETURN(this->ImportContentMetaDatabase(storage_id, false));
         }
+    }
+
+    Result ContentManagerImpl::BuildContentMetaDatabaseImpl(StorageId storage_id) {
+        /* Temporarily activate the database. */
+        R_TRY(this->ActivateContentMetaDatabase(storage_id));
+        ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
+
+        /* Open the content meta database and storage. */
+        ContentMetaDatabase meta_db;
+        ContentStorage storage;
+        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(storage), storage_id));
+
+        /* Create a builder, and build. */
+        ContentMetaDatabaseBuilder builder(std::addressof(meta_db));
+        R_RETURN(builder.BuildFromStorage(std::addressof(storage)));
     }
 
     Result ContentManagerImpl::ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition) {
@@ -830,6 +834,31 @@ namespace ams::ncm {
         }
 
         R_SUCCEED();
+    }
+
+    bool ContentManagerImpl::IsNeedRebuildSystemContentMetaDatabase() {
+        /* TODO: Should hos::GetVersion() >= hos::Version_17_0_0 be checked? */
+
+        /* If we do not actually have a content meta db, we should re-build. */
+        if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
+            return true;
+        }
+
+        /* We have a content meta db. Temporarily, activate it. */
+        if (R_FAILED(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem))) {
+            return true;
+        }
+        ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(StorageId::BuiltInSystem); };
+
+        /* Open the content meta db. */
+        ContentMetaDatabase meta_db;
+        R_ABORT_UNLESS(ncm::OpenContentMetaDatabase(std::addressof(meta_db), StorageId::BuiltInSystem));
+
+        /* List the meta db's contents. */
+        const auto list_count = meta_db.ListContentMeta(nullptr, 0);
+
+        /* We need to rebuild if the db has zero entries. */
+        return list_count.total == 0;
     }
 
     Result ContentManagerImpl::Initialize(const ContentManagerConfig &config) {
@@ -942,13 +971,26 @@ namespace ams::ncm {
         }
         R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
+        /* NOTE: This logic is unofficial. */
+        /* Beginning with 17.0.0+, save management behavior changed. The primary symptom of this is either verify fail */
+        /* or an empty kvs, both of which we can fix by performing a rebuild. */
+        if (this->IsNeedRebuildSystemContentMetaDatabase()) {
+            /* Clean up the system content meta database, to ensure creation can succeed. */
+            this->CleanupContentMetaDatabase(StorageId::BuiltInSystem);
+
+            /* Create the content meta database. */
+            R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
+
+            /* Rebuild the content meta database. */
+            R_TRY(this->BuildContentMetaDatabaseImpl(StorageId::BuiltInSystem));
+        }
+
         /* Setup the content meta database for system. */
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* Try to build or import a database, depending on our configuration. */
-            /* NOTE: To work around a change in save management behavior in 17.0.0+, we build the database if needed. */
-            if (manager_config.ShouldBuildDatabase() || hos::GetVersion() >= hos::Version_17_0_0) {
+            if (manager_config.ShouldBuildDatabase()) {
                 /* If we should build the database, do so. */
                 R_TRY(this->BuildContentMetaDatabase(StorageId::BuiltInSystem));
                 R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
