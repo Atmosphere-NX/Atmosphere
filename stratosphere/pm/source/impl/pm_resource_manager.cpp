@@ -202,7 +202,7 @@ namespace ams::pm::resource {
         }
 
         template<auto GetResourceLimitValueImpl>
-        ALWAYS_INLINE Result GetResourceLimitValuesImpl(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+        ALWAYS_INLINE Result GetResourceLimitValuesImpl(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
             /* Sanity check group. */
             AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
 
@@ -451,15 +451,15 @@ namespace ams::pm::resource {
         }
     }
 
-    Result GetCurrentResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+    Result GetResourceLimitCurrentValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
         R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitCurrentValue>(group, out));
     }
 
-    Result GetPeakResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+    Result GetResourceLimitPeakValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
         R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitPeakValue>(group, out));
     }
 
-    Result GetLimitResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+    Result GetResourceLimitLimitValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
         R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitLimitValue>(group, out));
     }
 

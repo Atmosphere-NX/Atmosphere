@@ -31,9 +31,9 @@ namespace ams::pm::resource {
 
     void WaitResourceAvailable(const ldr::ProgramInfo *info);
 
-    Result GetCurrentResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
-    Result GetPeakResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
-    Result GetLimitResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
+    Result GetResourceLimitCurrentValue(ResourceLimitGroup group, pm::ResourceLimitValue *out);
+    Result GetResourceLimitPeakValue(ResourceLimitGroup group, pm::ResourceLimitValue *out);
+    Result GetResourceLimitLimitValue(ResourceLimitGroup group, pm::ResourceLimitValue *out);
 
     Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource);
 

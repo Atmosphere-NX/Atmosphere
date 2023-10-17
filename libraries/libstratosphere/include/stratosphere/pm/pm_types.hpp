@@ -52,7 +52,7 @@ namespace ams::pm {
         LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
     };
 
-    struct ResourceLimitValues {
+    struct ResourceLimitValue {
         u64 physical_memory;
         u32 thread_count;
         u32 event_count;

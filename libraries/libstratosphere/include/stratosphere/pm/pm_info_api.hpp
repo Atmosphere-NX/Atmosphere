@@ -29,8 +29,8 @@ namespace ams::pm::info {
     Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id);
     Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id);
 
-    Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out);
-    Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out);
+    Result GetAppletResourceLimitCurrentValue(pm::ResourceLimitValue *out);
+    Result GetAppletResourceLimitPeakValue(pm::ResourceLimitValue *out);
 
     Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
 

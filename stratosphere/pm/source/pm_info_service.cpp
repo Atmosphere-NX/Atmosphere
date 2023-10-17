@@ -33,12 +33,12 @@ namespace ams::pm {
         R_RETURN(impl::GetProgramId(out.GetPointer(), process_id));
     }
 
-    Result InformationService::GetAppletCurrentResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
-        R_RETURN(impl::GetAppletCurrentResourceLimitValues(out.GetPointer()));
+    Result InformationService::GetAppletResourceLimitCurrentValue(sf::Out<pm::ResourceLimitValue> out) {
+        R_RETURN(impl::GetAppletResourceLimitCurrentValue(out.GetPointer()));
     }
 
-    Result InformationService::GetAppletPeakResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
-        R_RETURN(impl::GetAppletPeakResourceLimitValues(out.GetPointer()));
+    Result InformationService::GetAppletResourceLimitPeakValue(sf::Out<pm::ResourceLimitValue> out) {
+        R_RETURN(impl::GetAppletResourceLimitPeakValue(out.GetPointer()));
     }
 
     /* Atmosphere extension commands. */

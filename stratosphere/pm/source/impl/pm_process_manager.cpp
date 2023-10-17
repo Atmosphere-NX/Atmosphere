@@ -719,12 +719,12 @@ namespace ams::pm::impl {
         R_RETURN(resource::BoostSystemThreadResourceLimit());
     }
 
-    Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out) {
-        R_RETURN(resource::GetCurrentResourceLimitValues(ResourceLimitGroup_Applet, out));
+    Result GetAppletResourceLimitCurrentValue(pm::ResourceLimitValue *out) {
+        R_RETURN(resource::GetResourceLimitCurrentValue(ResourceLimitGroup_Applet, out));
     }
 
-    Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out) {
-        R_RETURN(resource::GetPeakResourceLimitValues(ResourceLimitGroup_Applet, out));
+    Result GetAppletResourceLimitPeakValue(pm::ResourceLimitValue *out) {
+        R_RETURN(resource::GetResourceLimitPeakValue(ResourceLimitGroup_Applet, out));
     }
 
     Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource) {

@@ -21,8 +21,8 @@
 
 #define AMS_PM_I_INFORMATION_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                     \
     AMS_SF_METHOD_INFO(C, H,     0, Result, GetProgramId,                        (sf::Out<ncm::ProgramId> out, os::ProcessId process_id),                                                    (out, process_id))                 \
-    AMS_SF_METHOD_INFO(C, H,     1, Result, GetAppletCurrentResourceLimitValues, (sf::Out<pm::ResourceLimitValues> out),                                                                     (out))                             \
-    AMS_SF_METHOD_INFO(C, H,     2, Result, GetAppletPeakResourceLimitValues,    (sf::Out<pm::ResourceLimitValues> out),                                                                     (out))                             \
+    AMS_SF_METHOD_INFO(C, H,     1, Result, GetAppletResourceLimitCurrentValue,  (sf::Out<pm::ResourceLimitValue> out),                                                                      (out))                             \
+    AMS_SF_METHOD_INFO(C, H,     2, Result, GetAppletResourceLimitPeakValue,     (sf::Out<pm::ResourceLimitValue> out),                                                                      (out))                             \
     AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereGetProcessId,              (sf::Out<os::ProcessId> out, ncm::ProgramId program_id),                                                    (out, program_id))                 \
     AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereHasLaunchedBootProgram,    (sf::Out<bool> out, ncm::ProgramId program_id),                                                             (out, program_id))                 \
     AMS_SF_METHOD_INFO(C, H, 65002, Result, AtmosphereGetProcessInfo,            (sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id), (out_loc, out_status, process_id))
