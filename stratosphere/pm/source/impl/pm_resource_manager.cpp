@@ -170,10 +170,18 @@ namespace ams::pm::resource {
         }
 
         void WaitApplicationMemoryAvailable() {
+            /* Get firmware version. */
+            const auto fw_ver = hos::GetVersion();
+
+            /* On 15.0.0+, pm considers application memory to be available if there is exactly 96 MB outstanding. */
+            /* This is probably because this corresponds to the gameplay-recording memory. */
+            constexpr u64 AllowedUsedApplicationMemory = 96_MB;
+
+            /* Wait for memory to be available. */
             u64 value = 0;
             while (true) {
                 R_ABORT_UNLESS(svc::GetSystemInfo(&value, svc::SystemInfoType_UsedPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
-                if (value == 0) {
+                if (value == 0 || (fw_ver >= hos::Version_15_0_0 && value == AllowedUsedApplicationMemory)) {
                     break;
                 }
                 os::SleepThread(TimeSpan::FromMilliSeconds(1));
