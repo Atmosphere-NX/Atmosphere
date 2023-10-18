@@ -93,7 +93,7 @@ namespace ams::capsrv::server::jpeg {
 
         const u32 shrunk_width  = input.width / 2;
         const u32 shrunk_height = input.height / 2;
-        CAPSRV_ABORT_UNLESS(util::IsAligned(input.width,  ImageSizeHorizonalUnit));
+        CAPSRV_ABORT_UNLESS(util::IsAligned(shrunk_width, ImageSizeHorizonalUnit));
 
         CAPSRV_ABORT_UNLESS(output.dst != nullptr);
 
