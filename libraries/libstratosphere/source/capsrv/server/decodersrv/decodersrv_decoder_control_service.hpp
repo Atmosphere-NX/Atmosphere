@@ -17,7 +17,8 @@
 #include <stratosphere.hpp>
 
 #define AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option), (out, in, width, height, option))
+    AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option),                             (out, in, width, height, option)) \
+    AMS_SF_METHOD_INFO(C, H, 4001, Result, ShrinkJpeg, (ams::sf::Out<u64> out_size, const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option), (out_size, out, in, width, height, option))
 
 AMS_SF_DEFINE_INTERFACE(ams::capsrv::sf, IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO, 0xD168E90B)
 
@@ -26,6 +27,7 @@ namespace ams::capsrv::server {
     class DecoderControlService final {
         public:
             Result DecodeJpeg(const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
+            Result ShrinkJpeg(ams::sf::Out<u64> out_size, const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option);
     };
     static_assert(capsrv::sf::IsIDecoderControlService<DecoderControlService>);
 
