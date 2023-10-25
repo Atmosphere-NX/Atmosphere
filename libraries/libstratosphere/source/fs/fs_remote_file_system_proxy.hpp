@@ -434,6 +434,11 @@ namespace ams::fs {
                 AMS_ABORT("TODO");
             }
 
+            Result GetAndClearMemoryReportInfo(ams::sf::Out<fs::MemoryReportInfo> out) {
+                static_assert(sizeof(fs::MemoryReportInfo) == sizeof(::FsMemoryReportInfo));
+                R_RETURN(::fsGetAndClearMemoryReportInfo(reinterpret_cast<::FsMemoryReportInfo *>(out.GetPointer())));
+            }
+
             /* ... */
 
             Result GetProgramIndexForAccessLog(ams::sf::Out<u32> out_idx, ams::sf::Out<u32> out_count) {

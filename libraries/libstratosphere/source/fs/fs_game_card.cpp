@@ -100,4 +100,65 @@ namespace ams::fs {
         R_SUCCEED();
     }
 
+    bool IsGameCardInserted() {
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_ABORT_UNLESS(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get insertion status. */
+        bool inserted;
+        AMS_FS_R_ABORT_UNLESS(device_operator->IsGameCardInserted(std::addressof(inserted)));
+
+        return inserted;
+    }
+
+    Result GetGameCardCid(void *dst, size_t size) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(size >= sizeof(gc::GameCardIdSet), fs::ResultInvalidSize());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the id set. */
+        gc::GameCardIdSet gc_id_set;
+        AMS_FS_R_TRY(device_operator->GetGameCardIdSet(sf::OutBuffer(std::addressof(gc_id_set), sizeof(gc_id_set)), static_cast<s64>(sizeof(gc_id_set))));
+
+        /* Copy the id set to output. */
+        std::memcpy(dst, std::addressof(gc_id_set), sizeof(gc_id_set));
+
+        R_SUCCEED();
+
+    }
+
+    Result GetGameCardDeviceId(void *dst, size_t size) {
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the cid. */
+        AMS_FS_R_TRY(device_operator->GetGameCardDeviceId(sf::OutBuffer(dst, size), static_cast<s64>(size)));
+
+        R_SUCCEED();
+    }
+
+    Result GetGameCardErrorReportInfo(GameCardErrorReportInfo *out) {
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the error report info. */
+        AMS_FS_R_TRY(device_operator->GetGameCardErrorReportInfo(out));
+
+        R_SUCCEED();
+    }
+
 }

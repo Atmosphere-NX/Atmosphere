@@ -417,6 +417,10 @@ namespace ams::fssrv {
         AMS_ABORT("TODO");
     }
 
+    Result FileSystemProxyImpl::GetAndClearMemoryReportInfo(ams::sf::Out<fs::MemoryReportInfo> out) {
+        AMS_ABORT("TODO");
+    }
+
     /* ... */
 
     Result FileSystemProxyImpl::GetProgramIndexForAccessLog(ams::sf::Out<u32> out_idx, ams::sf::Out<u32> out_count) {

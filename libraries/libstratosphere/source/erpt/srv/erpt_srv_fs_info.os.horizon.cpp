@@ -308,12 +308,66 @@ namespace ams::erpt::srv {
         }
 
         Result SubmitGameCardDetailInfo() {
-            /* TODO */
+            /* Create a record. */
+            auto record = std::make_unique<ContextRecord>(CategoryId_GameCardCIDInfo, fs::GameCardCidSize + fs::GameCardDeviceIdSize);
+            R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+            /* Add the game card cid. */
+            {
+                u8 gc_cid[fs::GameCardCidSize] = {};
+                if (fs::IsGameCardInserted() && R_SUCCEEDED(fs::GetGameCardCid(gc_cid, sizeof(gc_cid)))) {
+                    /* Add the cid. */
+                    R_ABORT_UNLESS(record->Add(FieldId_GameCardCID, gc_cid, sizeof(gc_cid)));
+                }
+            }
+
+            /* Add the game card device id. */
+            {
+                u8 gc_device_id[fs::GameCardDeviceIdSize] = {};
+                if (fs::IsGameCardInserted() && R_SUCCEEDED(fs::GetGameCardDeviceId(gc_device_id, sizeof(gc_device_id)))) {
+                    /* Add the cid. */
+                    R_ABORT_UNLESS(record->Add(FieldId_GameCardDeviceId, gc_device_id, sizeof(gc_device_id)));
+                }
+            }
+
+            /* Submit the record. */
+            R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+
             R_SUCCEED();
         }
 
         Result SubmitGameCardErrorInfo() {
-            /* TODO */
+            /* Get the game card error info. */
+            fs::GameCardErrorReportInfo ei = {};
+            if (R_SUCCEEDED(fs::GetGameCardErrorReportInfo(std::addressof(ei)))) {
+                /* Create a record. */
+                auto record = std::make_unique<ContextRecord>(CategoryId_GameCardErrorInfo, 0);
+                R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                /* Add fields. */
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardCrcErrorCount,                 static_cast<u32>(ei.game_card_crc_error_num)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAsicCrcErrorCount,             static_cast<u32>(ei.asic_crc_error_num)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardRefreshCount,                  static_cast<u32>(ei.refresh_num)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardReadRetryCount,                static_cast<u32>(ei.retry_limit_out_num)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardTimeoutRetryErrorCount,        static_cast<u32>(ei.timeout_retry_num)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardInsertionCount,                static_cast<u32>(ei.insertion_count)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardRemovalCount,                  static_cast<u32>(ei.removal_count)));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAsicInitializeCount,           ei.initialize_count));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAsicReinitializeCount,         ei.asic_reinitialize_num));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAsicReinitializeFailureCount,  ei.asic_reinitialize_failure_num));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAsicReinitializeFailureDetail, ei.asic_reinitialize_failure_detail));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardRefreshSuccessCount,           ei.refresh_succeeded_count));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAwakenCount,                   ei.awaken_count));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardAwakenFailureCount,            ei.awaken_failure_num));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardReadCountFromInsert,           ei.read_count_from_insert));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardReadCountFromAwaken,           ei.read_count_from_awaken));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardLastReadErrorPageAddress,      ei.last_read_error_page_address));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardLastReadErrorPageCount,        ei.last_read_error_page_count));
+
+                /* Submit the record. */
+                R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+            }
+
             R_SUCCEED();
         }
 
@@ -388,7 +442,38 @@ namespace ams::erpt::srv {
         }
 
         Result SubmitMemoryReportInfo() {
-            /* TODO */
+            /* Get the memory report info. */
+            fs::MemoryReportInfo mri = {};
+            if (R_SUCCEEDED(fs::GetAndClearMemoryReportInfo(std::addressof(mri)))) {
+                /* Create a record. */
+                auto record = std::make_unique<ContextRecord>(CategoryId_FsMemoryInfo, 0);
+                R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                /* Add fields. */
+                R_ABORT_UNLESS(record->Add(FieldId_FsPooledBufferPeakFreeSize,          mri.pooled_buffer_peak_free_size));
+                R_ABORT_UNLESS(record->Add(FieldId_FsPooledBufferRetriedCount,          mri.pooled_buffer_retried_count));
+                R_ABORT_UNLESS(record->Add(FieldId_FsPooledBufferReduceAllocationCount, mri.pooled_buffer_reduce_allocation_count));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsBufferManagerPeakFreeSize, mri.buffer_manager_peak_free_size));
+                R_ABORT_UNLESS(record->Add(FieldId_FsBufferManagerRetriedCount, mri.buffer_manager_retried_count));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsExpHeapPeakFreeSize, mri.exp_heap_peak_free_size));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsBufferPoolPeakFreeSize, mri.buffer_pool_peak_free_size));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsPatrolReadAllocateBufferSuccessCount, mri.patrol_read_allocate_buffer_success_count));
+                R_ABORT_UNLESS(record->Add(FieldId_FsPatrolReadAllocateBufferFailureCount, mri.patrol_read_allocate_buffer_failure_count));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsBufferManagerPeakTotalAllocatableSize, mri.buffer_manager_peak_total_allocatable_size));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsBufferPoolMaxAllocateSize, mri.buffer_pool_max_allocate_size));
+
+                R_ABORT_UNLESS(record->Add(FieldId_FsPooledBufferFailedIdealAllocationCountOnAsyncAccess, mri.pooled_buffer_failed_ideal_allocation_count_on_async_access));
+
+                /* Submit the record. */
+                R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+            }
+
             R_SUCCEED();
         }
 

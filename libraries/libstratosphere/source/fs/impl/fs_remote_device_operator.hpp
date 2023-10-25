@@ -83,6 +83,19 @@ namespace ams::fs::impl {
                 static_assert(sizeof(::FsGameCardHandle) == sizeof(u32));
                 R_RETURN(fsDeviceOperatorGetGameCardHandle(std::addressof(m_operator), reinterpret_cast<::FsGameCardHandle *>(out.GetPointer())));
             }
+
+            Result GetGameCardIdSet(ams::sf::OutBuffer out, s64 size) {
+                R_RETURN(fsDeviceOperatorGetGameCardIdSet(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
+            }
+
+            Result GetGameCardErrorReportInfo(ams::sf::Out<fs::GameCardErrorReportInfo> out) {
+                static_assert(sizeof(::FsGameCardErrorReportInfo) == sizeof(fs::GameCardErrorReportInfo));
+                R_RETURN(fsDeviceOperatorGetGameCardErrorReportInfo(std::addressof(m_operator), reinterpret_cast<::FsGameCardErrorReportInfo *>(out.GetPointer())));
+            }
+
+            Result GetGameCardDeviceId(ams::sf::OutBuffer out, s64 size) {
+                R_RETURN(fsDeviceOperatorGetGameCardDeviceId(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
+            }
     };
     static_assert(fssrv::sf::IsIDeviceOperator<RemoteDeviceOperator>);
     #endif

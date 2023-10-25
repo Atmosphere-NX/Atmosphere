@@ -13,9 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <vapours.hpp>
 #include <stratosphere/gc/impl/gc_types.hpp>
-#include <stratosphere/gc/impl/gc_gc_crypto.hpp>
-#include <stratosphere/gc/impl/gc_embedded_data_holder.hpp>
-#include <stratosphere/gc/gc.hpp>
+
+namespace ams::gc {
+
+    struct GameCardIdSet {
+        gc::impl::CardId1 id1;
+        gc::impl::CardId2 id2;
+        gc::impl::CardId3 id3;
+    };
+    static_assert(util::is_pod<GameCardIdSet>::value);
+    static_assert(sizeof(GameCardIdSet) == 0xC);
+
+}

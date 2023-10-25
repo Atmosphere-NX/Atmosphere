@@ -13,9 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
-#pragma once
-#include <stratosphere/gc/impl/gc_types.hpp>
-#include <stratosphere/gc/impl/gc_gc_crypto.hpp>
-#include <stratosphere/gc/impl/gc_embedded_data_holder.hpp>
-#include <stratosphere/gc/gc.hpp>
+namespace ams::fs {
+
+    Result GetAndClearMemoryReportInfo(MemoryReportInfo *out) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Get the memory report info. */
+        AMS_FS_R_TRY(fsp->GetAndClearMemoryReportInfo(out));
+
+        R_SUCCEED();
+    }
+
+}

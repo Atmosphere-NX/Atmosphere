@@ -132,6 +132,7 @@ namespace ams::fssrv {
             Result OutputAccessLogToSdCard(const ams::sf::InBuffer &buf);
             Result RegisterUpdatePartition();
             Result OpenRegisteredUpdatePartition(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out);
+            Result GetAndClearMemoryReportInfo(ams::sf::Out<fs::MemoryReportInfo> out);
             /* ... */
             Result GetProgramIndexForAccessLog(ams::sf::Out<u32> out_idx, ams::sf::Out<u32> out_count);
             Result GetFsStackUsage(ams::sf::Out<u32> out, u32 type);
