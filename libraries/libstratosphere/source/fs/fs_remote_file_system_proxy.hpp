@@ -389,6 +389,11 @@ namespace ams::fs {
 
             /* ... */
 
+            Result GetAndClearErrorInfo(ams::sf::Out<fs::FileSystemProxyErrorInfo> out) {
+                static_assert(sizeof(fs::FileSystemProxyErrorInfo) == sizeof(::FsFileSystemProxyErrorInfo));
+                R_RETURN(::fsGetAndClearErrorInfo(reinterpret_cast<::FsFileSystemProxyErrorInfo *>(out.GetPointer())));
+            }
+
             Result RegisterProgramIndexMapInfo(const ams::sf::InBuffer &buffer, s32 count) {
                 AMS_ABORT("TODO");
             }

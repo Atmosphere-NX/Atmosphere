@@ -373,6 +373,10 @@ namespace ams::fssrv {
 
     /* ... */
 
+    Result FileSystemProxyImpl::GetAndClearErrorInfo(ams::sf::Out<fs::FileSystemProxyErrorInfo> out) {
+        AMS_ABORT("TODO");
+    }
+
     Result FileSystemProxyImpl::RegisterProgramIndexMapInfo(const ams::sf::InBuffer &buffer, s32 count) {
         AMS_ABORT("TODO");
     }

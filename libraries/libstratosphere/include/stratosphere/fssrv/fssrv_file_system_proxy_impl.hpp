@@ -121,6 +121,7 @@ namespace ams::fssrv {
             Result IsSignedSystemPartitionOnSdCardValid(ams::sf::Out<bool> out);
             Result OpenAccessFailureDetectionEventNotifier();
             /* ... */
+            Result GetAndClearErrorInfo(ams::sf::Out<fs::FileSystemProxyErrorInfo> out);
             Result RegisterProgramIndexMapInfo(const ams::sf::InBuffer &buffer, s32 count);
             Result SetBisRootForHost(u32 id, const fssrv::sf::FspPath &path);
             Result SetSaveDataSize(s64 size, s64 journal_size);

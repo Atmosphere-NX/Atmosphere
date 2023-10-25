@@ -20,6 +20,7 @@
 #include <stratosphere/fssrv/sf/fssrv_sf_istorage.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_i_device_operator.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_i_event_notifier.hpp>
+#include <stratosphere/fs/fs_error_info.hpp>
 
 /* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_FILE_SYSTEM_PROXY_INTERFACE_INFO(C, H) \
@@ -125,7 +126,7 @@
  /* AMS_SF_METHOD_INFO(C, H,  702, Result, IsAccessFailureDetected,                                     (),                                                                                                                                                       (),                                                     hos::Version_5_0_0) */                      \
  /* AMS_SF_METHOD_INFO(C, H,  710, Result, ResolveAccessFailure,                                        (),                                                                                                                                                       (),                                                     hos::Version_5_0_0) */                      \
  /* AMS_SF_METHOD_INFO(C, H,  720, Result, AbandonAccessFailure,                                        (),                                                                                                                                                       (),                                                     hos::Version_5_0_0) */                      \
- /* AMS_SF_METHOD_INFO(C, H,  800, Result, GetAndClearErrorInfo,                                        (),                                                                                                                                                       (),                                                     hos::Version_2_0_0) */                      \
+    AMS_SF_METHOD_INFO(C, H,  800, Result, GetAndClearErrorInfo,                                        (ams::sf::Out<fs::FileSystemProxyErrorInfo> out),                                                                                                         (out),                                                  hos::Version_2_0_0)                         \
     AMS_SF_METHOD_INFO(C, H,  810, Result, RegisterProgramIndexMapInfo,                                 (const ams::sf::InBuffer &buffer, s32 count),                                                                                                             (buffer, count),                                        hos::Version_7_0_0)                         \
     AMS_SF_METHOD_INFO(C, H, 1000, Result, SetBisRootForHost,                                           (u32 id, const fssrv::sf::FspPath &path),                                                                                                                 (id, path),                                             hos::Version_Min,    hos::Version_9_2_0)    \
     AMS_SF_METHOD_INFO(C, H, 1001, Result, SetSaveDataSize,                                             (s64 size, s64 journal_size),                                                                                                                             (size, journal_size))                                                                               \

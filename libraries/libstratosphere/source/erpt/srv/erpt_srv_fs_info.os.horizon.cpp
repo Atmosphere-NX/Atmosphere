@@ -318,7 +318,72 @@ namespace ams::erpt::srv {
         }
 
         Result SubmitFileSystemErrorInfo() {
-            /* TODO */
+            /* Get the fsp error info. */
+            fs::FileSystemProxyErrorInfo ei = {};
+            if (R_SUCCEEDED(fs::GetAndClearFileSystemProxyErrorInfo(std::addressof(ei)))) {
+                /* Submit FsProxyErrorInfo. */
+                {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_FsProxyErrorInfo, fat::FatErrorNameMaxLength);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_FsRemountForDataCorruptCount,         ei.rom_fs_remount_for_data_corruption_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FsRemountForDataCorruptRetryOutCount, ei.rom_fs_unrecoverable_data_corruption_by_remount_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsError,      ei.fat_fs_error.error));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsExtraError, ei.fat_fs_error.extra_error));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsErrorDrive, ei.fat_fs_error.drive_id));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsErrorName,  ei.fat_fs_error.name, fat::FatErrorNameMaxLength));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FsRecoveredByInvalidateCacheCount, ei.rom_fs_recovered_by_invalidate_cache_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FsSaveDataIndexCount,              ei.save_data_index_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemFilePeakOpenCount,      ei.bis_system_fat_report_info_1.open_file_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemDirectoryPeakOpenCount, ei.bis_system_fat_report_info_1.open_directory_peak_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserFilePeakOpenCount,      ei.bis_user_fat_report_info_1.open_file_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserDirectoryPeakOpenCount, ei.bis_user_fat_report_info_1.open_directory_peak_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsSdCardFilePeakOpenCount,      ei.sd_card_fat_report_info_1.open_file_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsSdCardDirectoryPeakOpenCount, ei.sd_card_fat_report_info_1.open_directory_peak_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemUniqueFileEntryPeakOpenCount,      ei.bis_system_fat_report_info_2.open_unique_file_entry_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemUniqueDirectoryEntryPeakOpenCount, ei.bis_system_fat_report_info_2.open_unique_directory_entry_peak_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserUniqueFileEntryPeakOpenCount,      ei.bis_user_fat_report_info_2.open_unique_file_entry_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserUniqueDirectoryEntryPeakOpenCount, ei.bis_user_fat_report_info_2.open_unique_directory_entry_peak_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsSdCardUniqueFileEntryPeakOpenCount,      ei.sd_card_fat_report_info_2.open_unique_file_entry_peak_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsSdCardUniqueDirectoryEntryPeakOpenCount, ei.sd_card_fat_report_info_2.open_unique_directory_entry_peak_count));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+
+                /* Submit FsProxyErrorInfo2. */
+                {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_FsProxyErrorInfo2, 0);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_FsDeepRetryStartCount,                       ei.rom_fs_deep_retry_start_count));
+                    R_ABORT_UNLESS(record->Add(FieldId_FsUnrecoverableByGameCardAccessFailedCount, ei.rom_fs_unrecoverable_by_game_card_access_failed_count));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemFatSafeControlResult, static_cast<u8>(ei.bis_system_fat_safe_info.result)));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemFatErrorNumber,       ei.bis_system_fat_safe_info.error_number));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisSystemFatSafeErrorNumber,   ei.bis_system_fat_safe_info.safe_error_number));
+
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserFatSafeControlResult, static_cast<u8>(ei.bis_user_fat_safe_info.result)));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserFatErrorNumber,       ei.bis_user_fat_safe_info.error_number));
+                    R_ABORT_UNLESS(record->Add(FieldId_FatFsBisUserFatSafeErrorNumber,   ei.bis_user_fat_safe_info.safe_error_number));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+            }
+
             R_SUCCEED();
         }
 

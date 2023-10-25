@@ -23,7 +23,7 @@ namespace ams::fat {
     struct FatError {
         int error;
         int extra_error;
-        int device_id;
+        int drive_id;
         char name[FatErrorNameMaxLength];
         u8 reserved[4];
     };
@@ -31,15 +31,15 @@ namespace ams::fat {
     static_assert(util::is_pod<FatError>::value);
 
     struct FatReportInfo1 {
-        u16 file_peak_open_count;
-        u16 directory_peak_open_count;
+        u16 open_file_peak_count;
+        u16 open_directory_peak_count;
     };
     static_assert(sizeof(FatReportInfo1) == 4);
     static_assert(util::is_pod<FatReportInfo1>::value);
 
     struct FatReportInfo2 {
-        u16 unique_file_entry_peak_open_count;
-        u16 unique_directory_entry_peak_open_count;
+        u16 open_unique_file_entry_peak_count;
+        u16 open_unique_directory_entry_peak_count;
     };
     static_assert(sizeof(FatReportInfo2) == 4);
     static_assert(util::is_pod<FatReportInfo2>::value);

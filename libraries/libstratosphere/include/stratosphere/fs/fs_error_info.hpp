@@ -29,17 +29,17 @@ namespace ams::fs {
     static_assert(util::is_pod<StorageErrorInfo>::value);
 
     struct FileSystemProxyErrorInfo {
-        u32 rom_fs_remont_for_data_corruption_count;
+        u32 rom_fs_remount_for_data_corruption_count;
         u32 rom_fs_unrecoverable_data_corruption_by_remount_count;
         fat::FatError fat_fs_error;
         u32 rom_fs_recovered_by_invalidate_cache_count;
         u32 save_data_index_count;
-        fat::FatReportInfo1 bis_system_report1;
-        fat::FatReportInfo1 bis_user_report1;
-        fat::FatReportInfo1 sd_card_report1;
-        fat::FatReportInfo2 bis_system_report2;
-        fat::FatReportInfo2 bis_user_report2;
-        fat::FatReportInfo2 sd_card_report2;
+        fat::FatReportInfo1 bis_system_fat_report_info_1;
+        fat::FatReportInfo1 bis_user_fat_report_info_1;
+        fat::FatReportInfo1 sd_card_fat_report_info_1;
+        fat::FatReportInfo2 bis_system_fat_report_info_2;
+        fat::FatReportInfo2 bis_user_fat_report_info_2;
+        fat::FatReportInfo2 sd_card_fat_report_info_2;
         u32 rom_fs_deep_retry_start_count;
         u32 rom_fs_unrecoverable_by_game_card_access_failed_count;
         fat::FatSafeInfo bis_system_fat_safe_info;
