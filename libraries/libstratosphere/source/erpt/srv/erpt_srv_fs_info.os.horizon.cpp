@@ -127,17 +127,183 @@ namespace ams::erpt::srv {
         }
 
         Result SubmitMmcErrorInfo() {
-            /* TODO */
+            /* Get the mmc error info. */
+            fs::StorageErrorInfo sei = {};
+            char log_buffer[erpt::ArrayBufferSizeDefault] = {};
+            size_t log_size = 0;
+            if (R_SUCCEEDED(fs::GetAndClearMmcErrorInfo(std::addressof(sei), std::addressof(log_size), log_buffer, sizeof(log_buffer)))) {
+                /* Submit the error info. */
+                {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_NANDErrorInfo, 0);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_NANDNumActivationFailures,         sei.num_activation_failures));
+                    R_ABORT_UNLESS(record->Add(FieldId_NANDNumActivationErrorCorrections, sei.num_activation_error_corrections));
+                    R_ABORT_UNLESS(record->Add(FieldId_NANDNumReadWriteFailures,          sei.num_read_write_failures));
+                    R_ABORT_UNLESS(record->Add(FieldId_NANDNumReadWriteErrorCorrections,  sei.num_read_write_error_corrections));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+
+                /* If we have a log, submit it. */
+                if (log_size > 0) {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_NANDDriverLog, log_size);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_NANDErrorLog, log_buffer, log_size));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+            }
+
             R_SUCCEED();
         }
 
         Result SubmitSdCardDetailInfo() {
-            /* TODO */
+            /* Submit the sd card cid. */
+            {
+                u8 sd_cid[fs::SdCardCidSize] = {};
+                if (R_SUCCEEDED(fs::GetSdCardCid(sd_cid, sizeof(sd_cid)))) {
+                    /* Clear the serial number from the cid. */
+                    fs::ClearSdCardCidSerialNumber(sd_cid);
+
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_MicroSDTypeInfo, sizeof(sd_cid));
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add the cid. */
+                    R_ABORT_UNLESS(record->Add(FieldId_MicroSDType, sd_cid, sizeof(sd_cid)));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+            }
+
+            /* Submit the sd card speed mode. */
+            {
+                /* Create a record. */
+                auto record = std::make_unique<ContextRecord>(CategoryId_MicroSDSpeedModeInfo, 0x20);
+                R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                /* Get the speed mode. */
+                fs::SdCardSpeedMode speed_mode{};
+                const auto res = fs::GetSdCardSpeedMode(std::addressof(speed_mode));
+                if (R_SUCCEEDED(res)) {
+                    const char *speed_mode_name = "None";
+                    switch (speed_mode) {
+                        case fs::SdCardSpeedMode_Identification:
+                            speed_mode_name = "Identification";
+                            break;
+                        case fs::SdCardSpeedMode_DefaultSpeed:
+                            speed_mode_name = "DefaultSpeed";
+                            break;
+                        case fs::SdCardSpeedMode_HighSpeed:
+                            speed_mode_name = "HighSpeed";
+                            break;
+                        case fs::SdCardSpeedMode_Sdr12:
+                            speed_mode_name = "Sdr12";
+                            break;
+                        case fs::SdCardSpeedMode_Sdr25:
+                            speed_mode_name = "Sdr25";
+                            break;
+                        case fs::SdCardSpeedMode_Sdr50:
+                            speed_mode_name = "Sdr50";
+                            break;
+                        case fs::SdCardSpeedMode_Sdr104:
+                            speed_mode_name = "Sdr104";
+                            break;
+                        case fs::SdCardSpeedMode_Ddr50:
+                            speed_mode_name = "Ddr50";
+                            break;
+                        case fs::SdCardSpeedMode_Unknown:
+                            speed_mode_name = "Unknown";
+                            break;
+                        default:
+                            speed_mode_name = "UnDefined";
+                            break;
+                    }
+
+                    R_ABORT_UNLESS(record->Add(FieldId_MicroSDSpeedMode, speed_mode_name, std::strlen(speed_mode_name)));
+                } else {
+                    /* Getting speed mode failed, so add the result. */
+                    char res_str[0x20];
+                    util::SNPrintf(res_str, sizeof(res_str), "0x%08X", res.GetValue());
+                    R_ABORT_UNLESS(record->Add(FieldId_MicroSDSpeedMode, res_str, std::strlen(res_str)));
+                }
+
+                /* Submit the record. */
+                R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+            }
+
+            /* Submit the area sizes. */
+            {
+                s64 user_area_size = 0;
+                s64 prot_area_size = 0;
+                const Result res_user = fs::GetSdCardUserAreaSize(std::addressof(user_area_size));
+                const Result res_prot = fs::GetSdCardProtectedAreaSize(std::addressof(prot_area_size));
+                if (R_SUCCEEDED(res_user) || R_SUCCEEDED(res_prot)) {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_SdCardSizeSpec, 0);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add sizes. */
+                    if (R_SUCCEEDED(res_user)) {
+                        R_ABORT_UNLESS(record->Add(FieldId_SdCardUserAreaSize, user_area_size));
+                    }
+                    if (R_SUCCEEDED(res_prot)) {
+                        R_ABORT_UNLESS(record->Add(FieldId_SdCardProtectedAreaSize, prot_area_size));
+                    }
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+            }
+
             R_SUCCEED();
         }
 
         Result SubmitSdCardErrorInfo() {
-            /* TODO */
+            /* Get the sd card error info. */
+            fs::StorageErrorInfo sei = {};
+            char log_buffer[erpt::ArrayBufferSizeDefault] = {};
+            size_t log_size = 0;
+            if (R_SUCCEEDED(fs::GetAndClearSdCardErrorInfo(std::addressof(sei), std::addressof(log_size), log_buffer, sizeof(log_buffer)))) {
+                /* Submit the error info. */
+                {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_SdCardErrorInfo, 0);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_SdCardNumActivationFailures,         sei.num_activation_failures));
+                    R_ABORT_UNLESS(record->Add(FieldId_SdCardNumActivationErrorCorrections, sei.num_activation_error_corrections));
+                    R_ABORT_UNLESS(record->Add(FieldId_SdCardNumReadWriteFailures,          sei.num_read_write_failures));
+                    R_ABORT_UNLESS(record->Add(FieldId_SdCardNumReadWriteErrorCorrections,  sei.num_read_write_error_corrections));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+
+                /* If we have a log, submit it. */
+                if (log_size > 0) {
+                    /* Create a record. */
+                    auto record = std::make_unique<ContextRecord>(CategoryId_SdCardDriverLog, log_size);
+                    R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+                    /* Add fields. */
+                    R_ABORT_UNLESS(record->Add(FieldId_SdCardErrorLog, log_buffer, log_size));
+
+                    /* Submit the record. */
+                    R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
+                }
+            }
+
             R_SUCCEED();
         }
 

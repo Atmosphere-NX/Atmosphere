@@ -33,6 +33,27 @@ namespace ams::fs::impl {
                 R_RETURN(fsDeviceOperatorIsSdCardInserted(std::addressof(m_operator), out.GetPointer()));
             }
 
+            Result GetSdCardSpeedMode(ams::sf::Out<s64> out) {
+                R_RETURN(fsDeviceOperatorGetSdCardSpeedMode(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetSdCardCid(ams::sf::OutBuffer out, s64 size) {
+                R_RETURN(fsDeviceOperatorGetSdCardCid(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
+            }
+
+            Result GetSdCardUserAreaSize(ams::sf::Out<s64> out) {
+                R_RETURN(fsDeviceOperatorGetSdCardUserAreaSize(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetSdCardProtectedAreaSize(ams::sf::Out<s64> out) {
+                R_RETURN(fsDeviceOperatorGetSdCardProtectedAreaSize(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetAndClearSdCardErrorInfo(ams::sf::Out<fs::StorageErrorInfo> out_sei, ams::sf::Out<s64> out_size, ams::sf::OutBuffer out_buf, s64 size) {
+                static_assert(sizeof(::FsStorageErrorInfo) == sizeof(fs::StorageErrorInfo));
+                R_RETURN(fsDeviceOperatorGetAndClearSdCardErrorInfo(std::addressof(m_operator), reinterpret_cast<::FsStorageErrorInfo *>(out_sei.GetPointer()), out_size.GetPointer(), out_buf.GetPointer(), out_buf.GetSize(), size));
+            }
+
             Result GetMmcCid(ams::sf::OutBuffer out, s64 size) {
                 R_RETURN(fsDeviceOperatorGetMmcCid(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
             }
@@ -43,6 +64,11 @@ namespace ams::fs::impl {
 
             Result GetMmcPatrolCount(ams::sf::Out<u32> out) {
                 R_RETURN(fsDeviceOperatorGetMmcPatrolCount(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetAndClearMmcErrorInfo(ams::sf::Out<fs::StorageErrorInfo> out_sei, ams::sf::Out<s64> out_size, ams::sf::OutBuffer out_buf, s64 size) {
+                static_assert(sizeof(::FsStorageErrorInfo) == sizeof(fs::StorageErrorInfo));
+                R_RETURN(fsDeviceOperatorGetAndClearMmcErrorInfo(std::addressof(m_operator), reinterpret_cast<::FsStorageErrorInfo *>(out_sei.GetPointer()), out_size.GetPointer(), out_buf.GetPointer(), out_buf.GetSize(), size));
             }
 
             Result GetMmcExtendedCsd(ams::sf::OutBuffer out, s64 size) {

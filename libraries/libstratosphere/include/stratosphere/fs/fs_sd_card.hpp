@@ -21,11 +21,37 @@ namespace ams::fs {
     /* ACCURATE_TO_VERSION: Unknown */
     class IEventNotifier;
 
+    constexpr inline size_t SdCardCidSize = 0x10;
+
+    enum SdCardSpeedMode {
+        SdCardSpeedMode_Identification = 0,
+        SdCardSpeedMode_DefaultSpeed   = 1,
+        SdCardSpeedMode_HighSpeed      = 2,
+        SdCardSpeedMode_Sdr12          = 3,
+        SdCardSpeedMode_Sdr25          = 4,
+        SdCardSpeedMode_Sdr50          = 5,
+        SdCardSpeedMode_Sdr104         = 6,
+        SdCardSpeedMode_Ddr50          = 7,
+        SdCardSpeedMode_Unknown        = 8,
+    };
+
     struct EncryptionSeed {
         char value[0x10];
     };
     static_assert(util::is_pod<EncryptionSeed>::value);
     static_assert(sizeof(EncryptionSeed) == 0x10);
+
+    Result GetSdCardCid(void *dst, size_t size);
+
+    inline void ClearSdCardCidSerialNumber(u8 *cid) {
+        /* Clear the serial number from the cid. */
+        std::memset(cid + 2, 0, 4);
+    }
+
+    Result GetSdCardUserAreaSize(s64 *out);
+    Result GetSdCardProtectedAreaSize(s64 *out);
+
+    Result GetSdCardSpeedMode(SdCardSpeedMode *out);
 
     Result MountSdCard(const char *name);
 

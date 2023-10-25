@@ -51,6 +51,7 @@
 #include <stratosphere/fs/fs_code.hpp>
 #include <stratosphere/fs/fs_content.hpp>
 #include <stratosphere/fs/fs_content_storage.hpp>
+#include <stratosphere/fs/fs_error_info.hpp>
 #include <stratosphere/fs/fs_game_card.hpp>
 #include <stratosphere/fs/fs_host.hpp>
 #include <stratosphere/fs/fs_image_directory.hpp>
