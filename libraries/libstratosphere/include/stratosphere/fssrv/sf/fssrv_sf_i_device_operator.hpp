@@ -20,8 +20,12 @@
 /* TODO */
 /* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_DEVICE_OPERATOR_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H,   0, Result, IsSdCardInserted,   (ams::sf::Out<bool> out), (out)) \
-    AMS_SF_METHOD_INFO(C, H, 200, Result, IsGameCardInserted, (ams::sf::Out<bool> out), (out)) \
-    AMS_SF_METHOD_INFO(C, H, 202, Result, GetGameCardHandle,  (ams::sf::Out<u32> out),  (out))
+    AMS_SF_METHOD_INFO(C, H,   0, Result, IsSdCardInserted,   (ams::sf::Out<bool> out),           (out))       \
+    AMS_SF_METHOD_INFO(C, H, 100, Result, GetMmcCid,          (ams::sf::OutBuffer out, s64 size), (out, size)) \
+    AMS_SF_METHOD_INFO(C, H, 101, Result, GetMmcSpeedMode,    (ams::sf::Out<s64> out),            (out)) \
+    AMS_SF_METHOD_INFO(C, H, 112, Result, GetMmcPatrolCount,  (ams::sf::Out<u32> out),            (out)) \
+    AMS_SF_METHOD_INFO(C, H, 114, Result, GetMmcExtendedCsd,  (ams::sf::OutBuffer out, s64 size), (out, size)) \
+    AMS_SF_METHOD_INFO(C, H, 200, Result, IsGameCardInserted, (ams::sf::Out<bool> out),           (out)) \
+    AMS_SF_METHOD_INFO(C, H, 202, Result, GetGameCardHandle,  (ams::sf::Out<u32> out),            (out))
 
 AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IDeviceOperator, AMS_FSSRV_I_DEVICE_OPERATOR_INTERFACE_INFO, 0x1484E21C)

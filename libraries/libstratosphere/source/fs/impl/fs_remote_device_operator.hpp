@@ -33,6 +33,22 @@ namespace ams::fs::impl {
                 R_RETURN(fsDeviceOperatorIsSdCardInserted(std::addressof(m_operator), out.GetPointer()));
             }
 
+            Result GetMmcCid(ams::sf::OutBuffer out, s64 size) {
+                R_RETURN(fsDeviceOperatorGetMmcCid(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
+            }
+
+            Result GetMmcSpeedMode(ams::sf::Out<s64> out) {
+                R_RETURN(fsDeviceOperatorGetMmcSpeedMode(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetMmcPatrolCount(ams::sf::Out<u32> out) {
+                R_RETURN(fsDeviceOperatorGetMmcPatrolCount(std::addressof(m_operator), out.GetPointer()));
+            }
+
+            Result GetMmcExtendedCsd(ams::sf::OutBuffer out, s64 size) {
+                R_RETURN(fsDeviceOperatorGetMmcExtendedCsd(std::addressof(m_operator), out.GetPointer(), out.GetSize(), size));
+            }
+
             Result IsGameCardInserted(ams::sf::Out<bool> out) {
                 R_RETURN(fsDeviceOperatorIsGameCardInserted(std::addressof(m_operator), out.GetPointer()));
             }
