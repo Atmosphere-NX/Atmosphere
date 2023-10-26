@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "pm_resource_manager.hpp"
+#include "pm_spec.hpp"
 
-namespace ams::pm::resource {
+namespace ams::pm::impl {
 
     namespace {
 
@@ -209,8 +209,8 @@ namespace ams::pm::resource {
             R_SUCCEED();
         }
 
-        template<auto GetResourceLimitValueImpl>
-        ALWAYS_INLINE Result GetResourceLimitValuesImpl(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
+        template<auto ImplFunction>
+        ALWAYS_INLINE Result GetResourceLimitValueImpl(pm::ResourceLimitValue *out, ResourceLimitGroup group) {
             /* Sanity check group. */
             AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
 
@@ -219,11 +219,11 @@ namespace ams::pm::resource {
 
             /* Get values. */
             int64_t values[svc::LimitableResource_Count];
-            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_PhysicalMemoryMax]),      handle, svc::LimitableResource_PhysicalMemoryMax));
-            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_ThreadCountMax]),         handle, svc::LimitableResource_ThreadCountMax));
-            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_EventCountMax]),          handle, svc::LimitableResource_EventCountMax));
-            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_TransferMemoryCountMax]), handle, svc::LimitableResource_TransferMemoryCountMax));
-            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_SessionCountMax]),        handle, svc::LimitableResource_SessionCountMax));
+            R_ABORT_UNLESS(ImplFunction(std::addressof(values[svc::LimitableResource_PhysicalMemoryMax]),      handle, svc::LimitableResource_PhysicalMemoryMax));
+            R_ABORT_UNLESS(ImplFunction(std::addressof(values[svc::LimitableResource_ThreadCountMax]),         handle, svc::LimitableResource_ThreadCountMax));
+            R_ABORT_UNLESS(ImplFunction(std::addressof(values[svc::LimitableResource_EventCountMax]),          handle, svc::LimitableResource_EventCountMax));
+            R_ABORT_UNLESS(ImplFunction(std::addressof(values[svc::LimitableResource_TransferMemoryCountMax]), handle, svc::LimitableResource_TransferMemoryCountMax));
+            R_ABORT_UNLESS(ImplFunction(std::addressof(values[svc::LimitableResource_SessionCountMax]),        handle, svc::LimitableResource_SessionCountMax));
 
             /* Set to output. */
             out->physical_memory       = values[svc::LimitableResource_PhysicalMemoryMax];
@@ -278,8 +278,7 @@ namespace ams::pm::resource {
 
     }
 
-    /* Resource API. */
-    Result InitializeResourceManager() {
+    Result InitializeSpec() {
         /* Create resource limit handles. */
         for (size_t i = 0; i < ResourceLimitGroup_Count; i++) {
             if (i == ResourceLimitGroup_System) {
@@ -459,16 +458,16 @@ namespace ams::pm::resource {
         }
     }
 
-    Result GetResourceLimitCurrentValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
-        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitCurrentValue>(group, out));
+    Result GetResourceLimitCurrentValue(pm::ResourceLimitValue *out, ResourceLimitGroup group) {
+        R_RETURN(GetResourceLimitValueImpl<::ams::svc::GetResourceLimitCurrentValue>(out, group));
     }
 
-    Result GetResourceLimitPeakValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
-        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitPeakValue>(group, out));
+    Result GetResourceLimitPeakValue(pm::ResourceLimitValue *out, ResourceLimitGroup group) {
+        R_RETURN(GetResourceLimitValueImpl<::ams::svc::GetResourceLimitPeakValue>(out, group));
     }
 
-    Result GetResourceLimitLimitValue(ResourceLimitGroup group, pm::ResourceLimitValue *out) {
-        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitLimitValue>(group, out));
+    Result GetResourceLimitLimitValue(pm::ResourceLimitValue *out, ResourceLimitGroup group) {
+        R_RETURN(GetResourceLimitValueImpl<::ams::svc::GetResourceLimitLimitValue>(out, group));
     }
 
     Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource) {

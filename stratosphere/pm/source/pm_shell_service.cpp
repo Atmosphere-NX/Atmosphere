@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "pm_shell_service.hpp"
 #include "impl/pm_process_manager.hpp"
+#include "impl/pm_spec.hpp"
 
 namespace ams::pm {
 

@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "pm_debug_monitor_service.hpp"
 #include "impl/pm_process_manager.hpp"
+#include "impl/pm_spec.hpp"
 
 namespace ams::pm {
 
@@ -76,7 +77,7 @@ namespace ams::pm {
     }
 
     Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource) {
-        R_RETURN(impl::AtmosphereGetCurrentLimitInfo(out_cur_val.GetPointer(), out_lim_val.GetPointer(), group, resource));
+        R_RETURN(impl::GetResourceLimitValues(out_cur_val.GetPointer(), out_lim_val.GetPointer(), static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource)));
     }
 
 }
