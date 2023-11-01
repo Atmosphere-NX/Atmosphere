@@ -358,7 +358,7 @@ namespace ams::kern {
             void Detach() {
                 /* Close our object, if we have one. */
                 if (T * const object = m_object; AMS_LIKELY(object != nullptr)) {
-                    /* Set our object to a debug sentinel value, which will cause crash if accessed. */
+                    /* Set our object to a debug sentinel value, which will cause a crash if accessed. */
                     m_object = reinterpret_cast<T *>(1);
 
                     /* Close reference to our object. */
