@@ -142,10 +142,10 @@ namespace ams::kern::svc {
                     /* Get the target firmware. */
                     const auto target_fw = kern::GetTargetFirmware();
 
-                    /* 10.0.0 broke the ABI for QueryIoMapping. */
+                    /* 10.0.0 broke the ABI for QueryIoMapping, and renamed it to QueryMemoryMapping. */
                     if (target_fw < TargetFirmware_10_0_0) {
-                        if (table_64)         { ::ams::kern::svc::PatchSvcTableEntry(table_64,         svc::SvcId_QueryIoMapping, LegacyQueryIoMapping::Call64); }
-                        if (table_64_from_32) { ::ams::kern::svc::PatchSvcTableEntry(table_64_from_32, svc::SvcId_QueryIoMapping, LegacyQueryIoMapping::Call64From32); }
+                        if (table_64)         { ::ams::kern::svc::PatchSvcTableEntry(table_64,         svc::SvcId_QueryMemoryMapping, LegacyQueryIoMapping::Call64); }
+                        if (table_64_from_32) { ::ams::kern::svc::PatchSvcTableEntry(table_64_from_32, svc::SvcId_QueryMemoryMapping, LegacyQueryIoMapping::Call64From32); }
                     }
 
                     /* 6.0.0 broke the ABI for GetFutureThreadInfo, and renamed it to GetDebugFutureThreadInfo. */

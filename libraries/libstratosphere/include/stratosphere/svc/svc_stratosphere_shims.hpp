@@ -331,8 +331,8 @@
                     R_RETURN(::svcQueryPhysicalAddress(reinterpret_cast<::PhysicalMemoryInfo *>(out_info), address));
                 }
 
-                ALWAYS_INLINE Result QueryIoMapping(::ams::svc::Address *out_address, ::ams::svc::Size *out_size, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
-                    R_RETURN(::svcQueryIoMapping(reinterpret_cast<u64 *>(out_address), reinterpret_cast<u64 *>(out_size), physical_address, size));
+                ALWAYS_INLINE Result QueryMemoryMapping(::ams::svc::Address *out_address, ::ams::svc::Size *out_size, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
+                    R_RETURN(::svcQueryMemoryMapping(reinterpret_cast<u64 *>(out_address), reinterpret_cast<u64 *>(out_size), physical_address, size));
                 }
 
                 ALWAYS_INLINE Result LegacyQueryIoMapping(::ams::svc::Address *out_address, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
@@ -503,12 +503,12 @@
                     ::svcCallSecureMonitor(reinterpret_cast<::SecmonArgs *>(args));
                 }
 
-                ALWAYS_INLINE Result MapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
-                    R_RETURN(::svcMapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
+                ALWAYS_INLINE Result MapInsecurePhysicalMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcMapInsecurePhysicalMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
                 }
 
-                ALWAYS_INLINE Result UnmapInsecureMemory(::ams::svc::Address address, ::ams::svc::Size size) {
-                    R_RETURN(::svcUnmapInsecureMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
+                ALWAYS_INLINE Result UnmapInsecurePhysicalMemory(::ams::svc::Address address, ::ams::svc::Size size) {
+                    R_RETURN(::svcUnmapInsecurePhysicalMemory(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size));
                 }
 
             }

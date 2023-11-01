@@ -387,8 +387,8 @@ namespace ams::kern {
             Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
-            Result MapInsecureMemory(KProcessAddress address, size_t size);
-            Result UnmapInsecureMemory(KProcessAddress address, size_t size);
+            Result MapInsecurePhysicalMemory(KProcessAddress address, size_t size);
+            Result UnmapInsecurePhysicalMemory(KProcessAddress address, size_t size);
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 R_RETURN(this->MapPages(out_addr, num_pages, alignment, phys_addr, true, region_start, region_num_pages, state, perm));

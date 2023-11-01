@@ -68,7 +68,7 @@ namespace ams::dd {
 
             if (hos::GetVersion() >= hos::Version_10_0_0) {
                 svc::Size region_size = 0;
-                R_TRY_CATCH(svc::QueryIoMapping(std::addressof(virt_addr), std::addressof(region_size), aligned_addr, aligned_size)) {
+                R_TRY_CATCH(svc::QueryMemoryMapping(std::addressof(virt_addr), std::addressof(region_size), aligned_addr, aligned_size)) {
                     /* Official software handles this by returning 0. */
                     R_CATCH(svc::ResultNotFound) { return 0; }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;

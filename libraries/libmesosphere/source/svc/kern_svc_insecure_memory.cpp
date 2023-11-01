@@ -21,7 +21,7 @@ namespace ams::kern::svc {
 
     namespace {
 
-        Result MapInsecureMemory(uintptr_t address, size_t size) {
+        Result MapInsecurePhysicalMemory(uintptr_t address, size_t size) {
             /* Validate the address/size. */
             R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
             R_UNLESS(size > 0,                           svc::ResultInvalidSize());
@@ -33,10 +33,10 @@ namespace ams::kern::svc {
             R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_Insecure), svc::ResultInvalidMemoryRegion());
 
             /* Map the insecure memory. */
-            R_RETURN(pt.MapInsecureMemory(address, size));
+            R_RETURN(pt.MapInsecurePhysicalMemory(address, size));
         }
 
-        Result UnmapInsecureMemory(uintptr_t address, size_t size) {
+        Result UnmapInsecurePhysicalMemory(uintptr_t address, size_t size) {
             /* Validate the address/size. */
             R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
             R_UNLESS(size > 0,                           svc::ResultInvalidSize());
@@ -48,29 +48,29 @@ namespace ams::kern::svc {
             R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_Insecure), svc::ResultInvalidMemoryRegion());
 
             /* Map the insecure memory. */
-            R_RETURN(pt.UnmapInsecureMemory(address, size));
+            R_RETURN(pt.UnmapInsecurePhysicalMemory(address, size));
         }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
-    Result MapInsecureMemory64(ams::svc::Address address, ams::svc::Size size) {
-        R_RETURN(MapInsecureMemory(address, size));
+    Result MapInsecurePhysicalMemory64(ams::svc::Address address, ams::svc::Size size) {
+        R_RETURN(MapInsecurePhysicalMemory(address, size));
     }
 
-    Result UnmapInsecureMemory64(ams::svc::Address address, ams::svc::Size size) {
-        R_RETURN(UnmapInsecureMemory(address, size));
+    Result UnmapInsecurePhysicalMemory64(ams::svc::Address address, ams::svc::Size size) {
+        R_RETURN(UnmapInsecurePhysicalMemory(address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
-    Result MapInsecureMemory64From32(ams::svc::Address address, ams::svc::Size size) {
-        R_RETURN(MapInsecureMemory(address, size));
+    Result MapInsecurePhysicalMemory64From32(ams::svc::Address address, ams::svc::Size size) {
+        R_RETURN(MapInsecurePhysicalMemory(address, size));
     }
 
-    Result UnmapInsecureMemory64From32(ams::svc::Address address, ams::svc::Size size) {
-        R_RETURN(UnmapInsecureMemory(address, size));
+    Result UnmapInsecurePhysicalMemory64From32(ams::svc::Address address, ams::svc::Size size) {
+        R_RETURN(UnmapInsecurePhysicalMemory(address, size));
     }
 
 }
