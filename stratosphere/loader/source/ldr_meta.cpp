@@ -113,7 +113,7 @@ namespace ams::ldr {
 
         Result ValidateAcidSignature(Meta *meta, PlatformId platform, bool unk_unused) {
             /* Loader did not check signatures prior to 10.0.0. */
-            if (hos::GetVersion() < hos::Version_10_0_0) {
+            {
                 meta->check_verification_data = false;
                 R_SUCCEED();
             }
