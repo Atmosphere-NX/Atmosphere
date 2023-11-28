@@ -28,7 +28,7 @@ namespace ams::sf::cmif {
     /* This is needed for non-templated domain message processing. */
     struct ServerMessageRuntimeMetadata {
         u16 in_data_size;
-        u16 out_data_size;
+        u16 unaligned_out_data_size;
         u8 in_headers_size;
         u8 out_headers_size;
         u8 in_object_count;
@@ -39,7 +39,11 @@ namespace ams::sf::cmif {
         }
 
         constexpr size_t GetOutDataSize() const {
-            return static_cast<size_t>(this->out_data_size);
+            return static_cast<size_t>(util::AlignUp(this->unaligned_out_data_size, sizeof(u32)));
+        }
+
+        constexpr size_t GetUnalignedOutDataSize() const {
+            return static_cast<size_t>(this->unaligned_out_data_size);
         }
 
         constexpr size_t GetInHeadersSize() const {

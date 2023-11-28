@@ -62,7 +62,7 @@ namespace ams::sf::cmif {
             }
 
             constexpr size_t GetImplOutDataTotalSize() const {
-                return m_impl_metadata.GetOutDataSize() + m_impl_metadata.GetOutHeadersSize();
+                return m_impl_metadata.GetUnalignedOutDataSize() + m_impl_metadata.GetOutHeadersSize();
             }
         public:
             /* Used to enabled templated message processors. */
@@ -80,12 +80,12 @@ namespace ams::sf::cmif {
                 const auto runtime_metadata = m_impl_processor->GetRuntimeMetadata();
 
                 return ServerMessageRuntimeMetadata {
-                    .in_data_size      = static_cast<u16>(runtime_metadata.GetInDataSize()  + runtime_metadata.GetInObjectCount() * sizeof(DomainObjectId)),
-                    .out_data_size     = static_cast<u16>(runtime_metadata.GetOutDataSize() + runtime_metadata.GetOutObjectCount() * sizeof(DomainObjectId)),
-                    .in_headers_size   = static_cast<u8>(runtime_metadata.GetInHeadersSize()  + sizeof(CmifDomainInHeader)),
-                    .out_headers_size  = static_cast<u8>(runtime_metadata.GetOutHeadersSize() + sizeof(CmifDomainOutHeader)),
-                    .in_object_count   = 0,
-                    .out_object_count  = 0,
+                    .in_data_size            = static_cast<u16>(runtime_metadata.GetInDataSize()  + runtime_metadata.GetInObjectCount() * sizeof(DomainObjectId)),
+                    .unaligned_out_data_size = static_cast<u16>(runtime_metadata.GetOutDataSize() + runtime_metadata.GetOutObjectCount() * sizeof(DomainObjectId)),
+                    .in_headers_size         = static_cast<u8>(runtime_metadata.GetInHeadersSize()  + sizeof(CmifDomainInHeader)),
+                    .out_headers_size        = static_cast<u8>(runtime_metadata.GetOutHeadersSize() + sizeof(CmifDomainOutHeader)),
+                    .in_object_count         = 0,
+                    .out_object_count        = 0,
                 };
             }
 
