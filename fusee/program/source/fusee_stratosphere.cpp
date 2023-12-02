@@ -385,15 +385,6 @@ namespace ams::nxboot {
             return nullptr;
         }
 
-        InitialProcessMeta *FindInitialProcess(const se::Sha256Hash &hash) {
-            for (InitialProcessMeta *cur = std::addressof(g_initial_process_meta); cur != nullptr; cur = cur->next) {
-                if (std::memcmp(std::addressof(cur->kip_hash), std::addressof(hash), sizeof(hash)) == 0) {
-                    return cur;
-                }
-            }
-            return nullptr;
-        }
-
         u32 GetPatchSegments(const InitialProcessHeader *kip, u32 offset, size_t size) {
             /* Create segment mask. */
             u32 segments = 0;
@@ -472,78 +463,6 @@ namespace ams::nxboot {
             }
 
             meta->patches_tail = new_patch;
-        }
-
-        void AddIps24PatchToKip(InitialProcessMeta *meta, const u8 *ips, s32 size) {
-            while (size > 0) {
-                /* Read offset, stopping at EOF */
-                const u32 offset = (static_cast<u32>(ips[0]) << 16) | (static_cast<u32>(ips[1]) <<  8) | (static_cast<u32>(ips[2]) <<  0);
-                if (offset == 0x454F46) {
-                    break;
-                }
-
-                /* Read size. */
-                const u16 cur_size = (static_cast<u32>(ips[3]) << 8) | (static_cast<u32>(ips[4]) << 0);
-
-                if (cur_size > 0) {
-                    /* Add patch. */
-                    AddPatch(meta, offset, ips + 5, cur_size, false);
-
-                    /*  Advance. */
-                    ips  += (5 + cur_size);
-                    size -= (5 + cur_size);
-                } else {
-                    /* Read RLE size */
-                    const u16 rle_size = (static_cast<u32>(ips[5]) << 8) | (static_cast<u32>(ips[6]) << 0);
-
-                    /* Add patch. */
-                    AddPatch(meta, offset, ips + 7, rle_size, true);
-
-                    /*  Advance. */
-                    ips  += 8;
-                    size -= 8;
-                }
-            }
-        }
-
-        void AddIps32PatchToKip(InitialProcessMeta *meta, const u8 *ips, s32 size) {
-            while (size > 0) {
-                /* Read offset, stopping at EOF */
-                const u32 offset = (static_cast<u32>(ips[0]) << 24) | (static_cast<u32>(ips[1]) << 16) | (static_cast<u32>(ips[2]) <<  8) | (static_cast<u32>(ips[3]) <<  0);
-                if (offset == 0x45454F46) {
-                    break;
-                }
-
-                /* Read size. */
-                const u16 cur_size = (static_cast<u32>(ips[4]) << 8) | (static_cast<u32>(ips[5]) << 0);
-
-                if (cur_size > 0) {
-                    /* Add patch. */
-                    AddPatch(meta, offset, ips + 6, cur_size, false);
-
-                    /*  Advance. */
-                    ips  += (6 + cur_size);
-                    size -= (6 + cur_size);
-                } else {
-                    /* Read RLE size */
-                    const u16 rle_size = (static_cast<u32>(ips[6]) << 8) | (static_cast<u32>(ips[7]) << 0);
-
-                    /* Add patch. */
-                    AddPatch(meta, offset, ips + 8, rle_size, true);
-
-                    /*  Advance. */
-                    ips  += 9;
-                    size -= 9;
-                }
-            }
-        }
-
-        void AddIpsPatchToKip(InitialProcessMeta *meta, const u8 *ips, s32 size) {
-            if (std::memcmp(ips, "PATCH", 5) == 0) {
-                AddIps24PatchToKip(meta, ips + 5, size - 5);
-            } else if (std::memcmp(ips, "IPS32", 5) == 0) {
-                AddIps32PatchToKip(meta, ips + 5, size - 5);
-            }
         }
 
         constexpr const u8 NogcPatch0[] = {
@@ -891,106 +810,6 @@ namespace ams::nxboot {
             }
 
             /* TODO ams.tma2: add mount_host patches. */
-
-            /* Add generic patches. */
-            {
-                /* Create patch path. */
-                char patch_path[0x220];
-                std::memcpy(patch_path, "sdmc:/atmosphere/kip_patches", 0x1D);
-
-                fs::DirectoryHandle patch_root_dir;
-                if (R_SUCCEEDED(fs::OpenDirectory(std::addressof(patch_root_dir), patch_path))) {
-                    ON_SCOPE_EXIT { fs::CloseDirectory(patch_root_dir); };
-
-                    s64 count;
-                    fs::DirectoryEntry entries[1];
-                    while (R_SUCCEEDED(fs::ReadDirectory(std::addressof(count), entries, patch_root_dir, util::size(entries))) && count > 0) {
-                        /* Check that dir is a dir. */
-                        if (fs::GetEntryType(entries[0]) != fs::DirectoryEntryType_Directory) {
-                            continue;
-                        }
-
-                        /* For compatibility, ignore the old "default_nogc" patches. */
-                        if (std::strcmp(entries[0].file_name, "default_nogc") == 0) {
-                            continue;
-                        }
-
-                        /* Get filename length. */
-                        const int dir_len = std::strlen(entries[0].file_name);
-
-                        /* Adjust patch path. */
-                        patch_path[0x1C] = '/';
-                        std::memcpy(patch_path + 0x1D, entries[0].file_name, dir_len + 1);
-
-                        /* Try to open the patch subdirectory. */
-                        fs::DirectoryHandle patch_dir;
-                        if (R_SUCCEEDED(fs::OpenDirectory(std::addressof(patch_dir), patch_path))) {
-                            ON_SCOPE_EXIT { fs::CloseDirectory(patch_dir); };
-
-                            /* Read patches. */
-                            while (R_SUCCEEDED(fs::ReadDirectory(std::addressof(count), entries, patch_dir, util::size(entries))) && count > 0) {
-                                /* Check that file is a file. */
-                                if (fs::GetEntryType(entries[0]) != fs::DirectoryEntryType_File) {
-                                    continue;
-                                }
-
-                                /* Get filename length. */
-                                const int name_len = std::strlen(entries[0].file_name);
-
-                                /* Adjust patch path. */
-                                patch_path[0x1D + dir_len] = '/';
-                                std::memcpy(patch_path + 0x1D + dir_len + 1, entries[0].file_name, name_len + 1);
-
-                                /* Check that file is "{hex}.ips" file. */
-                                const int path_len = 0x1D + dir_len + 1 + name_len;
-                                if (name_len != 0x44 || std::memcmp(patch_path + path_len - 4, ".ips", 5) != 0) {
-                                    continue;
-                                }
-
-                                /* Check that the filename is hex. */
-                                bool valid_name = true;
-                                se::Sha256Hash patch_name = {};
-                                u32 shift = 4;
-                                for (int i = 0; i < name_len - 4; ++i) {
-                                    const char c = entries[0].file_name[i];
-
-                                    u8 val;
-                                    if ('0' <= c && c <= '9') {
-                                        val = (c - '0');
-                                    } else if ('a' <= c && c <= 'f') {
-                                        val = (c - 'a') + 10;
-                                    } else if ('A' <= c && c <= 'F') {
-                                        val = (c - 'A') + 10;
-                                    } else {
-                                        valid_name = false;
-                                        break;
-                                    }
-
-                                    patch_name.bytes[i >> 1] |= val << shift;
-                                    shift ^= 4;
-                                }
-
-                                /* Ignore invalid patches. */
-                                if (!valid_name) {
-                                    continue;
-                                }
-
-                                /* Find kip for the patch. */
-                                auto *kip_meta = FindInitialProcess(patch_name);
-                                if (kip_meta == nullptr) {
-                                    continue;
-                                }
-
-                                /* Read the ips patch. */
-                                s64 file_size;
-                                if (u8 *ips = static_cast<u8 *>(ReadFile(std::addressof(file_size), patch_path)); ips != nullptr) {
-                                    AddIpsPatchToKip(kip_meta, ips, static_cast<s32>(file_size));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         /* Return the fs version we're using. */

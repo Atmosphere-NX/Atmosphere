@@ -16,10 +16,10 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pm::resource {
+namespace ams::pm::impl {
 
-    /* Resource API. */
-    Result InitializeResourceManager();
+    Result InitializeSpec();
+
     Result BoostSystemMemoryResourceLimit(u64 boost_size);
     Result BoostApplicationThreadResourceLimit();
     Result BoostSystemThreadResourceLimit();
@@ -31,9 +31,9 @@ namespace ams::pm::resource {
 
     void WaitResourceAvailable(const ldr::ProgramInfo *info);
 
-    Result GetCurrentResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
-    Result GetPeakResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
-    Result GetLimitResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out);
+    Result GetResourceLimitCurrentValue(pm::ResourceLimitValue *out, ResourceLimitGroup group);
+    Result GetResourceLimitPeakValue(pm::ResourceLimitValue *outm, ResourceLimitGroup group);
+    Result GetResourceLimitLimitValue(pm::ResourceLimitValue *out, ResourceLimitGroup group);
 
     Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource);
 

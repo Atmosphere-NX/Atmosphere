@@ -437,7 +437,7 @@ namespace ams::sm::impl {
             {
                 /* TODO: Convert mitm internal messaging to use tipc? */
                 ::Service srv { .session = mitm_info->query_h };
-                R_ABORT_UNLESS(::serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm));
+                R_ABORT_UNLESS((serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm)));
             }
 
             /* If we shouldn't mitm, give normal session. */

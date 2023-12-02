@@ -472,6 +472,7 @@ namespace ams::sf::impl {
             static constexpr size_t InDataSize  = util::AlignUp(InDataOffsets[NumInDatas], alignof(u16));
 
             static constexpr std::array<size_t, NumOutDatas+1> OutDataOffsets = RawDataOffsetCalculator<OutDatas>::Offsets;
+            static constexpr size_t UnalignedOutDataSize = OutDataOffsets[NumOutDatas];
             static constexpr size_t OutDataSize = util::AlignUp(OutDataOffsets[NumOutDatas], alignof(u32));
             static constexpr size_t OutDataAlign = [] {
                 if constexpr (std::tuple_size<OutDatas>::value) {
@@ -492,12 +493,12 @@ namespace ams::sf::impl {
 
             /* Used by server message processor at runtime. */
             static constexpr inline const cmif::ServerMessageRuntimeMetadata RuntimeMetadata = cmif::ServerMessageRuntimeMetadata{
-                .in_data_size      = InDataSize,
-                .out_data_size     = OutDataSize,
-                .in_headers_size   = sizeof(CmifInHeader),
-                .out_headers_size  = sizeof(CmifOutHeader),
-                .in_object_count   = NumInObjects,
-                .out_object_count  = NumOutObjects,
+                .in_data_size            = InDataSize,
+                .unaligned_out_data_size = UnalignedOutDataSize,
+                .in_headers_size         = sizeof(CmifInHeader),
+                .out_headers_size        = sizeof(CmifOutHeader),
+                .in_object_count         = NumInObjects,
+                .out_object_count        = NumOutObjects,
             };
 
         /* Construction of argument serialization structs. */

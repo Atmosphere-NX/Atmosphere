@@ -18,3 +18,4 @@
 #include <stratosphere/gc/impl/gc_types.hpp>
 #include <stratosphere/gc/impl/gc_gc_crypto.hpp>
 #include <stratosphere/gc/impl/gc_embedded_data_holder.hpp>
+#include <stratosphere/gc/gc.hpp>

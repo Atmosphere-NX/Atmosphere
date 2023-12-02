@@ -54,6 +54,7 @@ namespace ams::capsrv {
 
     R_DEFINE_ERROR_RANGE(InternalError, 1024, 2047);
         R_DEFINE_ERROR_RESULT(InternalJpegEncoderError,         1210);
+        R_DEFINE_ERROR_RESULT(InternalJpegOutBufferShortage,    1211);
         R_DEFINE_ERROR_RESULT(InternalJpegWorkMemoryShortage,   1212);
 
         R_DEFINE_ERROR_RANGE(InternalFileDataVerificationError, 1300, 1399);

@@ -21,7 +21,7 @@ namespace ams::pm {
     namespace {
 
         /* Global bootmode. */
-        BootMode g_boot_mode = BootMode::Normal;
+        constinit BootMode g_boot_mode = BootMode::Normal;
 
     }
 

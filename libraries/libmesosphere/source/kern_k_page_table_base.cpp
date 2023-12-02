@@ -1072,7 +1072,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::MapInsecureMemory(KProcessAddress address, size_t size) {
+    Result KPageTableBase::MapInsecurePhysicalMemory(KProcessAddress address, size_t size) {
         /* Get the insecure memory resource limit and pool. */
         auto * const insecure_resource_limit = KSystemControl::GetInsecureMemoryResourceLimit();
         const auto insecure_pool             = static_cast<KMemoryManager::Pool>(KSystemControl::GetInsecureMemoryPool());
@@ -1128,7 +1128,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KPageTableBase::UnmapInsecureMemory(KProcessAddress address, size_t size) {
+    Result KPageTableBase::UnmapInsecurePhysicalMemory(KProcessAddress address, size_t size) {
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 

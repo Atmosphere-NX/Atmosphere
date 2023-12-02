@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "pm_info_service.hpp"
 #include "impl/pm_process_manager.hpp"
+#include "impl/pm_spec.hpp"
 
 namespace ams::pm {
 
@@ -33,12 +34,12 @@ namespace ams::pm {
         R_RETURN(impl::GetProgramId(out.GetPointer(), process_id));
     }
 
-    Result InformationService::GetAppletCurrentResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
-        R_RETURN(impl::GetAppletCurrentResourceLimitValues(out.GetPointer()));
+    Result InformationService::GetAppletResourceLimitCurrentValue(sf::Out<pm::ResourceLimitValue> out) {
+        R_RETURN(impl::GetResourceLimitCurrentValue(out.GetPointer(), ResourceLimitGroup_Applet));
     }
 
-    Result InformationService::GetAppletPeakResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
-        R_RETURN(impl::GetAppletPeakResourceLimitValues(out.GetPointer()));
+    Result InformationService::GetAppletResourceLimitPeakValue(sf::Out<pm::ResourceLimitValue> out) {
+        R_RETURN(impl::GetResourceLimitPeakValue(out.GetPointer(), ResourceLimitGroup_Applet));
     }
 
     /* Atmosphere extension commands. */

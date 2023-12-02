@@ -124,4 +124,90 @@ namespace ams::fs {
         return inserted;
     }
 
+    Result GetSdCardSpeedMode(SdCardSpeedMode *out) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the speed mode. */
+        s64 speed_mode = 0;
+        AMS_FS_R_TRY(device_operator->GetSdCardSpeedMode(std::addressof(speed_mode)));
+
+        *out = static_cast<SdCardSpeedMode>(speed_mode);
+        R_SUCCEED();
+    }
+
+    Result GetSdCardCid(void *dst, size_t size) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(dst != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the cid. */
+        AMS_FS_R_TRY(device_operator->GetSdCardCid(sf::OutBuffer(dst, size), static_cast<s64>(size)));
+
+        R_SUCCEED();
+    }
+
+    Result GetSdCardUserAreaSize(s64 *out) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the size. */
+        AMS_FS_R_TRY(device_operator->GetSdCardUserAreaSize(out));
+
+        R_SUCCEED();
+    }
+
+    Result GetSdCardProtectedAreaSize(s64 *out) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the size. */
+        AMS_FS_R_TRY(device_operator->GetSdCardProtectedAreaSize(out));
+
+        R_SUCCEED();
+    }
+
+    Result GetAndClearSdCardErrorInfo(StorageErrorInfo *out_sei, size_t *out_log_size, char *out_log_buffer, size_t log_buffer_size) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out_sei != nullptr,        fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(out_log_size != nullptr,   fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(out_log_buffer != nullptr, fs::ResultNullptrArgument());
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get the error info. */
+        s64 log_size = 0;
+        AMS_FS_R_TRY(device_operator->GetAndClearSdCardErrorInfo(out_sei, std::addressof(log_size), sf::OutBuffer(out_log_buffer, log_buffer_size), static_cast<s64>(log_buffer_size)));
+
+        *out_log_size = static_cast<size_t>(log_size);
+        R_SUCCEED();
+    }
+
 }

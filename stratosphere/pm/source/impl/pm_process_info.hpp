@@ -64,8 +64,8 @@ namespace ams::pm::impl {
             ~ProcessInfo();
             void Cleanup();
 
-            void LinkToMultiWait(os::MultiWaitType &multi_wait) {
-                os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(m_multi_wait_holder));
+            os::MultiWaitHolderType *GetMultiWaitHolder() {
+                return std::addressof(m_multi_wait_holder);
             }
 
             os::NativeHandle GetHandle() const {
@@ -231,5 +231,11 @@ namespace ams::pm::impl {
                 return m_list;
             }
     };
+
+    ProcessListAccessor GetProcessList();
+    ProcessListAccessor GetExitList();
+
+    ProcessInfo *AllocateProcessInfo(svc::Handle process_handle, os::ProcessId process_id, ldr::PinId pin_id, const ncm::ProgramLocation &location, const cfg::OverrideStatus &override_status);
+    void CleanupProcessInfo(ProcessListAccessor &list, ProcessInfo *process_info);
 
 }

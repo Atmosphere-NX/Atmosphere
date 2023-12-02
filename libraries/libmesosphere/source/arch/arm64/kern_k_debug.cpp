@@ -365,7 +365,7 @@ namespace ams::kern::arch::arm64 {
                 value = 0;
             }
 
-            /* Set the watchkpoint. */
+            /* Set the watchpoint. */
             switch (name) {
                 case ams::svc::HardwareBreakPointRegisterName_D0:  MESOSPHERE_SET_HW_WATCH_POINT( 0, flags, value);  break;
                 case ams::svc::HardwareBreakPointRegisterName_D1:  MESOSPHERE_SET_HW_WATCH_POINT( 1, flags, value);  break;

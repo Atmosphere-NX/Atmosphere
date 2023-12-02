@@ -28,13 +28,13 @@ namespace ams::pm::info {
         R_RETURN(pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id)));
     }
 
-    Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out) {
-        static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
+    Result GetAppletResourceLimitCurrentValue(pm::ResourceLimitValue *out) {
+        static_assert(sizeof(pm::ResourceLimitValue) == sizeof(::PmResourceLimitValues));
         R_RETURN(pminfoGetAppletCurrentResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)));
     }
 
-    Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out) {
-        static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
+    Result GetAppletResourceLimitPeakValue(pm::ResourceLimitValue *out) {
+        static_assert(sizeof(pm::ResourceLimitValue) == sizeof(::PmResourceLimitValues));
         R_RETURN(pminfoGetAppletPeakResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)));
     }
 

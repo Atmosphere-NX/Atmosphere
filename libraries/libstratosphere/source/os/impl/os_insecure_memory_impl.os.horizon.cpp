@@ -23,7 +23,7 @@ namespace ams::os::impl {
         /* Map at a random address. */
         R_RETURN(impl::GetAslrSpaceManager().MapAtRandomAddress(out_address,
             [](uintptr_t map_address, size_t map_size) -> Result {
-                R_TRY_CATCH(svc::MapInsecureMemory(map_address, map_size)) {
+                R_TRY_CATCH(svc::MapInsecurePhysicalMemory(map_address, map_size)) {
                     R_CONVERT(svc::ResultOutOfMemory,          os::ResultOutOfMemory())
                     R_CONVERT(svc::ResultInvalidCurrentMemory, os::ResultInvalidCurrentMemoryState())
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
@@ -39,7 +39,7 @@ namespace ams::os::impl {
     }
 
     void InsecureMemoryImpl::FreeInsecureMemoryImpl(uintptr_t address, size_t size) {
-        R_ABORT_UNLESS(svc::UnmapInsecureMemory(address, size));
+        R_ABORT_UNLESS(svc::UnmapInsecurePhysicalMemory(address, size));
     }
 
 }

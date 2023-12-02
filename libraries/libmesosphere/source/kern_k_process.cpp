@@ -51,7 +51,7 @@ namespace ams::kern {
                 }
             }
 
-            /* Wait for all children threads to terminate.*/
+            /* Wait for all children threads to terminate. */
             while (true) {
                 /* Get the next child. */
                 KThread *cur_child = nullptr;
@@ -467,7 +467,7 @@ namespace ams::kern {
     void KProcess::Exit() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Determine whether we need to start terminating */
+        /* Determine whether we need to start terminating. */
         bool needs_terminate = false;
         {
             KScopedLightLock lk(m_state_lock);

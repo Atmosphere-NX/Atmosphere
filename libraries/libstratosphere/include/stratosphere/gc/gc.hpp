@@ -14,13 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/gc/impl/gc_types.hpp>
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    6
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    2
+namespace ams::gc {
 
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
+    struct GameCardIdSet {
+        gc::impl::CardId1 id1;
+        gc::impl::CardId2 id2;
+        gc::impl::CardId3 id3;
+    };
+    static_assert(util::is_pod<GameCardIdSet>::value);
+    static_assert(sizeof(GameCardIdSet) == 0xC);
 
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 17
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 0
+}

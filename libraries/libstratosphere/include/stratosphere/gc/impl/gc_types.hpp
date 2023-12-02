@@ -76,6 +76,11 @@ namespace ams::gc::impl {
     static_assert(util::is_pod<CardHeaderEncryptedData>::value);
     static_assert(sizeof(CardHeaderEncryptedData) == 0x70);
 
+    enum MakerCodeForCardId1 : u8 {
+        MakerCodeForCardId1_MegaChips = 0xC2,
+        MakerCodeForCardId1_Lapis     = 0xAE,
+    };
+
     enum MemoryCapacity : u8 {
         MemoryCapacity_1GB  = 0xFA,
         MemoryCapacity_2GB  = 0xF8,
@@ -83,6 +88,33 @@ namespace ams::gc::impl {
         MemoryCapacity_8GB  = 0xE0,
         MemoryCapacity_16GB = 0xE1,
         MemoryCapacity_32GB = 0xE2,
+    };
+
+    enum MemoryType : u8 {
+        MemoryType_T1RomFast  = 0x01,
+        MemoryType_T2RomFast  = 0x02,
+        MemoryType_T1NandFast = 0x09,
+        MemoryType_T2NandFast = 0x0A,
+        MemoryType_T1RomLate  = 0x21,
+        MemoryType_T2RomLate  = 0x22,
+        MemoryType_T1NandLate = 0x29,
+        MemoryType_T2NandLate = 0x2A,
+    };
+
+    enum CardSecurityNumber : u8 {
+        CardSecurityNumber_0 = 0x00,
+        CardSecurityNumber_1 = 0x01,
+        CardSecurityNumber_2 = 0x02,
+        CardSecurityNumber_3 = 0x03,
+        CardSecurityNumber_4 = 0x04,
+    };
+
+    enum CardType : u8 {
+        CardType_Rom              = 0x00,
+        CardType_Writable_Dev_T1  = 0x01,
+        CardType_Writable_Prod_T1 = 0x02,
+        CardType_Writable_Dev_T2  = 0x03,
+        CardType_Writable_Prod_T2 = 0x04,
     };
 
     enum AccessControl1ClockRate : u32 {
@@ -93,6 +125,23 @@ namespace ams::gc::impl {
     enum SelSec : u8 {
         SelSec_T1 = 1,
         SelSec_T2 = 2,
+    };
+
+    struct CardId1 {
+        MakerCodeForCardId1 maker_code;
+        MemoryCapacity memory_capacity;
+        u8 reserved;
+        MemoryType memory_type;
+    };
+
+    struct CardId2 {
+        CardSecurityNumber card_security_number;
+        CardType card_type;
+        u8 reserved[2];
+    };
+
+    struct CardId3 {
+        u8 reserved[4];
     };
 
     struct CardHeader {

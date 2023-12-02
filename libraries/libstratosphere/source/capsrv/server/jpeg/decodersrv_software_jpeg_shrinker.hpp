@@ -14,13 +14,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    6
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    2
+namespace ams::capsrv::server::jpeg {
 
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
+    struct SoftwareJpegShrinkerInput {
+        const void *jpeg;
+        size_t jpeg_size;
+        u32 width;
+        u32 height;
+        bool fancy_upsampling;
+        bool block_smoothing;
+    };
 
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 17
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 0
+    struct SoftwareJpegShrinkerOutput {
+        u64 *out_size;
+        s32 *out_width;
+        s32 *out_height;
+        void *dst;
+        size_t dst_size;
+    };
+
+    class SoftwareJpegShrinker {
+        public:
+            static Result ShrinkRgba8(SoftwareJpegShrinkerOutput &output, const SoftwareJpegShrinkerInput &input, int quality, void *work, size_t work_size);
+    };
+
+}

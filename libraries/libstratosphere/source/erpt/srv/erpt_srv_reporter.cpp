@@ -19,6 +19,7 @@
 #include "erpt_srv_journal.hpp"
 #include "erpt_srv_context_record.hpp"
 #include "erpt_srv_context.hpp"
+#include "erpt_srv_fs_info.hpp"
 
 namespace ams::erpt::srv {
 
@@ -530,9 +531,14 @@ namespace ams::erpt::srv {
         SubmitResourceLimitContexts();
         #endif
 
-        if (flags.Test<CreateReportOptionFlag::SubmitFsInfo>()) {
-            /* TODO: 17.0.0 SubmitFsInfo() */
+        /* If we should, submit fs info. */
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        if (hos::GetVersion() >= hos::Version_17_0_0 && flags.Test<CreateReportOptionFlag::SubmitFsInfo>()) {
+            /* NOTE: Nintendo ignores the result of this call. */
+            SubmitFsInfo();
         }
+        #endif
+
 
         R_SUCCEED();
     }

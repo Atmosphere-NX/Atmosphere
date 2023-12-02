@@ -389,6 +389,11 @@ namespace ams::fs {
 
             /* ... */
 
+            Result GetAndClearErrorInfo(ams::sf::Out<fs::FileSystemProxyErrorInfo> out) {
+                static_assert(sizeof(fs::FileSystemProxyErrorInfo) == sizeof(::FsFileSystemProxyErrorInfo));
+                R_RETURN(::fsGetAndClearErrorInfo(reinterpret_cast<::FsFileSystemProxyErrorInfo *>(out.GetPointer())));
+            }
+
             Result RegisterProgramIndexMapInfo(const ams::sf::InBuffer &buffer, s32 count) {
                 AMS_ABORT("TODO");
             }
@@ -427,6 +432,11 @@ namespace ams::fs {
 
             Result OpenRegisteredUpdatePartition(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out) {
                 AMS_ABORT("TODO");
+            }
+
+            Result GetAndClearMemoryReportInfo(ams::sf::Out<fs::MemoryReportInfo> out) {
+                static_assert(sizeof(fs::MemoryReportInfo) == sizeof(::FsMemoryReportInfo));
+                R_RETURN(::fsGetAndClearMemoryReportInfo(reinterpret_cast<::FsMemoryReportInfo *>(out.GetPointer())));
             }
 
             /* ... */

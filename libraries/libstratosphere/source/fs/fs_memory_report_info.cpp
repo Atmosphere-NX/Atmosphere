@@ -13,14 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <stratosphere.hpp>
+#include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
-#define ATMOSPHERE_RELEASE_VERSION_MAJOR    1
-#define ATMOSPHERE_RELEASE_VERSION_MINOR    6
-#define ATMOSPHERE_RELEASE_VERSION_MICRO    2
+namespace ams::fs {
 
-#define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
+    Result GetAndClearMemoryReportInfo(MemoryReportInfo *out) {
+        /* Check pre-conditions. */
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
 
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 17
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 0
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Get the memory report info. */
+        AMS_FS_R_TRY(fsp->GetAndClearMemoryReportInfo(out));
+
+        R_SUCCEED();
+    }
+
+}
