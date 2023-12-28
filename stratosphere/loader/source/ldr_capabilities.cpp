@@ -418,15 +418,7 @@ namespace ams::ldr {
         for (size_t i = 0; i < count; ++i) {
             const auto cap = kac[i];
             switch (GetCapabilityId(cap)) {
-                case CapabilityId::MapRegion:
-                    {
-                        /* MapRegion was added in 8.0.0+, and is only allowed under kernels which have the relevant mappings. */
-                        /* However, we allow it under all firmwares on mesosphere, to facilitate KTrace usage by hbl. */
-                        if (!svc::IsKTraceEnabled()) {
-                            kac[i] = EmptyCapability;
-                        }
-                    }
-                    break;
+                /* NOTE: Currently, there is no pre-processing necessary. */
                 default:
                     break;
             }
