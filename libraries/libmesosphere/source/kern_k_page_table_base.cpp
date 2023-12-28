@@ -3624,7 +3624,7 @@ namespace ams::kern {
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
         /* Get the source permission. */
-        const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
+        const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? (KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped) : KMemoryPermission_UserRead);
 
         /* Get aligned extents. */
         const KProcessAddress aligned_src_start = util::AlignDown(GetInteger(address), PageSize);
@@ -3953,7 +3953,7 @@ namespace ams::kern {
         const size_t src_map_size           = src_map_end - src_map_start;
 
         /* Ensure that we clean up appropriately if we fail after this. */
-        const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
+        const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? (KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped) : KMemoryPermission_UserRead);
         ON_RESULT_FAILURE {
             if (src_map_end > src_map_start) {
                 src_page_table.CleanupForIpcClientOnServerSetupFailure(updater.GetPageList(), src_map_start, src_map_size, src_perm);
@@ -4488,7 +4488,7 @@ namespace ams::kern {
                                     }
                                 }
 
-                                /* Map the papges. */
+                                /* Map the pages. */
                                 R_TRY(this->Operate(updater.GetPageList(), cur_address, map_pages, cur_pg, map_properties, OperationType_MapFirstGroup, false));
                             }
                         }

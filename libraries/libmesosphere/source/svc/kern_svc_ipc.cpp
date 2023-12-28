@@ -143,7 +143,7 @@ namespace ams::kern::svc {
             /* Get the process page table. */
             auto &page_table = GetCurrentProcess().GetPageTable();
 
-            /* Lock the mesage buffer. */
+            /* Lock the message buffer. */
             R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
 
             {
@@ -186,7 +186,7 @@ namespace ams::kern::svc {
             /* Commit our reservation. */
             event_reservation.Commit();
 
-            /* At end of scope, kill the standing references to the sub events. */
+            /* At end of scope, kill the standing event references. */
             ON_SCOPE_EXIT {
                 event->GetReadableEvent().Close();
                 event->Close();
@@ -215,7 +215,7 @@ namespace ams::kern::svc {
             /* Get the process page table. */
             auto &page_table = GetCurrentProcess().GetPageTable();
 
-            /* Lock the mesage buffer. */
+            /* Lock the message buffer. */
             R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
 
             /* Ensure that if we fail and aren't terminating that we unlock the user buffer. */
@@ -242,7 +242,7 @@ namespace ams::kern::svc {
             /* Get the process page table. */
             auto &page_table = GetCurrentProcess().GetPageTable();
 
-            /* Lock the mesage buffer, getting its physical address. */
+            /* Lock the message buffer, getting its physical address. */
             KPhysicalAddress message_paddr;
             R_TRY(page_table.LockForIpcUserBuffer(std::addressof(message_paddr), message, buffer_size));
 

@@ -96,7 +96,7 @@ namespace ams::nxboot::loader {
     }
 
     void Uncompress(void *dst, size_t dst_size, const void *src, size_t src_size) {
-        /* Create an execute a decompressor. */
+        /* Create and execute a decompressor. */
         Lz4Uncompressor(dst, dst_size, src, src_size).Uncompress();
     }
 

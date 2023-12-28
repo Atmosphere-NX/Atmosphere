@@ -96,7 +96,7 @@ namespace ams::kern::svc {
             /* Add the client to the handle table. */
             R_TRY(handle_table.Add(out_client, std::addressof(port->GetClientPort())));
 
-            /* Ensure that we maintaing a clean handle state on exit. */
+            /* Ensure that we maintain a clean handle state on exit. */
             ON_RESULT_FAILURE { handle_table.Remove(*out_client); };
 
             /* Add the server to the handle table. */

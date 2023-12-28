@@ -650,7 +650,7 @@ namespace ams::kern {
                     const auto src_state = src_user ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
 
                     /* Determine the source permission. User buffer should be unmapped + read, TLS should be user readable. */
-                    const KMemoryPermission src_perm = static_cast<KMemoryPermission>(src_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelRead : KMemoryPermission_UserRead);
+                    const KMemoryPermission src_perm = static_cast<KMemoryPermission>(src_user ? (KMemoryPermission_NotMapped | KMemoryPermission_KernelRead) : KMemoryPermission_UserRead);
 
                     /* Perform the fast part of the copy. */
                     R_TRY(src_page_table.CopyMemoryFromLinearToKernel(reinterpret_cast<uintptr_t>(dst_msg_ptr) + offset_words, fast_size, src_message_buffer + offset_words,
@@ -753,7 +753,7 @@ namespace ams::kern {
                 /* Perform the pointer data copy. */
                 const bool dst_heap  = dst_user && dst_recv_list.IsToMessageBuffer();
                 const auto dst_state = dst_heap ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
-                const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_heap ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
+                const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_heap ? (KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite) : KMemoryPermission_UserReadWrite);
                 R_TRY(dst_page_table.CopyMemoryFromUserToLinear(recv_pointer, recv_size,
                                                                 dst_state, dst_state,
                                                                 dst_perm,
@@ -911,7 +911,7 @@ namespace ams::kern {
                         const auto dst_state = dst_user ? KMemoryState_FlagReferenceCounted : KMemoryState_FlagLinearMapped;
 
                         /* Determine the dst permission. User buffer should be unmapped + read, TLS should be user readable. */
-                        const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
+                        const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? (KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite) : KMemoryPermission_UserReadWrite);
 
                         /* Perform the fast part of the copy. */
                         R_TRY(dst_page_table.CopyMemoryFromKernelToLinear(dst_message_buffer + offset_words, fast_size,
