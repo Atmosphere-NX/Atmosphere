@@ -39,7 +39,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Socket(s32 *out_err, s32 *out_desc, bool enable_disconnection_emulation) {
         /* Invoke our implementation. */
-        s32 err, desc;
+        s32 err = -1, desc = -1;
         const Result result = m_impl->CreateSocket(std::addressof(err), std::addressof(desc), enable_disconnection_emulation);
 
         /* Set output. */
@@ -71,7 +71,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Connect(s32 *out_err, s32 *out_res, const SockAddrHtcs &address, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
+        s32 err = -1;
         const Result result = m_impl->Connect(std::addressof(err), desc, address);
 
         /* Set output. */
@@ -90,7 +90,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Bind(s32 *out_err, s32 *out_res, const SockAddrHtcs &address, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
+        s32 err = -1;
         const Result result = m_impl->Bind(std::addressof(err), desc, address);
 
         /* Set output. */
@@ -109,7 +109,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Listen(s32 *out_err, s32 *out_res, s32 backlog_count, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
+        s32 err = -1;
         const Result result = m_impl->Listen(std::addressof(err), desc, backlog_count);
 
         /* Set output. */
@@ -128,8 +128,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Recv(s32 *out_err, s64 *out_size, char *buffer, size_t size, s32 flags, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 recv_size;
+        s32 err = -1;
+        s64 recv_size = -1;
         const Result result = m_impl->Receive(std::addressof(err), std::addressof(recv_size), buffer, size, desc, flags);
 
         /* Set output. */
@@ -148,8 +148,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Send(s32 *out_err, s64 *out_size, const char *buffer, size_t size, s32 flags, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 send_size;
+        s32 err = -1;
+        s64 send_size = -1;
         const Result result = m_impl->Send(std::addressof(err), std::addressof(send_size), buffer, size, desc, flags);
 
         /* Set output. */
@@ -168,7 +168,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Shutdown(s32 *out_err, s32 *out_res, s32 how, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
+        s32 err = -1;
         const Result result = m_impl->Shutdown(std::addressof(err), desc, how);
 
         /* Set output. */
@@ -191,7 +191,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Fcntl(s32 *out_err, s32 *out_res, s32 command, s32 value, s32 desc) {
         /* Invoke our implementation. */
-        s32 err, res;
+        s32 err = -1, res = -1;
         const Result result = m_impl->Fcntl(std::addressof(err), std::addressof(res), desc, command, value);
 
         /* Set output. */
@@ -210,7 +210,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
+        s32 err = -1;
         const Result result = m_impl->AcceptResults(std::addressof(err), out_desc, out_address, task_id, desc);
 
         /* Set output. */
@@ -233,8 +233,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::RecvResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 size;
+        s32 err = -1;
+        s64 size = -1;
         const Result result = m_impl->RecvResults(std::addressof(err), std::addressof(size), buffer, buffer_size, task_id, desc);
 
         /* Set output. */
@@ -265,8 +265,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 size;
+        s32 err = -1;
+        s64 size = -1;
         const Result result = m_impl->SendResults(std::addressof(err), std::addressof(size), task_id, desc);
 
         /* Set output. */
@@ -293,7 +293,7 @@ namespace ams::htcs::impl {
 
     Result HtcsManager::ContinueSend(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s64 size;
+        s64 size = -1;
         R_TRY_CATCH(m_impl->ContinueSend(std::addressof(size), buffer, buffer_size, task_id, desc)) {
             R_CONVERT(htclow::ResultInvalidChannelState, tma::ResultUnknown())
             R_CONVERT(htc::ResultTaskCancelled,          tma::ResultUnknown())
@@ -306,8 +306,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::EndSend(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 size;
+        s32 err = -1;
+        s64 size = -1;
         const Result result = m_impl->EndSend(std::addressof(err), std::addressof(size), task_id, desc);
 
         /* Set output. */
@@ -334,8 +334,8 @@ namespace ams::htcs::impl {
 
     void HtcsManager::EndRecv(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        s64 size;
+        s32 err = -1;
+        s64 size = -1;
         const Result result = m_impl->EndRecv(std::addressof(err), std::addressof(size), buffer, buffer_size, task_id, desc);
 
         /* Set output. */
@@ -367,8 +367,8 @@ namespace ams::htcs::impl {
 
     Result HtcsManager::EndSelect(s32 *out_err, s32 *out_count, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
         /* Invoke our implementation. */
-        s32 err;
-        bool empty;
+        s32 err = -1;
+        bool empty = false;
         const Result result = m_impl->EndSelect(std::addressof(err), std::addressof(empty), read_handles, write_handles, exception_handles, task_id);
 
         /* Set output. */

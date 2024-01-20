@@ -107,9 +107,9 @@ namespace ams::mitm::socket::resolver {
                 HostName,
             };
 
-            ams::socket::InAddrT current_address;
+            ams::socket::InAddrT current_address{};
             char current_hostname[0x200];
-            u32 work;
+            u32 work{};
 
             State state = State::BeginLine;
             for (const char *cur = file_data; *cur != '\x00'; ++cur) {
