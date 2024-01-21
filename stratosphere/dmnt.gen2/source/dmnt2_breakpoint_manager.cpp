@@ -45,7 +45,7 @@ namespace ams::dmnt {
         }
 
         if (R_FAILED(result)) {
-            AMS_DMNT2_GDB_LOG_DEBUG("BreakPointManager::SetBreakPoint %p 0x%lx !!! Fail 0x%08x !!!\n", bp, bp->m_address, result.GetValue());
+            AMS_DMNT2_GDB_LOG_DEBUG("BreakPointManager::SetBreakPoint %p 0x%lx !!! Fail 0x%08x !!!\n", bp, address, result.GetValue());
         }
 
         R_RETURN(result);
