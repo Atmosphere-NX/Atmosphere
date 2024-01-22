@@ -107,7 +107,6 @@ namespace ams::kern {
                     R_UNLESS(cur_sessions < max, svc::ResultOutOfSessions());
                     new_sessions = cur_sessions + 1;
                 } while (!m_num_sessions.CompareExchangeWeak<std::memory_order_relaxed>(cur_sessions, new_sessions));
-
             }
 
             /* Atomically update the peak session tracking. */
@@ -182,7 +181,6 @@ namespace ams::kern {
                     R_UNLESS(cur_sessions < max, svc::ResultOutOfSessions());
                     new_sessions = cur_sessions + 1;
                 } while (!m_num_sessions.CompareExchangeWeak<std::memory_order_relaxed>(cur_sessions, new_sessions));
-
             }
 
             /* Atomically update the peak session tracking. */

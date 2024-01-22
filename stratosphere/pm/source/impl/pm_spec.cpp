@@ -243,29 +243,35 @@ namespace ams::pm::impl {
             const u64 boost_size = normal_boost + mitm_boost;
 
             /* Don't allow all application memory to be taken away. */
-            R_UNLESS(boost_size <= g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application], pm::ResultInvalidSize());
+            R_UNLESS(boost_size < g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application], pm::ResultInvalidSize());
 
             const u64 new_app_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application] - boost_size;
             {
                 std::scoped_lock lk(g_resource_limit_lock);
 
+                const auto cur_boost_size = GetCurrentSystemMemoryBoostSize();
+
                 if (hos::GetVersion() >= hos::Version_5_0_0) {
                     /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
-                    if (boost_size < GetCurrentSystemMemoryBoostSize()) {
+                    if (boost_size < cur_boost_size) {
                         R_TRY(svc::SetUnsafeLimit(boost_size));
                         R_ABORT_UNLESS(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                    } else {
+                    }  else if (boost_size > cur_boost_size) {
                         R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
                         R_ABORT_UNLESS(svc::SetUnsafeLimit(boost_size));
+                    } else {
+                        /* If the boost size is equal, there's nothing to do. */
                     }
                 } else {
                     const u64 new_sys_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_System] + boost_size;
-                    if (boost_size < GetCurrentSystemMemoryBoostSize()) {
+                    if (boost_size < cur_boost_size) {
                         R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
                         R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                    } else if (boost_size > cur_boost_size) {
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
                     } else {
-                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                        R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_System,      new_sys_size));
+                        /* If the boost size is equal, there's nothing to do. */
                     }
                 }
 

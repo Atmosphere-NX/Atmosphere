@@ -167,6 +167,7 @@ namespace ams::patcher {
 
                     /* Apply patch. */
                     if (patch_offset + rle_size > mapped_size) {
+                        AMS_ABORT_UNLESS(patch_offset <= mapped_size);
                         rle_size = mapped_size - patch_offset;
                     }
                     std::memset(mapped_module + patch_offset, buffer[0], rle_size);
@@ -190,6 +191,7 @@ namespace ams::patcher {
                     /* Apply patch. */
                     u32 read_size = patch_size;
                     if (patch_offset + read_size > mapped_size) {
+                        AMS_ABORT_UNLESS(patch_offset <= mapped_size);
                         read_size = mapped_size - patch_offset;
                     }
                     {

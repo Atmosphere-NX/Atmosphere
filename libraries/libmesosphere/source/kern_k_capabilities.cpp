@@ -184,6 +184,11 @@ namespace ams::kern {
                 case RegionType::NoMapping:
                     break;
                 case RegionType::KernelTraceBuffer:
+                    /* NOTE: This does not match official, but is used to make pre-processing hbl capabilities in userland unnecessary. */
+                    /* If ktrace isn't enabled, allow ktrace to succeed without mapping anything. */
+                    if constexpr (!ams::kern::IsKTraceEnabled) {
+                        break;
+                    }
                 case RegionType::OnMemoryBootImage:
                 case RegionType::DTB:
                     R_TRY(f(MemoryRegions[static_cast<u32>(type)], perm));

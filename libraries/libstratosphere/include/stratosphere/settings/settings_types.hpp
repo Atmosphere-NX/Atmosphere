@@ -53,7 +53,8 @@ namespace ams::settings {
         /* 4.0.0+ */
         Language_SimplifiedChinese,
         Language_TraditionalChinese,
-
+        /* 10.1.0+ */
+        Language_PortugueseBr,
         Language_Count,
     };
 
@@ -92,6 +93,8 @@ namespace ams::settings {
             /* 4.0.0+ */
             AMS_MATCH_LANGUAGE(SimplifiedChinese,       "zh-Hans")
             AMS_MATCH_LANGUAGE(TraditionalChinese,      "zh-Hant")
+            /* 10.1.0+ */
+            AMS_MATCH_LANGUAGE(PortugueseBr,            "pt-BR")
             #undef AMS_MATCH_LANGUAGE
             else { static_assert(Lang != Language_Japanese); }
         }
@@ -116,6 +119,8 @@ namespace ams::settings {
                 /* 4.0.0+ */
                 EncodeLanguage<Language_SimplifiedChinese>(),
                 EncodeLanguage<Language_TraditionalChinese>(),
+                /* 10.1.0+ */
+                EncodeLanguage<Language_PortugueseBr>(),
             };
             return EncodedLanguages[language];
         }
@@ -156,7 +161,11 @@ namespace ams::settings {
     }
 
     constexpr inline bool IsValidLanguageCodeDeprecated(const LanguageCode &lc) {
-        return impl::IsValidLanguageCode(lc, std::make_index_sequence<Language_Count - 2>{});
+        return impl::IsValidLanguageCode(lc, std::make_index_sequence<Language_Count - 3>{});
+    }
+
+    constexpr inline bool IsValidLanguageCodeDeprecated2(const LanguageCode &lc) {
+        return impl::IsValidLanguageCode(lc, std::make_index_sequence<Language_Count - 1>{});
     }
 
     constexpr inline bool IsValidLanguageCode(const LanguageCode &lc) {

@@ -288,7 +288,7 @@ namespace ams::htc::server::rpc {
             /* Get a task. */
             Task *task;
             u32 task_id{};
-            PacketCategory category;
+            PacketCategory category{};
             do {
                 /* Dequeue a task. */
                 R_TRY(m_task_queue.Take(std::addressof(task_id), std::addressof(category)));

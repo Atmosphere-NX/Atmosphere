@@ -36,7 +36,7 @@ namespace ams::kern {
 
         /* Cleanup the session list. */
         while (true) {
-            /* Get the last session in the list */
+            /* Get the last session in the list. */
             KServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;
@@ -56,7 +56,7 @@ namespace ams::kern {
 
         /* Cleanup the light session list. */
         while (true) {
-            /* Get the last session in the list */
+            /* Get the last session in the list. */
             KLightServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;

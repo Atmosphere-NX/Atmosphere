@@ -500,7 +500,7 @@ namespace ams::fs {
 
         R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
-        RomFileTable::FileInfo file_info;
+        RomFileTable::FileInfo file_info{};
         R_TRY(this->GetFileInfo(std::addressof(file_info), path.GetString()));
 
         auto file = std::make_unique<RomFsFile>(this, m_entry_size + file_info.offset.Get(), m_entry_size + file_info.offset.Get() + file_info.size.Get());
