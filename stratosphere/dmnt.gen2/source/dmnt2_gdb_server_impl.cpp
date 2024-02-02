@@ -49,6 +49,11 @@ namespace ams::dmnt {
             CONT,
             INCPC
         };
+        enum x30_catch_type_t {
+            OFFSET,
+            NONE,
+            END_OF_TYPE,
+        } NX_PACKED;
         typedef struct {
             bool execute = false, done = false;
             gen2_command command = SETW;
@@ -59,6 +64,7 @@ namespace ams::dmnt {
             const char *module_name = name;
             char name[10] = "undefine";
             bool read, next_read, write, next_write, intercepted = 0;
+            x30_catch_type_t x30_catch_type = OFFSET;        
             u64 next_pc=0x55AA55AA;
             union {
                 m_from_t from[max_watch_buffer];
@@ -73,7 +79,7 @@ namespace ams::dmnt {
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.10";
+            char version[10]="v0.11";
             u16 x30_match = 0;
             bool check_x30 = false;
             bool two_register = false;
@@ -1198,7 +1204,7 @@ namespace ams::dmnt {
                                                             return true;
                                                         };
                                                         if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
-                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | (thread_context.lr << (64 - 16));
+                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | ((m_watch_data.x30_catch_type == OFFSET) ? ((thread_context.lr - m_watch_data.main_start) << (64 - 27)) : 0);
                                                             bool found = false;
                                                             for (int i = 0; i < m_watch_data.count; i++) {
                                                                 if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
@@ -1278,7 +1284,7 @@ namespace ams::dmnt {
                                                                 };
                                                             }
                                                         };
-                                                        m_from_stack.address = thread_context.pc | (thread_context.lr << (64-16));
+                                                        m_from_stack.address = thread_context.pc | ((m_watch_data.x30_catch_type == OFFSET) ? ((thread_context.lr - m_watch_data.main_start) << (64 - 27)) : 0);
                                                         return m_from_stack;
                                                     };
                                                     // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
@@ -2376,7 +2382,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.10 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.11 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
@@ -2528,10 +2534,10 @@ namespace ams::dmnt {
             // }
             for (auto i = 0; i < m_watch_data.count; i++) {
                 if (m_watch_data.read || m_watch_data.write) {
-                    get_region(m_watch_data.fromU.from2[i].from_stack.address&0xFFFFFFFFFF);
-                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.fromU.from2[i].from_stack.address&0xFFFFFFFFFF, m_watch_data.fromU.from2[i].count, m_watch_data.module_name, m_watch_data.offset);
+                    get_region(m_watch_data.fromU.from2[i].from_stack.address&0x7FFFFFFFFF);
+                    AppendReplyFormat(reply_cur, reply_end, "Accessed from 0x%010lx Count = %d %s+0x%08lx\n", m_watch_data.fromU.from2[i].from_stack.address&0x7FFFFFFFFF, m_watch_data.fromU.from2[i].count, m_watch_data.module_name, m_watch_data.offset);
                 } else {
-                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.fromU.from[i].address&0xFFFFFFFFFF, m_watch_data.fromU.from[i].count);
+                    AppendReplyFormat(reply_cur, reply_end, "Register X%d has value 0x%010lx Count = %d\n", m_watch_data.i, m_watch_data.fromU.from[i].address&0x7FFFFFFFFF, m_watch_data.fromU.from[i].count);
                 }
             }
             m_watch_data.intercepted = false;
