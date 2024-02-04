@@ -46,8 +46,11 @@ namespace ams::dmnt::cheat::impl {
     void CheatVirtualMachine::OpenDebugLogFile() {
         #ifdef DMNT_CHEAT_VM_DEBUG_LOG
         CloseDebugLogFile();
-        R_ABORT_UNLESS(fs::OpenFile(std::addressof(m_debug_log_file), "sdmc:/atmosphere/cheat_vm_logs/debug_log.txt"));
+        fs::EnsureDirectory("sdmc:/atmosphere/cheat_vm_logs");
+        fs::CreateFile("sdmc:/atmosphere/cheat_vm_logs/debug_log.txt", 0);
+        R_ABORT_UNLESS(fs::OpenFile(std::addressof(m_debug_log_file), "sdmc:/atmosphere/cheat_vm_logs/debug_log.txt", fs::OpenMode_Write | fs::OpenMode_AllowAppend));
         m_debug_log_file_offset = 0;
+        m_has_debug_log_file = true;
         #endif
     }
 
@@ -80,7 +83,8 @@ namespace ams::dmnt::cheat::impl {
             fmt_len += 1;
         }
 
-        fs::WriteFile(m_debug_log_file, m_debug_log_offset, m_debug_log_format_buf, fmt_len, fs::WriteOption::Flush);
+        fs::WriteFile(m_debug_log_file, m_debug_log_file_offset, m_debug_log_format_buf, fmt_len, fs::WriteOption::Flush);
+        m_debug_log_file_offset += fmt_len;
         #else
         AMS_UNUSED(format);
         #endif
