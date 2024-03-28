@@ -1419,7 +1419,7 @@ namespace ams::kern {
         return this->GetSize(KMemoryState_AliasCodeData);
     }
 
-    Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, KMemoryPermission perm) {
+    Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties &properties) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Create a page group to hold the pages we allocate. */
@@ -1437,7 +1437,6 @@ namespace ams::kern {
         }
 
         /* Map the pages. */
-        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_None };
         R_RETURN(this->Operate(page_list, address, num_pages, pg, properties, OperationType_MapGroup, false));
     }
 
@@ -2419,11 +2418,11 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Perform mapping operation. */
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
         if (is_pa_valid) {
-            const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
             R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
         } else {
-            R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), addr, num_pages, perm));
+            R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), addr, num_pages, properties));
         }
 
         /* Update the blocks. */
@@ -2455,7 +2454,8 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Map the pages. */
-        R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, perm));
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
+        R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, properties));
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
