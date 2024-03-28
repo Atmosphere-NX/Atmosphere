@@ -345,7 +345,7 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS(slab_region_size <= resource_region_size);
 
         /* Setup the slab region. */
-        const KPhysicalAddress code_start_phys_addr = init_pt.GetPhysicalAddressOfRandomizedRange(code_start_virt_addr, code_region_size);
+        const KPhysicalAddress code_start_phys_addr = g_phase2_initial_process_binary_meta.layout.kern_address;
         const KPhysicalAddress code_end_phys_addr   = code_start_phys_addr + code_region_size;
         const KPhysicalAddress slab_start_phys_addr = code_end_phys_addr;
         const KPhysicalAddress slab_end_phys_addr   = slab_start_phys_addr + slab_region_size;
