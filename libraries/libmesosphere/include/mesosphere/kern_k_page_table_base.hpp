@@ -86,6 +86,15 @@ namespace ams::kern {
                 MemoryFillValue_Heap  = 'Z',
             };
 
+            enum RegionType {
+                RegionType_KernelMap = 0,
+                RegionType_Stack     = 1,
+                RegionType_Alias     = 2,
+                RegionType_Heap      = 3,
+
+                RegionType_Count,
+            };
+
             enum OperationType {
                 OperationType_Map                                 = 0,
                 OperationType_MapGroup                            = 1,
@@ -165,15 +174,9 @@ namespace ams::kern {
         private:
             KProcessAddress m_address_space_start;
             KProcessAddress m_address_space_end;
-            KProcessAddress m_heap_region_start;
-            KProcessAddress m_heap_region_end;
+            KProcessAddress m_region_starts[RegionType_Count];
+            KProcessAddress m_region_ends[RegionType_Count];
             KProcessAddress m_current_heap_end;
-            KProcessAddress m_alias_region_start;
-            KProcessAddress m_alias_region_end;
-            KProcessAddress m_stack_region_start;
-            KProcessAddress m_stack_region_end;
-            KProcessAddress m_kernel_map_region_start;
-            KProcessAddress m_kernel_map_region_end;
             KProcessAddress m_alias_code_region_start;
             KProcessAddress m_alias_code_region_end;
             KProcessAddress m_code_region_start;
@@ -203,10 +206,10 @@ namespace ams::kern {
             MemoryFillValue m_stack_fill_value;
         public:
             constexpr explicit KPageTableBase(util::ConstantInitializeTag)
-                : m_address_space_start(Null<KProcessAddress>), m_address_space_end(Null<KProcessAddress>), m_heap_region_start(Null<KProcessAddress>),
-                  m_heap_region_end(Null<KProcessAddress>), m_current_heap_end(Null<KProcessAddress>), m_alias_region_start(Null<KProcessAddress>),
-                  m_alias_region_end(Null<KProcessAddress>), m_stack_region_start(Null<KProcessAddress>), m_stack_region_end(Null<KProcessAddress>),
-                  m_kernel_map_region_start(Null<KProcessAddress>), m_kernel_map_region_end(Null<KProcessAddress>), m_alias_code_region_start(Null<KProcessAddress>),
+                : m_address_space_start(Null<KProcessAddress>), m_address_space_end(Null<KProcessAddress>),
+                  m_region_starts{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
+                  m_region_ends{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
+                  m_current_heap_end(Null<KProcessAddress>), m_alias_code_region_start(Null<KProcessAddress>),
                   m_alias_code_region_end(Null<KProcessAddress>), m_code_region_start(Null<KProcessAddress>), m_code_region_end(Null<KProcessAddress>),
                   m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), m_mapped_ipc_server_memory(),
                   m_general_lock(), m_map_physical_memory_lock(), m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
@@ -236,7 +239,7 @@ namespace ams::kern {
             }
 
             constexpr bool IsInAliasRegion(KProcessAddress addr, size_t size) const {
-                return this->Contains(addr, size) && m_alias_region_start <= addr && addr + size - 1 <= m_alias_region_end - 1;
+                return this->Contains(addr, size) && m_region_starts[RegionType_Alias] <= addr && addr + size - 1 <= m_region_ends[RegionType_Alias] - 1;
             }
 
             bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const {
@@ -479,24 +482,28 @@ namespace ams::kern {
             }
         public:
             KProcessAddress GetAddressSpaceStart()    const { return m_address_space_start; }
-            KProcessAddress GetHeapRegionStart()      const { return m_heap_region_start; }
-            KProcessAddress GetAliasRegionStart()     const { return m_alias_region_start; }
-            KProcessAddress GetStackRegionStart()     const { return m_stack_region_start; }
-            KProcessAddress GetKernelMapRegionStart() const { return m_kernel_map_region_start; }
+
+            KProcessAddress GetHeapRegionStart()      const { return m_region_starts[RegionType_Heap]; }
+            KProcessAddress GetAliasRegionStart()     const { return m_region_starts[RegionType_Alias]; }
+            KProcessAddress GetStackRegionStart()     const { return m_region_starts[RegionType_Stack]; }
+            KProcessAddress GetKernelMapRegionStart() const { return m_region_starts[RegionType_KernelMap]; }
+
             KProcessAddress GetAliasCodeRegionStart() const { return m_alias_code_region_start; }
 
-            size_t GetAddressSpaceSize()    const { return m_address_space_end     - m_address_space_start; }
-            size_t GetHeapRegionSize()      const { return m_heap_region_end       - m_heap_region_start; }
-            size_t GetAliasRegionSize()     const { return m_alias_region_end      - m_alias_region_start; }
-            size_t GetStackRegionSize()     const { return m_stack_region_end      - m_stack_region_start; }
-            size_t GetKernelMapRegionSize() const { return m_kernel_map_region_end - m_kernel_map_region_start; }
+            size_t GetAddressSpaceSize()    const { return m_address_space_end - m_address_space_start; }
+
+            size_t GetHeapRegionSize()      const { return m_region_ends[RegionType_Heap]      - m_region_starts[RegionType_Heap]; }
+            size_t GetAliasRegionSize()     const { return m_region_ends[RegionType_Alias]     - m_region_starts[RegionType_Alias]; }
+            size_t GetStackRegionSize()     const { return m_region_ends[RegionType_Stack]     - m_region_starts[RegionType_Stack]; }
+            size_t GetKernelMapRegionSize() const { return m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap]; }
+
             size_t GetAliasCodeRegionSize() const { return m_alias_code_region_end - m_alias_code_region_start; }
 
             size_t GetNormalMemorySize() const {
                 /* Lock the table. */
                 KScopedLightLock lk(m_general_lock);
 
-                return (m_current_heap_end - m_heap_region_start) + m_mapped_physical_memory_size;
+                return (m_current_heap_end - m_region_starts[RegionType_Heap]) + m_mapped_physical_memory_size;
             }
 
             size_t GetCodeSize() const;
