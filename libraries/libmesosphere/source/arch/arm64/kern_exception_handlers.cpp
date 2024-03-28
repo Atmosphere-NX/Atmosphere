@@ -223,6 +223,13 @@ namespace ams::kern::arch::arm64 {
                             type = ams::svc::ExceptionType_InstructionAbort;
                             break;
                         case EsrEc_DataAbortEl0:
+                            /* If esr.IFSC is "Alignment Fault", return UnalignedData instead of DataAbort. */
+                            if ((esr & 0x3F) == 0b100001) {
+                                type = ams::svc::ExceptionType_UnalignedData;
+                            } else {
+                                type = ams::svc::ExceptionType_DataAbort;
+                            }
+                            break;
                         default:
                             type = ams::svc::ExceptionType_DataAbort;
                             break;
