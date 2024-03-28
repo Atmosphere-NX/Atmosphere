@@ -195,7 +195,7 @@ namespace ams::kern::init::loader {
         /* Setup the INI1 header in memory for the kernel. */
         {
             /* Get the kernel layout. */
-            KSystemControl::Init::GetInitialProcessBinaryLayout(std::addressof(g_initial_process_binary_meta.layout));
+            KSystemControl::Init::GetInitialProcessBinaryLayout(std::addressof(g_initial_process_binary_meta.layout), base_address);
 
             /* If there's no desired base address, use the ini in place. */
             if (g_initial_process_binary_meta.layout.address == 0) {
