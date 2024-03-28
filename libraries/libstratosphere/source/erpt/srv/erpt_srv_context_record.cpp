@@ -69,13 +69,13 @@ namespace ams::erpt::srv {
 
         auto guard = SCOPE_GUARD { m_ctx.field_count = 0; };
 
-        R_UNLESS(m_ctx.field_count <= FieldsPerContext,                    erpt::ResultInvalidArgument());
-        R_UNLESS(0 <= m_ctx.category && m_ctx.category < CategoryId_Count, erpt::ResultInvalidArgument());
+        R_UNLESS(m_ctx.field_count <= FieldsPerContext,         erpt::ResultInvalidArgument());
+        R_UNLESS(FindCategoryIndex(m_ctx.category).has_value(), erpt::ResultInvalidArgument());
 
         for (u32 i = 0; i < m_ctx.field_count; i++) {
             m_ctx.fields[i] = ctx_ptr->fields[i];
 
-            R_UNLESS(0 <= m_ctx.fields[i].id   && m_ctx.fields[i].id   < FieldId_Count,   erpt::ResultInvalidArgument());
+            R_UNLESS(FindFieldIndex(m_ctx.fields[i].id).has_value(),                      erpt::ResultInvalidArgument());
             R_UNLESS(0 <= m_ctx.fields[i].type && m_ctx.fields[i].type < FieldType_Count, erpt::ResultInvalidArgument());
 
             R_UNLESS(m_ctx.fields[i].type == ConvertFieldToType(m_ctx.fields[i].id),     erpt::ResultFieldTypeMismatch());
