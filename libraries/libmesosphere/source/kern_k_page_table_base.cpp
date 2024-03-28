@@ -1266,7 +1266,7 @@ namespace ams::kern {
 
         /* Allocate pages for the insecure memory. */
         KPageGroup pg(m_block_info_manager);
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), size / PageSize, KMemoryManager::EncodeOption(insecure_pool, KMemoryManager::Direction_FromFront)));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), size / PageSize, 1, KMemoryManager::EncodeOption(insecure_pool, KMemoryManager::Direction_FromFront)));
 
         /* Close the opened pages when we're done with them. */
         /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
@@ -1426,7 +1426,7 @@ namespace ams::kern {
         KPageGroup pg(m_block_info_manager);
 
         /* Allocate the pages. */
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, m_allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, 1, m_allocate_option));
 
         /* Ensure that the page group is closed when we're done working with it. */
         ON_SCOPE_EXIT { pg.Close(); };
@@ -1931,7 +1931,7 @@ namespace ams::kern {
 
         /* Allocate pages for the heap extension. */
         KPageGroup pg(m_block_info_manager);
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), allocation_size / PageSize, m_allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), allocation_size / PageSize, 1, m_allocate_option));
 
         /* Close the opened pages when we're done with them. */
         /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
@@ -4844,7 +4844,7 @@ namespace ams::kern {
 
         /* Allocate the new memory. */
         const size_t num_pages = size / PageSize;
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, 1, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
 
         /* Close the page group when we're done with it. */
         ON_SCOPE_EXIT { pg.Close(); };
