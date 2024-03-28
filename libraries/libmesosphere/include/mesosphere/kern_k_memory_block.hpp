@@ -177,7 +177,7 @@ namespace ams::kern {
     };
 
     constexpr KMemoryPermission ConvertToKMemoryPermission(ams::svc::MemoryPermission perm) {
-        return static_cast<KMemoryPermission>((util::ToUnderlying(perm) & KMemoryPermission_UserMask) | KMemoryPermission_KernelRead | ((util::ToUnderlying(perm) & KMemoryPermission_UserWrite) << KMemoryPermission_KernelShift) | (perm == ams::svc::MemoryPermission_None ? KMemoryPermission_NotMapped : KMemoryPermission_None));
+        return static_cast<KMemoryPermission>((util::ToUnderlying(perm) & KMemoryPermission_UserMask) | KMemoryPermission_KernelRead | ((util::ToUnderlying(perm) & ams::svc::MemoryPermission_Write) ? KMemoryPermission_KernelWrite : KMemoryPermission_None) | (perm == ams::svc::MemoryPermission_None ? KMemoryPermission_NotMapped : KMemoryPermission_None));
     }
 
     enum KMemoryAttribute : u8 {
