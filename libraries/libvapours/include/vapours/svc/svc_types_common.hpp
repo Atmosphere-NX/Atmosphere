@@ -190,6 +190,7 @@ namespace ams::svc {
         InfoType_ThreadTickCount                = 25,
         InfoType_IsSvcPermitted                 = 26,
         InfoType_IoRegionHint                   = 27,
+        InfoType_AliasRegionExtraSize           = 28,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,
@@ -436,15 +437,19 @@ namespace ams::svc {
         /* 11.x+ DisableDeviceAddressSpaceMerge. */
         CreateProcessFlag_DisableDeviceAddressSpaceMerge = (1 << 12),
 
+        /* 18.x EnableAliasRegionExtraSize. */
+        CreateProcessFlag_EnableAliasRegionExtraSize = (1 << 13),
+
         /* Mask of all flags. */
-        CreateProcessFlag_All = CreateProcessFlag_Is64Bit                  |
-                                CreateProcessFlag_AddressSpaceMask         |
-                                CreateProcessFlag_EnableDebug              |
-                                CreateProcessFlag_EnableAslr               |
-                                CreateProcessFlag_IsApplication            |
-                                CreateProcessFlag_PoolPartitionMask        |
-                                CreateProcessFlag_OptimizeMemoryAllocation |
-                                CreateProcessFlag_DisableDeviceAddressSpaceMerge,
+        CreateProcessFlag_All = CreateProcessFlag_Is64Bit                        |
+                                CreateProcessFlag_AddressSpaceMask               |
+                                CreateProcessFlag_EnableDebug                    |
+                                CreateProcessFlag_EnableAslr                     |
+                                CreateProcessFlag_IsApplication                  |
+                                CreateProcessFlag_PoolPartitionMask              |
+                                CreateProcessFlag_OptimizeMemoryAllocation       |
+                                CreateProcessFlag_DisableDeviceAddressSpaceMerge |
+                                CreateProcessFlag_EnableAliasRegionExtraSize,
     };
 
     /* Debug types. */

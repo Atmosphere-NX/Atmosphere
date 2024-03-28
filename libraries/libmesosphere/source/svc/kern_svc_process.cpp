@@ -162,6 +162,18 @@ namespace ams::kern::svc {
             /* Check that the number of extra resource pages is >= 0. */
             R_UNLESS(params.system_resource_num_pages >= 0, svc::ResultInvalidSize());
 
+            /* Validate that the alias region extra size is allowed, if enabled. */
+            if (params.flags & ams::svc::CreateProcessFlag_EnableAliasRegionExtraSize) {
+                /* Check that we have a 64-bit address space. */
+                R_UNLESS((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace64Bit, svc::ResultInvalidState());
+
+                /* Check that the system resource page count is non-zero. */
+                R_UNLESS(params.system_resource_num_pages > 0, svc::ResultInvalidState());
+
+                /* Check that debug mode is enabled. */
+                R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultInvalidState());
+            }
+
             /* Convert to sizes. */
             const size_t code_num_pages            = params.code_num_pages;
             const size_t system_resource_num_pages = params.system_resource_num_pages;
