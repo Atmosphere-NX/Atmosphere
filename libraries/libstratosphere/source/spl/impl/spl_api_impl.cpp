@@ -893,6 +893,10 @@ namespace ams::spl::impl {
         R_RETURN(PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::ArchiveKey, generation));
     }
 
+    Result PrepareEsUnknown2Key(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
+        R_RETURN(PrepareEsDeviceUniqueKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, smc::EsDeviceUniqueKeyType::Unknown2, generation));
+    }
+
     /* FS */
     Result DecryptAndStoreGcKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
         R_RETURN(DecryptAndStoreDeviceUniqueKey(src, src_size, access_key, key_source, option));
