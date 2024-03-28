@@ -79,29 +79,7 @@ namespace ams::kern {
 
             /* Create a page group representing the segment. */
             KPageGroup segment_pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
-            if (size_t remaining_size = util::AlignUp(seg_size, PageSize); remaining_size != 0) {
-                /* Find the pages whose data corresponds to the segment. */
-                size_t cur_offset = 0;
-                for (auto it = pg.begin(); it != pg.end() && remaining_size > 0; ++it) {
-                    /* Get the current size. */
-                    const size_t cur_size = it->GetSize();
-
-                    /* Determine if the offset is in range. */
-                    const size_t rel_diff = seg_offset - cur_offset;
-                    const bool is_before  = cur_offset <= seg_offset;
-                    cur_offset += cur_size;
-                    if (is_before && seg_offset < cur_offset) {
-                        /* It is, so add the block. */
-                        const size_t block_size = std::min<size_t>(cur_size - rel_diff, remaining_size);
-                        MESOSPHERE_R_ABORT_UNLESS(segment_pg.AddBlock(it->GetAddress() + rel_diff, block_size / PageSize));
-
-                        /* Advance. */
-                        cur_offset      = seg_offset + block_size;
-                        remaining_size -= block_size;
-                        seg_offset     += block_size;
-                    }
-                }
-            }
+            MESOSPHERE_R_ABORT_UNLESS(pg.CopyRangeTo(segment_pg, seg_offset, util::AlignUp(seg_size, PageSize)));
 
             /* Setup the new page group's memory so that we can load the segment. */
             {
@@ -225,6 +203,9 @@ namespace ams::kern {
         const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(as_width, as_type);
         const uintptr_t map_end       = map_start + map_size;
         MESOSPHERE_ABORT_UNLESS(start_address == 0);
+
+        /* Default fields in parameter to zero. */
+        *out = {};
 
         /* Set fields in parameter. */
         out->code_address              = map_start + start_address;
