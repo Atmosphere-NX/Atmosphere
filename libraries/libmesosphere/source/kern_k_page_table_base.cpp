@@ -2994,7 +2994,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(src_page_table.GetPhysicalAddressLocked(std::addressof(phys_addr), address));
 
             /* Determine the current read size. */
-            const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
+            const size_t cur_size = std::min<size_t>(last_address - address + 1, PageSize - (GetInteger(address) & (PageSize - 1)));
 
             /* Read. */
             R_TRY(dst_page_table.ReadIoMemoryImpl(dst, phys_addr, cur_size, state));
@@ -3030,7 +3030,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(src_page_table.GetPhysicalAddressLocked(std::addressof(phys_addr), address));
 
             /* Determine the current read size. */
-            const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
+            const size_t cur_size = std::min<size_t>(last_address - address + 1, PageSize - (GetInteger(address) & (PageSize - 1)));
 
             /* Read. */
             R_TRY(dst_page_table.WriteIoMemoryImpl(phys_addr, src, cur_size, state));
