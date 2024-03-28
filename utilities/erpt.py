@@ -238,6 +238,7 @@ CATEGORIES = {
     139 : 'EthernetAdapterOUIInfo',
     140 : 'NANDTypeInfo',
     141 : 'MicroSDTypeInfo',
+    1000 : 'TestNx',
 }
 
 FIELD_TYPES = {
@@ -408,6 +409,14 @@ def find_flags(full, num_fields, magic_idx):
     ind = full.index(KNOWN) - magic_idx
     return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
 
+def find_id_array(full, num_fields, magic_idx, table_format):
+    if table_format == 0:
+        return list(range(num_fields))
+    else:
+        KNOWN = pk('<IIIIII', *range(444, 450))
+        ind = full.index(KNOWN) - 4 * magic_idx
+        return list(up('<' + 'I'*num_fields, full[ind:ind+4*num_fields]))
+
 def cat_to_string(c):
     return CATEGORIES[c] if c in CATEGORIES else 'Category_Unknown%d' % c
 
@@ -430,6 +439,8 @@ def main(argc, argv):
     cats = find_categories(full, NUM_FIELDS)
     types = find_types(full, NUM_FIELDS)
     flags = find_flags(full, NUM_FIELDS, fields.index('TestStringEncrypt') - 1)
+    ids   = find_id_array(full, NUM_FIELDS, fields.index('TestStringEncrypt'), table_format)
+    assert ids[:4] == [0, 1, 2, 3]
     print 'Identified %d fields.' % NUM_FIELDS
     mf = max(len(s) for s in fields)
     mc = max(len(cat_to_string(c)) for c in cats)
@@ -453,8 +464,8 @@ def main(argc, argv):
         out.write('\n')
         out.write('#define AMS_ERPT_FOREACH_FIELD(HANDLER) \\\n')
         for i in xrange(NUM_FIELDS):
-            f, c, t, l = fields[i], cats[i], types[i], flags[i]
-            out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt+1, ml)) % (f+',', '%d,'%i, cat_to_string(c)+',', typ_to_string(t)+',', flg_to_string(l)))
+            f, c, t, l, d = fields[i], cats[i], types[i], flags[i], ids[i]
+            out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt+1, ml)) % (f+',', '%d,'%d, cat_to_string(c)+',', typ_to_string(t)+',', flg_to_string(l)))
         out.write('\n')
     return 0
 
