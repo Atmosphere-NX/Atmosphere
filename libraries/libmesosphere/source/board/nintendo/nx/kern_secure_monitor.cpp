@@ -43,7 +43,7 @@ namespace ams::kern::board::nintendo::nx::smc {
         enum FunctionId : u32 {
             FunctionId_GetConfig           = 0xC3000004,
             FunctionId_GenerateRandomBytes = 0xC3000005,
-            FunctionId_Panic               = 0xC3000006,
+            FunctionId_ShowError           = 0xC3000006,
             FunctionId_ConfigureCarveout   = 0xC3000007,
             FunctionId_ReadWriteRegister   = 0xC3000008,
 
@@ -51,8 +51,96 @@ namespace ams::kern::board::nintendo::nx::smc {
             FunctionId_SetConfig           = 0xC3000409,
         };
 
+        constexpr size_t GenerateRandomBytesSizeMax = sizeof(::ams::svc::lp64::SecureMonitorArguments) - sizeof(::ams::svc::lp64::SecureMonitorArguments{}.r[0]);
+
         /* Global lock for generate random bytes. */
         constinit KSpinLock g_generate_random_lock;
+
+        bool TryGetConfigImpl(u64 *out, size_t num_qwords, ConfigItem config_item) {
+            /* Create the arguments .*/
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GetConfig, static_cast<u32>(config_item) } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* If successful, copy the output. */
+            const bool success = static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+            if (AMS_LIKELY(success)) {
+                for (size_t i = 0; i < num_qwords && i < 7; i++) {
+                    out[i] = args.r[1 + i];
+                }
+            }
+
+            return success;
+        }
+
+        bool SetConfigImpl(ConfigItem config_item, u64 value) {
+            /* Create the arguments .*/
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_SetConfig, static_cast<u32>(config_item), 0, value } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* Return whether the call was successful. */
+            return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        }
+
+        bool ReadWriteRegisterImpl(u32 *out, u64 address, u32 mask, u32 value) {
+            /* Create the arguments .*/
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ReadWriteRegister, address, mask, value } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* Unconditionally write the output. */
+            *out = static_cast<u32>(args.r[1]);
+
+            /* Return whether the call was successful. */
+            return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        }
+
+        bool GenerateRandomBytesImpl(void *dst, size_t size) {
+            /* Create the arguments. */
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GenerateRandomBytes, size } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* If successful, copy the output. */
+            const bool success = static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+            if (AMS_LIKELY(success)) {
+                std::memcpy(dst, std::addressof(args.r[1]), size);
+            }
+
+            return success;
+        }
+
+        bool ConfigureCarveoutImpl(size_t which, uintptr_t address, size_t size) {
+            /* Create the arguments .*/
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ConfigureCarveout, static_cast<u64>(which), static_cast<u64>(address), static_cast<u64>(size) } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* Return whether the call was successful. */
+            return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        }
+
+        bool ShowErrorImpl(u32 color) {
+            /* Create the arguments .*/
+            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ShowError, color } };
+
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor>(args.r);
+
+            /* Return whether the call was successful. */
+            return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        }
+
+        void CallSecureMonitorFromUserImpl(ams::svc::lp64::SecureMonitorArguments *args) {
+            /* Call into the secure monitor. */
+            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_User>(args->r);
+        }
 
     }
 
@@ -60,113 +148,90 @@ namespace ams::kern::board::nintendo::nx::smc {
     namespace init {
 
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
-            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GetConfig, static_cast<u32>(config_item) } };
-
-            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, false>(args.r);
-            MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.r[0]) == SmcResult::Success));
-
-            for (size_t i = 0; i < num_qwords && i < 7; i++) {
-                out[i] = args.r[1 + i];
-            }
+            /* Ensure we successfully get the config. */
+            MESOSPHERE_INIT_ABORT_UNLESS(TryGetConfigImpl(out, num_qwords, config_item));
         }
 
         void GenerateRandomBytes(void *dst, size_t size) {
-            /* Call SmcGenerateRandomBytes() */
-            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GenerateRandomBytes, size } };
-            MESOSPHERE_INIT_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.r[0]));
+            /* Check that the size is valid. */
+            MESOSPHERE_INIT_ABORT_UNLESS(0 < size && size <= GenerateRandomBytesSizeMax);
 
-            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, false>(args.r);
-            MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.r[0]) == SmcResult::Success));
-
-            /* Copy output. */
-            std::memcpy(dst, std::addressof(args.r[1]), size);
+            /* Ensure we successfully generate the random bytes. */
+            MESOSPHERE_INIT_ABORT_UNLESS(GenerateRandomBytesImpl(dst, size));
         }
 
-        bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value) {
-            ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ReadWriteRegister, address, mask, value } };
-
-            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, false>(args.r);
-            MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.r[0]) == SmcResult::Success));
-
-            *out = args.r[1];
-
-            return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        void ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value) {
+            /* Ensure we successfully access the register. */
+            MESOSPHERE_INIT_ABORT_UNLESS(ReadWriteRegisterImpl(out, address, mask, value));
         }
 
     }
 
     bool TryGetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GetConfig, static_cast<u32>(config_item) } };
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-        if (AMS_UNLIKELY(static_cast<SmcResult>(args.r[0]) != SmcResult::Success)) {
-            return false;
-        }
-
-        for (size_t i = 0; i < num_qwords && i < 7; i++) {
-            out[i] = args.r[1 + i];
-        }
-
-        return true;
+        /* Get the config. */
+        return TryGetConfigImpl(out, num_qwords, config_item);
     }
 
     void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
+        /* Ensure we successfully get the config. */
         MESOSPHERE_ABORT_UNLESS(TryGetConfig(out, num_qwords, config_item));
     }
 
     bool SetConfig(ConfigItem config_item, u64 value) {
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_SetConfig, static_cast<u32>(config_item), 0, value } };
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-
-        return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        /* Set the config. */
+        return SetConfigImpl(config_item, value);
     }
 
     bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ReadWriteRegister, address, mask, value } };
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-
-        *out = static_cast<u32>(args.r[1]);
-        return static_cast<SmcResult>(args.r[0]) == SmcResult::Success;
+        /* Access the register. */
+        return ReadWriteRegisterImpl(out, address, mask, value);
     }
 
     void ConfigureCarveout(size_t which, uintptr_t address, size_t size) {
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_ConfigureCarveout, static_cast<u64>(which), static_cast<u64>(address), static_cast<u64>(size) } };
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-
-        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.r[0]) == SmcResult::Success));
+        /* Ensure that we successfully configure the carveout. */
+        MESOSPHERE_ABORT_UNLESS(ConfigureCarveoutImpl(which, address, size));
     }
 
     void GenerateRandomBytes(void *dst, size_t size) {
-        /* Setup for call. */
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_GenerateRandomBytes, size } };
-        MESOSPHERE_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.r[0]));
+        /* Check that the size is valid. */
+        MESOSPHERE_ABORT_UNLESS(0 < size && size <= GenerateRandomBytesSizeMax);
 
-        /* Make call. */
-        {
-            KScopedInterruptDisable intr_disable;
-            KScopedSpinLock lk(g_generate_random_lock);
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-            ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-        }
-        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.r[0]) == SmcResult::Success));
+        /* Acquire the exclusive right to generate random bytes. */
+        KScopedSpinLock lk(g_generate_random_lock);
 
-        /* Copy output. */
-        std::memcpy(dst, std::addressof(args.r[1]), size);
+        /* Ensure we successfully generate the random bytes. */
+        MESOSPHERE_ABORT_UNLESS(GenerateRandomBytesImpl(dst, size));
     }
 
-    void NORETURN Panic(u32 color) {
-        ams::svc::lp64::SecureMonitorArguments args = { { FunctionId_Panic, color } };
+    void ShowError(u32 color) {
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
 
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_Supervisor, true>(args.r);
-
-        AMS_INFINITE_LOOP();
+        /* Ensure we successfully show the error. */
+        MESOSPHERE_ABORT_UNLESS(ShowErrorImpl(color));
     }
 
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args) {
-        ::ams::kern::arch::arm64::smc::SecureMonitorCall<SmcId_User, true>(args->r);
+        /* Disable interrupts. */
+        KScopedInterruptDisable di;
+
+        /* Perform the call. */
+        CallSecureMonitorFromUserImpl(args);
     }
 
 }
