@@ -301,7 +301,7 @@ namespace ams::kern {
                 /* If aslr is enabled, randomize the current region order. Otherwise, sort by type. */
                 if (m_enable_aslr) {
                     for (size_t i = 0; i < cur_alloc_count - 1; ++i) {
-                        std::swap(region_layouts[i], region_layouts[KSystemControl::GenerateRandomRange(i, cur_alloc_count - 1)]);
+                        std::swap(region_layouts[cur_region_index + i], region_layouts[cur_region_index + KSystemControl::GenerateRandomRange(i, cur_alloc_count - 1)]);
                     }
                 } else {
                     for (size_t i = 0; i < cur_alloc_count - 1; ++i) {
