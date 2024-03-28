@@ -68,7 +68,8 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
     /* Check if our disable count allows us to call SVCs. */
     mrs     x10, tpidrro_el0
-    ldrh    w10, [x10, #(THREAD_LOCAL_REGION_DISABLE_COUNT)]
+    add     x10, x10, #(THREAD_LOCAL_REGION_DISABLE_COUNT)
+    ldtrh   w10, [x10]
     cbz     w10, 1f
 
     /* It might not, so check the stack params to see if we must not allow the SVC. */
@@ -352,7 +353,8 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
     /* Check if our disable count allows us to call SVCs. */
     mrs     x10, tpidrro_el0
-    ldrh    w10, [x10, #(THREAD_LOCAL_REGION_DISABLE_COUNT)]
+    add     x10, x10, #(THREAD_LOCAL_REGION_DISABLE_COUNT)
+    ldtrh   w10, [x10]
     cbz     w10, 1f
 
     /* It might not, so check the stack params to see if we must not allow the SVC. */
