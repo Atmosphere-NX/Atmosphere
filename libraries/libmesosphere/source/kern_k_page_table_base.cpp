@@ -916,7 +916,7 @@ namespace ams::kern {
 
         /* Begin traversal. */
         TraversalContext context;
-        TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+        TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
         bool             cur_valid  = false;
         TraversalEntry   next_entry;
         bool             next_valid;
@@ -1687,17 +1687,21 @@ namespace ams::kern {
 
         /* Begin a traversal. */
         TraversalContext context;
-        TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+        TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
         R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address), svc::ResultInvalidCurrentMemory());
 
         /* Traverse until we have enough size or we aren't contiguous any more. */
         const KPhysicalAddress phys_address = cur_entry.phys_addr;
+        const u8 entry_attr = cur_entry.attr;
         size_t contig_size;
         for (contig_size = cur_entry.block_size - (GetInteger(phys_address) & (cur_entry.block_size - 1)); contig_size < size; contig_size += cur_entry.block_size) {
             if (!impl.ContinueTraversal(std::addressof(cur_entry), std::addressof(context))) {
                 break;
             }
             if (cur_entry.phys_addr != phys_address + contig_size) {
+                break;
+            }
+            if (cur_entry.attr != entry_attr) {
                 break;
             }
         }
@@ -1713,7 +1717,7 @@ namespace ams::kern {
         }
 
         /* The memory is contiguous, so set the output range. */
-        out->Set(phys_address, size, is_heap);
+        out->Set(phys_address, size, is_heap, attr);
         R_SUCCEED();
     }
 

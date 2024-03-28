@@ -258,7 +258,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Begin the traversal. */
                 TraversalContext context;
-                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
                 bool             cur_valid  = false;
                 TraversalEntry   next_entry;
                 bool             next_valid;
@@ -268,7 +268,9 @@ namespace ams::kern::arch::arm64 {
 
                 /* Iterate over entries. */
                 while (true) {
-                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                    /* NOTE: Nintendo really does check next_entry.attr == (cur_entry.attr != 0)...but attr is always zero as of 18.0.0, and this is "probably" for the new console or debug-only anyway, */
+                    /* so we'll implement the weird logic verbatim even though it doesn't match the GetContiguousRange logic. */
+                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size && next_entry.attr == (cur_entry.attr ? 1 : 0))) {
                         cur_entry.block_size += next_entry.block_size;
                     } else {
                         if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
