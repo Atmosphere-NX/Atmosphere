@@ -34,7 +34,6 @@ namespace ams::erpt {
 
     enum CategoryId {
         AMS_ERPT_FOREACH_CATEGORY(GENERATE_ENUM)
-        CategoryId_Count,
     };
 
     #undef GENERATE_ENUM
@@ -43,7 +42,6 @@ namespace ams::erpt {
 
     enum FieldId {
         AMS_ERPT_FOREACH_FIELD(GENERATE_ENUM)
-        FieldId_Count,
     };
 
     #undef GENERATE_ENUM

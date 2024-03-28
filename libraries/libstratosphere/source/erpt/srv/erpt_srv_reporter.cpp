@@ -277,7 +277,7 @@ namespace ams::erpt::srv {
         void SaveSyslogReportIfRequired(const ContextEntry *ctx, const ReportId &report_id) {
             bool needs_save_syslog = true;
             for (u32 i = 0; i < ctx->field_count; i++) {
-                static_assert(FieldToTypeMap[FieldId_HasSyslogFlag] == FieldType_Bool);
+                static_assert(FieldIndexToTypeMap[*FindFieldIndex(FieldId_HasSyslogFlag)] == FieldType_Bool);
                 if (ctx->fields[i].id == FieldId_HasSyslogFlag && !ctx->fields[i].value_bool) {
                     needs_save_syslog = false;
                     break;

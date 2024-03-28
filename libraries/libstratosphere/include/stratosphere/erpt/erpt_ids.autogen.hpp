@@ -35,7 +35,7 @@
     HANDLER(FieldType_NumericU8,  12) \
     HANDLER(FieldType_NumericI16, 13) \
     HANDLER(FieldType_NumericI8,  14) \
-    HANDLER(FieldType_I8Array,    15) \
+    HANDLER(FieldType_I8Array,    15)
 
 #define AMS_ERPT_FOREACH_CATEGORY(HANDLER) \
     HANDLER(Test,                                0   ) \
@@ -180,7 +180,7 @@
     HANDLER(EthernetAdapterOUIInfo,              139 ) \
     HANDLER(NANDTypeInfo,                        140 ) \
     HANDLER(MicroSDTypeInfo,                     141 ) \
-    HANDLER(TestNx,                              1000) \
+    HANDLER(TestNx,                              1000)
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,    Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -355,13 +355,13 @@
     HANDLER(CompositorDisplayState,                                   169,  CompositorDisplayInfo,               FieldType_String,     FieldFlag_None   ) \
     HANDLER(CompositorHWCState,                                       170,  CompositorHWCInfo,                   FieldType_String,     FieldFlag_None   ) \
     HANDLER(InputCurrentLimit,                                        171,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
-    HANDLER(BoostModeCurrentLimit,                                    172,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(BoostModeCurrentLimitDeprecated,                          172,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(FastChargeCurrentLimit,                                   173,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ChargeVoltageLimit,                                       174,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
-    HANDLER(ChargeConfiguration,                                      175,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
-    HANDLER(HizMode,                                                  176,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(ChargeConfigurationDeprecated,                            175,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(HizModeDeprecated,                                        176,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(ChargeEnabled,                                            177,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
-    HANDLER(PowerSupplyPath,                                          178,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(PowerSupplyPathDeprecated,                                178,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(BatteryTemperature,                                       179,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(BatteryChargePercent,                                     180,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(BatteryChargeVoltage,                                     181,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
@@ -371,8 +371,8 @@
     HANDLER(PowerSupplyVoltage,                                       185,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(PowerSupplyCurrent,                                       186,  BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(FastBatteryChargingEnabled,                               187,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
-    HANDLER(ControllerPowerSupplyAcquired,                            188,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
-    HANDLER(OtgRequested,                                             189,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(ControllerPowerSupplyAcquiredDeprecated,                  188,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(OtgRequestedDeprecated,                                   189,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(NANDPreEolInfo,                                           190,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NANDDeviceLifeTimeEstTypA,                                191,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NANDDeviceLifeTimeEstTypB,                                192,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
@@ -436,15 +436,15 @@
     HANDLER(GpuErrorPbdmaGpShadow1,                                   250,  GpuErrorInfo,                        FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AccessPointChannel,                                       251,  AccessPointInfo,                     FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(ThreadName,                                               252,  ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
-    HANDLER(AdspExceptionRegisters,                                   253,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(AdspExceptionSpsr,                                        254,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(AdspExceptionRegistersDeprecated,                         253,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(AdspExceptionSpsrDeprecated,                              254,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AdspExceptionProgramCounter,                              255,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AdspExceptionLinkRegister,                                256,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AdspExceptionStackPointer,                                257,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(AdspExceptionArmModeRegisters,                            258,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(AdspExceptionStackAddress,                                259,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(AdspExceptionStackDump,                                   260,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(AdspExceptionReason,                                      261,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(AdspExceptionArmModeRegistersDeprecated,                  258,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(AdspExceptionStackAddressDeprecated,                      259,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(AdspExceptionStackDumpDeprecated,                         260,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(AdspExceptionReasonDeprecated,                            261,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(OscillatorClock,                                          262,  PowerClockInfo,                      FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(CpuDvfsTableClocks,                                       263,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(CpuDvfsTableVoltages,                                     264,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
@@ -877,5 +877,5 @@
     HANDLER(AdspExceptionArmModeRegisters,                            1009, AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(AdspExceptionStackAddress,                                1010, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AdspExceptionStackDump,                                   1011, AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(AdspExceptionReason,                                      1012, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(AdspExceptionReason,                                      1012, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   )
 
