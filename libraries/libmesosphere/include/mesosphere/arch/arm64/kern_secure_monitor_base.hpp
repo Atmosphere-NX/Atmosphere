@@ -16,11 +16,10 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
-#include <mesosphere/kern_select_interrupt_manager.hpp>
 
 namespace ams::kern::arch::arm64::smc {
 
-    template<int SmcId, bool DisableInterrupt>
+    template<int SmcId>
     void SecureMonitorCall(u64 *buf) {
         /* Load arguments into registers. */
         register u64 x0 asm("x0") = buf[0];
@@ -32,34 +31,18 @@ namespace ams::kern::arch::arm64::smc {
         register u64 x6 asm("x6") = buf[6];
         register u64 x7 asm("x7") = buf[7];
 
+        /* Backup the current thread pointer. */
+        const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
+
         /* Perform the call. */
-        if constexpr (DisableInterrupt) {
-            KScopedInterruptDisable di;
+        __asm__ __volatile__("smc %c[smc_id]"
+                            : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
+                            : [smc_id]"i"(SmcId)
+                            : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
+                            );
 
-            /* Backup the current thread pointer. */
-            const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
-
-            __asm__ __volatile__("smc %c[smc_id]"
-                                : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
-                                : [smc_id]"i"(SmcId)
-                                : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
-                                );
-
-            /* Restore the current thread pointer into X18. */
-            cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
-        } else {
-            /* Backup the current thread pointer. */
-            const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
-
-            __asm__ __volatile__("smc %c[smc_id]"
-                                : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
-                                : [smc_id]"i"(SmcId)
-                                : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
-                                );
-
-            /* Restore the current thread pointer into X18. */
-            cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
-        }
+        /* Restore the current thread pointer into X18. */
+        cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
 
         /* Store arguments to output. */
         buf[0] = x0;
@@ -78,18 +61,18 @@ namespace ams::kern::arch::arm64::smc {
         PsciFunction_CpuOn      = 0xC4000003,
     };
 
-    template<int SmcId, bool DisableInterrupt>
+    template<int SmcId>
     u64 PsciCall(PsciFunction function, u64 x1 = 0, u64 x2 = 0, u64 x3 = 0, u64 x4 = 0, u64 x5 = 0, u64 x6 = 0, u64 x7 = 0) {
         ams::svc::lp64::SecureMonitorArguments args = { { function, x1, x2, x3, x4, x5, x6, x7 } };
 
-        SecureMonitorCall<SmcId, DisableInterrupt>(args.r);
+        SecureMonitorCall<SmcId>(args.r);
 
         return args.r[0];
     }
 
-    template<int SmcId, bool DisableInterrupt>
+    template<int SmcId>
     u64 CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
-        return PsciCall<SmcId, DisableInterrupt>(PsciFunction_CpuOn, core_id, entrypoint, arg);
+        return PsciCall<SmcId>(PsciFunction_CpuOn, core_id, entrypoint, arg);
     }
 
 }
