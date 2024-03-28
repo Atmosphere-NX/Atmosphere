@@ -21,11 +21,12 @@ namespace ams::os::impl {
     class VammManagerHorizonImpl {
         public:
             static void GetReservedRegionImpl(uintptr_t *out_start, uintptr_t *out_size) {
-                u64 start, size;
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(start), svc::InfoType_AliasRegionAddress, svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(size),  svc::InfoType_AliasRegionSize,    svc::PseudoHandle::CurrentProcess, 0));
+                u64 start, size, extra_size;
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(start),      svc::InfoType_AliasRegionAddress,   svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(size),       svc::InfoType_AliasRegionSize,      svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(extra_size), svc::InfoType_AliasRegionExtraSize, svc::PseudoHandle::CurrentProcess, 0));
                 *out_start = start;
-                *out_size  = size;
+                *out_size  = size - extra_size;
             }
 
             static Result AllocatePhysicalMemoryImpl(uintptr_t address, size_t size) {

@@ -112,6 +112,7 @@ namespace ams::kern {
         m_mapped_unsafe_physical_memory     = 0;
         m_mapped_insecure_memory            = 0;
         m_mapped_ipc_server_memory          = 0;
+        m_alias_region_extra_size           = 0;
 
         m_memory_block_slab_manager         = Kernel::GetSystemSystemResource().GetMemoryBlockSlabManagerPointer();
         m_block_info_manager                = Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer();
@@ -132,7 +133,7 @@ namespace ams::kern {
         R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -146,13 +147,16 @@ namespace ams::kern {
             return KAddressSpaceInfo::GetAddressSpaceSize(m_address_space_width, type);
         };
 
+        /* Default to zero alias region extra size. */
+        m_alias_region_extra_size = 0;
+
         /* Set our width and heap/alias sizes. */
-        m_address_space_width = GetAddressSpaceWidth(as_type);
+        m_address_space_width = GetAddressSpaceWidth(flags);
         size_t alias_region_size  = GetSpaceSize(KAddressSpaceInfo::Type_Alias);
         size_t heap_region_size   = GetSpaceSize(KAddressSpaceInfo::Type_Heap);
 
         /* Adjust heap/alias size if we don't have an alias region. */
-        if ((as_type & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
+        if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
             heap_region_size += alias_region_size;
             alias_region_size = 0;
         }
@@ -180,6 +184,14 @@ namespace ams::kern {
             before_process_code_size              = process_code_start - before_process_code_start;
             after_process_code_start              = process_code_end;
             after_process_code_size               = m_code_region_end - process_code_end;
+
+            /* If we have a 39-bit address space and should, enable extra size to the alias region. */
+            if (flags & ams::svc::CreateProcessFlag_EnableAliasRegionExtraSize) {
+                /* Extra size is 1/8th of the address space. */
+                m_alias_region_extra_size = (static_cast<size_t>(1) << m_address_space_width) / 8;
+
+                alias_region_size += m_alias_region_extra_size;
+            }
         } else {
             stack_region_size                     = 0;
             kernel_map_region_size                = 0;
@@ -203,8 +215,8 @@ namespace ams::kern {
         }
 
         /* Set other basic fields. */
-        m_enable_aslr                       = enable_aslr;
-        m_enable_device_address_space_merge = enable_das_merge;
+        m_enable_aslr                       = (flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+        m_enable_device_address_space_merge = (flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
         m_address_space_start               = start;
         m_address_space_end                 = end;
         m_is_kernel                         = false;

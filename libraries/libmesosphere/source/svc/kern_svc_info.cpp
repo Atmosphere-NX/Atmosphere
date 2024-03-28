@@ -106,6 +106,9 @@ namespace ams::kern::svc {
                         *out = 0;
                     }
                     break;
+                case ams::svc::InfoType_AliasRegionExtraSize:
+                    *out = process->GetPageTable().GetAliasRegionExtraSize();
+                    break;
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
 
@@ -134,6 +137,7 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_UsedNonSystemMemorySize:
                 case ams::svc::InfoType_IsApplication:
                 case ams::svc::InfoType_FreeThreadCount:
+                case ams::svc::InfoType_AliasRegionExtraSize:
                     {
                         /* These info types don't support non-zero subtypes. */
                         R_UNLESS(info_subtype == 0,  svc::ResultInvalidCombination());

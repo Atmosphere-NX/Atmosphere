@@ -186,6 +186,7 @@ namespace ams::kern {
             size_t m_mapped_unsafe_physical_memory;
             size_t m_mapped_insecure_memory;
             size_t m_mapped_ipc_server_memory;
+            size_t m_alias_region_extra_size;
             mutable KLightLock m_general_lock;
             mutable KLightLock m_map_physical_memory_lock;
             KLightLock m_device_map_lock;
@@ -211,7 +212,7 @@ namespace ams::kern {
                   m_region_ends{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
                   m_current_heap_end(Null<KProcessAddress>), m_alias_code_region_start(Null<KProcessAddress>),
                   m_alias_code_region_end(Null<KProcessAddress>), m_code_region_start(Null<KProcessAddress>), m_code_region_end(Null<KProcessAddress>),
-                  m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), m_mapped_ipc_server_memory(),
+                  m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), m_mapped_ipc_server_memory(), m_alias_region_extra_size(),
                   m_general_lock(), m_map_physical_memory_lock(), m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
                   m_allocate_option(), m_address_space_width(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(),
                   m_memory_block_slab_manager(), m_block_info_manager(), m_resource_limit(), m_cached_physical_linear_region(), m_cached_physical_heap_region(),
@@ -223,7 +224,7 @@ namespace ams::kern {
             explicit KPageTableBase() { /* ... */ }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
 
             void Finalize();
 
@@ -498,6 +499,8 @@ namespace ams::kern {
             size_t GetKernelMapRegionSize() const { return m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap]; }
 
             size_t GetAliasCodeRegionSize() const { return m_alias_code_region_end - m_alias_code_region_start; }
+
+            size_t GetAliasRegionExtraSize() const { return m_alias_region_extra_size; }
 
             size_t GetNormalMemorySize() const {
                 /* Lock the table. */
