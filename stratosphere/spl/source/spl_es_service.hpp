@@ -55,6 +55,10 @@ namespace ams::spl {
             Result LoadPreparedAesKey(s32 keyslot, AccessKey access_key) {
                 R_RETURN(m_manager.LoadPreparedAesKey(keyslot, this, access_key));
             }
+
+            Result PrepareEsUnknown2Key(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
+                R_RETURN(m_manager.PrepareEsUnknown2Key(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation));
+            }
     };
     static_assert(spl::impl::IsIEsInterface<EsService>);
 
