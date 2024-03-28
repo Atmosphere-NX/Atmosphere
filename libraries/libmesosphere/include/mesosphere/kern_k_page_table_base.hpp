@@ -62,18 +62,21 @@ namespace ams::kern {
                     KPhysicalAddress m_address;
                     size_t m_size;
                     bool m_heap;
+                    u8 m_attr;
                 public:
-                    constexpr MemoryRange() : m_address(Null<KPhysicalAddress>), m_size(0), m_heap(false) { /* ... */ }
+                    constexpr MemoryRange() : m_address(Null<KPhysicalAddress>), m_size(0), m_heap(false), m_attr(0) { /* ... */ }
 
-                    void Set(KPhysicalAddress address, size_t size, bool heap) {
+                    void Set(KPhysicalAddress address, size_t size, bool heap, u8 attr) {
                         m_address = address;
                         m_size    = size;
                         m_heap    = heap;
+                        m_attr    = attr;
                     }
 
                     constexpr KPhysicalAddress GetAddress() const { return m_address; }
                     constexpr size_t GetSize() const { return m_size; }
                     constexpr bool IsHeap() const { return m_heap; }
+                    constexpr u8 GetAttribute() const { return m_attr; }
 
                     void Open();
                     void Close();

@@ -46,12 +46,14 @@ namespace ams::kern::arch::arm64 {
                 out_entry->block_size = L3BlockSize;
             }
             out_entry->sw_reserved_bits = l3_entry->GetSoftwareReservedBits();
+            out_entry->attr             = 0;
 
             return true;
         } else {
             out_entry->phys_addr        = Null<KPhysicalAddress>;
             out_entry->block_size       = L3BlockSize;
             out_entry->sw_reserved_bits = 0;
+            out_entry->attr             = 0;
             return false;
         }
     }
@@ -69,6 +71,7 @@ namespace ams::kern::arch::arm64 {
                 out_entry->block_size = L2BlockSize;
             }
             out_entry->sw_reserved_bits = l2_entry->GetSoftwareReservedBits();
+            out_entry->attr             = 0;
 
             /* Set the output context. */
             out_context->l3_entry = nullptr;
@@ -79,6 +82,8 @@ namespace ams::kern::arch::arm64 {
             out_entry->phys_addr        = Null<KPhysicalAddress>;
             out_entry->block_size       = L2BlockSize;
             out_entry->sw_reserved_bits = 0;
+            out_entry->attr             = 0;
+
             out_context->l3_entry = nullptr;
             return false;
         }
@@ -108,6 +113,8 @@ namespace ams::kern::arch::arm64 {
             out_entry->phys_addr        = Null<KPhysicalAddress>;
             out_entry->block_size       = L1BlockSize;
             out_entry->sw_reserved_bits = 0;
+            out_entry->attr             = 0;
+
             out_context->l2_entry = nullptr;
             out_context->l3_entry = nullptr;
             return false;
@@ -119,6 +126,7 @@ namespace ams::kern::arch::arm64 {
         out_entry->phys_addr        = Null<KPhysicalAddress>;
         out_entry->block_size       = L1BlockSize;
         out_entry->sw_reserved_bits = 0;
+        out_entry->attr             = 0;
         out_context->l1_entry = m_table + m_num_entries;
         out_context->l2_entry = nullptr;
         out_context->l3_entry = nullptr;
@@ -220,6 +228,7 @@ namespace ams::kern::arch::arm64 {
                 out_entry->phys_addr        = Null<KPhysicalAddress>;
                 out_entry->block_size       = L1BlockSize;
                 out_entry->sw_reserved_bits = 0;
+                out_entry->attr             = 0;
                 context->l1_entry = m_table + m_num_entries;
                 context->l2_entry = nullptr;
                 context->l3_entry = nullptr;
