@@ -19,6 +19,7 @@
   + A bug was fixed that could cause atmosphere to incorrectly serialize output object IDs over IPC when using domain objects.
   + A bug was fixed in `pm`'s resource limit boost logic that could potentially cause legitimate boosts to fail in certain circumstances.
   + `loader`/`ro` will now throw a fatal error when using invalid IPS patches that go out of bounds, instead of corrupting memory.
+  + Support was fixed for booting using a memory configuration of half of the true available memory (e.g. forcing a 4GB configuration on an 8GB board).
 + General system stability improvements to enhance the user's experience.
 ## 1.6.2
 + Support was finished for 17.0.0.
