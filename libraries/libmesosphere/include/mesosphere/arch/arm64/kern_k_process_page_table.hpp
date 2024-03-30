@@ -28,8 +28,8 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-                R_RETURN(m_page_table.InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, system_resource, resource_limit));
+            Result Initialize(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+                R_RETURN(m_page_table.InitializeForProcess(flags, from_back, pool, code_address, code_size, system_resource, resource_limit));
             }
 
             void Finalize() { m_page_table.Finalize(); }
@@ -315,6 +315,8 @@ namespace ams::kern::arch::arm64 {
             size_t GetStackRegionSize()     const { return m_page_table.GetStackRegionSize(); }
             size_t GetKernelMapRegionSize() const { return m_page_table.GetKernelMapRegionSize(); }
             size_t GetAliasCodeRegionSize() const { return m_page_table.GetAliasCodeRegionSize(); }
+
+            size_t GetAliasRegionExtraSize() const { return m_page_table.GetAliasRegionExtraSize(); }
 
             size_t GetNormalMemorySize() const { return m_page_table.GetNormalMemorySize(); }
 

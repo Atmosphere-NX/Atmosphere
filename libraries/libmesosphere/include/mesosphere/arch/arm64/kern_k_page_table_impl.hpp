@@ -30,6 +30,7 @@ namespace ams::kern::arch::arm64 {
                 KPhysicalAddress phys_addr;
                 size_t block_size;
                 u8 sw_reserved_bits;
+                u8 attr;
 
                 constexpr bool IsHeadMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHead) != 0; }
                 constexpr bool IsHeadAndBodyMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadAndBody) != 0; }

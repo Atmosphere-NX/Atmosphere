@@ -97,15 +97,12 @@ namespace ams::kern {
         m_enable_aslr                       = true;
         m_enable_device_address_space_merge = false;
 
-        m_heap_region_start                 = 0;
-        m_heap_region_end                   = 0;
+        for (auto i = 0; i < RegionType_Count; ++i) {
+            m_region_starts[i] = 0;
+            m_region_ends[i]   = 0;
+        }
+
         m_current_heap_end                  = 0;
-        m_alias_region_start                = 0;
-        m_alias_region_end                  = 0;
-        m_stack_region_start                = 0;
-        m_stack_region_end                  = 0;
-        m_kernel_map_region_start           = 0;
-        m_kernel_map_region_end             = 0;
         m_alias_code_region_start           = 0;
         m_alias_code_region_end             = 0;
         m_code_region_start                 = 0;
@@ -115,6 +112,7 @@ namespace ams::kern {
         m_mapped_unsafe_physical_memory     = 0;
         m_mapped_insecure_memory            = 0;
         m_mapped_ipc_server_memory          = 0;
+        m_alias_region_extra_size           = 0;
 
         m_memory_block_slab_manager         = Kernel::GetSystemSystemResource().GetMemoryBlockSlabManagerPointer();
         m_block_info_manager                = Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer();
@@ -135,7 +133,7 @@ namespace ams::kern {
         R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -149,13 +147,16 @@ namespace ams::kern {
             return KAddressSpaceInfo::GetAddressSpaceSize(m_address_space_width, type);
         };
 
+        /* Default to zero alias region extra size. */
+        m_alias_region_extra_size = 0;
+
         /* Set our width and heap/alias sizes. */
-        m_address_space_width = GetAddressSpaceWidth(as_type);
+        m_address_space_width = GetAddressSpaceWidth(flags);
         size_t alias_region_size  = GetSpaceSize(KAddressSpaceInfo::Type_Alias);
         size_t heap_region_size   = GetSpaceSize(KAddressSpaceInfo::Type_Heap);
 
         /* Adjust heap/alias size if we don't have an alias region. */
-        if ((as_type & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
+        if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
             heap_region_size += alias_region_size;
             alias_region_size = 0;
         }
@@ -165,35 +166,57 @@ namespace ams::kern {
         KProcessAddress process_code_end;
         size_t stack_region_size;
         size_t kernel_map_region_size;
+        KProcessAddress before_process_code_start, after_process_code_start;
+        size_t before_process_code_size, after_process_code_size;
         if (m_address_space_width == 39) {
-            alias_region_size               = GetSpaceSize(KAddressSpaceInfo::Type_Alias);
-            heap_region_size                = GetSpaceSize(KAddressSpaceInfo::Type_Heap);
-            stack_region_size               = GetSpaceSize(KAddressSpaceInfo::Type_Stack);
-            kernel_map_region_size          = GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
-            m_code_region_start             = GetSpaceStart(KAddressSpaceInfo::Type_Map39Bit);
-            m_code_region_end               = m_code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_Map39Bit);
-            m_alias_code_region_start       = m_code_region_start;
-            m_alias_code_region_end         = m_code_region_end;
-            process_code_start              = util::AlignDown(GetInteger(code_address), RegionAlignment);
-            process_code_end                = util::AlignUp(GetInteger(code_address) + code_size, RegionAlignment);
+            stack_region_size                     = GetSpaceSize(KAddressSpaceInfo::Type_Stack);
+            kernel_map_region_size                = GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
+
+            m_code_region_start                   = GetSpaceStart(KAddressSpaceInfo::Type_Map39Bit);
+            m_code_region_end                     = m_code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_Map39Bit);
+            m_alias_code_region_start             = m_code_region_start;
+            m_alias_code_region_end               = m_code_region_end;
+
+            process_code_start                    = util::AlignDown(GetInteger(code_address), RegionAlignment);
+            process_code_end                      = util::AlignUp(GetInteger(code_address) + code_size, RegionAlignment);
+
+            before_process_code_start             = m_code_region_start;
+            before_process_code_size              = process_code_start - before_process_code_start;
+            after_process_code_start              = process_code_end;
+            after_process_code_size               = m_code_region_end - process_code_end;
+
+            /* If we have a 39-bit address space and should, enable extra size to the alias region. */
+            if (flags & ams::svc::CreateProcessFlag_EnableAliasRegionExtraSize) {
+                /* Extra size is 1/8th of the address space. */
+                m_alias_region_extra_size = (static_cast<size_t>(1) << m_address_space_width) / 8;
+
+                alias_region_size += m_alias_region_extra_size;
+            }
         } else {
-            stack_region_size               = 0;
-            kernel_map_region_size          = 0;
-            m_code_region_start             = GetSpaceStart(KAddressSpaceInfo::Type_MapSmall);
-            m_code_region_end               = m_code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
-            m_stack_region_start            = m_code_region_start;
-            m_alias_code_region_start       = m_code_region_start;
-            m_alias_code_region_end         = GetSpaceStart(KAddressSpaceInfo::Type_MapLarge) + GetSpaceSize(KAddressSpaceInfo::Type_MapLarge);
-            m_stack_region_end              = m_code_region_end;
-            m_kernel_map_region_start       = m_code_region_start;
-            m_kernel_map_region_end         = m_code_region_end;
-            process_code_start              = m_code_region_start;
-            process_code_end                = m_code_region_end;
+            stack_region_size                     = 0;
+            kernel_map_region_size                = 0;
+
+            m_code_region_start                   = GetSpaceStart(KAddressSpaceInfo::Type_MapSmall);
+            m_code_region_end                     = m_code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
+            m_alias_code_region_start             = m_code_region_start;
+            m_alias_code_region_end               = GetSpaceStart(KAddressSpaceInfo::Type_MapLarge) + GetSpaceSize(KAddressSpaceInfo::Type_MapLarge);
+            m_region_starts[RegionType_Stack]     = m_code_region_start;
+            m_region_ends[RegionType_Stack]       = m_code_region_end;
+            m_region_starts[RegionType_KernelMap] = m_code_region_start;
+            m_region_ends[RegionType_KernelMap]   = m_code_region_end;
+
+            process_code_start                    = m_code_region_start;
+            process_code_end                      = m_code_region_end;
+
+            before_process_code_start             = m_code_region_start;
+            before_process_code_size              = 0;
+            after_process_code_start              = GetSpaceStart(KAddressSpaceInfo::Type_MapLarge);
+            after_process_code_size               = GetSpaceSize(KAddressSpaceInfo::Type_MapLarge);
         }
 
         /* Set other basic fields. */
-        m_enable_aslr                       = enable_aslr;
-        m_enable_device_address_space_merge = enable_das_merge;
+        m_enable_aslr                       = (flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+        m_enable_device_address_space_merge = (flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
         m_address_space_start               = start;
         m_address_space_end                 = end;
         m_is_kernel                         = false;
@@ -201,100 +224,285 @@ namespace ams::kern {
         m_block_info_manager                = system_resource->GetBlockInfoManagerPointer();
         m_resource_limit                    = resource_limit;
 
-        /* Determine the region we can place our undetermineds in. */
-        KProcessAddress alloc_start;
-        size_t alloc_size;
-        if ((GetInteger(process_code_start) - GetInteger(m_code_region_start)) >= (GetInteger(end) - GetInteger(process_code_end))) {
-            alloc_start = m_code_region_start;
-            alloc_size  = GetInteger(process_code_start) - GetInteger(m_code_region_start);
-        } else {
-            alloc_start = process_code_end;
-            alloc_size  = GetInteger(end) - GetInteger(process_code_end);
-        }
-        const size_t needed_size = (alias_region_size + heap_region_size + stack_region_size + kernel_map_region_size);
-        R_UNLESS(alloc_size >= needed_size, svc::ResultOutOfMemory());
+        /* Set up our undetermined regions. */
+        {
+            /* Declare helper structure for layout process. */
+            struct RegionLayoutInfo {
+                size_t size;
+                RegionType type;
+                s32 alloc_index; /* 0 for before process code, 1 for after process code */
+            };
 
-        const size_t remaining_size = alloc_size - needed_size;
+            /* Create region layout info array, and add regions to it. */
+            RegionLayoutInfo region_layouts[RegionType_Count] = {};
+            size_t num_regions = 0;
 
-        /* Determine random placements for each region. */
-        size_t alias_rnd = 0, heap_rnd = 0, stack_rnd = 0, kmap_rnd = 0;
-        if (enable_aslr) {
-            alias_rnd = KSystemControl::GenerateRandomRange(0, remaining_size / RegionAlignment) * RegionAlignment;
-            heap_rnd  = KSystemControl::GenerateRandomRange(0, remaining_size / RegionAlignment) * RegionAlignment;
-            stack_rnd = KSystemControl::GenerateRandomRange(0, remaining_size / RegionAlignment) * RegionAlignment;
-            kmap_rnd  = KSystemControl::GenerateRandomRange(0, remaining_size / RegionAlignment) * RegionAlignment;
-        }
+            if (kernel_map_region_size > 0) { region_layouts[num_regions++] = { .size = kernel_map_region_size, .type = RegionType_KernelMap, .alloc_index = 0, }; }
+            if (stack_region_size > 0)      { region_layouts[num_regions++] = { .size = stack_region_size,      .type = RegionType_Stack,     .alloc_index = 0, }; }
 
-        /* Setup heap and alias regions. */
-        m_alias_region_start = alloc_start + alias_rnd;
-        m_alias_region_end   = m_alias_region_start + alias_region_size;
-        m_heap_region_start  = alloc_start + heap_rnd;
-        m_heap_region_end    = m_heap_region_start + heap_region_size;
+            region_layouts[num_regions++] = { .size = alias_region_size, .type = RegionType_Alias, .alloc_index = 0, };
+            region_layouts[num_regions++] = { .size = heap_region_size,  .type = RegionType_Heap,  .alloc_index = 0, };
 
-        if (alias_rnd <= heap_rnd) {
-            m_heap_region_start  += alias_region_size;
-            m_heap_region_end    += alias_region_size;
-        } else {
-            m_alias_region_start += heap_region_size;
-            m_alias_region_end   += heap_region_size;
-        }
-
-        /* Setup stack region. */
-        if (stack_region_size) {
-            m_stack_region_start = alloc_start + stack_rnd;
-            m_stack_region_end   = m_stack_region_start + stack_region_size;
-
-            if (alias_rnd < stack_rnd) {
-                m_stack_region_start += alias_region_size;
-                m_stack_region_end   += alias_region_size;
-            } else {
-                m_alias_region_start += stack_region_size;
-                m_alias_region_end   += stack_region_size;
+            /* Selection-sort the regions by size largest-to-smallest. */
+            for (size_t i = 0; i < num_regions - 1; ++i) {
+                for (size_t j = i + 1; j < num_regions; ++j) {
+                    if (region_layouts[i].size < region_layouts[j].size) {
+                        std::swap(region_layouts[i], region_layouts[j]);
+                    }
+                }
             }
 
-            if (heap_rnd < stack_rnd) {
-                m_stack_region_start += heap_region_size;
-                m_stack_region_end   += heap_region_size;
-            } else {
-                m_heap_region_start  += stack_region_size;
-                m_heap_region_end    += stack_region_size;
-            }
-        }
+            /* Layout the regions. */
+            constexpr auto AllocIndexCount = 2;
+            KProcessAddress alloc_starts[AllocIndexCount] = { before_process_code_start, after_process_code_start };
+            size_t alloc_sizes[AllocIndexCount] = { before_process_code_size, after_process_code_size };
+            size_t alloc_counts[AllocIndexCount] = {};
+            for (size_t i = 0; i < num_regions; ++i) {
+                /* Get reference to the current region. */
+                auto &cur_region = region_layouts[i];
 
-        /* Setup kernel map region. */
-        if (kernel_map_region_size) {
-            m_kernel_map_region_start = alloc_start + kmap_rnd;
-            m_kernel_map_region_end   = m_kernel_map_region_start + kernel_map_region_size;
+                /* Determine where the current region should go. */
+                cur_region.alloc_index = alloc_sizes[1] >= alloc_sizes[0] ? 1 : 0;
+                ++alloc_counts[cur_region.alloc_index];
 
-            if (alias_rnd < kmap_rnd) {
-                m_kernel_map_region_start += alias_region_size;
-                m_kernel_map_region_end   += alias_region_size;
-            } else {
-                m_alias_region_start      += kernel_map_region_size;
-                m_alias_region_end        += kernel_map_region_size;
+                /* Check that the current region can fit. */
+                R_UNLESS(alloc_sizes[cur_region.alloc_index] >= cur_region.size, svc::ResultOutOfMemory());
+
+                /* Update our remaining size tracking. */
+                alloc_sizes[cur_region.alloc_index] -= cur_region.size;
             }
 
-            if (heap_rnd < kmap_rnd) {
-                m_kernel_map_region_start += heap_region_size;
-                m_kernel_map_region_end   += heap_region_size;
-            } else {
-                m_heap_region_start       += kernel_map_region_size;
-                m_heap_region_end         += kernel_map_region_size;
+            /* Selection sort the regions to coalesce them by alloc index. */
+            for (size_t i = 0; i < num_regions - 1; ++i) {
+                for (size_t j = i + 1; j < num_regions; ++j) {
+                    if (region_layouts[i].alloc_index > region_layouts[j].alloc_index) {
+                        std::swap(region_layouts[i], region_layouts[j]);
+                    }
+                }
             }
 
-            if (stack_region_size) {
-                if (stack_rnd < kmap_rnd) {
-                    m_kernel_map_region_start += stack_region_size;
-                    m_kernel_map_region_end   += stack_region_size;
+            /* Layout the regions for each alloc index. */
+            for (auto cur_alloc_index = 0; cur_alloc_index < AllocIndexCount; ++cur_alloc_index) {
+                /* If there are no regions to place, continue. */
+                const size_t cur_alloc_count = alloc_counts[cur_alloc_index];
+                if (cur_alloc_count == 0) {
+                    continue;
+                }
+
+                /* Determine the starting region index for the current alloc index. */
+                size_t cur_region_index = 0;
+                for (size_t i = 0; i < num_regions; ++i) {
+                    if (region_layouts[i].alloc_index == cur_alloc_index) {
+                        cur_region_index = i;
+                        break;
+                    }
+                }
+
+                /* If aslr is enabled, randomize the current region order. Otherwise, sort by type. */
+                if (m_enable_aslr) {
+                    for (size_t i = 0; i < cur_alloc_count - 1; ++i) {
+                        std::swap(region_layouts[cur_region_index + i], region_layouts[cur_region_index + KSystemControl::GenerateRandomRange(i, cur_alloc_count - 1)]);
+                    }
                 } else {
-                    m_stack_region_start      += kernel_map_region_size;
-                    m_stack_region_end        += kernel_map_region_size;
+                    for (size_t i = 0; i < cur_alloc_count - 1; ++i) {
+                        for (size_t j = i + 1; j < cur_alloc_count; ++j) {
+                            if (region_layouts[cur_region_index + i].type > region_layouts[cur_region_index + j].type) {
+                                std::swap(region_layouts[cur_region_index + i], region_layouts[cur_region_index + j]);
+                            }
+                        }
+                    }
+                }
+
+                /* Determine aslr offsets for the current space. */
+                size_t aslr_offsets[RegionType_Count] = {};
+                if (m_enable_aslr) {
+                    /* Generate the aslr offsets. */
+                    for (size_t i = 0; i < cur_alloc_count; ++i) {
+                        aslr_offsets[i] = KSystemControl::GenerateRandomRange(0, alloc_sizes[cur_alloc_index] / RegionAlignment) * RegionAlignment;
+                    }
+
+                    /* Sort the aslr offsets. */
+                    for (size_t i = 0; i < cur_alloc_count - 1; ++i) {
+                        for (size_t j = i + 1; j < cur_alloc_count; ++j) {
+                            if (aslr_offsets[i] > aslr_offsets[j]) {
+                                std::swap(aslr_offsets[i], aslr_offsets[j]);
+                            }
+                        }
+                    }
+                }
+
+                /* Calculate final region positions. */
+                KProcessAddress prev_region_end = alloc_starts[cur_alloc_index];
+                size_t prev_aslr_offset = 0;
+                for (size_t i = 0; i < cur_alloc_count; ++i) {
+                    /* Get the current region. */
+                    auto &cur_region = region_layouts[cur_region_index + i];
+
+                    /* Set the current region start/end. */
+                    m_region_starts[cur_region.type] = (aslr_offsets[i] - prev_aslr_offset) + GetInteger(prev_region_end);
+                    m_region_ends[cur_region.type]   = m_region_starts[cur_region.type] + cur_region.size;
+
+                    /* Update tracking variables. */
+                    prev_region_end  = m_region_ends[cur_region.type];
+                    prev_aslr_offset = aslr_offsets[i];
+                }
+            }
+
+            /* Declare helpers to check that regions are inside our address space. */
+            const KProcessAddress process_code_last = process_code_end - 1;
+            auto IsInAddressSpace = [&](KProcessAddress addr) ALWAYS_INLINE_LAMBDA { return m_address_space_start <= addr && addr <= m_address_space_end; };
+
+            /* Ensure that the KernelMap region is valid. */
+            for (size_t k = 0; k < num_regions; ++k) {
+                if (const auto &kmap_region = region_layouts[k]; kmap_region.type == RegionType_KernelMap) {
+                    /* If there's no kmap region, we have nothing to check. */
+                    if (kmap_region.size == 0) {
+                        break;
+                    }
+
+                    /* Check that the kmap region is within our address space. */
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_KernelMap]));
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_KernelMap]));
+
+                    /* Check for overlap with process code. */
+                    const KProcessAddress kmap_start  = m_region_starts[RegionType_KernelMap];
+                    const KProcessAddress kmap_last   = m_region_ends[RegionType_KernelMap] - 1;
+                    MESOSPHERE_ABORT_UNLESS(kernel_map_region_size == 0 || kmap_last < process_code_start || process_code_last < kmap_start);
+
+                    /* Check for overlap with stack. */
+                    for (size_t s = 0; s < num_regions; ++s) {
+                        if (const auto &stack_region = region_layouts[s]; stack_region.type == RegionType_Stack) {
+                            if (stack_region.size != 0) {
+                                const KProcessAddress stack_start = m_region_starts[RegionType_Stack];
+                                const KProcessAddress stack_last  = m_region_ends[RegionType_Stack] - 1;
+                                MESOSPHERE_ABORT_UNLESS((kernel_map_region_size == 0 && stack_region_size == 0) || kmap_last < stack_start || stack_last < kmap_start);
+                            }
+                            break;
+                        }
+                    }
+
+                    /* Check for overlap with alias. */
+                    for (size_t a = 0; a < num_regions; ++a) {
+                        if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
+                            if (alias_region.size != 0) {
+                                const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
+                                const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
+                                MESOSPHERE_ABORT_UNLESS(kmap_last < alias_start || alias_last < kmap_start);
+                            }
+                            break;
+                        }
+                    }
+
+                    /* Check for overlap with heap. */
+                    for (size_t h = 0; h < num_regions; ++h) {
+                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
+                            if (heap_region.size != 0) {
+                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
+                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
+                                MESOSPHERE_ABORT_UNLESS(kmap_last < heap_start || heap_last < kmap_start);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /* Check that the Stack region is valid. */
+            for (size_t s = 0; s < num_regions; ++s) {
+                if (const auto &stack_region = region_layouts[s]; stack_region.type == RegionType_Stack) {
+                    /* If there's no stack region, we have nothing to check. */
+                    if (stack_region.size == 0) {
+                        break;
+                    }
+
+                    /* Check that the stack region is within our address space. */
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Stack]));
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Stack]));
+
+                    /* Check for overlap with process code. */
+                    const KProcessAddress stack_start = m_region_starts[RegionType_Stack];
+                    const KProcessAddress stack_last  = m_region_ends[RegionType_Stack] - 1;
+                    MESOSPHERE_ABORT_UNLESS(stack_region_size == 0 || stack_last < process_code_start || process_code_last < stack_start);
+
+                    /* Check for overlap with alias. */
+                    for (size_t a = 0; a < num_regions; ++a) {
+                        if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
+                            if (alias_region.size != 0) {
+                                const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
+                                const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
+                                MESOSPHERE_ABORT_UNLESS(stack_last < alias_start || alias_last < stack_start);
+                            }
+                            break;
+                        }
+                    }
+
+                    /* Check for overlap with heap. */
+                    for (size_t h = 0; h < num_regions; ++h) {
+                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
+                            if (heap_region.size != 0) {
+                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
+                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
+                                MESOSPHERE_ABORT_UNLESS(stack_last < heap_start || heap_last < stack_start);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /* Check that the Alias region is valid. */
+            for (size_t a = 0; a < num_regions; ++a) {
+                if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
+                    /* If there's no alias region, we have nothing to check. */
+                    if (alias_region.size == 0) {
+                        break;
+                    }
+
+                    /* Check that the alias region is within our address space. */
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Alias]));
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Alias]));
+
+                    /* Check for overlap with process code. */
+                    const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
+                    const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
+                    MESOSPHERE_ABORT_UNLESS(alias_last < process_code_start || process_code_last < alias_start);
+
+                    /* Check for overlap with heap. */
+                    for (size_t h = 0; h < num_regions; ++h) {
+                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
+                            if (heap_region.size != 0) {
+                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
+                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
+                                MESOSPHERE_ABORT_UNLESS(alias_last < heap_start || heap_last < alias_start);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /* Check that the Heap region is valid. */
+            for (size_t h = 0; h < num_regions; ++h) {
+                if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
+                    /* If there's no heap region, we have nothing to check. */
+                    if (heap_region.size == 0) {
+                        break;
+                    }
+
+                    /* Check that the heap region is within our address space. */
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Heap]));
+                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Heap]));
+
+                    /* Check for overlap with process code. */
+                    const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
+                    const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
+                    MESOSPHERE_ABORT_UNLESS(heap_last < process_code_start || process_code_last < heap_start);
                 }
             }
         }
 
         /* Set heap and fill members. */
-        m_current_heap_end              = m_heap_region_start;
+        m_current_heap_end              = m_region_starts[RegionType_Heap];
         m_max_heap_size                 = 0;
         m_mapped_physical_memory_size   = 0;
         m_mapped_unsafe_physical_memory = 0;
@@ -308,32 +516,6 @@ namespace ams::kern {
 
         /* Set allocation option. */
         m_allocate_option = KMemoryManager::EncodeOption(pool, from_back ? KMemoryManager::Direction_FromBack : KMemoryManager::Direction_FromFront);
-
-        /* Ensure that we regions inside our address space. */
-        auto IsInAddressSpace = [&](KProcessAddress addr) ALWAYS_INLINE_LAMBDA { return m_address_space_start <= addr && addr <= m_address_space_end; };
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_alias_region_start));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_alias_region_end));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_heap_region_start));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_heap_region_end));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_stack_region_start));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_stack_region_end));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_kernel_map_region_start));
-        MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_kernel_map_region_end));
-
-        /* Ensure that we selected regions that don't overlap. */
-        const KProcessAddress alias_start = m_alias_region_start;
-        const KProcessAddress alias_last  = m_alias_region_end - 1;
-        const KProcessAddress heap_start  = m_heap_region_start;
-        const KProcessAddress heap_last   = m_heap_region_end - 1;
-        const KProcessAddress stack_start = m_stack_region_start;
-        const KProcessAddress stack_last  = m_stack_region_end - 1;
-        const KProcessAddress kmap_start  = m_kernel_map_region_start;
-        const KProcessAddress kmap_last   = m_kernel_map_region_end - 1;
-        MESOSPHERE_ABORT_UNLESS(alias_last < heap_start  || heap_last  < alias_start);
-        MESOSPHERE_ABORT_UNLESS(alias_last < stack_start || stack_last < alias_start);
-        MESOSPHERE_ABORT_UNLESS(alias_last < kmap_start  || kmap_last  < alias_start);
-        MESOSPHERE_ABORT_UNLESS(heap_last  < stack_start || stack_last < heap_start);
-        MESOSPHERE_ABORT_UNLESS(heap_last  < kmap_start  || kmap_last  < heap_start);
 
         /* Initialize our implementation. */
         m_impl.InitializeForProcess(table, GetInteger(start), GetInteger(end));
@@ -374,16 +556,16 @@ namespace ams::kern {
             case ams::svc::MemoryState_Kernel:
                 return m_address_space_start;
             case ams::svc::MemoryState_Normal:
-                return m_heap_region_start;
+                return m_region_starts[RegionType_Heap];
             case ams::svc::MemoryState_Ipc:
             case ams::svc::MemoryState_NonSecureIpc:
             case ams::svc::MemoryState_NonDeviceIpc:
-                return m_alias_region_start;
+                return m_region_starts[RegionType_Alias];
             case ams::svc::MemoryState_Stack:
-                return m_stack_region_start;
+                return m_region_starts[RegionType_Stack];
             case ams::svc::MemoryState_Static:
             case ams::svc::MemoryState_ThreadLocal:
-                return m_kernel_map_region_start;
+                return m_region_starts[RegionType_KernelMap];
             case ams::svc::MemoryState_Io:
             case ams::svc::MemoryState_Shared:
             case ams::svc::MemoryState_AliasCode:
@@ -409,16 +591,16 @@ namespace ams::kern {
             case ams::svc::MemoryState_Kernel:
                 return m_address_space_end - m_address_space_start;
             case ams::svc::MemoryState_Normal:
-                return m_heap_region_end - m_heap_region_start;
+                return m_region_ends[RegionType_Heap] - m_region_starts[RegionType_Heap];
             case ams::svc::MemoryState_Ipc:
             case ams::svc::MemoryState_NonSecureIpc:
             case ams::svc::MemoryState_NonDeviceIpc:
-                return m_alias_region_end - m_alias_region_start;
+                return m_region_ends[RegionType_Alias] - m_region_starts[RegionType_Alias];
             case ams::svc::MemoryState_Stack:
-                return m_stack_region_end - m_stack_region_start;
+                return m_region_ends[RegionType_Stack] - m_region_starts[RegionType_Stack];
             case ams::svc::MemoryState_Static:
             case ams::svc::MemoryState_ThreadLocal:
-                return m_kernel_map_region_end - m_kernel_map_region_start;
+                return m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap];
             case ams::svc::MemoryState_Io:
             case ams::svc::MemoryState_Shared:
             case ams::svc::MemoryState_AliasCode:
@@ -446,8 +628,8 @@ namespace ams::kern {
         const size_t region_size           = this->GetRegionSize(state);
 
         const bool is_in_region = region_start <= addr && addr < end && last <= region_start + region_size - 1;
-        const bool is_in_heap   = !(end <= m_heap_region_start || m_heap_region_end <= addr || m_heap_region_start == m_heap_region_end);
-        const bool is_in_alias  = !(end <= m_alias_region_start || m_alias_region_end <= addr || m_alias_region_start == m_alias_region_end);
+        const bool is_in_heap   = !(end <= m_region_starts[RegionType_Heap] || m_region_ends[RegionType_Heap] <= addr || m_region_starts[RegionType_Heap] == m_region_ends[RegionType_Heap]);
+        const bool is_in_alias  = !(end <= m_region_starts[RegionType_Alias] || m_region_ends[RegionType_Alias] <= addr || m_region_starts[RegionType_Alias] == m_region_ends[RegionType_Alias]);
         switch (state) {
             case ams::svc::MemoryState_Free:
             case ams::svc::MemoryState_Kernel:
@@ -734,7 +916,7 @@ namespace ams::kern {
 
         /* Begin traversal. */
         TraversalContext context;
-        TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+        TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
         bool             cur_valid  = false;
         TraversalEntry   next_entry;
         bool             next_valid;
@@ -1084,7 +1266,7 @@ namespace ams::kern {
 
         /* Allocate pages for the insecure memory. */
         KPageGroup pg(m_block_info_manager);
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), size / PageSize, KMemoryManager::EncodeOption(insecure_pool, KMemoryManager::Direction_FromFront)));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), size / PageSize, 1, KMemoryManager::EncodeOption(insecure_pool, KMemoryManager::Direction_FromFront)));
 
         /* Close the opened pages when we're done with them. */
         /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
@@ -1237,14 +1419,14 @@ namespace ams::kern {
         return this->GetSize(KMemoryState_AliasCodeData);
     }
 
-    Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, KMemoryPermission perm) {
+    Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties &properties) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Create a page group to hold the pages we allocate. */
         KPageGroup pg(m_block_info_manager);
 
         /* Allocate the pages. */
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, m_allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, 1, m_allocate_option));
 
         /* Ensure that the page group is closed when we're done working with it. */
         ON_SCOPE_EXIT { pg.Close(); };
@@ -1255,7 +1437,6 @@ namespace ams::kern {
         }
 
         /* Map the pages. */
-        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_None };
         R_RETURN(this->Operate(page_list, address, num_pages, pg, properties, OperationType_MapGroup, false));
     }
 
@@ -1506,17 +1687,21 @@ namespace ams::kern {
 
         /* Begin a traversal. */
         TraversalContext context;
-        TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+        TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
         R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address), svc::ResultInvalidCurrentMemory());
 
         /* Traverse until we have enough size or we aren't contiguous any more. */
         const KPhysicalAddress phys_address = cur_entry.phys_addr;
+        const u8 entry_attr = cur_entry.attr;
         size_t contig_size;
         for (contig_size = cur_entry.block_size - (GetInteger(phys_address) & (cur_entry.block_size - 1)); contig_size < size; contig_size += cur_entry.block_size) {
             if (!impl.ContinueTraversal(std::addressof(cur_entry), std::addressof(context))) {
                 break;
             }
             if (cur_entry.phys_addr != phys_address + contig_size) {
+                break;
+            }
+            if (cur_entry.attr != entry_attr) {
                 break;
             }
         }
@@ -1532,7 +1717,7 @@ namespace ams::kern {
         }
 
         /* The memory is contiguous, so set the output range. */
-        out->Set(phys_address, size, is_heap);
+        out->Set(phys_address, size, is_heap, attr);
         R_SUCCEED();
     }
 
@@ -1692,17 +1877,17 @@ namespace ams::kern {
             KScopedLightLock lk(m_general_lock);
 
             /* Validate that setting heap size is possible at all. */
-            R_UNLESS(!m_is_kernel,                                                         svc::ResultOutOfMemory());
-            R_UNLESS(size <= static_cast<size_t>(m_heap_region_end - m_heap_region_start), svc::ResultOutOfMemory());
-            R_UNLESS(size <= m_max_heap_size,                                              svc::ResultOutOfMemory());
+            R_UNLESS(!m_is_kernel,                                                                                   svc::ResultOutOfMemory());
+            R_UNLESS(size <= static_cast<size_t>(m_region_ends[RegionType_Heap] - m_region_starts[RegionType_Heap]), svc::ResultOutOfMemory());
+            R_UNLESS(size <= m_max_heap_size,                                                                        svc::ResultOutOfMemory());
 
-            if (size < static_cast<size_t>(m_current_heap_end - m_heap_region_start)) {
+            if (size < static_cast<size_t>(m_current_heap_end - m_region_starts[RegionType_Heap])) {
                 /* The size being requested is less than the current size, so we need to free the end of the heap. */
 
                 /* Validate memory state. */
                 size_t num_allocator_blocks;
                 R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks),
-                                             m_heap_region_start + size, (m_current_heap_end - m_heap_region_start) - size,
+                                             m_region_starts[RegionType_Heap] + size, (m_current_heap_end - m_region_starts[RegionType_Heap]) - size,
                                              KMemoryState_All, KMemoryState_Normal,
                                              KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                              KMemoryAttribute_All,  KMemoryAttribute_None));
@@ -1716,30 +1901,30 @@ namespace ams::kern {
                 KScopedPageTableUpdater updater(this);
 
                 /* Unmap the end of the heap. */
-                const size_t num_pages = ((m_current_heap_end - m_heap_region_start) - size) / PageSize;
+                const size_t num_pages = ((m_current_heap_end - m_region_starts[RegionType_Heap]) - size) / PageSize;
                 const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
-                R_TRY(this->Operate(updater.GetPageList(), m_heap_region_start + size, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+                R_TRY(this->Operate(updater.GetPageList(), m_region_starts[RegionType_Heap] + size, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
                 /* Release the memory from the resource limit. */
                 m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, num_pages * PageSize);
 
                 /* Apply the memory block update. */
-                m_memory_block_manager.Update(std::addressof(allocator), m_heap_region_start + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, size == 0 ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None);
+                m_memory_block_manager.Update(std::addressof(allocator), m_region_starts[RegionType_Heap] + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, size == 0 ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None);
 
                 /* Update the current heap end. */
-                m_current_heap_end = m_heap_region_start + size;
+                m_current_heap_end = m_region_starts[RegionType_Heap] + size;
 
                 /* Set the output. */
-                *out = m_heap_region_start;
+                *out = m_region_starts[RegionType_Heap];
                 R_SUCCEED();
-            } else if (size == static_cast<size_t>(m_current_heap_end - m_heap_region_start)) {
+            } else if (size == static_cast<size_t>(m_current_heap_end - m_region_starts[RegionType_Heap])) {
                 /* The size requested is exactly the current size. */
-                *out = m_heap_region_start;
+                *out = m_region_starts[RegionType_Heap];
                 R_SUCCEED();
             } else {
                 /* We have to allocate memory. Determine how much to allocate and where while the table is locked. */
                 cur_address     = m_current_heap_end;
-                allocation_size = size - (m_current_heap_end - m_heap_region_start);
+                allocation_size = size - (m_current_heap_end - m_region_starts[RegionType_Heap]);
             }
         }
 
@@ -1749,7 +1934,7 @@ namespace ams::kern {
 
         /* Allocate pages for the heap extension. */
         KPageGroup pg(m_block_info_manager);
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), allocation_size / PageSize, m_allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), allocation_size / PageSize, 1, m_allocate_option));
 
         /* Close the opened pages when we're done with them. */
         /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
@@ -1782,20 +1967,20 @@ namespace ams::kern {
 
             /* Map the pages. */
             const size_t num_pages = allocation_size / PageSize;
-            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, (m_current_heap_end == m_heap_region_start) ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
+            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, (m_current_heap_end == m_region_starts[RegionType_Heap]) ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
             R_TRY(this->Operate(updater.GetPageList(), m_current_heap_end, num_pages, pg, map_properties, OperationType_MapGroup, false));
 
             /* We succeeded, so commit our memory reservation. */
             memory_reservation.Commit();
 
             /* Apply the memory block update. */
-            m_memory_block_manager.Update(std::addressof(allocator), m_current_heap_end, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, m_heap_region_start == m_current_heap_end ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
+            m_memory_block_manager.Update(std::addressof(allocator), m_current_heap_end, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, m_region_starts[RegionType_Heap] == m_current_heap_end ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
             /* Update the current heap end. */
-            m_current_heap_end = m_heap_region_start + size;
+            m_current_heap_end = m_region_starts[RegionType_Heap] + size;
 
             /* Set the output. */
-            *out = m_heap_region_start;
+            *out = m_region_starts[RegionType_Heap];
             R_SUCCEED();
         }
     }
@@ -1927,8 +2112,8 @@ namespace ams::kern {
         const KPhysicalAddress last = phys_addr + size - 1;
 
         /* Get region extents. */
-        const KProcessAddress region_start     = m_kernel_map_region_start;
-        const size_t          region_size      = m_kernel_map_region_end - m_kernel_map_region_start;
+        const KProcessAddress region_start     = m_region_starts[RegionType_KernelMap];
+        const size_t          region_size      = m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap];
         const size_t          region_num_pages = region_size / PageSize;
 
         MESOSPHERE_ASSERT(this->CanContain(region_start, region_size, state));
@@ -2237,11 +2422,11 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Perform mapping operation. */
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
         if (is_pa_valid) {
-            const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
             R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
         } else {
-            R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), addr, num_pages, perm));
+            R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), addr, num_pages, properties));
         }
 
         /* Update the blocks. */
@@ -2273,7 +2458,8 @@ namespace ams::kern {
         KScopedPageTableUpdater updater(this);
 
         /* Map the pages. */
-        R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, perm));
+        const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
+        R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, properties));
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
@@ -2812,7 +2998,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(src_page_table.GetPhysicalAddressLocked(std::addressof(phys_addr), address));
 
             /* Determine the current read size. */
-            const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
+            const size_t cur_size = std::min<size_t>(last_address - address + 1, PageSize - (GetInteger(address) & (PageSize - 1)));
 
             /* Read. */
             R_TRY(dst_page_table.ReadIoMemoryImpl(dst, phys_addr, cur_size, state));
@@ -2848,7 +3034,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(src_page_table.GetPhysicalAddressLocked(std::addressof(phys_addr), address));
 
             /* Determine the current read size. */
-            const size_t cur_size = std::min<size_t>(last_address - address + 1, util::AlignDown(GetInteger(address) + PageSize, PageSize) - GetInteger(address));
+            const size_t cur_size = std::min<size_t>(last_address - address + 1, PageSize - (GetInteger(address) & (PageSize - 1)));
 
             /* Read. */
             R_TRY(dst_page_table.WriteIoMemoryImpl(phys_addr, src, cur_size, state));
@@ -3720,8 +3906,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(src_page_table.IsLockedByCurrentThread());
 
         /* Check that we can theoretically map. */
-        const KProcessAddress region_start = m_alias_region_start;
-        const size_t          region_size  = m_alias_region_end - m_alias_region_start;
+        const KProcessAddress region_start = m_region_starts[RegionType_Alias];
+        const size_t          region_size  = m_region_ends[RegionType_Alias] - m_region_starts[RegionType_Alias];
         R_UNLESS(size < region_size, svc::ResultOutOfAddressSpace());
 
         /* Get aligned source extents. */
@@ -4662,7 +4848,7 @@ namespace ams::kern {
 
         /* Allocate the new memory. */
         const size_t num_pages = size / PageSize;
-        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, 1, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
 
         /* Close the page group when we're done with it. */
         ON_SCOPE_EXIT { pg.Close(); };

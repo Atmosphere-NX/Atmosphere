@@ -145,6 +145,8 @@ namespace ams::kern {
 
             bool IsEquivalentTo(const KPageGroup &rhs) const;
 
+            Result CopyRangeTo(KPageGroup &out, size_t offset, size_t size) const;
+
             ALWAYS_INLINE bool operator==(const KPageGroup &rhs) const {
                 return this->IsEquivalentTo(rhs);
             }

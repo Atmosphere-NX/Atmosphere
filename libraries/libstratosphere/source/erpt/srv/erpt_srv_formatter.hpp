@@ -62,7 +62,10 @@ namespace ams::erpt::srv {
             static Result AddId(Report *report, FieldId field_id) {
                 static_assert(MaxFieldStringSize < ElementSize_256);
 
-                R_TRY(AddStringValue(report, FieldString[field_id], strnlen(FieldString[field_id], MaxFieldStringSize)));
+                const auto index = FindFieldIndex(field_id);
+                AMS_ASSERT(index.has_value());
+
+                R_TRY(AddStringValue(report, FieldString[index.value()], strnlen(FieldString[index.value()], MaxFieldStringSize)));
 
                 R_SUCCEED();
             }

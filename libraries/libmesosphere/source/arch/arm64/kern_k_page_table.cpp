@@ -207,7 +207,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Get an ASID */
         m_asid = g_asid_manager.Reserve();
         ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
@@ -222,10 +222,10 @@ namespace ams::kern::arch::arm64 {
         ON_RESULT_FAILURE_2 { m_manager->Free(new_table); };
 
         /* Initialize our base table. */
-        const size_t as_width = GetAddressSpaceWidth(as_type);
+        const size_t as_width = GetAddressSpaceWidth(flags);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, system_resource, resource_limit));
+        R_TRY(KPageTableBase::InitializeForProcess(flags, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, system_resource, resource_limit));
 
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();
@@ -258,7 +258,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Begin the traversal. */
                 TraversalContext context;
-                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
+                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
                 bool             cur_valid  = false;
                 TraversalEntry   next_entry;
                 bool             next_valid;
@@ -268,7 +268,9 @@ namespace ams::kern::arch::arm64 {
 
                 /* Iterate over entries. */
                 while (true) {
-                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                    /* NOTE: Nintendo really does check next_entry.attr == (cur_entry.attr != 0)...but attr is always zero as of 18.0.0, and this is "probably" for the new console or debug-only anyway, */
+                    /* so we'll implement the weird logic verbatim even though it doesn't match the GetContiguousRange logic. */
+                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size && next_entry.attr == (cur_entry.attr ? 1 : 0))) {
                         cur_entry.block_size += next_entry.block_size;
                     } else {
                         if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {

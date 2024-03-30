@@ -94,7 +94,7 @@ namespace ams::secmon::boot {
         }
 
         /* Check that the key generation is one that we can use. */
-        static_assert(pkg1::KeyGeneration_Count == 17);
+        static_assert(pkg1::KeyGeneration_Count == 18);
         if (key_generation >= pkg1::KeyGeneration_Count) {
             return false;
         }

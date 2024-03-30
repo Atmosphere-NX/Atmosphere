@@ -34,8 +34,8 @@ namespace ams::fssrv {
 
     void ProgramRegistryImpl::Initialize(ProgramRegistryServiceImpl *service) {
         /* Check pre-conditions. */
-        AMS_ASSERT(g_impl != nullptr);
-        AMS_ASSERT(g_impl == nullptr);
+        AMS_ASSERT(service != nullptr);
+        AMS_ASSERT(g_impl  == nullptr);
 
         /* Set the global service. */
         g_impl = service;

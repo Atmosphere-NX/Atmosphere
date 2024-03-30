@@ -1,4 +1,26 @@
 # Changelog
+## 1.7.0
++ Basic support was added for 18.0.0.
+  + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
+    + There shouldn't be anything user visible resulting from this, but it will be addressed in a future atmosphère update, once I am not traveling so much.
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `spl` was updated to reflect the latest official behavior.
++ `fusee`'s no longer supports applying IPS patches to KIPs.
+  + The only KIPs that are ever present are a) atmosphère modules, b) custom system modules, or c) FS.
+  + The IPS subsystem was originally designed to make nogc patches work for FS, but these are now internal, and it appears the literal only kip patches that exist are for piracy.
+    + I could not find any kip patches posted anywhere made for any other purpose.
+  + It fundamentally does not make sense to slow down boot for every normal user for a feature that has no actual use-case, especially when `fusee` seeks to be a minimal bootloader.
++ Minor improvements were made to atmosphere's gdbstub, including:
+  + Support was added for QStartNoAckMode.
+  + An issue was fixed that could cause a fatal error when creating too many breakpoints.
++ A number of minor issues were fixed and improvements were made, including:
+  + `pt-BR` (`PortugueseBr`) is now accepted as a valid language when overriding game locales.
+  + A bug was fixed that could cause atmosphere to incorrectly serialize output object IDs over IPC when using domain objects.
+  + A bug was fixed in `pm`'s resource limit boost logic that could potentially cause legitimate boosts to fail in certain circumstances.
+  + `loader`/`ro` will now throw a fatal error when using invalid IPS patches that go out of bounds, instead of corrupting memory.
+  + Support was fixed for booting using a memory configuration of half of the true available memory (e.g. forcing a 4GB configuration on an 8GB board).
++ General system stability improvements to enhance the user's experience.
 ## 1.6.2
 + Support was finished for 17.0.0.
   + `erpt` was updated to support the latest official behavior.

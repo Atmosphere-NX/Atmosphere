@@ -3,7 +3,7 @@
 =====
 
 ![License](https://img.shields.io/badge/License-GPLv2-blue.svg)
-[![Chat on Discord](https://camo.githubusercontent.com/b4175720ede4f2621aa066ffbabb70ae30044679/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f636861742d446973636f72642d627269676874677265656e2e737667)](https://discordapp.com/invite/ZdqEhed)
+[![Chat on Discord](https://img.shields.io/badge/Discord-5865f2?logo=discord&logoColor=white)](https://discordapp.com/invite/ZdqEhed)
 
 Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
 
@@ -27,7 +27,6 @@ This software is licensed under the terms of the GPLv2, with exemptions for spec
 You can find a copy of the license in the [LICENSE file](LICENSE).
 
 Exemptions:
-* The [yuzu Nintendo Switch emulator](https://github.com/yuzu-emu/yuzu) and the [Ryujinx Team and Contributors](https://github.com/orgs/Ryujinx) are exempt from GPLv2 licensing. They are permitted, each at their individual discretion, to instead license any source code authored for the Atmosphère project as either GPLv2 or later or the [MIT license](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/licensing_exemptions/MIT_LICENSE). In doing so, they may alter, supplement, or entirely remove the copyright notice for each file they choose to relicense. Neither the Atmosphère project nor its individual contributors shall assert their moral rights against any of the aforementioned projects.
 * [Nintendo](https://github.com/Nintendo) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the Atmosphère project under the Zero-Clause BSD license.
 
 Credits

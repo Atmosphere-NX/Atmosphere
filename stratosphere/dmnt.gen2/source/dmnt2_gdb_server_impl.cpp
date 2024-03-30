@@ -1854,11 +1854,16 @@ namespace ams::dmnt {
     }
 
     void GdbServerImpl::Q() {
-        if (false) {
-            /* TODO: QStartNoAckMode? */
+        if (ParsePrefix(m_receive_packet, "QStartNoAckMode")) {
+            this->QStartNoAckMode();
         } else {
             AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented Q: %s\n", m_receive_packet);
         }
+    }
+
+    void GdbServerImpl::QStartNoAckMode() {
+        m_packet_io.SetNoAck();
+        AppendReplyOk(m_reply_cur, m_reply_end);
     }
 
     void GdbServerImpl::T() {
@@ -2235,6 +2240,7 @@ namespace ams::dmnt {
 
         R_SUCCEED();
     }
+
 
     void GdbServerImpl::q() {
         if (ParsePrefix(m_receive_packet, "qAttached:")) {
@@ -2661,6 +2667,7 @@ namespace ams::dmnt {
         AppendReplyFormat(m_reply_cur, m_reply_end, ";swbreak+");
         AppendReplyFormat(m_reply_cur, m_reply_end, ";hwbreak+");
         AppendReplyFormat(m_reply_cur, m_reply_end, ";vContSupported+");
+        AppendReplyFormat(m_reply_cur, m_reply_end, ";QStartNoAckMode+");
     }
 
     void GdbServerImpl::qXfer() {

@@ -39,17 +39,18 @@ namespace ams::kern {
     KPhysicalAddress KSystemControlBase::Init::GetKernelPhysicalBaseAddress(KPhysicalAddress base_address) {
         const size_t real_dram_size     = KSystemControl::Init::GetRealMemorySize();
         const size_t intended_dram_size = KSystemControl::Init::GetIntendedMemorySize();
-        if (intended_dram_size * 2 < real_dram_size) {
+        if (intended_dram_size * 2 <= real_dram_size) {
             return base_address;
         } else {
             return base_address + ((real_dram_size - intended_dram_size) / 2);
         }
     }
 
-    void KSystemControlBase::Init::GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out) {
+    void KSystemControlBase::Init::GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out, KPhysicalAddress kern_base_address) {
         *out = {
-            .address = GetInteger(KSystemControl::Init::GetKernelPhysicalBaseAddress(ams::kern::MainMemoryAddress)) + KSystemControl::Init::GetIntendedMemorySize() - InitialProcessBinarySizeMax,
-            ._08     = 0,
+            .address      = GetInteger(KSystemControl::Init::GetKernelPhysicalBaseAddress(ams::kern::MainMemoryAddress)) + KSystemControl::Init::GetIntendedMemorySize() - InitialProcessBinarySizeMax,
+            ._08          = 0,
+            .kern_address = GetInteger(kern_base_address),
         };
     }
 
@@ -77,7 +78,7 @@ namespace ams::kern {
 
     void KSystemControlBase::Init::CpuOnImpl(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
         #if defined(ATMOSPHERE_ARCH_ARM64)
-        MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<0, false>(core_id, entrypoint, arg)) == 0);
+        MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<0>(core_id, entrypoint, arg)) == 0);
         #else
         AMS_INFINITE_LOOP();
         #endif

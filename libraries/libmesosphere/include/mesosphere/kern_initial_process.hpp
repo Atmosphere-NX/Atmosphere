@@ -32,6 +32,7 @@ namespace ams::kern {
     struct InitialProcessBinaryLayout {
         uintptr_t address;
         uintptr_t _08;
+        uintptr_t kern_address;
     };
 
     struct InitialProcessBinaryLayoutWithSize {

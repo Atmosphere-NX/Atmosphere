@@ -296,7 +296,7 @@ namespace ams::kern::board::nintendo::nx {
         /* TODO: Move this into a header for the MC in general. */
         constexpr u32 MemoryControllerConfigurationRegister = 0x70019050;
         u32 config_value;
-        MESOSPHERE_INIT_ABORT_UNLESS(smc::init::ReadWriteRegister(&config_value, MemoryControllerConfigurationRegister, 0, 0));
+        smc::init::ReadWriteRegister(std::addressof(config_value), MemoryControllerConfigurationRegister, 0, 0);
         return static_cast<size_t>(config_value & 0x3FFF) << 20;
     }
 
@@ -387,7 +387,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KSystemControl::Init::CpuOnImpl(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
-        MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor, false>(core_id, entrypoint, arg)) == 0);
+        MESOSPHERE_INIT_ABORT_UNLESS((::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor>(core_id, entrypoint, arg)) == 0);
     }
 
     /* Randomness for Initialization. */
@@ -601,8 +601,9 @@ namespace ams::kern::board::nintendo::nx {
 
         if (g_call_smc_on_panic) {
             /* If we should, instruct the secure monitor to display a panic screen. */
-            smc::Panic(0xF00);
+            smc::ShowError(0xF00);
         }
+
         AMS_INFINITE_LOOP();
     }
 

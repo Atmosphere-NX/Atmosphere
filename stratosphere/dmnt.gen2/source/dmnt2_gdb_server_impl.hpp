@@ -81,6 +81,8 @@ namespace ams::dmnt {
 
             void Q();
 
+            void QStartNoAckMode();
+
             void T();
 
             void Z();

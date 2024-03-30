@@ -37,6 +37,7 @@ namespace ams::pkg1 {
         KeyGeneration_15_0_0 = 0x0E,
         KeyGeneration_16_0_0 = 0x0F,
         KeyGeneration_17_0_0 = 0x10,
+        KeyGeneration_18_0_0 = 0x11,
 
         KeyGeneration_Count,
 

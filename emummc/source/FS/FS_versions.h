@@ -101,6 +101,9 @@ enum FS_VER
     FS_VER_17_0_0,
     FS_VER_17_0_0_EXFAT,
 
+    FS_VER_18_0_0,
+    FS_VER_18_0_0_EXFAT,
+
     FS_VER_MAX,
 };
 

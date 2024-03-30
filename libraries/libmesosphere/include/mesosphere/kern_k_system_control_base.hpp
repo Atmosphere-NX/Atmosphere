@@ -53,7 +53,7 @@ namespace ams::kern {
                     static size_t GetRealMemorySize();
                     static size_t GetIntendedMemorySize();
                     static KPhysicalAddress GetKernelPhysicalBaseAddress(KPhysicalAddress base_address);
-                    static void GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out);
+                    static void GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out, KPhysicalAddress kern_base_address);
                     static bool ShouldIncreaseThreadResourceLimit();
                     static void TurnOnCpu(u64 core_id, const ams::kern::init::KInitArguments *args);
                     static size_t GetApplicationPoolSize();

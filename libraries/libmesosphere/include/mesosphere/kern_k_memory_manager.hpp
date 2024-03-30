@@ -185,7 +185,7 @@ namespace ams::kern {
                 }
             }
 
-            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random);
+            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random, s32 min_heap_index);
         public:
             KMemoryManager()
                 : m_pool_locks(), m_pool_managers_head(), m_pool_managers_tail(), m_managers(), m_num_managers(), m_optimized_process_ids(), m_has_optimized_process()
@@ -199,7 +199,7 @@ namespace ams::kern {
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
             NOINLINE KPhysicalAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
-            NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             Pool GetPool(KPhysicalAddress address) const {

@@ -121,6 +121,10 @@ namespace ams::spl {
         R_RETURN(impl::PrepareEsArchiveKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, generation));
     }
 
+    Result SecureMonitorManager::PrepareEsUnknown2Key(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
+        R_RETURN(impl::PrepareEsUnknown2Key(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, generation));
+    }
+
     Result SecureMonitorManager::PrepareCommonEsTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation) {
         R_RETURN(impl::PrepareCommonEsTitleKey(out_access_key, key_source, generation));
     }

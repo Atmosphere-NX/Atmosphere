@@ -136,7 +136,7 @@ namespace ams::kern {
                     {
                         /* Allocate the previously unreserved pages. */
                         KPageGroup unreserve_pg(Kernel::GetSystemSystemResource().GetBlockInfoManagerPointer());
-                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(unreserve_pg), unreserved_size / PageSize, KMemoryManager::EncodeOption(dst_pool, KMemoryManager::Direction_FromFront)));
+                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(unreserve_pg), unreserved_size / PageSize, 1, KMemoryManager::EncodeOption(dst_pool, KMemoryManager::Direction_FromFront)));
 
                         /* Add the previously reserved pages. */
                         if (src_pool == dst_pool && binary_pages != 0) {
@@ -173,7 +173,7 @@ namespace ams::kern {
                     /* If the pool is the same, we need to use the workaround page group. */
                     if (src_pool == dst_pool) {
                         /* Allocate a new, usable group for the process. */
-                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(workaround_pg), static_cast<size_t>(params.code_num_pages), KMemoryManager::EncodeOption(dst_pool, KMemoryManager::Direction_FromFront)));
+                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(workaround_pg), static_cast<size_t>(params.code_num_pages), 1, KMemoryManager::EncodeOption(dst_pool, KMemoryManager::Direction_FromFront)));
 
                         /* Copy data from the working page group to the usable one. */
                         auto work_it = pg.begin();
