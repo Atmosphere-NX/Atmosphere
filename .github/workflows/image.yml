@@ -1,0 +1,31 @@
+name: Build image
+
+on:
+  push:
+    branches:
+      - evaron-master
+    paths:
+      - 'Dockerfile'
+
+env:
+  IMAGE_NAME: devkita64-atmosphere
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          docker build . --no-cache \
+          --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${{ github.run_id }}"
+      - name: Log in to registry
+        run: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image
+        run: |
+          docker tag $IMAGE_NAME ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest
+          docker push ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest
