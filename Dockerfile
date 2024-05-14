@@ -4,6 +4,8 @@ WORKDIR /app/
 
 COPY ./requirements.txt /opt/requirements.txt
 
+RUN apt-get install -y --no-install-recommends jq curl
+
 RUN apt-get install -y --no-install-recommends python3-venv && \
 python3 -m venv /opt/venv && \
 . /opt//venv/bin/activate && \

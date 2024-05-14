@@ -12,6 +12,10 @@ ATMOSPHERE_MICRO_VERSION               := $(shell grep 'define ATMOSPHERE_RELEAS
 ATMOSPHERE_SUPPORTED_HOS_MAJOR_VERSION := $(shell grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR\b' $(ATMOSPHERE_LIBRARIES_DIR)/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
 ATMOSPHERE_SUPPORTED_HOS_MINOR_VERSION := $(shell grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR\b' $(ATMOSPHERE_LIBRARIES_DIR)/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
 ATMOSPHERE_SUPPORTED_HOS_MICRO_VERSION := $(shell grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO\b' $(ATMOSPHERE_LIBRARIES_DIR)/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
+NX_HBMENU_VERSION 					   := $(shell curl -s https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest | jq ".tag_name" | tr -d [v])
+NX_HBLOADER_VERSION                    := $(shell curl -s https://api.github.com/repos/switchbrew/nx-hbloader/releases/latest | jq ".tag_name" | tr -d [v])
+NX_HBMENU_DOWNLOAD                     := $(shell curl -s https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest | jq ".assets[0].browser_download_url")
+NX_HBLOADER_DOWNLOAD                   := $(shell curl -s https://api.github.com/repos/switchbrew/nx-hbloader/releases/latest | jq ".assets[0].browser_download_url")
 
 ATMOSPHERE_VERSION := $(ATMOSPHERE_MAJOR_VERSION).$(ATMOSPHERE_MINOR_VERSION).$(ATMOSPHERE_MICRO_VERSION)-$(ATMOSPHERE_GIT_REVISION)
 
@@ -109,7 +113,10 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro $(DIST_DIR)/switch/reboot_to_payload.nro
 	cp troposphere/daybreak/daybreak.nro $(DIST_DIR)/switch/daybreak.nro
 	cp troposphere/haze/haze.nro $(DIST_DIR)/switch/haze.nro
-	cd $(DIST_DIR); zip -r ../atmosphere-$(ATMOSPHERE_VERSION).zip ./*; cd ../;
+	chmod +x $(CURRENT_DIRECTORY)/software.sh; $(CURRENT_DIRECTORY)/software.sh $(DIST_DIR);
+	$(eval NX_HBMENU_VERSION = $(curl -s https://api.github.com/repos/switchbrew/nx-hbmenu/releases/latest | jq -r ".tag_name" | tr -d [v]))
+	$(eval NX_HBLOADER_VERSION = $(curl -s https://api.github.com/repos/switchbrew/nx-hbloader/releases/latest | jq -r ".tag_name" | tr -d [v]))
+	cd $(DIST_DIR); zip -r ../atmosphere-$(ATMOSPHERE_VERSION)-hbl-$(NX_HBLOADER_VERSION)+hbmenu-$(NX_HBMENU_VERSION).zip ./*; cd ../;
 	rm -rf $(DIST_DIR)
 	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)/fusee.bin
 
@@ -118,7 +125,7 @@ package3: emummc fusee stratosphere mesosphere exosphere troposphere
 	@echo "Built package3!"
 
 emummc:
-	$(MAKE) -C $(CURRENT_DIRECTORY)/emummc all
+	$(MAKE) -C $(CURRENT_DIRECTORY)/emummc
 
 fusee: libexosphere_boot
 	@$(MAKE) --no-print-directory -C $(CURRENT_DIRECTORY)/fusee -f $(CURRENT_DIRECTORY)/fusee/fusee.mk ATMOSPHERE_CPU="$(strip $(ATMOSPHERE_BOOT_CPU))"
