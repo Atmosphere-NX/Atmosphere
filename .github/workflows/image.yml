@@ -3,7 +3,7 @@ name: Build image
 on:
   push:
     branches:
-      - evaron-master
+      - master
     paths:
       - 'Dockerfile'
 

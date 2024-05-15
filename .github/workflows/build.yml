@@ -3,11 +3,9 @@ name: Build Atmosphere
 on:
   push:
     branches:
-      - evaron-master
+      - master
     paths-ignore:
       - 'Dockerfile'
-    # tags:
-    #   - '[0-9]+.[0-9]+.[0-9]+'
 
 defaults:
   run:
