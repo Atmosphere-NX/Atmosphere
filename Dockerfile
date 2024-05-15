@@ -9,7 +9,7 @@ RUN apt-get install -y --no-install-recommends jq curl
 RUN apt-get install -y --no-install-recommends python3-venv && \
 python3 -m venv /opt/venv && \
 . /opt//venv/bin/activate && \
-pip install -r /opt/requirements.txt
+pip install --no-cache-dir -r /opt/requirements.txt
 
 RUN dkp-pacman -S --needed --noconfirm \
 switch-glm switch-libjpeg-turbo \
