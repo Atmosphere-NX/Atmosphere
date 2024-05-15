@@ -231,7 +231,11 @@ endif
 #---------------------------------------------------------------------------------
 # get atmosphere git revision information
 #---------------------------------------------------------------------------------
-export ATMOSPHERE_GIT_BRANCH   := $(shell git symbolic-ref --short HEAD)
+ifneq ($(strip $(shell git symbolic-ref --short HEAD 2>/dev/null)),)
+export ATMOSPHERE_GIT_BRANCH := $(shell git symbolic-ref --short HEAD)
+else
+export ATMOSPHERE_GIT_BRANCH := notbranch
+endif
 
 ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 export ATMOSPHERE_GIT_REVISION := $(ATMOSPHERE_GIT_BRANCH)-$(shell git rev-parse --short HEAD)
