@@ -1,0 +1,23 @@
+name: Build jobs
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    container: ghcr.io/${{ github.repository_owner }}/devkita64-atmosphere:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Atmosphere
+        run: |
+          source /opt/venv/bin/activate
+          git config --global --add safe.directory "*"
+          make
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: atmosphere-artifacts
+          path: ./out/nintendo_nx_arm64_armv8a/release/*
