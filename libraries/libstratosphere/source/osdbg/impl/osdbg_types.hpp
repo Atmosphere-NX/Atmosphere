@@ -19,9 +19,13 @@
 namespace ams::osdbg::impl {
 
     template<size_t Size, int NumPointers, size_t Alignment>
-    using AlignedStorageIlp32 = typename std::aligned_storage<Size + NumPointers * sizeof(u32), Alignment>::type;
+    struct AlignedStorageIlp32 {
+        alignas(Alignment) std::byte _storage[Size + NumPointers * sizeof(u32)];
+    };
 
     template<size_t Size, int NumPointers, size_t Alignment>
-    using AlignedStorageLp64 = typename std::aligned_storage<Size + NumPointers * sizeof(u64), Alignment>::type;
+    struct AlignedStorageLp64 {
+        alignas(Alignment) std::byte _storage[Size + NumPointers * sizeof(u64)];
+    };
 
 }
