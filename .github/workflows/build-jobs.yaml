@@ -12,6 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build Atmosphere
+        shell: bash
         run: |
           source /opt/venv/bin/activate
           git config --global --add safe.directory "*"
