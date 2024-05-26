@@ -1002,14 +1002,16 @@ namespace ams::nxboot {
                                                                                                \
                         constexpr u32 SrcLow = RANGE_LOW(SRC_RANGE);                           \
                         constexpr u32 DstLow = RANGE_LOW(DST_RANGE);                           \
+                        constexpr auto Shift = (SrcLow < DstLow) ? (DstLow - SrcLow)           \
+                                                                 : (SrcLow - DstLow);          \
                                                                                                \
                         cur_reg_value &= ~Mask;                                                \
                         if constexpr (SrcLow == DstLow) {                                      \
                             cur_reg_value |= (src_value & Mask);                               \
                         } else if constexpr (SrcLow < DstLow) {                                \
-                            cur_reg_value |= ((src_value << (DstLow - SrcLow)) & Mask);        \
+                            cur_reg_value |= ((src_value << Shift) & Mask);                    \
                         } else {                                                               \
-                            cur_reg_value |= ((src_value >> (SrcLow - DstLow)) & Mask);        \
+                            cur_reg_value |= ((src_value >> Shift) & Mask);                    \
                         }                                                                      \
                     }                                                                          \
                 }
