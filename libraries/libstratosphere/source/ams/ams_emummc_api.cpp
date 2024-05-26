@@ -73,7 +73,7 @@ namespace ams::emummc {
             /* Retrieve and cache values. */
             {
 
-                typename std::aligned_storage<2 * (MaxDirLen + 1), os::MemoryPageSize>::type path_storage;
+                alignas(os::MemoryPageSize) std::byte path_storage[2 * (MaxDirLen + 1)];
 
                 struct {
                     char file_path[MaxDirLen + 1];

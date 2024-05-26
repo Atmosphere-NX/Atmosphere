@@ -22,7 +22,7 @@ namespace ams::util {
 
     template<typename T, size_t Size = sizeof(T), size_t Align = alignof(T)>
     struct TypedStorage {
-        typename std::aligned_storage<Size, Align>::type _storage;
+        alignas(Align) std::byte _storage[Size];
     };
 
     template<typename T>

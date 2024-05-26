@@ -44,7 +44,7 @@ else ifeq ($(strip $(ATMOSPHERE_COMPILER_NAME)),clang)
 export ATMOSPHERE_CFLAGS += -Wno-c99-designator -Wno-gnu-alignof-expression -Wno-unused-private-field
 endif
 
-export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++20 -Wno-invalid-offsetof
+export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++23 -Wno-invalid-offsetof
 export ATMOSPHERE_ASFLAGS  :=
 
 
