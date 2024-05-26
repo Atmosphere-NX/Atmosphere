@@ -8,14 +8,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: "prerelease"
-  cancel-in-progress: false
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build-workflow:
     uses: ./.github/workflows/build-jobs.yaml

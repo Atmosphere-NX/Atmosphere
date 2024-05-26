@@ -7,10 +7,6 @@ on:
     paths-ignore:
       - 'Dockerfile'
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build-workflow:
     uses: ./.github/workflows/build-jobs.yaml
