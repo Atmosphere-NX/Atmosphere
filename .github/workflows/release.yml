@@ -17,6 +17,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: ./configs/cliff.toml
+          args: --verbose
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -27,4 +34,5 @@ jobs:
         with:
           artifacts: "atmosphere-*.zip,fusee.bin"
           prerelease: false
-          name: "Atmosphère ${{ github.ref_name }}"
+          name: "Evaron-Atmosphère ${{ github.ref_name }}"
+          bodyFile: "CHANGELOG.md"
