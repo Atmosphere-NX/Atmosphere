@@ -85,14 +85,13 @@ namespace ams {
         };
 
         /* Use CRTP for Results. */
-        template<typename Self>
         class ResultBase {
             public:
                 using BaseType = typename ResultTraits::BaseType;
                 static constexpr BaseType SuccessValue = ResultTraits::SuccessValue;
             public:
-                constexpr ALWAYS_INLINE BaseType GetModule() const { return ResultTraits::GetModuleFromValue(static_cast<const Self *>(this)->GetValue()); }
-                constexpr ALWAYS_INLINE BaseType GetDescription() const { return ResultTraits::GetDescriptionFromValue(static_cast<const Self *>(this)->GetValue()); }
+                constexpr ALWAYS_INLINE BaseType GetModule(this auto const &self) { return ResultTraits::GetModuleFromValue(self.GetValue()); }
+                constexpr ALWAYS_INLINE BaseType GetDescription(this auto const &self) { return ResultTraits::GetDescriptionFromValue(self.GetValue()); }
         };
 
         class ResultInternalAccessor;
@@ -101,10 +100,10 @@ namespace ams {
 
     class ResultSuccess;
 
-    class Result final : public result::impl::ResultBase<Result> {
+    class Result final : public result::impl::ResultBase {
         friend class result::impl::ResultInternalAccessor;
         public:
-            using Base = typename result::impl::ResultBase<Result>;
+            using Base = typename result::impl::ResultBase;
         private:
             typename Base::BaseType m_value;
         private:
@@ -157,9 +156,9 @@ namespace ams {
 
     }
 
-    class ResultSuccess final : public result::impl::ResultBase<ResultSuccess> {
+    class ResultSuccess final : public result::impl::ResultBase {
         public:
-            using Base = typename result::impl::ResultBase<ResultSuccess>;
+            using Base = typename result::impl::ResultBase;
         public:
             constexpr ALWAYS_INLINE operator Result() const { return result::impl::MakeResult(Base::SuccessValue); }
             static constexpr ALWAYS_INLINE bool CanAccept(Result result) { return result.IsSuccess(); }
@@ -189,9 +188,9 @@ namespace ams {
     namespace result::impl {
 
         template<ResultTraits::BaseType _Module, ResultTraits::BaseType _Description>
-        class ResultErrorBase : public ResultBase<ResultErrorBase<_Module, _Description>> {
+        class ResultErrorBase : public ResultBase {
             public:
-                using Base = typename result::impl::ResultBase<ResultErrorBase<_Module, _Description>>;
+                using Base = typename result::impl::ResultBase;
                 static constexpr typename Base::BaseType Module = _Module;
                 static constexpr typename Base::BaseType Description = _Description;
                 static constexpr typename Base::BaseType Value = ResultTraits::MakeStaticValue<Module, Description>::value;
