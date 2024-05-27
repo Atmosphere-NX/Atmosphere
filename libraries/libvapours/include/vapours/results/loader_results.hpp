@@ -34,6 +34,8 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidAcidSignature,  11);
     R_DEFINE_ERROR_RESULT(InvalidNcaSignature,   12);
 
+    R_DEFINE_ERROR_RESULT(InvalidPlatformId,     14);
+
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,            51);
     R_DEFINE_ERROR_RESULT(InvalidNroImage,              52);
     R_DEFINE_ERROR_RESULT(InvalidNrrImage,              53);

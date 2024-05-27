@@ -19,6 +19,7 @@
 #include <stratosphere/ncm/ncm_ids.hpp>
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
+#include <stratosphere/ldr/ldr_platform_id.hpp>
 
 namespace ams::ldr {
 
@@ -224,6 +225,7 @@ namespace ams::ldr {
 
             MetaFlag_OptimizeMemoryAllocation       = (1 << 4),
             MetaFlag_DisableDeviceAddressSpaceMerge = (1 << 5),
+            MetaFlag_EnableAliasRegionExtraSize     = (1 << 6),
         };
 
         enum AddressSpaceType {

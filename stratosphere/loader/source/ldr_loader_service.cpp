@@ -27,56 +27,72 @@ namespace ams::ldr {
 
         constinit ArgumentStore g_argument_store;
 
+        bool IsValidPlatform(PlatformId platform) {
+            return platform == PlatformId_Nx;
+        }
+
+        Result CreateProcessByPlatform(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
+            /* Check that the platform is valid. */
+            R_UNLESS(IsValidPlatform(platform), ldr::ResultInvalidPlatformId());
+
+            /* Get the location and override status. */
+            ncm::ProgramLocation loc;
+            cfg::OverrideStatus override_status;
+            R_TRY(ldr::GetProgramLocationAndOverrideStatusFromPinId(std::addressof(loc), std::addressof(override_status), pin_id));
+
+            /* Get the program path. */
+            char path[fs::EntryNameLengthMax];
+            R_TRY(GetProgramPath(path, sizeof(path), loc, platform));
+            path[sizeof(path) - 1] = '\x00';
+
+            /* Create the process. */
+            R_RETURN(ldr::CreateProcess(out, pin_id, loc, override_status, path, g_argument_store.Get(loc.program_id), flags, resource_limit, platform));
+        }
+
+        Result GetProgramInfoByPlatform(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, PlatformId platform) {
+            /* Check that the platform is valid. */
+            R_UNLESS(IsValidPlatform(platform), ldr::ResultInvalidPlatformId());
+
+            /* Zero output. */
+            std::memset(out, 0, sizeof(*out));
+
+            /* Get the program path. */
+            char path[fs::EntryNameLengthMax];
+            R_TRY(GetProgramPath(path, sizeof(path), loc, platform));
+            path[sizeof(path) - 1] = '\x00';
+
+            /* Get the program info. */
+            cfg::OverrideStatus status;
+            R_TRY(ldr::GetProgramInfo(out, std::addressof(status), loc, path, platform));
+
+            if (loc.program_id != out->program_id) {
+                /* Redirect the program path. */
+                const ncm::ProgramLocation new_loc = ncm::ProgramLocation::Make(out->program_id, static_cast<ncm::StorageId>(loc.storage_id));
+                R_TRY(RedirectProgramPath(path, sizeof(path), new_loc));
+
+                /* Update the arguments, as needed. */
+                if (const auto *entry = g_argument_store.Get(loc.program_id); entry != nullptr) {
+                    R_TRY(g_argument_store.Set(new_loc.program_id, entry->argument, entry->argument_size));
+                }
+            }
+
+            /* If we should, set the output status. */
+            if (out_status != nullptr) {
+                *out_status = status;
+            }
+
+            R_SUCCEED();
+        }
+
     }
 
 
     Result LoaderService::CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit) {
-        /* Declare program path, which we'll need later. */
-
-        /* Get the location and override status. */
-        ncm::ProgramLocation loc;
-        cfg::OverrideStatus override_status;
-        R_TRY(ldr::GetProgramLocationAndOverrideStatusFromPinId(std::addressof(loc), std::addressof(override_status), pin_id));
-
-        /* Get the program path. */
-        char path[fs::EntryNameLengthMax];
-        R_TRY(GetProgramPath(path, sizeof(path), loc));
-        path[sizeof(path) - 1] = '\x00';
-
-        /* Create the process. */
-        R_RETURN(ldr::CreateProcess(out, pin_id, loc, override_status, path, g_argument_store.Get(loc.program_id), flags, resource_limit));
+        R_RETURN(CreateProcessByPlatform(out, pin_id, flags, resource_limit, PlatformId_Nx));
     }
 
     Result LoaderService::GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
-        /* Zero output. */
-        std::memset(out, 0, sizeof(*out));
-
-        /* Get the program path. */
-        char path[fs::EntryNameLengthMax];
-        R_TRY(GetProgramPath(path, sizeof(path), loc));
-        path[sizeof(path) - 1] = '\x00';
-
-        /* Get the program info. */
-        cfg::OverrideStatus status;
-        R_TRY(ldr::GetProgramInfo(out, std::addressof(status), loc, path));
-
-        if (loc.program_id != out->program_id) {
-            /* Redirect the program path. */
-            const ncm::ProgramLocation new_loc = ncm::ProgramLocation::Make(out->program_id, static_cast<ncm::StorageId>(loc.storage_id));
-            R_TRY(RedirectProgramPath(path, sizeof(path), new_loc));
-
-            /* Update the arguments, as needed. */
-            if (const auto *entry = g_argument_store.Get(loc.program_id); entry != nullptr) {
-                R_TRY(this->SetProgramArgument(new_loc.program_id, entry->argument, entry->argument_size));
-            }
-        }
-
-        /* If we should, set the output status. */
-        if (out_status != nullptr) {
-            *out_status = status;
-        }
-
-        R_SUCCEED();
+        R_RETURN(GetProgramInfoByPlatform(out, out_status, loc, PlatformId_Nx));
     }
 
     Result LoaderService::PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {

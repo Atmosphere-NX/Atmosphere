@@ -34,23 +34,43 @@ namespace ams::ldr {
         enum NsoIndex {
             Nso_Rtld    =  0,
             Nso_Main    =  1,
-            Nso_SubSdk0 =  2,
-            Nso_SubSdk1 =  3,
-            Nso_SubSdk2 =  4,
-            Nso_SubSdk3 =  5,
-            Nso_SubSdk4 =  6,
-            Nso_SubSdk5 =  7,
-            Nso_SubSdk6 =  8,
-            Nso_SubSdk7 =  9,
-            Nso_SubSdk8 = 10,
-            Nso_SubSdk9 = 11,
-            Nso_Sdk     = 12,
+            Nso_Compat0 =  2,
+            Nso_Compat1 =  3,
+            Nso_Compat2 =  4,
+            Nso_Compat3 =  5,
+            Nso_Compat4 =  6,
+            Nso_Compat5 =  7,
+            Nso_Compat6 =  8,
+            Nso_Compat7 =  9,
+            Nso_Compat8 = 10,
+            Nso_Compat9 = 11,
+            Nso_SubSdk0 = 12,
+            Nso_SubSdk1 = 13,
+            Nso_SubSdk2 = 14,
+            Nso_SubSdk3 = 15,
+            Nso_SubSdk4 = 16,
+            Nso_SubSdk5 = 17,
+            Nso_SubSdk6 = 18,
+            Nso_SubSdk7 = 19,
+            Nso_SubSdk8 = 20,
+            Nso_SubSdk9 = 21,
+            Nso_Sdk     = 22,
             Nso_Count,
         };
 
         constexpr inline const char *NsoPaths[Nso_Count] = {
             ENCODE_ATMOSPHERE_CODE_PATH("/rtld"),
             ENCODE_ATMOSPHERE_CODE_PATH("/main"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat0"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat1"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat2"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat3"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat4"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat5"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat6"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat7"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat8"),
+            ENCODE_ATMOSPHERE_CMPT_PATH("/compat9"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk0"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk1"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk2"),
@@ -360,6 +380,11 @@ namespace ams::ldr {
                 flags |= svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
             }
 
+            /* 18.0.0+/meso Set Alias region extra size. */
+            if (meta_flags & Npdm::MetaFlag_EnableAliasRegionExtraSize) {
+                flags |= svc::CreateProcessFlag_EnableAliasRegionExtraSize;
+            }
+
             *out = flags;
             R_SUCCEED();
         }
@@ -639,15 +664,15 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
         /* Mount code. */
         AMS_UNUSED(path);
-        ScopedCodeMount mount(loc, override_status);
+        ScopedCodeMount mount(loc, override_status, platform);
         R_TRY(mount.GetResult());
 
         /* Load meta, possibly from cache. */
         Meta meta;
-        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
+        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status, platform));
 
         /* Validate meta. */
         R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
@@ -695,16 +720,16 @@ namespace ams::ldr {
         R_SUCCEED();
     }
 
-    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path) {
+    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path, PlatformId platform) {
         Meta meta;
 
         /* Load Meta. */
         {
             AMS_UNUSED(path);
 
-            ScopedCodeMount mount(loc);
+            ScopedCodeMount mount(loc, platform);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus()));
+            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), platform, false));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }

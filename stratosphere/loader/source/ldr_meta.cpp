@@ -55,21 +55,8 @@ namespace ams::ldr {
             R_UNLESS(npdm->magic == Npdm::Magic, ldr::ResultInvalidMeta());
 
             /* Validate flags. */
-            u32 mask;
-            if (hos::GetVersion() >= hos::Version_11_0_0) {
-                /* 11.0.0 added bit 5 = "DisableDeviceAddressSpaceMerge". */
-                mask = ~0x3F;
-            } else if (hos::GetVersion() >= hos::Version_7_0_0) {
-                /* 7.0.0 added bit 4 = "UseOptimizedMemory" */
-                mask = ~0x1F;
-            } else {
-                mask = ~0xF;
-            }
-
-            /* We set the "DisableDeviceAddressSpaceMerge" bit on all versions, so be permissive with it. */
-            mask &= ~0x20;
-
-            R_UNLESS(!(npdm->flags & mask), ldr::ResultInvalidMeta());
+            constexpr u32 InvalidMetaFlagMask = 0x80000000;
+            R_UNLESS(!(npdm->flags & InvalidMetaFlagMask), ldr::ResultInvalidMeta());
 
             /* Validate Acid extents. */
             R_TRY(ValidateSubregion(sizeof(Npdm), size, npdm->acid_offset, npdm->acid_size, sizeof(Acid)));
@@ -90,8 +77,8 @@ namespace ams::ldr {
             }
 
             /* Validate that the acid version is correct. */
-            constexpr u8 MinimumValueForAcid209 = 14; /* TODO: What is the actual meaning of this value? */
-            if (acid->unknown_209 < MinimumValueForAcid209) {
+            constexpr u8 SupportedSdkMajorVersion = ams::svc::ConvertToSdkMajorVersion(ams::svc::SupportedKernelMajorVersion);
+            if (acid->unknown_209 < SupportedSdkMajorVersion) {
                 R_UNLESS(acid->version == 0,     ldr::ResultInvalidMeta());
                 R_UNLESS(acid->unknown_209 == 0, ldr::ResultInvalidMeta());
             }
@@ -116,22 +103,30 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        const u8 *GetAcidSignatureModulus(u32 key_generation) {
-            return fssystem::GetAcidSignatureKeyModulus(!IsDevelopmentForAcidSignatureCheck(), key_generation);
+        const u8 *GetAcidSignatureModulus(PlatformId platform, u8 key_generation, bool unk_unused) {
+            return fssystem::GetAcidSignatureKeyModulus(platform, !IsDevelopmentForAcidSignatureCheck(), key_generation, unk_unused);
         }
 
-        Result ValidateAcidSignature(Meta *meta) {
+        size_t GetAcidSignatureModulusSize(PlatformId platform, bool unk_unused) {
+            return fssystem::GetAcidSignatureKeyModulusSize(platform, unk_unused);
+        }
+
+        Result ValidateAcidSignature(Meta *meta, PlatformId platform, bool unk_unused) {
             /* Loader did not check signatures prior to 10.0.0. */
             if (hos::GetVersion() < hos::Version_10_0_0) {
                 meta->check_verification_data = false;
                 R_SUCCEED();
             }
 
+            /* Get the signature key generation. */
+            const auto signature_key_generation = meta->npdm->signature_key_generation;
+            R_UNLESS(fssystem::IsValidSignatureKeyGeneration(platform, signature_key_generation), ldr::ResultInvalidMeta());
+
             /* Verify the signature. */
             const u8 *sig         = meta->acid->signature;
             const size_t sig_size = sizeof(meta->acid->signature);
-            const u8 *mod         = GetAcidSignatureModulus(meta->npdm->signature_key_generation);
-            const size_t mod_size = fssystem::AcidSignatureKeyModulusSize;
+            const u8 *mod         = GetAcidSignatureModulus(platform, signature_key_generation, unk_unused);
+            const size_t mod_size = GetAcidSignatureModulusSize(platform, unk_unused);
             const u8 *exp         = fssystem::GetAcidSignatureKeyPublicExponent();
             const size_t exp_size = fssystem::AcidSignatureKeyPublicExponentSize;
             const u8 *msg         = meta->acid->modulus;
@@ -195,7 +190,10 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
+    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform, bool unk_unused) {
+        /* Set the cached program id back to zero. */
+        g_cached_program_id = {};
+
         /* Try to load meta from file. */
         fs::FileHandle file;
         R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
@@ -261,7 +259,7 @@ namespace ams::ldr {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 R_TRY(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)));
-                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));
+                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta), platform, unk_unused));
                 meta->modulus                 = g_original_meta_cache.meta.modulus;
                 meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
             }
@@ -280,9 +278,9 @@ namespace ams::ldr {
         R_SUCCEED();
     }
 
-    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
+    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform) {
         if (g_cached_program_id != loc.program_id || g_cached_override_status != status) {
-            R_RETURN(LoadMeta(out_meta, loc, status));
+            R_RETURN(LoadMeta(out_meta, loc, status, platform, false));
         }
         *out_meta = g_meta_cache.meta;
         R_SUCCEED();
