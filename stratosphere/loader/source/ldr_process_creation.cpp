@@ -29,6 +29,8 @@ namespace ams::ldr {
 
         /* Convenience defines. */
         constexpr size_t SystemResourceSizeMax = 0x1FE00000;
+        constexpr ncm::ProgramId BREATH_OF_THE_WILD = 0x01007EF00011E000;
+        constexpr const char *ASLR_CONFIG = "sdmc:/atmosphere/config/aslr.txt";
 
         /* Types. */
         enum NsoIndex {
@@ -468,45 +470,56 @@ namespace ams::ldr {
 
             /* Calculate ASLR. */
             uintptr_t aslr_start = 0;
-            size_t aslr_size     = 0;
-            if (hos::GetVersion() >= hos::Version_2_0_0) {
-                switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
-                    case svc::CreateProcessFlag_AddressSpace32Bit:
-                    case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
-                        aslr_start = svc::AddressSmallMap32Start;
-                        aslr_size  = svc::AddressSmallMap32Size;
-                        break;
-                    case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
+                size_t aslr_size = 0;
+                if (hos::GetVersion() >= hos::Version_2_0_0) {
+                    switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
+                        case svc::CreateProcessFlag_AddressSpace32Bit:
+                        case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+                            aslr_start = svc::AddressSmallMap32Start;
+                            aslr_size  = svc::AddressSmallMap32Size;
+                            break;
+                        case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                            aslr_start = svc::AddressSmallMap36Start;
+                            aslr_size  = svc::AddressSmallMap36Size;
+                            break;
+                        case svc::CreateProcessFlag_AddressSpace64Bit:
+                            aslr_start = svc::AddressMap39Start;
+                            aslr_size  = svc::AddressMap39Size;
+                            break;
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                } else {
+                    /* On 1.0.0, only 2 address space types existed. */
+                    if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
                         aslr_start = svc::AddressSmallMap36Start;
                         aslr_size  = svc::AddressSmallMap36Size;
-                        break;
-                    case svc::CreateProcessFlag_AddressSpace64Bit:
-                        aslr_start = svc::AddressMap39Start;
-                        aslr_size  = svc::AddressMap39Size;
-                        break;
-                    AMS_UNREACHABLE_DEFAULT_CASE();
+                    } else {
+                        aslr_start = svc::AddressSmallMap32Start;
+                        aslr_size  = svc::AddressSmallMap32Size;
+                    }
                 }
-            } else {
-                /* On 1.0.0, only 2 address space types existed. */
-                if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
-                    aslr_start = svc::AddressSmallMap36Start;
-                    aslr_size  = svc::AddressSmallMap36Size;
-                } else {
-                    aslr_start = svc::AddressSmallMap32Start;
-                    aslr_size  = svc::AddressSmallMap32Size;
-                }
-            }
-            R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
+                R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
 
-            /* Set Create Process output. */
-            uintptr_t aslr_slide = 0;
-            size_t free_size     = (aslr_size - total_size);
-            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
+                /* Set Create Process output. */
+                uintptr_t aslr_slide = 0;
+                size_t free_size     = (aslr_size - total_size);
                 aslr_slide = GenerateSecureRandom(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
+
+                /* Set out. */
+                aslr_start += aslr_slide;
+            }
+            else {
+                fs::FileHandle aslr;
+                if (R_SUCCEEDED(fs::OpenFile(std::addressof(aslr), ASLR_CONFIG, fs::OpenMode_Read))) {
+                    ON_SCOPE_EXIT { fs::CloseFile(aslr); }
+
+                    size_t read_size;
+                    uintptr_t address = 0;
+                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
+                }
             }
 
-            /* Set out. */
-            aslr_start += aslr_slide;
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
                     out->nso_address[i] += aslr_start;
@@ -665,6 +678,8 @@ namespace ams::ldr {
 
     /* Process Creation API. */
     Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
+        if (loc->program_id == BREATH_OF_THE_WILD) flags |= svc::CreateProcessFlag_DisableAslr;
+
         /* Mount code. */
         AMS_UNUSED(path);
         ScopedCodeMount mount(loc, override_status, platform);
