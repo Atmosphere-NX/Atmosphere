@@ -455,7 +455,7 @@ namespace ams::ldr {
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize);
+                    out->nso_size[i] = util::AlignUp(out->nso_size[i], out_param->program_id != BREATH_OF_THE_WILD || i ? os::MemoryPageSize : os::MemoryBlockUnitSize);
 
                     total_size += out->nso_size[i];
 
