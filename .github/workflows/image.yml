@@ -19,6 +19,10 @@ jobs:
       contents: read
       attestations: write
     steps:
+      - name: Get Short GitHub SHA and Save in Environment Variable
+        run: |
+          COMMIT_SHA=${{ github.sha }}
+          echo "COMMIT_SHORT_SHA=${COMMIT_SHA::9}" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to GitHub Container Registry
