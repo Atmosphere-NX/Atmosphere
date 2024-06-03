@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'Dockerfile'
+      - '.github/workflows/image.yml'
 
 env:
   IMAGE_NAME: devkita64-atmosphere
