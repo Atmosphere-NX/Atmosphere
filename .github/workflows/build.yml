@@ -6,6 +6,7 @@ on:
       - master
     paths-ignore:
       - 'Dockerfile'
+      - '.github/workflows/image.yml'
 
 jobs:
   build-workflow:
