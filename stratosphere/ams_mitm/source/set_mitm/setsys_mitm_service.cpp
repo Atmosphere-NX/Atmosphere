@@ -63,13 +63,16 @@ namespace ams::mitm::settings {
                 const auto api_info = exosphere::GetApiInfo();
                 const char emummc_char = emummc::IsActive() ? 'E' : 'S';
 
-                /* NOTE: We have carefully accounted for the size of the string we print. */
-                /* No truncation occurs assuming two-digits for all version number components. */
-                char display_version[sizeof(g_ams_firmware_version.display_version)];
-
-                util::SNPrintf(display_version, sizeof(display_version), "%s|AMS %u.%u.%u|%c", g_ams_firmware_version.display_version, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
-
-                std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
+                /* GCC complains about the following snprintf possibly truncating, but this is not a problem and has been carefully accounted for. */
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wformat-truncation"
+                {
+                    char display_version[sizeof(g_ams_firmware_version.display_version)];
+                    std::snprintf(display_version, sizeof(display_version), "%s|%s-%u.%u.%u|%c", g_ams_firmware_version.display_version, ATMOSPHERE_GIT_REVISION, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+                    
+                    std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
+                }
+                #pragma GCC diagnostic pop
             }
 
             g_cached_firmware_version = true;

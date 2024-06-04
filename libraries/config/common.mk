@@ -233,11 +233,7 @@ endif
 #---------------------------------------------------------------------------------
 export ATMOSPHERE_GIT_BRANCH   := $(shell git symbolic-ref --short HEAD)
 
-ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
-export ATMOSPHERE_GIT_REVISION := $(ATMOSPHERE_GIT_BRANCH)-$(shell git rev-parse --short HEAD)
-else
-export ATMOSPHERE_GIT_REVISION := $(ATMOSPHERE_GIT_BRANCH)-$(shell git rev-parse --short HEAD)-dirty
-endif
+export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat /mnt/f/git/dev/_kefir/version)
 
 export ATMOSPHERE_GIT_HASH := $(shell git rev-parse --short=16 HEAD)
 
