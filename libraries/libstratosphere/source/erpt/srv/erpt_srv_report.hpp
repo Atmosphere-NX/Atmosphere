@@ -51,12 +51,15 @@ namespace ams::erpt::srv {
 
             template<typename T>
             Result Write(T val) {
-                R_RETURN(this->WriteStream(reinterpret_cast<const u8 *>(std::addressof(val)), sizeof(val)));
+                (void)val;
+                R_SUCCEED();
             }
 
             template<typename T>
             Result Write(const T *buf, u32 buffer_size) {
-                R_RETURN(this->WriteStream(reinterpret_cast<const u8 *>(buf), buffer_size));
+                (void)buf;
+                (void)buffer_size;
+                R_SUCCEED();
             }
     };
 
