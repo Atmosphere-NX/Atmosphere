@@ -203,11 +203,14 @@ namespace ams::mitm::fs {
         /* Only redirect if the appropriate system setting is set. */
         R_UNLESS(GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd"), sm::mitm::ResultShouldForwardToSession());
 
-        /* Only redirect if the specific title being accessed has a redirect save flag. */
-        R_UNLESS(cfg::HasContentSpecificFlag(m_client_info.program_id, "redirect_save"), sm::mitm::ResultShouldForwardToSession());
+        /* DO NOT redirect if the specific title being accessed has a redirect save flag. */
+        R_UNLESS(!cfg::HasContentSpecificFlag(m_client_info.program_id, "do_not_redirect_save"), sm::mitm::ResultShouldForwardToSession());
 
-        /* Only redirect account savedata. */
-        R_UNLESS(attribute.type == fs::SaveDataType::Account, sm::mitm::ResultShouldForwardToSession());
+        /* Redirect account, bcat and device savedata. */
+        R_UNLESS((attribute.type == fs::SaveDataType::Account) || (attribute.type == fs::SaveDataType::Device) || (attribute.type == fs::SaveDataType::Bcat) || (attribute.type == fs::SaveDataType::Cache), sm::mitm::ResultShouldForwardToSession());
+
+        /* If emunand enabled */
+        R_UNLESS(emummc::IsActive(), sm::mitm::ResultShouldForwardToSession());
 
         /* Get enum type for space id. */
         auto space_id = static_cast<FsSaveDataSpaceId>(_space_id);
