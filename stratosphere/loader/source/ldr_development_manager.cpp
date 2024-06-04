@@ -46,19 +46,19 @@ namespace ams::ldr {
     }
 
     bool IsDevelopmentForAcidProductionCheck() {
-        return g_development_for_acid_production_check;
+        return true;
     }
 
     bool IsDevelopmentForAntiDowngradeCheck() {
-        return g_development_for_anti_downgrade_check;
+        return true;
     }
 
     bool IsDevelopmentForAcidSignatureCheck() {
-        return g_development_for_acid_signature_check;
+        return false;
     }
 
     bool IsEnabledProgramVerification() {
-        return g_enabled_program_verification;
+        return false;
     }
 
 }
