@@ -10,6 +10,18 @@ Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
 Components
 =====
 
+Kefirosphere features:
+
+* Updating the firmware version to match the system version
+* Installing a specific memory card driver by default when updating the system
+* Removing the ACID signature check for using homebrew without patches
+* Embedded Sigpatches
+* Removing system logging to prevent cluttering the memory card and excessive use
+* Redirecting saves from internal memory to the memory card when using the emuNAND command to reduce the likelihood of losing them when exiting the emuNAND command (optional)
+
+Components
+=====
+
 Atmosphère consists of multiple components, each of which replaces/modifies a different component of the system:
 
 * Fusée: First-stage Loader, responsible for loading and validating stage 2 (custom TrustZone) plus package2 (Kernel/FIRM sysmodules), and patching them as needed. This replaces all functionality normally in Package1loader/NX Bootloader.

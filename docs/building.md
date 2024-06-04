@@ -10,17 +10,18 @@ Building Atmosphère is a very straightforward process that relies almost exclus
 + [hactool](https://github.com/SciresM/hactool)
 
 ## Instructions
-1. Follow the guide located [here](https://devkitpro.org/wiki/Getting_Started) to install and configure all the tools necessary for the build process.
-
-2. Install the following packages via (dkp-)pacman:
-    + `switch-dev`
-    + `switch-glm`
-    + `switch-libjpeg-turbo`
-    + `devkitARM`
-    + `devkitarm-rules`
-    + `hactool`
-
-3. Install the following library via python's package manager `pip`, required by [exosphere](components/exosphere.md):
-    + `lz4`
-
-4. Finally, clone the Atmosphère repository and run `make` under its root directory.
+1. Install pacman
+    * `wget https://github.com/devkitPro/pacman/releases/download/v1.0.2/devkitpro-pacman.amd64.deb`
+    * `sudo apt-get install gdebi-core`
+    * `sudo gdebi devkitpro-pacman.amd64.deb`
+1. Install devkitpro
+    * `sudo dkp-pacman -Syu`
+    * `sudo dkp-pacman -S switch-dev switch-glm switch-libjpeg-turbo devkitARM devkitarm-rules hactool`
+    * `echo export DEVKITPRO="/opt/devkitpro" >> .bashrc`
+1. Install Python 2
+    * `sudo apt install python2 zip`
+    * `curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py`
+    * `sudo python2 get-pip.py`
+    * `pip install lz4 pycryptodome`
+    * `sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1`
+1. Finally, clone the Atmosphère repository and run `make` under its root directory.
