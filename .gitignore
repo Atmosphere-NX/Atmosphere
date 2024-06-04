@@ -108,3 +108,7 @@ tools/*/
 package3
 
 stratosphere/test/
+/stratosphere/boot/source/splashscreen.h
+/stratosphere/boot/source/convert.py
+/stratosphere/boot/source/bmp_to_array.py
+/stratosphere/boot/source/splash_screen.bmp
