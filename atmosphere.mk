@@ -13,48 +13,7 @@ ATMOSPHERE_SUPPORTED_HOS_MAJOR_VERSION := $(shell grep 'define ATMOSPHERE_SUPPOR
 ATMOSPHERE_SUPPORTED_HOS_MINOR_VERSION := $(shell grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR\b' $(ATMOSPHERE_LIBRARIES_DIR)/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
 ATMOSPHERE_SUPPORTED_HOS_MICRO_VERSION := $(shell grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO\b' $(ATMOSPHERE_LIBRARIES_DIR)/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
 
-ATMOSPHERE_VERSION := $(ATMOSPHERE_MAJOR_VERSION).$(ATMOSPHERE_MINOR_VERSION).$(ATMOSPHERE_MICRO_VERSION)-$(ATMOSPHERE_GIT_REVISION)
-
-dist: dist-no-debug
-	$(eval DIST_DIR = $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)/atmosphere-$(ATMOSPHERE_VERSION)-debug)
-	rm -rf $(DIST_DIR)
-	mkdir $(DIST_DIR)
-	cp $(CURRENT_DIRECTORY)/fusee/loader_stub/$(ATMOSPHERE_BOOT_OUT_DIR)/loader_stub.elf $(DIST_DIR)/fusee-loader-stub.elf
-	cp $(CURRENT_DIRECTORY)/fusee/program/$(ATMOSPHERE_BOOT_OUT_DIR)/program.elf $(DIST_DIR)/fusee-program.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/loader_stub/$(ATMOSPHERE_OUT_DIR)/loader_stub.elf $(DIST_DIR)/exosphere-loader-stub.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/program/$(ATMOSPHERE_OUT_DIR)/program.elf $(DIST_DIR)/exosphere-program.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/warmboot/$(ATMOSPHERE_BOOT_OUT_DIR)/warmboot.elf $(DIST_DIR)/exosphere-warmboot.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/mariko_fatal/$(ATMOSPHERE_OUT_DIR)/mariko_fatal.elf $(DIST_DIR)/exosphere-mariko-fatal.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/program/sc7fw/$(ATMOSPHERE_BOOT_OUT_DIR)/sc7fw.elf $(DIST_DIR)/exosphere-sc7fw.elf
-	cp $(CURRENT_DIRECTORY)/exosphere/program/rebootstub/$(ATMOSPHERE_BOOT_OUT_DIR)/rebootstub.elf $(DIST_DIR)/exosphere-rebootstub.elf
-	cp $(CURRENT_DIRECTORY)/mesosphere/kernel_ldr/$(ATMOSPHERE_OUT_DIR)/kernel_ldr.elf $(DIST_DIR)/kernel_ldr.elf
-	cp $(CURRENT_DIRECTORY)/mesosphere/kernel/$(ATMOSPHERE_OUT_DIR)/kernel.elf $(DIST_DIR)/kernel.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/ams_mitm/$(ATMOSPHERE_OUT_DIR)/ams_mitm.elf $(DIST_DIR)/ams_mitm.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/boot/$(ATMOSPHERE_OUT_DIR)/boot.elf $(DIST_DIR)/boot.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/boot2/$(ATMOSPHERE_OUT_DIR)/boot2.elf $(DIST_DIR)/boot2.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/creport/$(ATMOSPHERE_OUT_DIR)/creport.elf $(DIST_DIR)/creport.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/cs/$(ATMOSPHERE_OUT_DIR)/cs.elf $(DIST_DIR)/cs.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/dmnt/$(ATMOSPHERE_OUT_DIR)/dmnt.elf $(DIST_DIR)/dmnt.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/dmnt.gen2/$(ATMOSPHERE_OUT_DIR)/dmnt.gen2.elf $(DIST_DIR)/dmnt.gen2.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/eclct.stub/$(ATMOSPHERE_OUT_DIR)/eclct.stub.elf $(DIST_DIR)/eclct.stub.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/erpt/$(ATMOSPHERE_OUT_DIR)/erpt.elf $(DIST_DIR)/erpt.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/fatal/$(ATMOSPHERE_OUT_DIR)/fatal.elf $(DIST_DIR)/fatal.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/htc/$(ATMOSPHERE_OUT_DIR)/htc.elf $(DIST_DIR)/htc.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/jpegdec/$(ATMOSPHERE_OUT_DIR)/jpegdec.elf $(DIST_DIR)/jpegdec.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/loader/$(ATMOSPHERE_OUT_DIR)/loader.elf $(DIST_DIR)/loader.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/LogManager/$(ATMOSPHERE_OUT_DIR)/LogManager.elf $(DIST_DIR)/LogManager.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/ncm/$(ATMOSPHERE_OUT_DIR)/ncm.elf $(DIST_DIR)/ncm.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/pgl/$(ATMOSPHERE_OUT_DIR)/pgl.elf $(DIST_DIR)/pgl.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/pm/$(ATMOSPHERE_OUT_DIR)/pm.elf $(DIST_DIR)/pm.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/ro/$(ATMOSPHERE_OUT_DIR)/ro.elf $(DIST_DIR)/ro.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/sm/$(ATMOSPHERE_OUT_DIR)/sm.elf $(DIST_DIR)/sm.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/spl/$(ATMOSPHERE_OUT_DIR)/spl.elf $(DIST_DIR)/spl.elf
-	cp $(CURRENT_DIRECTORY)/stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.elf $(DIST_DIR)/TioServer.elf
-	cp $(CURRENT_DIRECTORY)/troposphere/daybreak/daybreak.elf $(DIST_DIR)/daybreak.elf
-	cp $(CURRENT_DIRECTORY)/troposphere/haze/haze.elf $(DIST_DIR)/haze.elf
-	cp $(CURRENT_DIRECTORY)/troposphere/reboot_to_payload/reboot_to_payload.elf $(DIST_DIR)/reboot_to_payload.elf
-	cd $(DIST_DIR); zip -r ../atmosphere-$(ATMOSPHERE_VERSION)-debug.zip ./*; cd ../;
-	rm -rf $(DIST_DIR)
+ATMOSPHERE_VERSION := out
 
 dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	$(eval DIST_DIR = $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)/atmosphere-$(ATMOSPHERE_VERSION))
@@ -63,19 +22,15 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	mkdir $(DIST_DIR)
 	mkdir $(DIST_DIR)/atmosphere
 	mkdir $(DIST_DIR)/switch
-	mkdir -p $(DIST_DIR)/atmosphere/fatal_errors
 	mkdir -p $(DIST_DIR)/atmosphere/config_templates
 	mkdir -p $(DIST_DIR)/atmosphere/config
-	mkdir -p $(DIST_DIR)/atmosphere/flags
-	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin $(DIST_DIR)/atmosphere/reboot_payload.bin
+	mkdir -p $(DIST_DIR)/bootloader/payloads
+	mkdir -p $(DIST_DIR)/switch/daybreak
 	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/package3 $(DIST_DIR)/atmosphere/package3
 	cp config_templates/stratosphere.ini $(DIST_DIR)/atmosphere/config_templates/stratosphere.ini
 	cp config_templates/override_config.ini $(DIST_DIR)/atmosphere/config_templates/override_config.ini
 	cp config_templates/system_settings.ini $(DIST_DIR)/atmosphere/config_templates/system_settings.ini
 	cp config_templates/exosphere.ini $(DIST_DIR)/atmosphere/config_templates/exosphere.ini
-	mkdir -p config_templates/kip_patches
-	cp -r config_templates/kip_patches $(DIST_DIR)/atmosphere/kip_patches
-	cp -r config_templates/hbl_html $(DIST_DIR)/atmosphere/hbl_html
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000008
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000000d
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000017
@@ -106,12 +61,12 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623/exefs.nsp
 	@build_romfs $(DIST_DIR)/stratosphere_romfs $(DIST_DIR)/atmosphere/stratosphere.romfs
 	rm -r $(DIST_DIR)/stratosphere_romfs
-	cp troposphere/reboot_to_payload/reboot_to_payload.nro $(DIST_DIR)/switch/reboot_to_payload.nro
-	cp troposphere/daybreak/daybreak.nro $(DIST_DIR)/switch/daybreak.nro
-	cp troposphere/haze/haze.nro $(DIST_DIR)/switch/haze.nro
-	cd $(DIST_DIR); zip -r ../atmosphere-$(ATMOSPHERE_VERSION).zip ./*; cd ../;
+	cp troposphere/daybreak/daybreak.nro $(DIST_DIR)/switch/daybreak/daybreak.nro
+	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin $(DIST_DIR)/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(DIST_DIR)/atmosphere/package3
+	cd $(DIST_DIR); ls; rm -rf ../../../../../atmosphere-$(ATMOSPHERE_VERSION).zip; ls
+	cd $(DIST_DIR); zip -r ../../../../../atmosphere-$(ATMOSPHERE_VERSION).zip ./*; cd ../;
 	rm -rf $(DIST_DIR)
-	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)/fusee.bin
 
 package3: emummc fusee stratosphere mesosphere exosphere troposphere
 	@python fusee/build_package3.py $(CURRENT_DIRECTORY) $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BOOT_OUT_DIR) $(ATMOSPHERE_GIT_HASH) $(ATMOSPHERE_MAJOR_VERSION) $(ATMOSPHERE_MINOR_VERSION) $(ATMOSPHERE_MICRO_VERSION) 0 $(ATMOSPHERE_SUPPORTED_HOS_MAJOR_VERSION) $(ATMOSPHERE_SUPPORTED_HOS_MINOR_VERSION) $(ATMOSPHERE_SUPPORTED_HOS_MICRO_VERSION) 0
@@ -167,4 +122,4 @@ clean:
 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR) $(CURRENT_DIRECTORY)/$(ATMOSPHERE_BUILD_DIR):
 	@[ -d $@ ] || mkdir -p $@
 
-.PHONY: dist dist-no-debug clean package3 emummc fusee stratosphere mesosphere exosphere troposphere
+.PHONY: dist-no-debug clean package3 emummc fusee stratosphere mesosphere exosphere troposphere
