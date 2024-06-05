@@ -201,7 +201,7 @@ namespace ams::svc::codegen::impl {
                 } else if constexpr (Size == 8) {
                     __asm__ __volatile__("ldr     x%c[r], [sp, %c[offset]]" :: [r]"i"(Reg), [offset]"i"(Offset) : "memory");
                 } else {
-                    static_assert(Size != Size);
+                    static_assert(false, "Invalid Size");
                 }
             }
 
@@ -212,7 +212,7 @@ namespace ams::svc::codegen::impl {
                 } else if constexpr (Size == 8) {
                     __asm__ __volatile__("ldp     x%c[r0], x%c[r1], [sp, %c[offset]]" :: [r0]"i"(Reg0), [r1]"i"(Reg1), [offset]"i"(Offset) : "memory");
                 } else {
-                    static_assert(Size != Size);
+                    static_assert(false, "Invalid Size");
                 }
             }
 
@@ -223,7 +223,7 @@ namespace ams::svc::codegen::impl {
                 } else if constexpr (Size == 8) {
                     __asm__ __volatile__("str     x%c[r], [sp, %c[offset]]" :: [r]"i"(Reg), [offset]"i"(Offset) : "memory");
                 } else {
-                    static_assert(Size != Size);
+                    static_assert(false, "Invalid Size");
                 }
             }
 
@@ -234,7 +234,7 @@ namespace ams::svc::codegen::impl {
                 } else if constexpr (Size == 8) {
                     __asm__ __volatile__("stp     x%c[r0], x%c[r1], [sp, %c[offset]]" :: [r0]"i"(Reg0), [r1]"i"(Reg1), [offset]"i"(Offset) : "memory");
                 } else {
-                    static_assert(Size != Size);
+                    static_assert(false, "Invalid Size");
                 }
             }
 

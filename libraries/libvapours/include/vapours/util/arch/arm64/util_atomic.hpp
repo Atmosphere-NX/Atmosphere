@@ -157,7 +157,7 @@ namespace ams::util {
             } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
                 return ::ams::util::impl::LoadAcquireExclusiveForAtomic(p);
             } else {
-                static_assert(Order != Order, "Invalid memory order");
+                static_assert(false, "Invalid memory order");
             }
         }
 
@@ -172,7 +172,7 @@ namespace ams::util {
             } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
                 return ::ams::util::impl::StoreReleaseExclusiveForAtomic(p, s);
             } else {
-                static_assert(Order != Order, "Invalid memory order");
+                static_assert(false, "Invalid memory order");
             }
         }
 
