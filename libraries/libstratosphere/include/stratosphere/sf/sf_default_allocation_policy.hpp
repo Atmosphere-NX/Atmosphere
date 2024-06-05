@@ -29,7 +29,7 @@ namespace ams::sf {
             private:
                 struct Holder {
                     MemoryResource *allocator;
-                    typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+                    alignas(alignof(T)) std::byte storage[sizeof(T)];
                 };
             public:
                 void *Allocate(size_t size) {
