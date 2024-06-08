@@ -1,5 +1,7 @@
 ATMOSPHERE_BUILD_CONFIGS :=
+
 all: nx_release
+
 clean: clean-nx_release
 
 THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -39,4 +41,97 @@ $(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm-cortex-a57,))
 
 clean-all: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
 
-.PHONY: all clean clean-all $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
+clean-logo:
+	$(info ---------------------------------------------------------)
+	$(info  Building logo in $(CURDIR))
+	$(info ---------------------------------------------------------)
+
+	git checkout master
+	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
+	make -C $(CURDIR)/stratosphere/boot clean -j12
+	git checkout 8gb_DRAM
+	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
+	make -C $(CURDIR)/stratosphere/boot clean -j12
+	git checkout master
+
+kefir-version:
+	cd libraries/libstratosphere && $(MAKE) -j12 clean && cd ../../stratosphere/ams_mitm && $(MAKE) -j12 clean && cd ../.. && $(MAKE) -j12
+
+clear:
+	$(MAKE) clean -j12
+	$(MAKE) -j12
+
+8gb_DRAM:
+	$(info ---------------------------------------------------------)
+	$(info                   Built with 8GB DRAM!)
+	$(info ---------------------------------------------------------)
+	git checkout 8gb_DRAM
+	git merge master --no-edit
+	$(MAKE) -f atmosphere.mk package3 -j12
+	$(MAKE) -C fusee -j12
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/package3
+	$(info ---------------------------------------------------------)
+	$(info             FINISH building with 8GB DRAM!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+8gb_DRAM-clean:
+	$(info ---------------------------------------------------------)
+	$(info                   Built with 8GB DRAM!)
+	$(info ---------------------------------------------------------)
+	git checkout 8gb_DRAM
+	git merge master --no-edit
+	$(MAKE) clean -j12
+	$(MAKE) -f atmosphere.mk package3 -j12
+	$(MAKE) -C fusee -j12
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/package3
+	$(info ---------------------------------------------------------)
+	$(info             FINISH building with 8GB DRAM!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+oc:
+	$(info ---------------------------------------------------------)
+	$(info                     Built with OC)
+	$(info ---------------------------------------------------------)
+	git checkout oc
+	git merge master --no-edit
+	$(MAKE) -C stratosphere/loader -j12
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/f/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	$(info ---------------------------------------------------------)
+	$(info                   FINISH building OC!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+oc-clean:
+	$(info ---------------------------------------------------------)
+	$(info                     Built with OC)
+	$(info ---------------------------------------------------------)
+	git checkout oc
+	git merge master --no-edit
+	$(MAKE) clean -j12
+	$(MAKE) -C stratosphere/loader -j12
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/f/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	$(info ---------------------------------------------------------)
+	$(info                   FINISH building OC!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+build-kefir:
+	$(MAKE) clean -j12
+	$(MAKE) clean-logo 
+	$(MAKE) 8gb_DRAM-clean
+	$(MAKE) oc-clean
+	$(MAKE) nx_release -j12
+
+build-kefir-fast:
+	$(MAKE) clean-logo 
+	$(MAKE) nx_release -j12
+	$(MAKE) 8gb_DRAM
+	$(MAKE) oc
+
+.PHONY: all clean clean-all kefir-version $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
