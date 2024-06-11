@@ -76,6 +76,13 @@ namespace ams::ldr {
                 R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ldr::ResultInvalidMeta());
             }
 
+            /* Validate that the acid version is correct. */
+            constexpr u8 SupportedSdkMajorVersion = ams::svc::ConvertToSdkMajorVersion(ams::svc::SupportedKernelMajorVersion);
+            if (acid->unknown_209 < SupportedSdkMajorVersion) {
+                R_UNLESS(acid->version == 0,     ldr::ResultInvalidMeta());
+                R_UNLESS(acid->unknown_209 == 0, ldr::ResultInvalidMeta());
+            }
+
             /* Validate Fac, Sac, Kac. */
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->fac_offset, acid->fac_size));
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->sac_offset, acid->sac_size));
@@ -93,6 +100,41 @@ namespace ams::ldr {
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->sac_offset, aci->sac_size));
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->kac_offset, aci->kac_size));
 
+            R_SUCCEED();
+        }
+
+        const u8 *GetAcidSignatureModulus(PlatformId platform, u8 key_generation, bool unk_unused) {
+            return fssystem::GetAcidSignatureKeyModulus(platform, !IsDevelopmentForAcidSignatureCheck(), key_generation, unk_unused);
+        }
+
+        size_t GetAcidSignatureModulusSize(PlatformId platform, bool unk_unused) {
+            return fssystem::GetAcidSignatureKeyModulusSize(platform, unk_unused);
+        }
+
+        Result ValidateAcidSignature(Meta *meta, PlatformId platform, bool unk_unused) {
+            /* Loader did not check signatures prior to 10.0.0. */
+            if (hos::GetVersion() < hos::Version_10_0_0) {
+                meta->check_verification_data = false;
+                R_SUCCEED();
+            }
+
+            /* Get the signature key generation. */
+            const auto signature_key_generation = meta->npdm->signature_key_generation;
+            R_UNLESS(fssystem::IsValidSignatureKeyGeneration(platform, signature_key_generation), ldr::ResultInvalidMeta());
+
+            /* Verify the signature. */
+            const u8 *sig         = meta->acid->signature;
+            const size_t sig_size = sizeof(meta->acid->signature);
+            const u8 *mod         = GetAcidSignatureModulus(platform, signature_key_generation, unk_unused);
+            const size_t mod_size = GetAcidSignatureModulusSize(platform, unk_unused);
+            const u8 *exp         = fssystem::GetAcidSignatureKeyPublicExponent();
+            const size_t exp_size = fssystem::AcidSignatureKeyPublicExponentSize;
+            const u8 *msg         = meta->acid->modulus;
+            const size_t msg_size = meta->acid->size;
+            const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
+            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ldr::ResultInvalidAcidSignature());
+
+            meta->check_verification_data = true;
             R_SUCCEED();
         }
 
@@ -138,6 +180,8 @@ namespace ams::ldr {
                 meta->aci_fah = reinterpret_cast<u8 *>(aci) + aci->fah_offset;
                 meta->aci_sac = reinterpret_cast<u8 *>(aci) + aci->sac_offset;
                 meta->aci_kac = reinterpret_cast<u8 *>(aci) + aci->kac_offset;
+
+                meta->modulus   = acid->modulus;
             }
 
             R_SUCCEED();
@@ -146,7 +190,7 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform [[maybe_unused]], bool unk_unused [[maybe_unused]]) {
+    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform, bool unk_unused) {
         /* Set the cached program id back to zero. */
         g_cached_program_id = {};
 
@@ -215,6 +259,9 @@ namespace ams::ldr {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 R_TRY(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)));
+                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta), platform, unk_unused));
+                meta->modulus                 = g_original_meta_cache.meta.modulus;
+                meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
             }
         }
 
