@@ -130,8 +130,8 @@ build-kefir:
 
 build-kefir-fast:
 	$(MAKE) clean-logo 
-	$(MAKE) nx_release -j12
 	$(MAKE) 8gb_DRAM
 	$(MAKE) oc
+	$(MAKE) nx_release -j12
 
 .PHONY: all clean clean-all kefir-version $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
