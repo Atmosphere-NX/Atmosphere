@@ -174,6 +174,9 @@ namespace ams::nxboot {
             FsVersion_18_0_0,
             FsVersion_18_0_0_Exfat,
 
+            FsVersion_18_1_0,
+            FsVersion_18_1_0_Exfat,
+
             FsVersion_Count,
         };
 
@@ -260,6 +263,9 @@ namespace ams::nxboot {
 
             { 0x79, 0x5F, 0x5A, 0x5E, 0xB0, 0xC6, 0x77, 0x9E }, /* FsVersion_18_0_0 */
             { 0x1E, 0x2C, 0x64, 0xB1, 0xCC, 0xE2, 0x78, 0x24 }, /* FsVersion_18_0_0_Exfat */
+
+            { 0xA3, 0x39, 0xF0, 0x1C, 0x95, 0xBF, 0xA7, 0x68 }, /* FsVersion_18_1_0 */
+            { 0x20, 0x4C, 0xBA, 0x86, 0xDE, 0x08, 0x44, 0x6A }, /* FsVersion_18_1_0_Exfat */
         };
 
         const InitialProcessBinaryHeader *FindInitialProcessBinary(const pkg2::Package2Header *header, const u8 *data, ams::TargetFirmware target_firmware) {
