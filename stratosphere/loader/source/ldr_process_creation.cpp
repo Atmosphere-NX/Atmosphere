@@ -202,61 +202,8 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        constexpr const ncm::ProgramId UnqualifiedApprovalProgramIds[] = {
-            { 0x010003F003A34000 }, /* Pokemon: Let's Go, Pikachu! */
-            { 0x0100152000022000 }, /* Mario Kart 8 Deluxe */
-            { 0x0100165003504000 }, /* Nintendo Labo Toy-Con 04: VR Kit */
-            { 0x0100187003A36000 }, /* Pokemon: Let's Go, Eevee! */
-            { 0x01002E5008C56000 }, /* Pokemon Sword [Live Tournament] */
-            { 0x01002FF008C24000 }, /* Ring Fit Adventure */
-            { 0x010049900F546001 }, /* Super Mario 3D All-Stars: Super Mario 64 */
-            { 0x010057D00ECE4000 }, /* Nintendo Switch Online (Nintendo 64) [for Japan] */
-            { 0x01006F8002326000 }, /* Animal Crossing: New Horizons */
-            { 0x01006FB00F50E000 }, /* [???] */
-            { 0x010070300F50C000 }, /* [???] */
-            { 0x010075100E8EC000 }, /* 马力欧卡丁车8 豪华版 [Mario Kart 8 Deluxe for China] */
-            { 0x01008DB008C2C000 }, /* Pokemon Shield */
-            { 0x01009AD008C4C000 }, /* Pokemon: Let's Go, Pikachu! [Kiosk] */
-            { 0x0100A66003384000 }, /* Hulu */
-            { 0x0100ABF008968000 }, /* Pokemon Sword */
-            { 0x0100C9A00ECE6000 }, /* Nintendo Switch Online (Nintendo 64) [for America] */
-            { 0x0100ED100BA3A000 }, /* Mario Kart Live: Home Circuit */
-            { 0x0100F38011CFE000 }, /* Animal Crossing: New Horizons Island Transfer Tool */
-            { 0x0100F6B011028000 }, /* 健身环大冒险 [Ring Fit Adventure for China] */
-        };
 
-        /* Check that the unqualified approval programs are sorted. */
-        static_assert([]() -> bool {
-            for (size_t i = 0; i < util::size(UnqualifiedApprovalProgramIds) - 1; ++i) {
-                if (UnqualifiedApprovalProgramIds[i].value >= UnqualifiedApprovalProgramIds[i + 1].value) {
-                    return false;
-                }
-            }
-
-            return true;
-        }());
-
-        bool IsUnqualifiedApprovalProgramId(ncm::ProgramId program_id) {
-            /* Check if the program id is one with unqualified approval. */
-            return std::binary_search(std::begin(UnqualifiedApprovalProgramIds), std::end(UnqualifiedApprovalProgramIds), program_id);
-        }
-
-        bool IsUnqualifiedApproval(const Meta *meta) {
-            /* If the meta has unqualified approval flag, it's unqualified approval. */
-            if (meta->acid->flags & ldr::Acid::AcidFlag_UnqualifiedApproval) {
-                return true;
-            }
-
-            /* If the unqualified approval flag is not set, the program must be an application. */
-            if (!IsApplication(meta)) {
-                return false;
-            }
-
-            /* The program id must be a force unqualified approval program id. */
-            return IsUnqualifiedApprovalProgramId(meta->acid->program_id_min) && meta->acid->program_id_min == meta->acid->program_id_max;
-        }
-
-        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeVerificationData &code_verification_data) {
+        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc) {
             /* Validate version. */
             R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
 
@@ -266,21 +213,6 @@ namespace ams::ldr {
 
             /* Validate the kernel capabilities. */
             R_TRY(TestCapability(static_cast<const util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32), static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)));
-
-            /* If we have data to validate, validate it. */
-            if (meta->check_verification_data) {
-                const bool is_signature_valid = true;
-
-                /* If the signature check fails, we need to check if this is allowable. */
-                if (!is_signature_valid) {
-                    /* We have to enforce signature checks on prod and when we have a signature to check on dev. */
-                    R_UNLESS(IsDevelopmentForAcidProductionCheck(), ldr::ResultInvalidNcaSignature());
-                    R_UNLESS(!code_verification_data.has_data,      ldr::ResultInvalidNcaSignature());
-
-                    /* There was no signature to check on dev. Check if this is acceptable. */
-                    R_UNLESS(IsUnqualifiedApproval(meta), ldr::ResultInvalidNcaSignature());
-                }
-            }
 
             /* All good. */
             R_SUCCEED();
@@ -664,10 +596,10 @@ namespace ams::ldr {
 
         /* Load meta, possibly from cache. */
         Meta meta;
-        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status, platform));
+        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
 
         /* Validate meta. */
-        R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
+        R_TRY(ValidateMeta(std::addressof(meta), loc));
 
         /* Load, validate NSO headers. */
         R_TRY(LoadAutoLoadHeaders(g_nso_headers, g_has_nso));
@@ -721,7 +653,7 @@ namespace ams::ldr {
 
             ScopedCodeMount mount(loc, platform);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), platform, false));
+            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus()));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }
