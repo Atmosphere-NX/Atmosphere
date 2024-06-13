@@ -596,7 +596,7 @@ namespace ams::ldr {
 
         /* Load meta, possibly from cache. */
         Meta meta;
-        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
+        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status, platform));
 
         /* Validate meta. */
         R_TRY(ValidateMeta(std::addressof(meta), loc));
@@ -653,7 +653,7 @@ namespace ams::ldr {
 
             ScopedCodeMount mount(loc, platform);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus()));
+            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), platform, false));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }
