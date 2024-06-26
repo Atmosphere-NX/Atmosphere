@@ -347,6 +347,7 @@ namespace ams::erpt::srv {
         }
 
         Result CreateReportFile(const ReportId &report_id, ReportType type, const ReportMetaData *meta, u32 num_attachments, const time::PosixTime &timestamp_user, const time::PosixTime &timestamp_network, bool redirect_new_reports) {
+            return 0;
             /* Define journal record deleter. */
             struct JournalRecordDeleter {
                 void operator()(JournalRecord<ReportInfo> *record) {
