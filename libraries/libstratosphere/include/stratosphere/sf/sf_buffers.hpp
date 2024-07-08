@@ -42,7 +42,7 @@ namespace ams::sf {
             } else if constexpr(TransferMode == BufferTransferMode::AutoSelect) {
                 return SfBufferAttr_HipcAutoSelect;
             } else {
-                static_assert(TransferMode != TransferMode, "Invalid BufferTransferMode");
+                static_assert(false, "Invalid BufferTransferMode");
             }
         }();
 

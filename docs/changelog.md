@@ -1,4 +1,10 @@
 # Changelog
+## 1.7.1
++ Support was added for 18.1.0.
++ Atmosphère was updated to use GCC 14/newlib (latest devkitA64/devkitARM releases).
++ Further changes were for 18.0.0:
+  + `loader` was updated to reflect the latest official behavior.
++ General system stability improvements to enhance the user's experience.
 ## 1.7.0
 + Basic support was added for 18.0.0.
   + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
