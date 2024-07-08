@@ -470,44 +470,41 @@ namespace ams::ldr {
 
             /* Calculate ASLR. */
             uintptr_t aslr_start = 0;
-            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
-                size_t aslr_size = 0;
-                if (hos::GetVersion() >= hos::Version_2_0_0) {
-                    switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
-                        case svc::CreateProcessFlag_AddressSpace32Bit:
-                        case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
-                            aslr_start = svc::AddressSmallMap32Start;
-                            aslr_size  = svc::AddressSmallMap32Size;
-                            break;
-                        case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
-                            aslr_start = svc::AddressSmallMap36Start;
-                            aslr_size  = svc::AddressSmallMap36Size;
-                            break;
-                        case svc::CreateProcessFlag_AddressSpace64Bit:
-                            aslr_start = svc::AddressMap39Start;
-                            aslr_size  = svc::AddressMap39Size;
-                            break;
-                        AMS_UNREACHABLE_DEFAULT_CASE();
-                    }
-                } else {
-                    /* On 1.0.0, only 2 address space types existed. */
-                    if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
-                        aslr_start = svc::AddressSmallMap36Start;
-                        aslr_size  = svc::AddressSmallMap36Size;
-                    } else {
+            size_t aslr_size = 0;
+            if (hos::GetVersion() >= hos::Version_2_0_0) {
+                switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
+                    case svc::CreateProcessFlag_AddressSpace32Bit:
+                    case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
                         aslr_start = svc::AddressSmallMap32Start;
                         aslr_size  = svc::AddressSmallMap32Size;
-                    }
+                        break;
+                    case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                        aslr_start = svc::AddressSmallMap36Start;
+                        aslr_size  = svc::AddressSmallMap36Size;
+                        break;
+                    case svc::CreateProcessFlag_AddressSpace64Bit:
+                        aslr_start = svc::AddressMap39Start;
+                        aslr_size  = svc::AddressMap39Size;
+                        break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
                 }
-                R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
+            } else {
+                /* On 1.0.0, only 2 address space types existed. */
+                if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
+                    aslr_start = svc::AddressSmallMap36Start;
+                    aslr_size  = svc::AddressSmallMap36Size;
+                } else {
+                    aslr_start = svc::AddressSmallMap32Start;
+                    aslr_size  = svc::AddressSmallMap32Size;
+                }
+            }
+            R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
 
-                /* Set Create Process output. */
-                uintptr_t aslr_slide = 0;
-                size_t free_size     = (aslr_size - total_size);
+            /* Set Create Process output. */
+            uintptr_t aslr_slide = 0;
+            size_t free_size     = (aslr_size - total_size);
+            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
                 aslr_slide = GenerateSecureRandom(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
-
-                /* Set out. */
-                aslr_start += aslr_slide;
             }
             else {
                 fs::FileHandle aslr;
@@ -516,10 +513,12 @@ namespace ams::ldr {
 
                     size_t read_size;
                     uintptr_t address = 0;
-                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
+                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_slide = address;
                 }
             }
 
+            /* Set out. */
+            aslr_start += aslr_slide;
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
                     out->nso_address[i] += aslr_start;
