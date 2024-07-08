@@ -29,7 +29,7 @@ namespace ams::ldr {
 
         /* Convenience defines. */
         constexpr size_t SystemResourceSizeMax = 0x1FE00000;
-        constexpr ncm::ProgramId BREATH_OF_THE_WILD = 0x01007EF00011E000;
+        constexpr ncm::ProgramId BREATH_OF_THE_WILD{ 0x01007EF00011E000 };
         constexpr const char *ASLR_CONFIG = "sdmc:/atmosphere/config/aslr.txt";
 
         /* Types. */
@@ -455,7 +455,7 @@ namespace ams::ldr {
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = util::AlignUp(out->nso_size[i], out_param->program_id != BREATH_OF_THE_WILD || i ? os::MemoryPageSize : os::MemoryBlockUnitSize);
+                    out->nso_size[i] = util::AlignUp(out->nso_size[i], out_param->program_id.value != BREATH_OF_THE_WILD || i ? os::MemoryPageSize : os::MemoryBlockUnitSize);
 
                     total_size += out->nso_size[i];
 
@@ -512,7 +512,7 @@ namespace ams::ldr {
             else {
                 fs::FileHandle aslr;
                 if (R_SUCCEEDED(fs::OpenFile(std::addressof(aslr), ASLR_CONFIG, fs::OpenMode_Read))) {
-                    ON_SCOPE_EXIT { fs::CloseFile(aslr); }
+                    ON_SCOPE_EXIT { fs::CloseFile(aslr); };
 
                     size_t read_size;
                     uintptr_t address = 0;
@@ -678,7 +678,7 @@ namespace ams::ldr {
 
     /* Process Creation API. */
     Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
-        if (loc->program_id == BREATH_OF_THE_WILD) flags |= svc::CreateProcessFlag_DisableAslr;
+        if (loc.program_id == BREATH_OF_THE_WILD) flags |= CreateProcessFlag_DisableAslr;
 
         /* Mount code. */
         AMS_UNUSED(path);
