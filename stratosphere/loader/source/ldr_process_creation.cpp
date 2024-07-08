@@ -513,7 +513,8 @@ namespace ams::ldr {
 
                     size_t read_size;
                     uintptr_t address = 0;
-                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_slide = address;
+                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
+                    else aslr_start = 0xcafe00000;  // FIXME
                 }
             }
 
