@@ -30,7 +30,7 @@ namespace ams::ldr {
         /* Convenience defines. */
         constexpr size_t SystemResourceSizeMax = 0x1FE00000;
         constexpr ncm::ProgramId BREATH_OF_THE_WILD{ 0x01007EF00011E000 };
-        constexpr const char *ASLR_CONFIG = "sdmc:/atmosphere/config/aslr.txt";
+        constexpr const char *ASLR_CONFIG = "sdmc:/atmosphere/config/aslr.bin";
 
         /* Types. */
         enum NsoIndex {
