@@ -516,6 +516,7 @@ namespace ams::ldr {
                     if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
                     else aslr_start = 0xcafe00000;  // FIXME
                 }
+                else aslr_start = 0xdead00000;  // FIXME
             }
 
             /* Set out. */
