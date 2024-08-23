@@ -455,7 +455,7 @@ namespace ams::ldr {
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = util::AlignUp(out->nso_size[i], out_param->program_id != BREATH_OF_THE_WILD.value || i ? os::MemoryPageSize : os::MemoryBlockUnitSize);
+                    out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize);
 
                     total_size += out->nso_size[i];
 
@@ -507,16 +507,7 @@ namespace ams::ldr {
                 aslr_slide = GenerateSecureRandom(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
             else {
-                fs::FileHandle aslr;
-                if (R_SUCCEEDED(fs::OpenFile(std::addressof(aslr), ASLR_CONFIG, fs::OpenMode_Read))) {
-                    ON_SCOPE_EXIT { fs::CloseFile(aslr); };
-
-                    size_t read_size;
-                    uintptr_t address = 0;
-                    if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
-                    else aslr_start = 0xcafe00000;  // FIXME
-                }
-                else aslr_start = 0xdead00000;  // FIXME
+                aslr_start = 0xffe00000;
             }
 
             /* Set out. */
