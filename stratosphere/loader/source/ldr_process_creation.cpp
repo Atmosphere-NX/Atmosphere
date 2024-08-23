@@ -455,7 +455,7 @@ namespace ams::ldr {
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = util::AlignUp(out->nso_size[i], out_param->program_id != BREATH_OF_THE_WILD.value || i ? os::MemoryPageSize : os::MemoryBlockUnitSize);
+                     out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize);
 
                     total_size += out->nso_size[i];
 
@@ -516,7 +516,8 @@ namespace ams::ldr {
                     if (R_SUCCEEDED(fs::ReadFile(std::addressof(read_size), aslr, 0, &address, sizeof address)) && read_size == sizeof address) aslr_start = address;
                     else aslr_start = 0xcafe00000;  // FIXME
                 }
-                else aslr_start = 0xdead00000;  // FIXME
+                else aslr_slide = (0xfd000000 / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize - 0x8000000;
+
             }
 
             /* Set out. */
