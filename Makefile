@@ -69,9 +69,9 @@ clear:
 	git merge master --no-edit
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/kefir/atmosphere/package3_8gb
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/kefir/bootloader/payloads/fusee_8gb.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/kefir/atmosphere/package3_8gb
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building with 8GB DRAM!)
 	$(info ---------------------------------------------------------)
@@ -86,9 +86,9 @@ clear:
 	$(MAKE) clean -j12
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/kefir/atmosphere/package3_8gb
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/kefir/bootloader/payloads/fusee_8gb.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/kefir/atmosphere/package3_8gb
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building with 8GB DRAM!)
 	$(info ---------------------------------------------------------)

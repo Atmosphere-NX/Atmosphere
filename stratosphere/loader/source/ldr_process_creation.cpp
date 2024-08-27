@@ -22,6 +22,7 @@
 #include "ldr_patcher.hpp"
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
+#include "./oc/oc_loader.hpp"
 
 namespace ams::ldr {
 
@@ -96,6 +97,10 @@ namespace ams::ldr {
             uintptr_t nso_address[Nso_Count];
             size_t    nso_size[Nso_Count];
         };
+
+        /* Pcv/Ptm check cache. */
+        bool g_is_pcv;
+        bool g_is_ptm;
 
         /* Global NSO header cache. */
         bool g_has_nso[Nso_Count];
@@ -210,6 +215,10 @@ namespace ams::ldr {
             /* Validate program id. */
             R_UNLESS(meta->aci->program_id >= meta->acid->program_id_min, ldr::ResultInvalidProgramId());
             R_UNLESS(meta->aci->program_id <= meta->acid->program_id_max, ldr::ResultInvalidProgramId());
+
+            /* Check if nca is pcv or ptm */
+            g_is_pcv = meta->aci->program_id == ncm::SystemProgramId::Pcv;
+            g_is_ptm = meta->aci->program_id == ncm::SystemProgramId::Ptm;
 
             /* Validate the kernel capabilities. */
             R_TRY(TestCapability(static_cast<const util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32), static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)));
@@ -511,6 +520,12 @@ namespace ams::ldr {
 
                 /* Apply IPS patches. */
                 LocateAndApplyIpsPatchesToModule(nso_header->module_id, map_address, nso_size);
+
+                /* Apply pcv and ptm patches. */
+                if (g_is_pcv)
+                    oc::pcv::Patch(map_address, nso_size);
+                if (g_is_ptm)
+                    oc::ptm::Patch(map_address, nso_size);
             }
 
             /* Set permissions. */
