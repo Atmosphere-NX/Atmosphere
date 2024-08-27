@@ -61,6 +61,14 @@ clear:
 	$(MAKE) clean -j12
 	$(MAKE) -j12
 
+hekate:
+	@echo "Building Hekate"
+	@cd ../hekate && git pull && make clean && make -j12
+	@mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/sys/
+	@cp ../hekate/output/*.bso /mnt/f/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
+	@cp ../hekate/output/nyx.bin /mnt/f/git/dev/_kefir/8gb/bootloader/sys/nyx.bin || echo "Warning: nyx.bin not found or copy failed"
+	@cp ../hekate/output/payload.bin /mnt/f/git/dev/_kefir/8gb/payload.bin || echo "Warning: payload.bin not found or copy failed"
+
 8gb_DRAM:
 	$(info ---------------------------------------------------------)
 	$(info                   Built with 8GB DRAM!)
@@ -69,6 +77,7 @@ clear:
 	git merge master --no-edit
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
+	$(MAKE) hekate
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
 	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
 	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
@@ -86,6 +95,7 @@ clear:
 	$(MAKE) clean -j12
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
+	$(MAKE) hekate
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
 	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
 	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
