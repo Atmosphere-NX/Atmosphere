@@ -192,7 +192,7 @@ namespace ams::kern {
             u32 m_program_type;
         private:
             constexpr bool SetSvcAllowed(u32 id) {
-                if (AMS_LIKELY(id < m_svc_access_flags.GetCount())) {
+                if (AMS_LIKELY(id < static_cast<u32>(m_svc_access_flags.GetCount()))) {
                     m_svc_access_flags[id] = true;
                     return true;
                 } else {
@@ -201,7 +201,7 @@ namespace ams::kern {
             }
 
             constexpr bool SetInterruptPermitted(u32 id) {
-                if (AMS_LIKELY(id < m_irq_access_flags.GetCount())) {
+                if (AMS_LIKELY(id < static_cast<u32>(m_irq_access_flags.GetCount()))) {
                     m_irq_access_flags[id] = true;
                     return true;
                 } else {
