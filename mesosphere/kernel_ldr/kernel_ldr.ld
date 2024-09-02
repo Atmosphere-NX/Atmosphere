@@ -12,6 +12,7 @@ SECTIONS
 	/* =========== CODE section =========== */
 	PROVIDE(__start__ = 0x0);
 	. = __start__;
+    __bin_start__ = .;
 	__code_start = . ;
 
 	.crt0 :
@@ -74,9 +75,8 @@ SECTIONS
 	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } : rodata
 
 	.dynamic           : { *(.dynamic) } :krnlldr :dyn
-	.dynsym            : { *(.dynsym) } :krnlldr
-	.dynstr            : { *(.dynstr) } :krnlldr
 	.rela.dyn          : { *(.rela.*) } :krnlldr
+	.relr.dyn          : { *(.relr.*) } :krnlldr
 	.hash              : { *(.hash) } :krnlldr
 	.gnu.hash          : { *(.gnu.hash) } :krnlldr
 	.gnu.version       : { *(.gnu.version) } :krnlldr
@@ -159,6 +159,7 @@ SECTIONS
 	} :krnlldr
 	__bss_end__ = .;
 
+    __bin_end__ = .;
 	__end__ = ABSOLUTE(.) ;
 
 	/* ==================
@@ -166,7 +167,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note .interp) }
+	/DISCARD/ : { *(.group .comment .note .interp .dynsym .dynstr) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }
