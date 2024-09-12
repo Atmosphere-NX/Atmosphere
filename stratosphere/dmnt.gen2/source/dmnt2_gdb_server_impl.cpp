@@ -25,19 +25,19 @@ namespace ams::dmnt {
         typedef struct {
             u64 address:64;
             u32 count:32;
-        } PACKED m_from_t;
+        } NX_PACKED m_from_t;
         typedef struct {
-            int SP_offset : 16;
-            int code_offset : 16;
-        } PACKED call_stack_t;
+            u32 SP_offset : 7;
+            u32 code_offset : 25;
+        } NX_PACKED call_stack_t;
         typedef struct {
             u64 address : 64;
             call_stack_t stack[max_call_stack];
-        } PACKED m_from_stack_t;
+        } NX_PACKED m_from_stack_t;
         typedef struct {
             m_from_stack_t from_stack;
             int count;
-        } PACKED m_from2_t;    
+        } NX_PACKED m_from2_t;    
 #define max_watch_buffer2 (int) (max_watch_buffer * sizeof(m_from_t) / sizeof(m_from2_t))
 
         enum gen2_command {
@@ -90,6 +90,8 @@ namespace ams::dmnt {
             u64 total_trigger = 0;
             u64 max_trigger = 0x10000;
             u16 caller_SP_offset = 0;
+            u64 grab_A_address = 0;
+            bool grab_A = false;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
 // #include "led.hpp"
@@ -1195,12 +1197,12 @@ namespace ams::dmnt {
                                                     } else {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
-                                                        u16 buffer[stack_check_size];
+                                                        u64 buffer[stack_check_size];
                                                         auto Check_CALLSTACK = [&]() {
-                                                            if (m_watch_data.stack_check_count > 0) {
-                                                                m_debug_process.ReadMemory(buffer, thread_context.sp, sizeof buffer);
+                                                            if (m_watch_data.stack_check_count > 0 && false) {
+                                                                m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64));
                                                                 for (int i = 0; i < m_watch_data.stack_check_count; i++) {
-                                                                    if (m_watch_data.call_stack[i].code_offset != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
+                                                                    if (((m_watch_data.call_stack[i].code_offset) << 2) + m_watch_data.main_start != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
                                                                 }
                                                             }
                                                             return true;
@@ -1211,7 +1213,7 @@ namespace ams::dmnt {
                                                                     return (thread_context.lr);
                                                                 case STACK: {
                                                                     u64 value;
-                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset, sizeof(value)))) {
+                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(value)))) {
                                                                         m_watch_data.failed++;
                                                                         return (u64)0;
                                                                     };
@@ -1289,27 +1291,30 @@ namespace ams::dmnt {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                    u16 buffer[stack_check_size];
+                                                    u64 buffer[stack_check_size];
                                                     auto get_from_stack = [&]() {
                                                         m_from_stack_t m_from_stack = {0};
                                                         auto index = 0;
-                                                        if (m_watch_data.stack_check_count > 0) {
-                                                            m_debug_process.ReadMemory(buffer, thread_context.sp, sizeof buffer);
-                                                            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i+= 2) {
-                                                                if (m_watch_data.main_start < (u64)(buffer + i) && (u64)(buffer + i) < m_watch_data.main_end) {
-                                                                    m_from_stack.stack[index].code_offset = buffer[i + 3];
-                                                                    m_from_stack.stack[index].SP_offset = i + 3;
+                                                        if (m_watch_data.stack_check_count > 0 && R_SUCCEEDED(m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64)))) {
+                                                            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i++) {
+                                                                if ((m_watch_data.main_start <= buffer[i]) && (buffer[i] < m_watch_data.main_end)) {
+                                                                    m_from_stack.stack[index].code_offset = ((buffer[i] - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
+                                                                    m_from_stack.stack[index].SP_offset = i;
                                                                     index++;
                                                                 };
                                                             }
                                                         };
+                                                        if (m_watch_data.grab_A && m_watch_data.stack_check_count < max_call_stack) {
+                                                            index = m_watch_data.stack_check_count;
+                                                            m_debug_process.ReadMemory(&(m_from_stack.stack[index]), m_watch_data.grab_A_address , (max_call_stack - index) * sizeof(call_stack_t));
+                                                        }
                                                         switch(m_watch_data.x30_catch_type) {
                                                             case OFFSET:
                                                                 m_from_stack.address = thread_context.pc | ((thread_context.lr - m_watch_data.main_start) << (64 - 27));
                                                                 break;
                                                             case STACK: {
                                                                 u64 value;
-                                                                if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset, sizeof(value)))) {
+                                                                if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(value)))) {
                                                                     m_watch_data.failed++;
                                                                     m_from_stack.address = thread_context.pc;
                                                                     break;
