@@ -52,6 +52,7 @@ namespace ams::dmnt {
         enum x30_catch_type_t {
             OFFSET,
             NONE,
+            STACK,
             END_OF_TYPE,
         } NX_PACKED;
         typedef struct {
@@ -79,7 +80,7 @@ namespace ams::dmnt {
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.11";
+            char version[10]="v0.12";
             u16 x30_match = 0;
             bool check_x30 = false;
             bool two_register = false;
@@ -88,6 +89,7 @@ namespace ams::dmnt {
             u64 main_start, main_end;
             u64 total_trigger = 0;
             u64 max_trigger = 0x10000;
+            u16 caller_SP_offset = 0;
         } m_watch_data_t;
         m_watch_data_t m_watch_data;
 // #include "led.hpp"
@@ -1203,8 +1205,25 @@ namespace ams::dmnt {
                                                             }
                                                             return true;
                                                         };
-                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (thread_context.lr & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
-                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | ((m_watch_data.x30_catch_type == OFFSET) ? ((thread_context.lr - m_watch_data.main_start) << (64 - 27)) : 0);
+                                                        auto get_X30_alternative = [&]() {
+                                                            switch (m_watch_data.x30_catch_type) {
+                                                                case OFFSET:
+                                                                    return (thread_context.lr);
+                                                                case STACK: {
+                                                                    u64 value;
+                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset, sizeof(value)))) {
+                                                                        m_watch_data.failed++;
+                                                                        return (u64)0;
+                                                                    };
+                                                                    return ((value) & (-4));
+                                                                    break;
+                                                                }
+                                                                default:
+                                                                    return (u64)0;
+                                                            };
+                                                        };
+                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (get_X30_alternative() & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
+                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | (get_X30_alternative() - m_watch_data.main_start) << (64 - 27);
                                                             bool found = false;
                                                             for (int i = 0; i < m_watch_data.count; i++) {
                                                                 if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
@@ -1284,7 +1303,24 @@ namespace ams::dmnt {
                                                                 };
                                                             }
                                                         };
-                                                        m_from_stack.address = thread_context.pc | ((m_watch_data.x30_catch_type == OFFSET) ? ((thread_context.lr - m_watch_data.main_start) << (64 - 27)) : 0);
+                                                        switch(m_watch_data.x30_catch_type) {
+                                                            case OFFSET:
+                                                                m_from_stack.address = thread_context.pc | ((thread_context.lr - m_watch_data.main_start) << (64 - 27));
+                                                                break;
+                                                            case STACK: {
+                                                                u64 value;
+                                                                if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset, sizeof(value)))) {
+                                                                    m_watch_data.failed++;
+                                                                    m_from_stack.address = thread_context.pc;
+                                                                    break;
+                                                                };
+                                                                m_from_stack.address = thread_context.pc | (((value - m_watch_data.main_start)&(-4)) << (64 - 27));
+                                                                break;
+                                                            }
+                                                            default:
+                                                                m_from_stack.address = thread_context.pc;
+                                                                break;
+                                                        };
                                                         return m_from_stack;
                                                     };
                                                     // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
@@ -2388,7 +2424,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.11 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.12 address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
