@@ -1197,14 +1197,14 @@ namespace ams::dmnt {
                                                     } else {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
-                                                        u64 buffer[stack_check_size];
+                                                        // u64 buffer[stack_check_size];
                                                         auto Check_CALLSTACK = [&]() {
-                                                            if (m_watch_data.stack_check_count > 0 && false) {
-                                                                m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64));
-                                                                for (int i = 0; i < m_watch_data.stack_check_count; i++) {
-                                                                    if (((m_watch_data.call_stack[i].code_offset) << 2) + m_watch_data.main_start != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
-                                                                }
-                                                            }
+                                                            // if (m_watch_data.stack_check_count > 0 && false) {
+                                                            //     m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64));
+                                                            //     for (int i = 0; i < m_watch_data.stack_check_count; i++) {
+                                                            //         if (((m_watch_data.call_stack[i].code_offset) << 2) + m_watch_data.main_start != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
+                                                            //     }
+                                                            // }
                                                             return true;
                                                         };
                                                         auto get_X30_alternative = [&]() {
@@ -1291,15 +1291,15 @@ namespace ams::dmnt {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                    u64 buffer[stack_check_size];
+                                                    u64 buffer;
                                                     auto get_from_stack = [&]() {
                                                         m_from_stack_t m_from_stack = {0};
                                                         auto index = 0;
-                                                        if (m_watch_data.stack_check_count > 0 && R_SUCCEEDED(m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64)))) {
-                                                            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i++) {
-                                                                if ((m_watch_data.main_start <= buffer[i]) && (buffer[i] < m_watch_data.main_end)) {
-                                                                    m_from_stack.stack[index].code_offset = ((buffer[i] - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
-                                                                    m_from_stack.stack[index].SP_offset = i;
+                                                        if (m_watch_data.stack_check_count > 0) {
+                                                            for (int i = 0; i < stack_check_size * 8 && index < m_watch_data.stack_check_count && R_SUCCEEDED(m_debug_process.ReadMemory(&buffer, thread_context.sp + i, sizeof(u64))); i += 8) {
+                                                                if ((m_watch_data.main_start <= buffer) && (buffer < m_watch_data.main_end)) {
+                                                                    m_from_stack.stack[index].code_offset = ((buffer - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
+                                                                    m_from_stack.stack[index].SP_offset = i / 8;
                                                                     index++;
                                                                 };
                                                             }
