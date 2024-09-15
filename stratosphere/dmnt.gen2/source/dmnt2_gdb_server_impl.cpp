@@ -1190,6 +1190,30 @@ namespace ams::dmnt {
                                                         if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (get_X30_alternative() & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
                                                             u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | (get_X30_alternative() - m_watch_data.main_start) << (64 - 27);
                                                             bool found = false;
+                                                            if (m_watch_data.stack_check_count > 0) {
+                                                                auto entry = get_from_stack(thread_context);
+                                                                entry.address = ret_Rvalue;
+                                                                for (int i = 0; i < m_watch_data.count; i++) {
+                                                                    if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
+                                                                        (m_watch_data.fromU.from2[i].count)++;
+                                                                        found = true;
+                                                                    }
+                                                                };
+                                                                if (!found && m_watch_data.count < max_watch_buffer) {
+                                                                    u64 value = 0;
+                                                                    if (m_watch_data.range_check) {
+                                                                        u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
+                                                                        if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
+                                                                            m_watch_data.failed++;
+                                                                        };
+                                                                    }
+                                                                    if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
+                                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = entry;
+                                                                        m_watch_data.fromU.from2[m_watch_data.count].count = 1;
+                                                                        m_watch_data.count++;
+                                                                    };
+                                                                }
+                                                            } else {
                                                             for (int i = 0; i < m_watch_data.count; i++) {
                                                                 if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
                                                                     (m_watch_data.fromU.from[i].count)++;
@@ -1209,6 +1233,7 @@ namespace ams::dmnt {
                                                                     m_watch_data.fromU.from[m_watch_data.count].count = 1;
                                                                     m_watch_data.count++;
                                                                 };
+                                                            }
                                                             }
                                                         }
 
