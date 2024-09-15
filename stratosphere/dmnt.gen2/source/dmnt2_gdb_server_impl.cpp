@@ -1053,7 +1053,43 @@ namespace ams::dmnt {
         /* Set our state. */
         m_state = State::Exited;
     }
-
+    m_from_stack_t GdbServerImpl::get_from_stack(svc::ThreadContext &thread_context) {
+        u64 buffer[stack_check_size];
+        m_from_stack_t m_from_stack = {0};
+        auto index = 0;
+        if (m_watch_data.stack_check_count > 0 && R_SUCCEEDED(m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64)))) {
+            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i++) {
+                if ((m_watch_data.main_start <= buffer[i]) && (buffer[i] < m_watch_data.main_end)) {
+                    m_from_stack.stack[index].code_offset = ((buffer[i] - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
+                    m_from_stack.stack[index].SP_offset = i;
+                    index++;
+                };
+            }
+        };
+        if (m_watch_data.grab_A && m_watch_data.stack_check_count < max_call_stack) {
+            index = m_watch_data.stack_check_count;
+            m_debug_process.ReadMemory(&(m_from_stack.stack[index]), m_watch_data.grab_A_address, (max_call_stack - index) * sizeof(call_stack_t));
+        }
+        switch (m_watch_data.x30_catch_type) {
+            case OFFSET:
+                m_from_stack.address = thread_context.pc | ((thread_context.lr - m_watch_data.main_start) << (64 - 27));
+                break;
+            case STACK: {
+                u64 value;
+                if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset * 8, sizeof(value)))) {
+                    m_watch_data.failed++;
+                    m_from_stack.address = thread_context.pc;
+                    break;
+                };
+                m_from_stack.address = thread_context.pc | (((value - m_watch_data.main_start) & (-4)) << (64 - 27));
+                break;
+            }
+            default:
+                m_from_stack.address = thread_context.pc;
+                break;
+        };
+        return m_from_stack;
+    };
     void GdbServerImpl::ProcessDebugEvents() {
         AMS_DMNT2_GDB_LOG_DEBUG("Processing debug events for %016lx\n", m_process_id.value);
 
@@ -1218,54 +1254,18 @@ namespace ams::dmnt {
                                                 /* save the info*/
                                                 svc::ThreadContext thread_context;
                                                 if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
-                                                    u64 buffer;
-                                                    auto get_from_stack = [&]() {
-                                                        m_from_stack_t m_from_stack = {0};
-                                                        auto index = 0;
-                                                        if (m_watch_data.stack_check_count > 0) {
-                                                            for (int i = 0; i < stack_check_size * 8 && index < m_watch_data.stack_check_count && R_SUCCEEDED(m_debug_process.ReadMemory(&buffer, thread_context.sp + i, sizeof(u64))); i += 8) {
-                                                                if ((m_watch_data.main_start <= buffer) && (buffer < m_watch_data.main_end)) {
-                                                                    m_from_stack.stack[index].code_offset = ((buffer - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
-                                                                    m_from_stack.stack[index].SP_offset = i / 8;
-                                                                    index++;
-                                                                };
-                                                            }
-                                                        };
-                                                        if (m_watch_data.grab_A && m_watch_data.stack_check_count < max_call_stack) {
-                                                            index = m_watch_data.stack_check_count;
-                                                            m_debug_process.ReadMemory(&(m_from_stack.stack[index]), m_watch_data.grab_A_address , (max_call_stack - index) * sizeof(call_stack_t));
-                                                        }
-                                                        switch(m_watch_data.x30_catch_type) {
-                                                            case OFFSET:
-                                                                m_from_stack.address = thread_context.pc | ((thread_context.lr - m_watch_data.main_start) << (64 - 27));
-                                                                break;
-                                                            case STACK: {
-                                                                u64 value;
-                                                                if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(value)))) {
-                                                                    m_watch_data.failed++;
-                                                                    m_from_stack.address = thread_context.pc;
-                                                                    break;
-                                                                };
-                                                                m_from_stack.address = thread_context.pc | (((value - m_watch_data.main_start)&(-4)) << (64 - 27));
-                                                                break;
-                                                            }
-                                                            default:
-                                                                m_from_stack.address = thread_context.pc;
-                                                                break;
-                                                        };
-                                                        return m_from_stack;
-                                                    };
+
                                                     // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
                                                     bool found = false;
                                                     for (int i = 0; i < m_watch_data.count; i++) {
-                                                        auto entry = get_from_stack();
+                                                        auto entry = get_from_stack(thread_context);
                                                         if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
                                                             (m_watch_data.fromU.from2[i].count)++;
                                                             found = true;
                                                         }
                                                     };
                                                     if (!found && m_watch_data.count < max_watch_buffer2) {
-                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = get_from_stack();
+                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = get_from_stack(thread_context);
                                                         m_watch_data.fromU.from2[m_watch_data.count].count = 1;
                                                         m_watch_data.count++;
                                                     };

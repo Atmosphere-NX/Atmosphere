@@ -53,7 +53,7 @@ namespace ams::dmnt {
             bool gen2_loop();
             u8 gen2_server_on = 0;
             void Gen2Attach();
-            // m_from_stack_t get_from_stack(svc::ThreadContext &thread_context);
+            m_from_stack_t get_from_stack(svc::ThreadContext &thread_context);
 
            private:
             void ProcessPacket(char *receive, char *reply);
