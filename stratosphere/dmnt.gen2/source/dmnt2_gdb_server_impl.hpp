@@ -20,6 +20,7 @@
 #include "dmnt2_debug_process.hpp"
 
 namespace ams::dmnt {
+#include "gen2type.hpp"
 
     class GdbServerImpl {
         private:
@@ -52,6 +53,7 @@ namespace ams::dmnt {
             bool gen2_loop();
             u8 gen2_server_on = 0;
             void Gen2Attach();
+            // m_from_stack_t get_from_stack(svc::ThreadContext &thread_context);
 
            private:
             void ProcessPacket(char *receive, char *reply);
