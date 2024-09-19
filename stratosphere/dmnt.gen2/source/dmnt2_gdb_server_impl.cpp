@@ -1244,7 +1244,7 @@ namespace ams::dmnt {
                                                             m_watch_data.next_pc = address + 4;
                                                             if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
                                                                 m_watch_data.failed = 7;
-                                                            } else
+                                                            } 
                                                                 m_debug_process.Continue();
                                                         } else
                                                             m_debug_process.Continue();
@@ -1253,7 +1253,7 @@ namespace ams::dmnt {
                                                     /* memory case*/
                                                     if (R_FAILED(m_debug_process.SetWatchPoint(m_watch_data.address, m_watch_data.size, m_watch_data.read, m_watch_data.write))) {
                                                         m_watch_data.failed = 4;
-                                                    } else
+                                                    } 
                                                         m_debug_process.Continue();  // thread_id);
                                                 }
                                             }
@@ -1297,6 +1297,8 @@ namespace ams::dmnt {
                                                         m_watch_data.count++;
                                                     };
                                                     // m_watch_data.fromU.from[thread_context.pc]++;
+                                                    if (m_watch_data.total_trigger < m_watch_data.max_trigger) {
+                                                            m_watch_data.total_trigger++;
                                                     m_watch_data.next_pc = thread_context.pc + 4;
                                                     // if (m_watch_data.count < m_watch_data.max_count) {
                                                     //     m_watch_data.from.push_back(thread_context.pc);
@@ -1304,6 +1306,7 @@ namespace ams::dmnt {
                                                     if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.next_pc, 4, false))) {
                                                         m_watch_data.failed = 2;
                                                     };
+                                                    }
                                                     // };
                                                     m_debug_process.Continue();//thread_id);
                                                 } else
