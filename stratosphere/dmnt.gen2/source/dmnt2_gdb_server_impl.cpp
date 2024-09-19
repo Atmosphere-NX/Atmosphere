@@ -1053,7 +1053,7 @@ namespace ams::dmnt {
         /* Set our state. */
         m_state = State::Exited;
     }
-    m_from_stack_t GdbServerImpl::get_from_stack(svc::ThreadContext &thread_context) {
+    m_from_stack_t GdbServerImpl::get_from_stack(svc::ThreadContext &thread_context, bool get_address = true) {
         u64 buffer[stack_check_size];
         m_from_stack_t m_from_stack = {0};
         auto index = 0;
@@ -1070,6 +1070,7 @@ namespace ams::dmnt {
             index = m_watch_data.stack_check_count;
             m_debug_process.ReadMemory(&(m_from_stack.stack[index]), m_watch_data.grab_A_address, (max_call_stack - index) * sizeof(call_stack_t));
         }
+        if (get_address)
         switch (m_watch_data.x30_catch_type) {
             case OFFSET:
                 m_from_stack.address = thread_context.pc | ((thread_context.lr - m_watch_data.main_start) << (64 - 27));
@@ -1161,79 +1162,80 @@ namespace ams::dmnt {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
                                                         // u64 buffer[stack_check_size];
-                                                        auto Check_CALLSTACK = [&]() {
-                                                            // if (m_watch_data.stack_check_count > 0 && false) {
-                                                            //     m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64));
-                                                            //     for (int i = 0; i < m_watch_data.stack_check_count; i++) {
-                                                            //         if (((m_watch_data.call_stack[i].code_offset) << 2) + m_watch_data.main_start != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
-                                                            //     }
-                                                            // }
-                                                            return true;
-                                                        };
-                                                        auto get_X30_alternative = [&]() {
+                                                        // auto Check_CALLSTACK = [&]() {
+                                                        //     // if (m_watch_data.stack_check_count > 0 && false) {
+                                                        //     //     m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64));
+                                                        //     //     for (int i = 0; i < m_watch_data.stack_check_count; i++) {
+                                                        //     //         if (((m_watch_data.call_stack[i].code_offset) << 2) + m_watch_data.main_start != buffer[m_watch_data.call_stack[i].SP_offset]) return false;
+                                                        //     //     }
+                                                        //     // }
+                                                        //     return true;
+                                                        // };
+                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All))) {
+                                                            u64 X30_alternative;
                                                             switch (m_watch_data.x30_catch_type) {
                                                                 case OFFSET:
-                                                                    return (thread_context.lr);
-                                                                case STACK: {
-                                                                    u64 value;
-                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(value)))) {
-                                                                        m_watch_data.failed++;
-                                                                        return (u64)0;
-                                                                    };
-                                                                    return ((value) & (-4));
+                                                                    X30_alternative = (thread_context.lr);
                                                                     break;
-                                                                }
+                                                                case STACK:
+                                                                    if (R_FAILED(m_debug_process.ReadMemory(&X30_alternative, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(X30_alternative)))) {
+                                                                        m_watch_data.failed++;
+                                                                        X30_alternative = 0;
+                                                                    };
+                                                                    X30_alternative = X30_alternative & (-4);
+                                                                    break;
                                                                 default:
-                                                                    return (u64)0;
+                                                                    X30_alternative = m_watch_data.main_start;
+                                                                    break;
                                                             };
-                                                        };
-                                                        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(thread_context), thread_id, svc::ThreadContextFlag_All)) && (m_watch_data.check_x30 ? (get_X30_alternative() & 0xFFFF) == m_watch_data.x30_match : true) && Check_CALLSTACK()) {
-                                                            u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? thread_context.r[m_watch_data.j] << m_watch_data.k : 0)) | (get_X30_alternative() - m_watch_data.main_start) << (64 - 27);
-                                                            bool found = false;
-                                                            if (m_watch_data.stack_check_count > 0) {
-                                                                auto entry = get_from_stack(thread_context);
-                                                                entry.address = ret_Rvalue;
-                                                                for (int i = 0; i < m_watch_data.count; i++) {
-                                                                    if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
-                                                                        (m_watch_data.fromU.from2[i].count)++;
-                                                                        found = true;
-                                                                    }
-                                                                };
-                                                                if (!found && m_watch_data.count < max_watch_buffer) {
-                                                                    u64 value = 0;
-                                                                    if (m_watch_data.range_check) {
-                                                                        u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
-                                                                        if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
-                                                                            m_watch_data.failed++;
+                                                            if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
+                                                                u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
+                                                                bool found = false;
+                                                                if (m_watch_data.stack_check_count > 0) {
+                                                                    auto entry = get_from_stack(thread_context,false);
+                                                                    entry.address = ret_Rvalue;
+                                                                    for (int i = 0; i < m_watch_data.count; i++) {
+                                                                        if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
+                                                                            (m_watch_data.fromU.from2[i].count)++;
+                                                                            found = true;
+                                                                        }
+                                                                    };
+                                                                    if (!found && m_watch_data.count < max_watch_buffer) {
+                                                                        u64 value = 0;
+                                                                        if (m_watch_data.range_check) {
+                                                                            u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
+                                                                            if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
+                                                                                m_watch_data.failed++;
+                                                                            };
+                                                                        }
+                                                                        if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
+                                                                            m_watch_data.fromU.from2[m_watch_data.count].from_stack = entry;
+                                                                            m_watch_data.fromU.from2[m_watch_data.count].count = 1;
+                                                                            m_watch_data.count++;
                                                                         };
                                                                     }
-                                                                    if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
-                                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = entry;
-                                                                        m_watch_data.fromU.from2[m_watch_data.count].count = 1;
-                                                                        m_watch_data.count++;
+                                                                } else {
+                                                                    for (int i = 0; i < m_watch_data.count; i++) {
+                                                                        if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
+                                                                            (m_watch_data.fromU.from[i].count)++;
+                                                                            found = true;
+                                                                        }
                                                                     };
+                                                                    if (!found && m_watch_data.count < max_watch_buffer) {
+                                                                        u64 value = 0;
+                                                                        if (m_watch_data.range_check) {
+                                                                            u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
+                                                                            if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
+                                                                                m_watch_data.failed++;
+                                                                            };
+                                                                        }
+                                                                        if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
+                                                                            m_watch_data.fromU.from[m_watch_data.count].address = ret_Rvalue;
+                                                                            m_watch_data.fromU.from[m_watch_data.count].count = 1;
+                                                                            m_watch_data.count++;
+                                                                        };
+                                                                    }
                                                                 }
-                                                            } else {
-                                                            for (int i = 0; i < m_watch_data.count; i++) {
-                                                                if (m_watch_data.fromU.from[i].address == ret_Rvalue) {
-                                                                    (m_watch_data.fromU.from[i].count)++;
-                                                                    found = true;
-                                                                }
-                                                            };
-                                                            if (!found && m_watch_data.count < max_watch_buffer) {
-                                                                u64 value = 0;
-                                                                if (m_watch_data.range_check) {
-                                                                    u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
-                                                                    if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
-                                                                        m_watch_data.failed++;
-                                                                    };
-                                                                }
-                                                                if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
-                                                                    m_watch_data.fromU.from[m_watch_data.count].address = ret_Rvalue;
-                                                                    m_watch_data.fromU.from[m_watch_data.count].count = 1;
-                                                                    m_watch_data.count++;
-                                                                };
-                                                            }
                                                             }
                                                         }
 
@@ -1283,7 +1285,7 @@ namespace ams::dmnt {
                                                     // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
                                                     bool found = false;
                                                     for (int i = 0; i < m_watch_data.count; i++) {
-                                                        auto entry = get_from_stack(thread_context);
+                                                        auto entry = get_from_stack(thread_context,true);
                                                         if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
                                                             (m_watch_data.fromU.from2[i].count)++;
                                                             found = true;
