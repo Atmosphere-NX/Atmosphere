@@ -1191,7 +1191,7 @@ namespace ams::dmnt {
                                                             if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
                                                                 u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
                                                                 bool found = false;
-                                                                if (m_watch_data.stack_check_count > 0) {
+                                                                if ((m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) {
                                                                     auto entry = get_from_stack(thread_context,false);
                                                                     entry.address = ret_Rvalue;
                                                                     for (int i = 0; i < m_watch_data.count; i++) {
@@ -2386,7 +2386,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.13a address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.13b address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
