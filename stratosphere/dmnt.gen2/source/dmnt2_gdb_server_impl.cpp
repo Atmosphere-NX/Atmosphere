@@ -1156,8 +1156,8 @@ namespace ams::dmnt {
                                                     if (address == m_watch_data.next_pc) {
                                                         if (R_FAILED(m_debug_process.SetHardwareBreakPoint(m_watch_data.address, m_watch_data.size, false))) { 
                                                             m_watch_data.failed = 6;
-                                                        } else
-                                                            m_debug_process.Continue();
+                                                        }
+                                                        m_debug_process.Continue();
                                                     } else {
                                                         /* do data collection*/
                                                         svc::ThreadContext thread_context;
@@ -1200,7 +1200,7 @@ namespace ams::dmnt {
                                                                             found = true;
                                                                         }
                                                                     };
-                                                                    if (!found && m_watch_data.count < max_watch_buffer) {
+                                                                    if (!found && m_watch_data.count < max_watch_buffer2) {
                                                                         u64 value = 0;
                                                                         if (m_watch_data.range_check) {
                                                                             u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
@@ -1284,15 +1284,15 @@ namespace ams::dmnt {
 
                                                     // u64 ret_pc = thread_context.pc | (thread_context.lr << (64-16));
                                                     bool found = false;
+                                                    auto entry = get_from_stack(thread_context, true);
                                                     for (int i = 0; i < m_watch_data.count; i++) {
-                                                        auto entry = get_from_stack(thread_context,true);
                                                         if (memcmp(&(m_watch_data.fromU.from2[i].from_stack), &entry, sizeof(m_from_stack_t)) == 0) {
                                                             (m_watch_data.fromU.from2[i].count)++;
                                                             found = true;
                                                         }
                                                     };
                                                     if (!found && m_watch_data.count < max_watch_buffer2) {
-                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = get_from_stack(thread_context);
+                                                        m_watch_data.fromU.from2[m_watch_data.count].from_stack = entry;
                                                         m_watch_data.fromU.from2[m_watch_data.count].count = 1;
                                                         m_watch_data.count++;
                                                     };
@@ -2386,7 +2386,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.13b address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork v0.13c address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
