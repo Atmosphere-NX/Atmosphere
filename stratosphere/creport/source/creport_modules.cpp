@@ -46,7 +46,7 @@ namespace ams::creport {
     }
 
     void ModuleList::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("    Number of Modules:           %zu\n", m_num_modules);
+        file.WriteFormat("    Number of Modules:           %02zu\n", m_num_modules);
         for (size_t i = 0; i < m_num_modules; i++) {
             const auto& module = m_modules[i];
             file.WriteFormat("    Module %02zu:\n", i);
