@@ -23,9 +23,21 @@
             u64 address : 39;                    // address of the instr to watch *** use to set break point
             u32 x30_offset : 25;                 // (x30-main)/4 data capture for this must not be stack alternative
             call_stack_t stack[max_call_stack];  // ([SP+SP_offset*8]-main)/4 == code_offset
-            u32 i : 5;                           //  [xi+register_offset]!=target_address *** use to test match if mismatch zero the data until no more
-            u32 register_offset : 27;            //  
+            u8 i : 5;                           //  [xi+register_offset]!=target_address *** use to test match if mismatch zero the data until no more
+            u8 j : 5;
+            u8 k : 5;
+            bool two_register:1;
+            s16 offset : 16;            //  
         } NX_PACKED m_from3_t;
+        typedef struct {
+            u64 address : 39;     // address of the instr to watch *** use to set break point
+            u32 x30_offset : 25;  // (x30-main)/4 data capture for this must not be stack alternative
+            u8 i : 5;             //  [xi+register_offset]!=target_address *** use to test match if mismatch zero the data until no more
+            u8 j : 5;
+            u8 k : 5;
+            bool two_register : 1;
+            s16 offset : 16;
+        } NX_PACKED m_from1_t;
 
         enum gen2_command {
             SETW,
@@ -57,8 +69,9 @@
             u64 next_pc=0x55AA55AA;
             union {
                 m_from_t from[max_watch_buffer];
+                m_from1_t from1[max_watch_buffer];
                 m_from2_t from2[max_watch_buffer2];
-                m_from3_t from3;
+                m_from3_t from3[max_watch_buffer2];
             } fromU;
             int failed = 0;
             u8 gen2loop_on = false;
@@ -69,12 +82,13 @@
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.13c";
+            char version[10]="v0.13d";
             u16 x30_match = 0;
             bool check_x30 = false;
             bool two_register = false;
             u16 stack_check_count = 0; //must be not greater than max_call_stack
-            call_stack_t call_stack = {0};// spare 32 bit 
+            u16 exclusive_search_count = 0;  //
+            bool exclusive_search_from2 = false;
             u64 target_address;
             u64 main_start, main_end;
             u64 total_trigger = 0;

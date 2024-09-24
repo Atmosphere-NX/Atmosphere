@@ -54,6 +54,7 @@ namespace ams::dmnt {
             u8 gen2_server_on = 0;
             void Gen2Attach();
             m_from_stack_t get_from_stack(svc::ThreadContext &thread_context, bool get_address);
+            void set_next_watch_for_exclusive_search();
 
            private:
             void ProcessPacket(char *receive, char *reply);

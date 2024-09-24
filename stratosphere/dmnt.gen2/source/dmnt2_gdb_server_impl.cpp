@@ -31,12 +31,22 @@ namespace ams::dmnt {
                 // flash_led_connect();
                 switch (m_watch_data.command) {
                     case SETW:
-                        m_watch_data.total_trigger = 0;
-                        clearw();
-                        m_watch_data.address = m_watch_data.next_address;
-                        m_watch_data.read = m_watch_data.next_read;
-                        m_watch_data.write = m_watch_data.next_write;
-                        setw();
+                        if (m_watch_data.x30_catch_type == EXCLUSIVE_SEARCH) {
+                            if (!m_watch_data.next_read && !m_watch_data.next_write) break;  // not memeory access catched, not valid data for exclusive search
+
+                            m_watch_data.target_address = m_watch_data.next_address;
+                            m_watch_data.exclusive_search_count = m_watch_data.count;
+                            if ((m_watch_data.read || m_watch_data.write) || (m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) m_watch_data.exclusive_search_from2 = true; else m_watch_data.exclusive_search_from2 = false;
+
+                            set_next_watch_for_exclusive_search();
+                        } else {
+                            m_watch_data.total_trigger = 0;
+                            clearw();
+                            m_watch_data.address = m_watch_data.next_address;
+                            m_watch_data.read = m_watch_data.next_read;
+                            m_watch_data.write = m_watch_data.next_write;
+                            setw();
+                        }
                         break;
                     case CLEARW:
                         clearw();
@@ -1053,6 +1063,37 @@ namespace ams::dmnt {
         /* Set our state. */
         m_state = State::Exited;
     }
+    void GdbServerImpl::set_next_watch_for_exclusive_search() {
+        if (m_watch_data.exclusive_search_count == 0) {
+            clearw();
+            return;
+        }
+        m_watch_data.total_trigger = 0;
+        clearw();
+        if (m_watch_data.exclusive_search_from2) {
+            m_watch_data.address = m_watch_data.fromU.from3[0].address;
+            m_watch_data.i = m_watch_data.fromU.from3[0].i;
+            m_watch_data.j = m_watch_data.fromU.from3[0].j;
+            m_watch_data.k = m_watch_data.fromU.from3[0].k;
+            m_watch_data.two_register = m_watch_data.fromU.from3[0].two_register;
+            m_watch_data.offset = m_watch_data.fromU.from3[0].offset;
+        } else {
+            m_watch_data.address = m_watch_data.fromU.from1[0].address;
+            m_watch_data.i = m_watch_data.fromU.from1[0].i;
+            m_watch_data.j = m_watch_data.fromU.from1[0].j;
+            m_watch_data.k = m_watch_data.fromU.from1[0].k;
+            m_watch_data.two_register = m_watch_data.fromU.from1[0].two_register;
+            m_watch_data.offset = m_watch_data.fromU.from1[0].offset;
+        }
+        memcpy(&(m_watch_data.v1),&(m_watch_data.fromU.from3[0].stack[0]),16);
+        m_watch_data.next_address = m_watch_data.address; // for debug purpose also need to get i,j,k
+        m_watch_data.next_read = false;
+        m_watch_data.next_write = false;
+        m_watch_data.read = false;
+        m_watch_data.write = false;
+        setw();
+        return;
+    };
     m_from_stack_t GdbServerImpl::get_from_stack(svc::ThreadContext &thread_context, bool get_address = true) {
         u64 buffer[stack_check_size];
         m_from_stack_t m_from_stack = {0};
@@ -1188,7 +1229,30 @@ namespace ams::dmnt {
                                                                     X30_alternative = m_watch_data.main_start;
                                                                     break;
                                                             };
-                                                            if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
+#define FROM_U(i) (m_watch_data.fromU.from3[i])
+#define Match_U(i) ((FROM_U(i).x30_offset == x30_catch) && (memcmp(&(FROM_U(i).stack[0]), &(entry.stack[0]), sizeof(call_stack_t) * m_watch_data.stack_check_count) == 0))
+#define IS_CURRENT_ADDRESS(i) (FROM_U(i).address == m_watch_data.address)
+
+                                                            if (m_watch_data.x30_catch_type == EXCLUSIVE_SEARCH) {
+                                                                u64 target_address = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : m_watch_data.offset));
+                                                                if (m_watch_data.target_address != target_address) {
+                                                                    u32 x30_catch = (thread_context.lr - m_watch_data.main_start) >> 2;
+                                                                    auto entry = get_from_stack(thread_context,false);
+                                                                    u32 index = 0;
+                                                                    while (index < m_watch_data.exclusive_search_count && IS_CURRENT_ADDRESS(index)) {
+                                                                        if (Match_U(index)) {
+                                                                            for (int i = index; i < m_watch_data.exclusive_search_count - 1; i++)
+                                                                                memcpy(&FROM_U(i), &FROM_U(i + 1), sizeof(m_from3_t));
+                                                                            m_watch_data.exclusive_search_count--;
+                                                                            if (m_watch_data.exclusive_search_count != 0 && FROM_U(0).address != m_watch_data.address) {
+                                                                                set_next_watch_for_exclusive_search();
+                                                                            }
+                                                                        }
+                                                                        index++;
+                                                                    }
+                                                                } else
+                                                                    m_watch_data.count = m_watch_data.exclusive_search_count;
+                                                            } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
                                                                 u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
                                                                 bool found = false;
                                                                 if ((m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) {
