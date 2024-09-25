@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest a new feature for Atmosphère.
+title: "[FEATURE REQUEST] "
+body:
+- type: markdown
+  attributes:
+    value: |
+      Please search for [existing feature requests](https://github.com/Atmosphere-NX/Atmosphere/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22features%2Ffeature-request%22) before you make your own request.
+      Duplicate requests will be marked as such, and you will be referred to the original request.
+- type: textarea
+  attributes:
+    label: What feature are you suggesting?
+    description: Include the basic concepts for this feature here.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Smaller details
+    description: These may include specific methods of implementation, etc.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Nature of the request
+    description: |
+      Is this request an addition, a change, or a removal?
+
+      If you are suggesting porting features or including features from other projects, include what license they are distributed under, and what (if any) libraries those projects use.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: What component do you feel this would best fit within?
+    description: See [here](https://github.com/Atmosphere-NX/Atmosphere#components) for more information.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Why would this feature be useful?
+    description: |
+      - If this is a feature for an end-user, how does it benefit the end-user?
+      - If this feature is for developers, what does it add to Atmosphère that did not already exist?
+  validations:
+    required: true
