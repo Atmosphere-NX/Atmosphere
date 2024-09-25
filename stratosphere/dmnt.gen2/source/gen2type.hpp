@@ -1,7 +1,7 @@
 #define max_watch_buffer 0x100
-#define max_call_stack 3
+#define max_call_stack 5
 #define stack_check_size 100
-#define GEN2_VERSION "v0.13c"
+#define GEN2_VERSION "v0.13f"
         typedef struct {
             u64 address:64;
             u32 count:32;
@@ -82,13 +82,14 @@
             u64 v1,v2;
             int size = 4;
             int vsize = 4;
-            char version[10]="v0.13d";
+            char version[10] = GEN2_VERSION;
             u16 x30_match = 0;
             bool check_x30 = false;
             bool two_register = false;
             u16 stack_check_count = 0; //must be not greater than max_call_stack
             u16 exclusive_search_count = 0;  //
             bool exclusive_search_from2 = false;
+            u32 exclusive_search_target_trigger = 0;
             u64 target_address;
             u64 main_start, main_end;
             u64 total_trigger = 0;

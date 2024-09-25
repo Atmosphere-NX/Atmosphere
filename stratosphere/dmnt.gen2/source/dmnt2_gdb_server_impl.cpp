@@ -37,7 +37,7 @@ namespace ams::dmnt {
                             m_watch_data.target_address = m_watch_data.next_address;
                             m_watch_data.exclusive_search_count = m_watch_data.count;
                             if ((m_watch_data.read || m_watch_data.write) || (m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) m_watch_data.exclusive_search_from2 = true; else m_watch_data.exclusive_search_from2 = false;
-
+                            m_watch_data.exclusive_search_target_trigger = 0;
                             set_next_watch_for_exclusive_search();
                         } else {
                             m_watch_data.total_trigger = 0;
@@ -1246,12 +1246,19 @@ namespace ams::dmnt {
                                                                             m_watch_data.exclusive_search_count--;
                                                                             if (m_watch_data.exclusive_search_count != 0 && FROM_U(0).address != m_watch_data.address) {
                                                                                 set_next_watch_for_exclusive_search();
+                                                                            } else if (m_watch_data.exclusive_search_count == 0) {
+                                                                                clearw();
                                                                             }
                                                                         }
                                                                         index++;
                                                                     }
-                                                                } else
+                                                                } else {
                                                                     m_watch_data.count = m_watch_data.exclusive_search_count;
+                                                                    u32 x30_catch = (thread_context.lr - m_watch_data.main_start) >> 2;
+                                                                    auto entry = get_from_stack(thread_context, false);
+                                                                    if Match_U (0)
+                                                                        m_watch_data.exclusive_search_target_trigger++;
+                                                                }
                                                             } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
                                                                 u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
                                                                 bool found = false;
@@ -2450,7 +2457,7 @@ namespace ams::dmnt {
                                                "gen2\n"
                                                "attach\n"
                                                "detach\n"
-                                               "Tomvita fork v0.13c address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
+                                               "Tomvita fork" GEN2_VERSION " address = %010lx\n",(long unsigned int)&(m_watch_data.execute));
         } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
                 AppendReplyFormat(reply_cur, reply_end, "Not attached.\n");
