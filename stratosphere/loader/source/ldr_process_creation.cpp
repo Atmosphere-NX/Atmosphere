@@ -212,8 +212,8 @@ namespace ams::ldr {
             { 0x010049900F546001 }, /* Super Mario 3D All-Stars: Super Mario 64 */
             { 0x010057D00ECE4000 }, /* Nintendo Switch Online (Nintendo 64) [for Japan] */
             { 0x01006F8002326000 }, /* Animal Crossing: New Horizons */
-            { 0x01006FB00F50E000 }, /* [???] */
-            { 0x010070300F50C000 }, /* [???] */
+            { 0x01006FB00F50E000 }, /* 宝可梦 走吧！伊布 [Pokemon: Let's Go, Eevee! for China] */
+            { 0x010070300F50C000 }, /* 宝可梦 走吧！皮卡丘 [Pokemon: Let's Go, Pikachu! for China] */
             { 0x010075100E8EC000 }, /* 马力欧卡丁车8 豪华版 [Mario Kart 8 Deluxe for China] */
             { 0x01008DB008C2C000 }, /* Pokemon Shield */
             { 0x01009AD008C4C000 }, /* Pokemon: Let's Go, Pikachu! [Kiosk] */
