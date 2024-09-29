@@ -1098,8 +1098,16 @@ namespace ams::dmnt {
         u64 buffer[stack_check_size];
         m_from_stack_t m_from_stack = {0};
         auto index = 0;
-        if (m_watch_data.stack_check_count > 0 && R_SUCCEEDED(m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64)))) {
-            for (int i = 0; i < stack_check_size && index < m_watch_data.stack_check_count; i++) {
+        if (m_watch_data.stack_check_count > 0) {
+            svc::MemoryInfo meminfo;
+            int check_size = stack_check_size;
+            if R_FAILED (m_debug_process.ReadMemory(buffer, thread_context.sp, stack_check_size * sizeof(u64))) {
+                if R_SUCCEEDED (m_debug_process.QueryMemory(&meminfo, thread_context.sp))
+                    check_size = (meminfo.base_address + meminfo.size - thread_context.sp) / sizeof(u64);
+                if (R_FAILED(m_debug_process.ReadMemory(buffer, thread_context.sp, check_size * sizeof(u64))))
+                    check_size = 0;
+            };
+            for (int i = 0; i < check_size && index < m_watch_data.stack_check_count; i++) {
                 if ((m_watch_data.main_start <= buffer[i]) && (buffer[i] < m_watch_data.main_end)) {
                     m_from_stack.stack[index].code_offset = ((buffer[i] - m_watch_data.main_start) & 0x7FFFFFF) >> 2;
                     m_from_stack.stack[index].SP_offset = i;
