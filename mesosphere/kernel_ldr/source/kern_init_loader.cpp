@@ -19,8 +19,8 @@
 /* Necessary for calculating kernelldr size/base for initial identity mapping */
 extern "C" {
 
-	extern const u8 __start__[];
-    extern const u8 __end__[];
+	extern const u8 __bin_start__[];
+    extern const u8 __bin_end__[];
 
 }
 
@@ -88,8 +88,8 @@ namespace ams::kern::init::loader {
 
             /* Map in an RWX identity mapping for ourselves. */
             constexpr PageTableEntry KernelLdrRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            const uintptr_t kernel_ldr_base = util::AlignDown(reinterpret_cast<uintptr_t>(__start__), PageSize);
-            const uintptr_t kernel_ldr_size = util::AlignUp(reinterpret_cast<uintptr_t>(__end__), PageSize) - kernel_ldr_base;
+            const uintptr_t kernel_ldr_base = util::AlignDown(reinterpret_cast<uintptr_t>(__bin_start__), PageSize);
+            const uintptr_t kernel_ldr_size = util::AlignUp(reinterpret_cast<uintptr_t>(__bin_end__), PageSize) - kernel_ldr_base;
             init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator, 0);
 
             /* Map in the page table region as RW- for ourselves. */

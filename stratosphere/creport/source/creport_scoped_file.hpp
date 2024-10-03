@@ -25,8 +25,11 @@ namespace ams::creport {
             fs::FileHandle m_file;
             s64 m_offset;
             bool m_opened;
+            u8 *m_cache;
+            const size_t m_cache_size;
+            s64 m_cache_offset;
         public:
-            ScopedFile(const char *path) : m_file(), m_offset(), m_opened(false) {
+            ScopedFile(const char *path, void *cache = nullptr, size_t cache_size = 0) : m_file(), m_offset(), m_opened(false), m_cache(static_cast<u8*>(cache)), m_cache_size(cache_size), m_cache_offset(0) {
                 if (R_SUCCEEDED(fs::CreateFile(path, 0))) {
                     m_opened = R_SUCCEEDED(fs::OpenFile(std::addressof(m_file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
                 }
@@ -34,6 +37,10 @@ namespace ams::creport {
 
             ~ScopedFile() {
                 if (m_opened) {
+                    if (m_cache != nullptr) {
+                        this->TryWriteCache();
+                    }
+                    fs::FlushFile(m_file);
                     fs::CloseFile(m_file);
                 }
             }
@@ -47,6 +54,8 @@ namespace ams::creport {
             void DumpMemory(const char *prefix, const void *data, size_t size);
 
             void Write(const void *data, size_t size);
+        private:
+            Result TryWriteCache();
     };
 
 }
