@@ -238,7 +238,10 @@ CATEGORIES = {
     139 : 'EthernetAdapterOUIInfo',
     140 : 'NANDTypeInfo',
     141 : 'MicroSDTypeInfo',
+    142 : 'AttachmentFileInfo',
     1000 : 'TestNx',
+    1001 : 'NANDTypeInfo',
+    1002 : 'NANDExtendedCsd',
 }
 
 FIELD_TYPES = {
