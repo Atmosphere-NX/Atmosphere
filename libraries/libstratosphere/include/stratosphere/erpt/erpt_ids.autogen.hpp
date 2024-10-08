@@ -81,8 +81,8 @@
     HANDLER(NetworkErrorInfo,                    40  ) \
     HANDLER(FileAccessPathInfo,                  41  ) \
     HANDLER(GameCardCIDInfo,                     42  ) \
-    HANDLER(NANDCIDInfo,                         43  ) \
-    HANDLER(MicroSDCIDInfo,                      44  ) \
+    HANDLER(NANDCIDInfoDeprecated,               43  ) \
+    HANDLER(MicroSDCIDInfoDeprecated,            44  ) \
     HANDLER(NANDSpeedModeInfo,                   45  ) \
     HANDLER(MicroSDSpeedModeInfo,                46  ) \
     HANDLER(GameCardSpeedModeInfo,               47  ) \
@@ -112,7 +112,7 @@
     HANDLER(FocusedAppletHistoryInfo,            71  ) \
     HANDLER(CompositorInfo,                      72  ) \
     HANDLER(BatteryChargeInfo,                   73  ) \
-    HANDLER(NANDExtendedCsd,                     74  ) \
+    HANDLER(NANDExtendedCsdDeprecated,           74  ) \
     HANDLER(NANDPatrolInfo,                      75  ) \
     HANDLER(NANDErrorInfo,                       76  ) \
     HANDLER(NANDDriverLog,                       77  ) \
@@ -178,9 +178,12 @@
     HANDLER(BuiltInWirelessOUIInfo,              137 ) \
     HANDLER(WirelessAPOUIInfo,                   138 ) \
     HANDLER(EthernetAdapterOUIInfo,              139 ) \
-    HANDLER(NANDTypeInfo,                        140 ) \
+    HANDLER(NANDTypeInfoDeprecated,              140 ) \
     HANDLER(MicroSDTypeInfo,                     141 ) \
-    HANDLER(TestNx,                              1000)
+    HANDLER(AttachmentFileInfo,                  142 ) \
+    HANDLER(TestNx,                              1000) \
+    HANDLER(NANDTypeInfo,                        1001) \
+    HANDLER(NANDExtendedCsd,                     1002) \
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,    Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -280,8 +283,8 @@
     HANDLER(CDNContentPath,                                           94,   NetworkErrorInfo,                    FieldType_String,     FieldFlag_None   ) \
     HANDLER(FileAccessPath,                                           95,   FileAccessPathInfo,                  FieldType_String,     FieldFlag_None   ) \
     HANDLER(GameCardCID,                                              96,   GameCardCIDInfo,                     FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(NANDCID,                                                  97,   NANDCIDInfo,                         FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(MicroSDCID,                                               98,   MicroSDCIDInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(NANDCIDDeprecated,                                        97,   NANDCIDInfoDeprecated,               FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(MicroSDCIDDeprecated,                                     98,   MicroSDCIDInfoDeprecated,            FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(NANDSpeedMode,                                            99,   NANDSpeedModeInfo,                   FieldType_String,     FieldFlag_None   ) \
     HANDLER(MicroSDSpeedMode,                                         100,  MicroSDSpeedModeInfo,                FieldType_String,     FieldFlag_None   ) \
     HANDLER(GameCardSpeedMode,                                        101,  GameCardSpeedModeInfo,               FieldType_String,     FieldFlag_None   ) \
@@ -373,9 +376,9 @@
     HANDLER(FastBatteryChargingEnabled,                               187,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(ControllerPowerSupplyAcquiredDeprecated,                  188,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(OtgRequestedDeprecated,                                   189,  BatteryChargeInfo,                   FieldType_Bool,       FieldFlag_None   ) \
-    HANDLER(NANDPreEolInfo,                                           190,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(NANDDeviceLifeTimeEstTypA,                                191,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(NANDDeviceLifeTimeEstTypB,                                192,  NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(NANDPreEolInfoDeprecated,                                 190,  NANDExtendedCsdDeprecated,           FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(NANDDeviceLifeTimeEstTypADeprecated,                      191,  NANDExtendedCsdDeprecated,           FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(NANDDeviceLifeTimeEstTypBDeprecated,                      192,  NANDExtendedCsdDeprecated,           FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NANDPatrolCount,                                          193,  NANDPatrolInfo,                      FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NANDNumActivationFailures,                                194,  NANDErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NANDNumActivationErrorCorrections,                        195,  NANDErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
@@ -446,21 +449,21 @@
     HANDLER(AdspExceptionStackDumpDeprecated,                         260,  AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(AdspExceptionReasonDeprecated,                            261,  AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(OscillatorClock,                                          262,  PowerClockInfo,                      FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(CpuDvfsTableClocks,                                       263,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(CpuDvfsTableVoltages,                                     264,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
-    HANDLER(GpuDvfsTableClocks,                                       265,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(GpuDvfsTableVoltages,                                     266,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
-    HANDLER(EmcDvfsTableClocks,                                       267,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(EmcDvfsTableVoltages,                                     268,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(CpuDvfsTableClocksDeprecated,                             263,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(CpuDvfsTableVoltagesDeprecated,                           264,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(GpuDvfsTableClocksDeprecated,                             265,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(GpuDvfsTableVoltagesDeprecated,                           266,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(EmcDvfsTableClocksDeprecated,                             267,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(EmcDvfsTableVoltagesDeprecated,                           268,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
     HANDLER(ModuleClockFrequencies,                                   269,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(ModuleClockEnableFlags,                                   270,  PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModulePowerEnableFlags,                                   271,  PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModuleResetAssertFlags,                                   272,  PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModuleMinimumVoltageClockRates,                           273,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(PowerDomainEnableFlags,                                   274,  PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(PowerDomainVoltages,                                      275,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(PowerDomainEnableFlagsDeprecated,                         274,  PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(PowerDomainVoltagesDeprecated,                            275,  PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
     HANDLER(AccessPointRssi,                                          276,  RadioStrengthInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
-    HANDLER(FuseInfo,                                                 277,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(FuseInfoDeprecated,                                       277,  PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(VideoLog,                                                 278,  VideoInfo,                           FieldType_String,     FieldFlag_None   ) \
     HANDLER(GameCardDeviceId,                                         279,  GameCardCIDInfo,                     FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(GameCardAsicReinitializeCount,                            280,  GameCardErrorInfo,                   FieldType_NumericU16, FieldFlag_None   ) \
@@ -830,9 +833,9 @@
     HANDLER(RuntimeLimitedApplicationLicenseUpgrade,                  644,  RunningApplicationInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ServiceProfileRevisionKey,                                645,  ServiceProfileInfo,                  FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(BluetoothAudioConnectionCount,                            646,  BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(BluetoothHidPairingInfoCount,                             647,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(BluetoothAudioPairingInfoCount,                           648,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(BluetoothLePairingInfoCount,                              649,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothHidPairingInfoCountDeprecated,                   647,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothAudioPairingInfoCountDeprecated,                 648,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothLePairingInfoCountDeprecated,                    649,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(FatFsBisSystemFilePeakOpenCount,                          650,  FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsBisSystemDirectoryPeakOpenCount,                     651,  FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
     HANDLER(FatFsBisUserFilePeakOpenCount,                            652,  FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
@@ -860,11 +863,24 @@
     HANDLER(FatFsBisUserFatErrorNumber,                               674,  FsProxyErrorInfo2,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(FatFsBisUserFatSafeErrorNumber,                           675,  FsProxyErrorInfo2,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(GpuCrashDump2,                                            676,  GpuCrashInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(NANDType,                                                 677,  NANDTypeInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(NANDTypeDeprecated,                                       677,  NANDTypeInfoDeprecated,              FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(MicroSDType,                                              678,  MicroSDTypeInfo,                     FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(GameCardLastDeactivateReasonResult,                       679,  GameCardErrorInfo,                   FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(GameCardLastDeactivateReason,                             680,  GameCardErrorInfo,                   FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(InvalidErrorCode,                                         681,  ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
+    HANDLER(AppletId,                                                 682,  ApplicationInfo,                     FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(PrevReportIdentifier,                                     683,  ErrorInfoAuto,                       FieldType_String,     FieldFlag_None   ) \
+    HANDLER(SyslogStartupTimeBase,                                    684,  ErrorInfoAuto,                       FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(NxdmpIsAttached,                                          685,  AttachmentFileInfo,                  FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(ScreenshotIsAttached,                                     686,  AttachmentFileInfo,                  FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(SyslogIsAttached,                                         687,  AttachmentFileInfo,                  FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(SaveSyslogResult,                                         688,  AttachmentFileInfo,                  FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(EncryptionKeyGeneration,                                  689,  ErrorInfo,                           FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(FsBufferManagerNonBlockingRetriedCount,                   690,  FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
+    HANDLER(FsPooledBufferNonBlockingRetriedCount,                    691,  FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
+    HANDLER(LastConnectionTestDownloadSpeed64,                        692,  ConnectionInfo,                      FieldType_NumericU64, FieldFlag_None   ) \
+    HANDLER(LastConnectionTestUploadSpeed64,                          693,  ConnectionInfo,                      FieldType_NumericU64, FieldFlag_None   ) \
+    HANDLER(EncryptionKeyV1,                                          694,  ErrorInfo,                           FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(TestStringNx,                                             1000, TestNx,                              FieldType_String,     FieldFlag_None   ) \
     HANDLER(BoostModeCurrentLimit,                                    1001, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ChargeConfiguration,                                      1002, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
@@ -877,5 +893,21 @@
     HANDLER(AdspExceptionArmModeRegisters,                            1009, AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
     HANDLER(AdspExceptionStackAddress,                                1010, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AdspExceptionStackDump,                                   1011, AdspErrorInfo,                       FieldType_U32Array,   FieldFlag_None   ) \
-    HANDLER(AdspExceptionReason,                                      1012, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   )
+    HANDLER(AdspExceptionReason,                                      1012, AdspErrorInfo,                       FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(CpuDvfsTableClocks,                                       1013, PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(CpuDvfsTableVoltages,                                     1014, PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(GpuDvfsTableClocks,                                       1015, PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(GpuDvfsTableVoltages,                                     1016, PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(EmcDvfsTableClocks,                                       1017, PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(EmcDvfsTableVoltages,                                     1018, PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(PowerDomainEnableFlags,                                   1019, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(PowerDomainVoltages,                                      1020, PowerClockInfo,                      FieldType_I32Array,   FieldFlag_None   ) \
+    HANDLER(FuseInfo,                                                 1021, PowerClockInfo,                      FieldType_U32Array,   FieldFlag_None   ) \
+    HANDLER(NANDType,                                                 1022, NANDTypeInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(BluetoothHidPairingInfoCount,                             1023, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothAudioPairingInfoCount,                           1024, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothLePairingInfoCount,                              1025, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(NANDPreEolInfo,                                           1026, NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(NANDDeviceLifeTimeEstTypA,                                1027, NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(NANDDeviceLifeTimeEstTypB,                                1028, NANDExtendedCsd,                     FieldType_NumericU32, FieldFlag_None   )
 
