@@ -220,18 +220,8 @@ namespace ams::kern {
             m_running_thread_switch_counts[i] = 0;
         }
 
-        /* Set max memory based on address space type. */
-        switch ((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask)) {
-            case ams::svc::CreateProcessFlag_AddressSpace32Bit:
-            case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
-            case ams::svc::CreateProcessFlag_AddressSpace64Bit:
-                m_max_process_memory = m_page_table.GetHeapRegionSize();
-                break;
-            case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
-                m_max_process_memory = m_page_table.GetHeapRegionSize() + m_page_table.GetAliasRegionSize();
-                break;
-            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-        }
+        /* Set max memory. */
+        m_max_process_memory = m_page_table.GetHeapRegionSize();
 
         /* Generate random entropy. */
         KSystemControl::GenerateRandom(m_entropy, util::size(m_entropy));
