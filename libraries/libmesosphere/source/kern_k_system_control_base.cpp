@@ -124,31 +124,14 @@ namespace ams::kern {
     }
 
     /* System Initialization. */
+    void KSystemControlBase::ConfigureKTargetSystem() {
+        /* By default, use the default config set in the KTargetSystem header. */
+    }
+
     void KSystemControlBase::InitializePhase1() {
-        /* Configure KTargetSystem. */
+        /* Enable KTargetSystem. */
         {
-            /* Set IsDebugMode. */
-            {
-                KTargetSystem::SetIsDebugMode(true);
-
-                /* If debug mode, we want to initialize uart logging. */
-                KTargetSystem::EnableDebugLogging(true);
-            }
-
-            /* Set Kernel Configuration. */
-            {
-                KTargetSystem::EnableDebugMemoryFill(false);
-                KTargetSystem::EnableUserExceptionHandlers(true);
-                KTargetSystem::EnableDynamicResourceLimits(true);
-                KTargetSystem::EnableUserPmuAccess(false);
-            }
-
-            /* Set Kernel Debugging. */
-            {
-                /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
-                /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
-                KTargetSystem::EnableKernelDebugging(true);
-            }
+            KTargetSystem::SetInitialized();
         }
 
         /* Initialize random and resource limit. */
