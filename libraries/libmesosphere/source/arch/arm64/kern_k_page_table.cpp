@@ -85,77 +85,6 @@ namespace ams::kern::arch::arm64 {
             return (static_cast<u64>(asid) << 48) | (static_cast<u64>(GetInteger(table)));
         }
 
-        class KPageTableAsidManager {
-            private:
-                using WordType = u32;
-                static constexpr u8 ReservedAsids[] = { 0 };
-                static constexpr size_t NumReservedAsids = util::size(ReservedAsids);
-                static constexpr size_t BitsPerWord = BITSIZEOF(WordType);
-                static constexpr size_t AsidCount = 0x100;
-                static constexpr size_t NumWords = AsidCount / BitsPerWord;
-                static constexpr WordType FullWord = ~WordType(0u);
-            private:
-                WordType m_state[NumWords];
-                KLightLock m_lock;
-                u8 m_hint;
-            private:
-                constexpr bool TestImpl(u8 asid) const {
-                    return m_state[asid / BitsPerWord] & (1u << (asid % BitsPerWord));
-                }
-                constexpr void ReserveImpl(u8 asid) {
-                    MESOSPHERE_ASSERT(!this->TestImpl(asid));
-                    m_state[asid / BitsPerWord] |= (1u << (asid % BitsPerWord));
-                }
-
-                constexpr void ReleaseImpl(u8 asid) {
-                    MESOSPHERE_ASSERT(this->TestImpl(asid));
-                    m_state[asid / BitsPerWord] &= ~(1u << (asid % BitsPerWord));
-                }
-
-                constexpr u8 FindAvailable() const {
-                    for (size_t i = 0; i < util::size(m_state); i++) {
-                        if (m_state[i] == FullWord) {
-                            continue;
-                        }
-                        const WordType clear_bit = (m_state[i] + 1) ^ (m_state[i]);
-                        return BitsPerWord * i + BitsPerWord - 1 - ClearLeadingZero(clear_bit);
-                    }
-                    if (m_state[util::size(m_state)-1] == FullWord) {
-                        MESOSPHERE_PANIC("Unable to reserve ASID");
-                    }
-                    __builtin_unreachable();
-                }
-
-                static constexpr ALWAYS_INLINE WordType ClearLeadingZero(WordType value) {
-                    return __builtin_clzll(value) - (BITSIZEOF(unsigned long long) - BITSIZEOF(WordType));
-                }
-            public:
-                constexpr KPageTableAsidManager() : m_state(), m_lock(), m_hint() {
-                    for (size_t i = 0; i < NumReservedAsids; i++) {
-                        this->ReserveImpl(ReservedAsids[i]);
-                    }
-                }
-
-                u8 Reserve() {
-                    KScopedLightLock lk(m_lock);
-
-                    if (this->TestImpl(m_hint)) {
-                        m_hint = this->FindAvailable();
-                    }
-
-                    this->ReserveImpl(m_hint);
-
-                    return m_hint++;
-                }
-
-                void Release(u8 asid) {
-                    KScopedLightLock lk(m_lock);
-                    this->ReleaseImpl(asid);
-                }
-        };
-
-        KPageTableAsidManager g_asid_manager;
-
     }
 
     ALWAYS_INLINE void KPageTable::NoteUpdated() const {
@@ -184,6 +113,7 @@ namespace ams::kern::arch::arm64 {
         this->OnKernelTableSinglePageUpdated(virt_addr);
     }
 
+
     void KPageTable::Initialize(s32 core_id) {
         /* Nothing actually needed here. */
         MESOSPHERE_UNUSED(core_id);
@@ -194,38 +124,29 @@ namespace ams::kern::arch::arm64 {
         m_asid = 0;
         m_manager = Kernel::GetSystemSystemResource().GetPageTableManagerPointer();
 
-        /* Allocate a page for ttbr. */
-        /* NOTE: It is a postcondition of page table manager allocation that the page is all-zero. */
-        const u64 asid_tag = (static_cast<u64>(m_asid) << 48ul);
-        const KVirtualAddress page = m_manager->Allocate();
-        MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
-        m_ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
-
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
 
         R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-        /* Get an ASID */
-        m_asid = g_asid_manager.Reserve();
-        ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
+    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index) {
+        /* Determine our ASID */
+        m_asid = process_index + 1;
+        MESOSPHERE_ABORT_UNLESS(0 < m_asid && m_asid < util::size(s_ttbr0_entries));
 
         /* Set our manager. */
         m_manager = system_resource->GetPageTableManagerPointer();
 
-        /* Allocate a new table, and set our ttbr value. */
-        const KVirtualAddress new_table = m_manager->Allocate();
-        R_UNLESS(new_table != Null<KVirtualAddress>, svc::ResultOutOfResource());
-        m_ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), m_asid);
-        ON_RESULT_FAILURE_2 { m_manager->Free(new_table); };
+        /* Get the virtual address of our L1 table. */
+        const KPhysicalAddress ttbr0_phys = KPhysicalAddress(s_ttbr0_entries[m_asid] & UINT64_C(0xFFFFFFFFFFFE));
+        const KVirtualAddress  ttbr0_virt = KMemoryLayout::GetLinearVirtualAddress(ttbr0_phys);
 
         /* Initialize our base table. */
         const size_t as_width = GetAddressSpaceWidth(flags);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(flags, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, system_resource, resource_limit));
+        R_TRY(KPageTableBase::InitializeForProcess(flags, from_back, pool, GetVoidPointer(ttbr0_virt), as_start, as_end, code_address, code_size, system_resource, resource_limit));
 
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();
@@ -329,19 +250,15 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            /* Free the L1 table. */
+            /* Clear the L1 table. */
             {
                 const KVirtualAddress l1_table = reinterpret_cast<uintptr_t>(impl.Finalize());
                 ClearPageTable(l1_table);
-                this->GetPageTableManager().Free(l1_table);
             }
 
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
         }
-
-        /* Release our asid. */
-        g_asid_manager.Release(m_asid);
 
         R_SUCCEED();
     }

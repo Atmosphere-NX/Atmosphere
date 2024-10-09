@@ -93,9 +93,13 @@ namespace ams::kern::arch::arm64 {
                 MESOSPHERE_ASSERT(alignment < L1BlockSize);
                 return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
+        public:
+            /* TODO: How should this size be determined. Does the KProcess slab count need to go in a header as a define? */
+            static constexpr size_t NumTtbr0Entries = 81;
+        private:
+            static constinit inline const volatile u64 s_ttbr0_entries[NumTtbr0Entries] = {};
         private:
             KPageTableManager *m_manager;
-            u64 m_ttbr;
             u8 m_asid;
         protected:
             Result OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll);
@@ -168,17 +172,28 @@ namespace ams::kern::arch::arm64 {
                 return entry;
             }
         public:
-            constexpr explicit KPageTable(util::ConstantInitializeTag) : KPageTableBase(util::ConstantInitialize), m_manager(), m_ttbr(), m_asid() { /* ... */ }
+            constexpr explicit KPageTable(util::ConstantInitializeTag) : KPageTableBase(util::ConstantInitialize), m_manager(), m_asid() { /* ... */ }
             explicit KPageTable() { /* ... */ }
 
             static NOINLINE void Initialize(s32 core_id);
 
-            ALWAYS_INLINE void Activate(u32 proc_id) {
-                cpu::SwitchProcess(m_ttbr, proc_id);
+            static const volatile u64 &GetTtbr0Entry(size_t index) { return s_ttbr0_entries[index]; }
+
+            static ALWAYS_INLINE u64 GetKernelTtbr0() {
+                return s_ttbr0_entries[0];
+            }
+
+            static ALWAYS_INLINE void ActivateKernel() {
+                /* Activate, using asid 0 and process id = 0xFFFFFFFF */
+                cpu::SwitchProcess(GetKernelTtbr0(), 0xFFFFFFFF);
+            }
+
+            static ALWAYS_INLINE void ActivateProcess(size_t proc_idx, u32 proc_id) {
+                cpu::SwitchProcess(s_ttbr0_entries[proc_idx + 1], proc_id);
             }
 
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
             Result Finalize();
         private:
             Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);

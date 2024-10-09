@@ -299,7 +299,7 @@ namespace ams::kern {
         /* Setup page table. */
         {
             const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
@@ -378,7 +378,7 @@ namespace ams::kern {
         /* Setup page table. */
         {
             const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 

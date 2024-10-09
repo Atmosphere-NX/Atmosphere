@@ -29,8 +29,7 @@ namespace ams::kern::arch::arm64 {
             NOINLINE void Initialize(s32 core_id);
 
             void Activate() {
-                /* Activate, using process id = 0xFFFFFFFF */
-                m_page_table.Activate(0xFFFFFFFF);
+                m_page_table.ActivateKernel();
             }
 
             void ActivateForInit() {
