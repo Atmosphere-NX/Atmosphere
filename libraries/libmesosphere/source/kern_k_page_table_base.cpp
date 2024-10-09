@@ -2695,18 +2695,37 @@ namespace ams::kern {
         R_RETURN(cpu::InvalidateDataCache(GetVoidPointer(address), size));
     }
 
-    Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
+    bool KPageTableBase::CanReadWriteDebugMemory(KProcessAddress address, size_t size, bool force_debug_prod) {
+        /* Check pre-conditions. */
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* If the memory is debuggable and user-readable, we can perform the access. */
+        if (R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_NotMapped | KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
+            return true;
+        }
+
+        /* If we're in debug mode, and the process isn't force debug prod, check if the memory is debuggable and kernel-readable and user-executable. */
+        if (KTargetSystem::IsDebugMode() && !force_debug_prod) {
+            if (R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_KernelRead | KMemoryPermission_UserExecute, KMemoryPermission_KernelRead | KMemoryPermission_UserExecute, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                return true;
+            }
+        }
+
+        /* If neither of the above checks passed, we can't access the memory. */
+        return false;
+    }
+
+    Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size, bool force_debug_prod) {
         /* Lightly validate the region is in range. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
-        /* Require that the memory either be user readable or debuggable. */
-        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+        /* Require that the memory either be user-readable-and-mapped or debug-accessible. */
+        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_NotMapped | KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
         if (!can_read) {
-            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
-            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+            R_UNLESS(this->CanReadWriteDebugMemory(address, size, force_debug_prod), svc::ResultInvalidCurrentMemory());
         }
 
         /* Get the impl. */
@@ -2788,11 +2807,10 @@ namespace ams::kern {
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
-        /* Require that the memory either be user writable or debuggable. */
-        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
-        if (!can_read) {
-            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
-            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+        /* Require that the memory either be user-writable-and-mapped or debug-accessible. */
+        const bool can_write = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_NotMapped | KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
+        if (!can_write) {
+            R_UNLESS(this->CanReadWriteDebugMemory(address, size, false), svc::ResultInvalidCurrentMemory());
         }
 
         /* Get the impl. */

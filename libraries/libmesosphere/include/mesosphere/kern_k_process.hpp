@@ -206,6 +206,10 @@ namespace ams::kern {
                 return m_capabilities.IsPermittedDebug();
             }
 
+            constexpr bool CanForceDebugProd() const {
+                return m_capabilities.CanForceDebugProd();
+            }
+
             constexpr bool CanForceDebug() const {
                 return m_capabilities.CanForceDebug();
             }

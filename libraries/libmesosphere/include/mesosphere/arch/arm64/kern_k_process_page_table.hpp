@@ -154,8 +154,8 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.InvalidateCurrentProcessDataCache(address, size));
             }
 
-            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
-                R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size));
+            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size, bool force_debug_prod) {
+                R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size, force_debug_prod));
             }
 
             Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state) {
