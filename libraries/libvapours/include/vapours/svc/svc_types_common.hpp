@@ -191,6 +191,8 @@ namespace ams::svc {
         InfoType_IsSvcPermitted                 = 26,
         InfoType_IoRegionHint                   = 27,
         InfoType_AliasRegionExtraSize           = 28,
+        /* ... */
+        InfoType_TransferMemoryHint             = 34,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,
