@@ -263,6 +263,7 @@ namespace ams::svc {
         ArbitrationType_WaitIfLessThan             = 0,
         ArbitrationType_DecrementAndWaitIfLessThan = 1,
         ArbitrationType_WaitIfEqual                = 2,
+        ArbitrationType_WaitIfEqual64              = 3,
     };
 
     enum YieldType : s64 {

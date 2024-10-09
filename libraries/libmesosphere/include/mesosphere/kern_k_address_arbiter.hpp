@@ -39,14 +39,16 @@ namespace ams::kern {
                 }
             }
 
-            Result WaitForAddress(uintptr_t addr, ams::svc::ArbitrationType type, s32 value, s64 timeout) {
+            Result WaitForAddress(uintptr_t addr, ams::svc::ArbitrationType type, s64 value, s64 timeout) {
                 switch (type) {
                     case ams::svc::ArbitrationType_WaitIfLessThan:
-                        R_RETURN(this->WaitIfLessThan(addr, value, false, timeout));
+                        R_RETURN(this->WaitIfLessThan(addr, static_cast<s32>(value), false, timeout));
                     case ams::svc::ArbitrationType_DecrementAndWaitIfLessThan:
-                        R_RETURN(this->WaitIfLessThan(addr, value, true, timeout));
+                        R_RETURN(this->WaitIfLessThan(addr, static_cast<s32>(value), true, timeout));
                     case ams::svc::ArbitrationType_WaitIfEqual:
-                        R_RETURN(this->WaitIfEqual(addr, value, timeout));
+                        R_RETURN(this->WaitIfEqual(addr, static_cast<s32>(value), timeout));
+                    case ams::svc::ArbitrationType_WaitIfEqual64:
+                        R_RETURN(this->WaitIfEqual64(addr, value, timeout));
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
             }
@@ -56,6 +58,7 @@ namespace ams::kern {
             Result SignalAndModifyByWaitingCountIfEqual(uintptr_t addr, s32 value, s32 count);
             Result WaitIfLessThan(uintptr_t addr, s32 value, bool decrement, s64 timeout);
             Result WaitIfEqual(uintptr_t addr, s32 value, s64 timeout);
+            Result WaitIfEqual64(uintptr_t addr, s64 value, s64 timeout);
     };
 
 }
