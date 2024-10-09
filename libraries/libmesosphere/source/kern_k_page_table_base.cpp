@@ -141,10 +141,10 @@ namespace ams::kern {
 
         /* Define helpers. */
         auto GetSpaceStart = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
-            return KAddressSpaceInfo::GetAddressSpaceStart(m_address_space_width, type);
+            return KAddressSpaceInfo::GetAddressSpaceStart(flags, type);
         };
         auto GetSpaceSize = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
-            return KAddressSpaceInfo::GetAddressSpaceSize(m_address_space_width, type);
+            return KAddressSpaceInfo::GetAddressSpaceSize(flags, type);
         };
 
         /* Default to zero alias region extra size. */

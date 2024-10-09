@@ -110,8 +110,8 @@ namespace ams::kern::svc {
                 case ams::svc::CreateProcessFlag_AddressSpace32Bit:
                 case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
                     {
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(32, KAddressSpaceInfo::Type_MapSmall);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(32, KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
@@ -120,8 +120,8 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(36, KAddressSpaceInfo::Type_MapSmall);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(36, KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
@@ -130,10 +130,10 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(39, KAddressSpaceInfo::Type_Map39Bit);
-                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Map39Bit);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
 
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Heap);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
                     }
                     break;
                 default:
