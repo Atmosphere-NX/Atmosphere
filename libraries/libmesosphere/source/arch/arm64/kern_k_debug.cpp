@@ -623,11 +623,6 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            /* Read the first instruction. */
-            if (!ReadValue(std::addressof(temp_32), process, base_address)) {
-                return PrintAddress(address);
-            }
-
             /* Get the module name. */
             char module_name[0x20];
             const bool has_module_name = GetModuleName(module_name, sizeof(module_name), process, base_address);
@@ -637,36 +632,32 @@ namespace ams::kern::arch::arm64 {
                 return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
             }
 
-            if (temp_32 == 0) {
-                /* Module is dynamically loaded by rtld. */
+            /* Locate .dyn using rocrt::ModuleHeader. */
+            {
+                /* Determine the ModuleHeader offset. */
                 u32 mod_offset;
                 if (!ReadValue(std::addressof(mod_offset), process, base_address + sizeof(u32))) {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
-                if (!ReadValue(std::addressof(temp_32), process, base_address + mod_offset)) {
+
+                /* Read the signature. */
+                constexpr u32 SignatureFieldOffset = AMS_OFFSETOF(rocrt::ModuleHeader, signature);
+                if (!ReadValue(std::addressof(temp_32), process, base_address + mod_offset + SignatureFieldOffset)) {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
-                if (temp_32 != 0x30444F4D) { /* MOD0 */
+
+                /* Check that the module signature is expected. */
+                if (temp_32 != rocrt::ModuleHeaderVersion) { /* MOD0 */
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
-                if (!ReadValue(std::addressof(temp_32), process, base_address + mod_offset + sizeof(u32))) {
+
+                /* Determine the dynamic offset. */
+                constexpr u32 DynamicFieldOffset = AMS_OFFSETOF(rocrt::ModuleHeader, dynamic_offset);
+                if (!ReadValue(std::addressof(temp_32), process, base_address + mod_offset + DynamicFieldOffset)) {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
-                dyn_address = base_address + mod_offset + temp_32;
-            } else if (temp_32 == 0x14000002) {
-                /* Module embeds rtld. */
-                if (!ReadValue(std::addressof(temp_32), process, base_address + 0x5C)) {
-                    return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
-                }
-                if (temp_32 != 0x94000002) {
-                    return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
-                }
-                if (!ReadValue(std::addressof(temp_32), process, base_address + 0x60)) {
-                    return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
-                }
-                dyn_address = base_address + 0x60 + temp_32;
-            } else {
-                return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
+
+                dyn_address = module.start_address + mod_offset + temp_32;
             }
 
             /* Locate tables inside .dyn. */

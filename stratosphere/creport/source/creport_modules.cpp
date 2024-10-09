@@ -46,7 +46,7 @@ namespace ams::creport {
     }
 
     void ModuleList::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("    Number of Modules:           %zu\n", m_num_modules);
+        file.WriteFormat("    Number of Modules:           %02zu\n", m_num_modules);
         for (size_t i = 0; i < m_num_modules; i++) {
             const auto& module = m_modules[i];
             file.WriteFormat("    Module %02zu:\n", i);
@@ -282,56 +282,38 @@ namespace ams::creport {
             return;
         }
 
-        /* Read the first instruction of .text. */
-        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address, sizeof(temp_32)))) {
-            return;
-        }
-
         /* We want to find the symbol table/.dynamic. */
         uintptr_t dyn_address = 0;
         uintptr_t sym_tab     = 0;
         uintptr_t str_tab     = 0;
         size_t    num_sym     = 0;
 
-        /* Detect module type. */
-        if (temp_32 == 0) {
-            /* Module is dynamically loaded by rtld. */
+        /* Locate .dyn using rocrt::ModuleHeader. */
+        {
+            /* Determine the ModuleHeader offset. */
             u32 mod_offset;
             if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(mod_offset)), m_debug_handle, module.start_address + sizeof(u32), sizeof(u32)))) {
                 return;
             }
 
-            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + mod_offset, sizeof(u32)))) {
+            /* Read the signature. */
+            constexpr u32 SignatureFieldOffset = AMS_OFFSETOF(rocrt::ModuleHeader, signature);
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + mod_offset + SignatureFieldOffset, sizeof(u32)))) {
                 return;
             }
 
+            /* Check that the module signature is expected. */
             if (temp_32 != rocrt::ModuleHeaderVersion) { /* MOD0 */
                 return;
             }
 
-            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + mod_offset + sizeof(u32), sizeof(u32)))) {
+            /* Determine the dynamic offset. */
+            constexpr u32 DynamicFieldOffset = AMS_OFFSETOF(rocrt::ModuleHeader, dynamic_offset);
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + mod_offset + DynamicFieldOffset, sizeof(u32)))) {
                 return;
             }
 
             dyn_address = module.start_address + mod_offset + temp_32;
-        } else if (temp_32 == 0x14000002) {
-            /* Module embeds rtld. */
-            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + 0x5C, sizeof(u32)))) {
-                return;
-            }
-
-            if (temp_32 != 0x94000002) {
-                return;
-            }
-
-            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + 0x60, sizeof(u32)))) {
-                return;
-            }
-
-            dyn_address = module.start_address + 0x60 + temp_32;
-        } else {
-            /* Module has unknown format. */
-            return;
         }
 
 

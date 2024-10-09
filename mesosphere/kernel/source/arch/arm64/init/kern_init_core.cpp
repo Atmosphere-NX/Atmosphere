@@ -15,8 +15,8 @@
  */
 #include <mesosphere.hpp>
 
-extern "C" void _start();
-extern "C" void __end__();
+extern "C" void __bin_start__();
+extern "C" void __bin_end__();
 
 namespace ams::kern {
 
@@ -264,8 +264,8 @@ namespace ams::kern::init {
         KMemoryLayout::GetPhysicalMemoryRegionTree().InsertDirectly(KernelPhysicalAddressSpaceBase, KernelPhysicalAddressSpaceBase + KernelPhysicalAddressSpaceSize - 1);
 
         /* Save start and end for ease of use. */
-        const uintptr_t code_start_virt_addr = reinterpret_cast<uintptr_t>(_start);
-        const uintptr_t code_end_virt_addr   = reinterpret_cast<uintptr_t>(__end__);
+        const uintptr_t code_start_virt_addr = reinterpret_cast<uintptr_t>(__bin_start__);
+        const uintptr_t code_end_virt_addr   = reinterpret_cast<uintptr_t>(__bin_end__);
 
         /* Setup the containing kernel region. */
         constexpr size_t KernelRegionSize  = 1_GB;
