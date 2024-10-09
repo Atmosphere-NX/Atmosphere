@@ -32,6 +32,7 @@ namespace ams::kern {
             KLightLock m_lock;
             KProcess::State m_old_process_state;
             bool m_is_attached;
+            bool m_is_force_debug_prod;
         public:
             explicit KDebugBase() { /* ... */ }
         protected:
@@ -60,6 +61,10 @@ namespace ams::kern {
 
             ALWAYS_INLINE bool IsAttached() const {
                 return m_is_attached;
+            }
+
+            ALWAYS_INLINE bool IsForceDebugProd() const {
+                return m_is_force_debug_prod;
             }
 
             ALWAYS_INLINE bool OpenProcess() {
