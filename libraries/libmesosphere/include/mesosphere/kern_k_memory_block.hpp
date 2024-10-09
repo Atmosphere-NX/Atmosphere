@@ -380,10 +380,9 @@ namespace ams::kern {
             explicit KMemoryBlock() { /* ... */ }
 
             constexpr KMemoryBlock(util::ConstantInitializeTag, KProcessAddress addr, u32 np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
-                : util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock>(util::ConstantInitialize), m_device_disable_merge_left_count(),
-                  m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0),
-                  m_device_use_count(0), m_ipc_disable_merge_count(), m_permission(p), m_original_permission(KMemoryPermission_None),
-                  m_attribute(attr), m_disable_merge_attribute()
+                : util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock>(util::ConstantInitialize), m_permission(p), m_original_permission(KMemoryPermission_None),
+                  m_attribute(attr), m_disable_merge_attribute(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0),
+                  m_ipc_disable_merge_count(), m_device_use_count(0), m_device_disable_merge_left_count(), m_device_disable_merge_right_count()
             {
                 /* ... */
             }
