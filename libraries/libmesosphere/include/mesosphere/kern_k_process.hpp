@@ -360,7 +360,7 @@ namespace ams::kern {
                 R_RETURN(m_address_arbiter.SignalToAddress(address, signal_type, value, count));
             }
 
-            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
+            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s64 value, s64 timeout) {
                 R_RETURN(m_address_arbiter.WaitForAddress(address, arb_type, value, timeout));
             }
 

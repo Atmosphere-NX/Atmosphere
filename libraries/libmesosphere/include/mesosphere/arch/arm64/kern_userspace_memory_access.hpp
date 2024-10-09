@@ -25,6 +25,7 @@ namespace ams::kern::arch::arm64 {
             static bool CopyMemoryFromUser(void *dst, const void *src, size_t size);
             static bool CopyMemoryFromUserAligned32Bit(void *dst, const void *src, size_t size);
             static bool CopyMemoryFromUserAligned64Bit(void *dst, const void *src, size_t size);
+            static bool CopyMemoryFromUserSize64Bit(void *dst, const void *src);
             static bool CopyMemoryFromUserSize32Bit(void *dst, const void *src);
             static s32  CopyStringFromUser(void *dst, const void *src, size_t size);
 
