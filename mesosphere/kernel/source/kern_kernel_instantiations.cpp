@@ -111,4 +111,8 @@ namespace ams::kern {
     KThread &Kernel::GetMainThread(s32 core_id) { return g_main_threads.m_arr[core_id]; }
     KThread &Kernel::GetIdleThread(s32 core_id) { return g_idle_threads.m_arr[core_id]; }
 
+    __attribute__((constructor)) void ConfigureKTargetSystem() {
+        KSystemControl::ConfigureKTargetSystem();
+    }
+
 }

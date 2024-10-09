@@ -69,6 +69,7 @@ namespace ams::kern {
             static NOINLINE void InitializePhase1Base(u64 seed);
         public:
             /* Initialization. */
+            static NOINLINE void ConfigureKTargetSystem();
             static NOINLINE void InitializePhase1();
             static NOINLINE void InitializePhase2();
             static NOINLINE u32 GetCreateProcessMemoryPool();
