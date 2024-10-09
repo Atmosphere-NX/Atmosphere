@@ -374,7 +374,7 @@ namespace ams::kern {
 
                 /* Update the current page table. */
                 if (next_process) {
-                    next_process->GetPageTable().Activate(next_process->GetProcessId());
+                    next_process->GetPageTable().Activate(next_process->GetSlabIndex(), next_process->GetProcessId());
                 } else {
                     Kernel::GetKernelPageTable().Activate();
                 }
