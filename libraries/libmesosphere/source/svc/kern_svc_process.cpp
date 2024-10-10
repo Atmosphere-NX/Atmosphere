@@ -296,7 +296,9 @@ namespace ams::kern::svc {
 
         Result StartProcess(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
             /* Validate stack size. */
-            R_UNLESS(main_thread_stack_size == static_cast<size_t>(main_thread_stack_size), svc::ResultOutOfMemory());
+            const uint64_t aligned_stack_size = util::AlignUp(main_thread_stack_size, Kernel::GetMemoryManager().GetMinimumAlignment(GetCurrentProcess().GetMemoryPool()));
+            R_UNLESS(aligned_stack_size >= main_thread_stack_size,                  svc::ResultOutOfMemory());
+            R_UNLESS(aligned_stack_size == static_cast<size_t>(aligned_stack_size), svc::ResultOutOfMemory());
 
             /* Get the target process. */
             KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
@@ -314,7 +316,7 @@ namespace ams::kern::svc {
             process->SetIdealCoreId(core_id);
 
             /* Run the process. */
-            R_RETURN(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
+            R_RETURN(process->Run(priority, static_cast<size_t>(aligned_stack_size)));
         }
 
         Result TerminateProcess(ams::svc::Handle process_handle) {
