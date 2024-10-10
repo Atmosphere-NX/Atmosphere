@@ -174,79 +174,85 @@ namespace ams::kern::arch::arm64 {
 
             /* Traverse, freeing all pages. */
             {
-                /* Get the address space size. */
-                const size_t as_size = this->GetAddressSpaceSize();
-
                 /* Begin the traversal. */
                 TraversalContext context;
-                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0, .attr = 0 };
-                bool             cur_valid  = false;
-                TraversalEntry   next_entry;
-                bool             next_valid;
-                size_t           tot_size   = 0;
+                TraversalEntry entry;
 
-                next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), this->GetAddressSpaceStart());
+                KPhysicalAddress cur_phys_addr = Null<KPhysicalAddress>;
+                size_t cur_size                = 0;
+                u8 has_attr                    = 0;
 
-                /* Iterate over entries. */
+                bool cur_valid = impl.BeginTraversal(std::addressof(entry), std::addressof(context), this->GetAddressSpaceStart());
                 while (true) {
-                    /* NOTE: Nintendo really does check next_entry.attr == (cur_entry.attr != 0)...but attr is always zero as of 18.0.0, and this is "probably" for the new console or debug-only anyway, */
-                    /* so we'll implement the weird logic verbatim even though it doesn't match the GetContiguousRange logic. */
-                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size && next_entry.attr == (cur_entry.attr ? 1 : 0))) {
-                        cur_entry.block_size += next_entry.block_size;
-                    } else {
-                        if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                            mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
+                    if (cur_valid) {
+                        /* Free the actual pages, if there are any. */
+                        if (IsHeapPhysicalAddressForFinalize(entry.phys_addr)) {
+                            if (cur_size > 0) {
+                                /* NOTE: Nintendo really does check next_entry.attr == (cur_entry.attr != 0)...but attr is always zero as of 18.0.0, and this is "probably" for the new console or debug-only anyway, */
+                                /* so we'll implement the weird logic verbatim even though it doesn't match the GetContiguousRange logic. */
+                                if (entry.phys_addr == cur_phys_addr + cur_size && entry.attr == has_attr) {
+                                    /* Just extend the block, since we can. */
+                                    cur_size += entry.block_size;
+                                } else {
+                                    /* Close the block, and begin tracking anew. */
+                                    mm.Close(cur_phys_addr, cur_size / PageSize);
+
+                                    cur_phys_addr = entry.phys_addr;
+                                    cur_size      = entry.block_size;
+                                    has_attr      = entry.attr != 0;
+                                }
+                            } else {
+                                cur_phys_addr = entry.phys_addr;
+                                cur_size      = entry.block_size;
+                                has_attr      = entry.attr != 0;
+                            }
                         }
 
-                        /* Update tracking variables. */
-                        tot_size += cur_entry.block_size;
-                        cur_entry = next_entry;
-                        cur_valid = next_valid;
-                    }
+                        /* Clean up the page table entries. */
+                        bool freeing_table = false;
+                        while (true) {
+                            /* Clear the entries. */
+                            const size_t num_to_clear = (!freeing_table && context.is_contiguous) ? BlocksPerContiguousBlock : 1;
+                            auto *pte = reinterpret_cast<PageTableEntry *>(context.is_contiguous ? util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)) : reinterpret_cast<uintptr_t>(context.level_entries[context.level]));
+                            for (size_t i = 0; i < num_to_clear; ++i) {
+                                pte[i] = InvalidPageTableEntry;
+                            }
 
-                    if (cur_entry.block_size + tot_size >= as_size) {
-                        break;
-                    }
+                            /* Remove the entries from the previous table. */
+                            if (context.level != KPageTableImpl::EntryLevel_L1) {
+                                context.level_entries[context.level + 1]->RemoveTableEntries(num_to_clear);
+                            }
 
-                    next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
-                }
+                            /* If we cleared a table, we need to note that we updated and free the table. */
+                            if (freeing_table) {
+                                KVirtualAddress table = KVirtualAddress(util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level - 1]), PageSize));
+                                ClearPageTable(table);
+                                this->GetPageTableManager().Free(table);
+                            }
 
-                /* Handle the last block. */
-                if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                    mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
-                }
-            }
+                            /* Advance; we're no longer contiguous. */
+                            context.is_contiguous                = false;
+                            context.level_entries[context.level] = pte + num_to_clear - 1;
 
-            /* Cache address space extents for convenience. */
-            const KProcessAddress as_start = this->GetAddressSpaceStart();
-            const KProcessAddress as_last  = as_start + this->GetAddressSpaceSize() - 1;
+                            /* We may have removed the last entries in a table, in which case we can free and unmap the tables. */
+                            if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
+                                break;
+                            }
 
-            /* Free all L3 tables. */
-            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L2BlockSize) {
-                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
-                if (l1_entry->IsTable()) {
-                    L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
-                    if (l2_entry->IsTable()) {
-                        const KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
-                        if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
-                            while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
-                            ClearPageTable(l3_table);
-                            this->GetPageTableManager().Free(l3_table);
+                            /* Advance; we will not be working with blocks any more. */
+                            context.level = static_cast<KPageTableImpl::EntryLevel>(util::ToUnderlying(context.level) + 1);
+                            freeing_table = true;
                         }
-                    }
-                }
-            }
 
-            /* Free all L2 tables. */
-            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
-                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
-                if (l1_entry->IsTable()) {
-                    const KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
-                    if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
-                        while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
-                        ClearPageTable(l2_table);
-                        this->GetPageTableManager().Free(l2_table);
                     }
+
+                    /* Continue the traversal. */
+                    cur_valid = impl.ContinueTraversal(std::addressof(entry), std::addressof(context));
+                }
+
+                /* Free any remaining pages. */
+                if (cur_size > 0) {
+                    mm.Close(cur_phys_addr, cur_size / PageSize);
                 }
             }
 
@@ -259,6 +265,7 @@ namespace ams::kern::arch::arm64 {
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
         }
+
 
         R_SUCCEED();
     }
@@ -570,7 +577,7 @@ namespace ams::kern::arch::arm64 {
                 context.is_contiguous                = false;
                 context.level_entries[context.level] = pte + num_to_clear - 1;
 
-                /* We may have removed the last entries in a table, in which case we can free an unmap the tables. */
+                /* We may have removed the last entries in a table, in which case we can free and unmap the tables. */
                 if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
                     break;
                 }
@@ -1056,7 +1063,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* If we merged, correct the traversal to a sane state. */
                 if (merge) {
-                    /* NOTE: Nintendo does not verify the result of this BeginTraversal call. */
+                    /* NOTE: Begin a new traversal, now that we've merged. */
                     MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_virt_addr));
 
                     /* The actual size needs to not take into account the portion of the block before our virtual address. */
