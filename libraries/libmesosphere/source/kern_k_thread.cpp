@@ -1438,7 +1438,10 @@ namespace ams::kern {
         this->SetState(ThreadState_Waiting);
 
         /* Set our wait queue. */
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wdangling-pointer"
         m_wait_queue = queue;
+        #pragma GCC diagnostic pop
     }
 
     void KThread::NotifyAvailable(KSynchronizationObject *signaled_object, Result wait_result) {

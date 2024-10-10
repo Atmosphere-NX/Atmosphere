@@ -27,6 +27,7 @@ namespace ams::os::impl {
                 case os::MemoryPermission_ReadOnly:    return svc::MemoryPermission_Read;
                 case os::MemoryPermission_ReadWrite:   return svc::MemoryPermission_ReadWrite;
                 case os::MemoryPermission_ReadExecute: return svc::MemoryPermission_ReadExecute;
+                case os::MemoryPermission_ExecuteOnly: return svc::MemoryPermission_Execute;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }

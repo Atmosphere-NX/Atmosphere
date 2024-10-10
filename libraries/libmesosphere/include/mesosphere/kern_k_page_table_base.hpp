@@ -318,7 +318,7 @@ namespace ams::kern {
                 R_RETURN(this->CheckMemoryStateContiguous(nullptr, addr, size, state_mask, state, perm_mask, perm, attr_mask, attr));
             }
 
-            Result CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const;
+            Result CheckMemoryState(KMemoryBlockManager::const_iterator it, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const;
             Result CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KMemoryBlockManager::const_iterator it, KProcessAddress last_addr, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const;
             Result CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const;
             Result CheckMemoryState(size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const {
@@ -327,6 +327,8 @@ namespace ams::kern {
             Result CheckMemoryState(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const {
                 R_RETURN(this->CheckMemoryState(nullptr, addr, size, state_mask, state, perm_mask, perm, attr_mask, attr, ignore_attr));
             }
+
+            bool CanReadWriteDebugMemory(KProcessAddress addr, size_t size, bool force_debug_prod);
 
             Result LockMemoryAndOpen(KPageGroup *out_pg, KPhysicalAddress *out_paddr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr);
             Result UnlockMemory(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr, const KPageGroup *pg);
@@ -421,7 +423,7 @@ namespace ams::kern {
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
             Result InvalidateCurrentProcessDataCache(KProcessAddress address, size_t size);
 
-            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size);
+            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size, bool force_debug_prod);
             Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state);
 
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);

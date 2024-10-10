@@ -231,7 +231,7 @@
                     R_RETURN(::svcGetThreadContext3(reinterpret_cast<::ThreadContext *>(out_context.GetPointerUnsafe()), thread_handle));
                 }
 
-                ALWAYS_INLINE Result WaitForAddress(::ams::svc::Address address, ::ams::svc::ArbitrationType arb_type, int32_t value, int64_t timeout_ns) {
+                ALWAYS_INLINE Result WaitForAddress(::ams::svc::Address address, ::ams::svc::ArbitrationType arb_type, int64_t value, int64_t timeout_ns) {
                     R_RETURN(::svcWaitForAddress(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), arb_type, value, timeout_ns));
                 }
 

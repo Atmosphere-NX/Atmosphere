@@ -191,6 +191,8 @@ namespace ams::svc {
         InfoType_IsSvcPermitted                 = 26,
         InfoType_IoRegionHint                   = 27,
         InfoType_AliasRegionExtraSize           = 28,
+        /* ... */
+        InfoType_TransferMemoryHint             = 34,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,
@@ -261,6 +263,7 @@ namespace ams::svc {
         ArbitrationType_WaitIfLessThan             = 0,
         ArbitrationType_DecrementAndWaitIfLessThan = 1,
         ArbitrationType_WaitIfEqual                = 2,
+        ArbitrationType_WaitIfEqual64              = 3,
     };
 
     enum YieldType : s64 {

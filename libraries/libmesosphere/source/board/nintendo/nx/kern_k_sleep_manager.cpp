@@ -31,7 +31,6 @@ namespace ams::kern::board::nintendo::nx {
         /* Struct representing registers saved on wake/sleep. */
         class SavedSystemRegisters {
             private:
-                u64 ttbr0_el1;
                 u64 elr_el1;
                 u64 sp_el0;
                 u64 spsr_el1;
@@ -90,7 +89,6 @@ namespace ams::kern::board::nintendo::nx {
 
         void SavedSystemRegisters::Save() {
             /* Save system registers. */
-            this->ttbr0_el1     = cpu::GetTtbr0El1();
             this->tpidr_el0     = cpu::GetTpidrEl0();
             this->elr_el1       = cpu::GetElrEl1();
             this->sp_el0        = cpu::GetSpEl0();
@@ -405,7 +403,7 @@ namespace ams::kern::board::nintendo::nx {
             cpu::EnsureInstructionConsistency();
 
             /* Restore system registers. */
-            cpu::SetTtbr0El1   (this->ttbr0_el1);
+            cpu::SetTtbr0El1   (KPageTable::GetKernelTtbr0());
             cpu::SetTpidrEl0   (this->tpidr_el0);
             cpu::SetElrEl1     (this->elr_el1);
             cpu::SetSpEl0      (this->sp_el0);

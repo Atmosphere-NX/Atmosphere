@@ -15,6 +15,28 @@
  */
 #include <mesosphere.hpp>
 
+/* <stratosphere/rocrt/rocrt.hpp> */
+namespace ams::rocrt {
+
+    constexpr inline const u32 ModuleHeaderVersion = util::FourCC<'M','O','D','0'>::Code;
+
+    struct ModuleHeader {
+        u32 signature;
+        u32 dynamic_offset;
+        u32 bss_start_offset;
+        u32 bss_end_offset;
+        u32 exception_info_start_offset;
+        u32 exception_info_end_offset;
+        u32 module_offset;
+    };
+
+    struct ModuleHeaderLocation {
+        u32 pad;
+        u32 header_offset;
+    };
+
+}
+
 namespace ams::kern::arch::arm64 {
 
     namespace {
@@ -657,7 +679,7 @@ namespace ams::kern::arch::arm64 {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
 
-                dyn_address = module.start_address + mod_offset + temp_32;
+                dyn_address = base_address + mod_offset + temp_32;
             }
 
             /* Locate tables inside .dyn. */

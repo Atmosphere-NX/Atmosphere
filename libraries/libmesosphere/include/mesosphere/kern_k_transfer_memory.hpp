@@ -48,6 +48,22 @@ namespace ams::kern {
             KProcess *GetOwner() const { return m_owner; }
             KProcessAddress GetSourceAddress() { return m_address; }
             size_t GetSize() const { return m_is_initialized ? GetReference(m_page_group).GetNumPages() * PageSize : 0; }
+
+            constexpr uintptr_t GetHint() const {
+                /* Get memory size. */
+                const size_t size = this->GetSize();
+
+                /* TODO: Is this architecture specific? */
+                if (size >= 2_MB) {
+                    return GetInteger(m_address) & (2_MB - 1);
+                } else if (size >= 64_KB) {
+                    return GetInteger(m_address) & (64_KB - 1);
+                } else if (size >= 4_KB) {
+                    return GetInteger(m_address) & (4_KB - 1);
+                } else {
+                    return 0;
+                }
+            }
     };
 
 }

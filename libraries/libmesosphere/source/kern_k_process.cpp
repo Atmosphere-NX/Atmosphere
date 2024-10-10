@@ -220,18 +220,8 @@ namespace ams::kern {
             m_running_thread_switch_counts[i] = 0;
         }
 
-        /* Set max memory based on address space type. */
-        switch ((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask)) {
-            case ams::svc::CreateProcessFlag_AddressSpace32Bit:
-            case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
-            case ams::svc::CreateProcessFlag_AddressSpace64Bit:
-                m_max_process_memory = m_page_table.GetHeapRegionSize();
-                break;
-            case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
-                m_max_process_memory = m_page_table.GetHeapRegionSize() + m_page_table.GetAliasRegionSize();
-                break;
-            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-        }
+        /* Set max memory. */
+        m_max_process_memory = m_page_table.GetHeapRegionSize();
 
         /* Generate random entropy. */
         KSystemControl::GenerateRandom(m_entropy, util::size(m_entropy));
@@ -299,7 +289,7 @@ namespace ams::kern {
         /* Setup page table. */
         {
             const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
@@ -378,7 +368,7 @@ namespace ams::kern {
         /* Setup page table. */
         {
             const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit));
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
@@ -934,7 +924,6 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(m_main_thread_stack_size == 0);
 
         /* Ensure that we're allocating a valid stack. */
-        stack_size = util::AlignUp(stack_size, PageSize);
         R_UNLESS(stack_size + m_code_size <= m_max_process_memory, svc::ResultOutOfMemory());
         R_UNLESS(stack_size + m_code_size >= m_code_size,          svc::ResultOutOfMemory());
 

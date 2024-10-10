@@ -24,6 +24,7 @@ namespace ams::ldr::pm {
     }
 
     Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
+        static_assert(sizeof(*out) == sizeof(LoaderProgramInfo));
         R_RETURN(ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<LoaderProgramInfo *>(out)));
     }
 
@@ -42,6 +43,7 @@ namespace ams::ldr::pm {
 
     Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition!");
+        static_assert(sizeof(*out) == sizeof(LoaderProgramInfo));
         R_RETURN(ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc))));
     }
 

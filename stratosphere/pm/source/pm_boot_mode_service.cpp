@@ -22,6 +22,7 @@ namespace ams::pm {
 
         /* Global bootmode. */
         constinit BootMode g_boot_mode = BootMode::Normal;
+        constinit u32 g_unknown = 0;
 
     }
 
@@ -45,6 +46,16 @@ namespace ams::pm {
 
     void BootModeService::SetMaintenanceBoot() {
         pm::bm::SetMaintenanceBoot();
+    }
+
+    void BootModeService::GetUnknown(sf::Out<u32> out) {
+        out.SetValue(g_unknown);
+    }
+
+    Result BootModeService::SetUnknown(u32 val) {
+        R_UNLESS(val <= 3, pm::ResultUnknown7());
+        g_unknown = val;
+        R_SUCCEED();
     }
 
 }

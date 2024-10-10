@@ -314,6 +314,19 @@ namespace ams::kern::svc {
                         *out = io_region->GetHint();
                     }
                     break;
+                case ams::svc::InfoType_TransferMemoryHint:
+                    {
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* Get the transfer memory from its handle. */
+                        KScopedAutoObject transfer_memory = GetCurrentProcess().GetHandleTable().GetObject<KTransferMemory>(handle);
+                        R_UNLESS(transfer_memory.IsNotNull(), svc::ResultInvalidHandle());
+
+                        /* Get the transfer memory's address hint. */
+                        *out = transfer_memory->GetHint();
+                    }
+                    break;
                 case ams::svc::InfoType_MesosphereMeta:
                     {
                         /* Verify the handle is invalid. */

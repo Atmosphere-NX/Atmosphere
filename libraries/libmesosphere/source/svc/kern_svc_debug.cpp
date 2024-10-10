@@ -24,6 +24,9 @@ namespace ams::kern::svc {
         constexpr inline int32_t MaximumDebuggableThreadCount = 0x60;
 
         Result DebugActiveProcess(ams::svc::Handle *out_handle, uint64_t process_id) {
+            /* Check that the SVC can be used. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Get the process from its id. */
             KProcess *process = KProcess::GetProcessFromId(process_id);
             R_UNLESS(process != nullptr, svc::ResultInvalidProcessId());
@@ -32,9 +35,8 @@ namespace ams::kern::svc {
             ON_SCOPE_EXIT { process->Close(); };
 
             /* Check that the debugging is allowed. */
-            if (!process->IsPermittedDebug()) {
-                R_UNLESS(GetCurrentProcess().CanForceDebug(), svc::ResultInvalidState());
-            }
+            const bool allowable = process->IsPermittedDebug() || GetCurrentProcess().CanForceDebug() || GetCurrentProcess().CanForceDebugProd();
+            R_UNLESS(allowable, svc::ResultInvalidState());
 
             /* Disallow debugging one's own processs, to prevent softlocks. */
             R_UNLESS(process != GetCurrentProcessPointer(), svc::ResultInvalidState());
@@ -92,6 +94,9 @@ namespace ams::kern::svc {
 
         template<typename EventInfoType>
         Result GetDebugEvent(KUserPointer<EventInfoType *> out_info, ams::svc::Handle debug_handle) {
+            /* Only allow invoking the svc on development hardware or if force debug prod. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Get the debug object. */
             KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
             R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
@@ -164,6 +169,9 @@ namespace ams::kern::svc {
         }
 
         Result GetDebugThreadContext(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
+            /* Only allow invoking the svc on development hardware or if force debug prod. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Validate the context flags. */
             R_UNLESS((context_flags | ams::svc::ThreadContextFlag_All) == ams::svc::ThreadContextFlag_All, svc::ResultInvalidEnumValue());
 
@@ -220,6 +228,9 @@ namespace ams::kern::svc {
         }
 
         Result QueryDebugProcessMemory(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, uintptr_t address) {
+            /* Only allow invoking the svc on development hardware or if force debug prod. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Get the debug object. */
             KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
             R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
@@ -261,6 +272,9 @@ namespace ams::kern::svc {
         }
 
         Result ReadDebugProcessMemory(uintptr_t buffer, ams::svc::Handle debug_handle, uintptr_t address, size_t size) {
+            /* Only allow invoking the svc on development hardware or if force debug prod. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Validate address / size. */
             R_UNLESS(size > 0,                   svc::ResultInvalidSize());
             R_UNLESS((address < address + size), svc::ResultInvalidCurrentMemory());
@@ -306,6 +320,9 @@ namespace ams::kern::svc {
         }
 
         Result GetDebugThreadParam(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
+            /* Only allow invoking the svc on development hardware or if force debug prod. */
+            R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
+
             /* Get the debug object. */
             KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
             R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());

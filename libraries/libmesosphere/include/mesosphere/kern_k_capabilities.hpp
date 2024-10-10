@@ -168,9 +168,10 @@ namespace ams::kern {
             struct DebugFlags {
                 using IdBits = Field<0, CapabilityId<CapabilityType::DebugFlags> + 1>;
 
-                DEFINE_FIELD(AllowDebug, IdBits,      1, bool);
-                DEFINE_FIELD(ForceDebug, AllowDebug,  1, bool);
-                DEFINE_FIELD(Reserved,   ForceDebug, 13);
+                DEFINE_FIELD(AllowDebug,     IdBits,         1, bool);
+                DEFINE_FIELD(ForceDebugProd, AllowDebug,     1, bool);
+                DEFINE_FIELD(ForceDebug,     ForceDebugProd, 1, bool);
+                DEFINE_FIELD(Reserved,       ForceDebug,     12);
             };
 
             #undef DEFINE_FIELD
@@ -253,6 +254,10 @@ namespace ams::kern {
 
             constexpr bool IsPermittedDebug() const {
                 return m_debug_capabilities.Get<DebugFlags::AllowDebug>();
+            }
+
+            constexpr bool CanForceDebugProd() const {
+                return m_debug_capabilities.Get<DebugFlags::ForceDebugProd>();
             }
 
             constexpr bool CanForceDebug() const {

@@ -193,39 +193,24 @@ namespace ams::kern {
             R_UNLESS(this->Is64Bit(), svc::ResultInvalidCombination());
         }
 
-        using ASType = KAddressSpaceInfo::Type;
-
         const uintptr_t start_address = rx_address;
         const uintptr_t end_address   = bss_size > 0 ? bss_address + bss_size : rw_address + rw_size;
-        const size_t    as_width      = this->Is64BitAddressSpace() ? ((GetTargetFirmware() >= TargetFirmware_2_0_0) ? 39 : 36) : 32;
-        const ASType    as_type       = this->Is64BitAddressSpace() ? ((GetTargetFirmware() >= TargetFirmware_2_0_0) ? KAddressSpaceInfo::Type_Map39Bit : KAddressSpaceInfo::Type_MapSmall) : KAddressSpaceInfo::Type_MapSmall;
-        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(as_width, as_type);
-        const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(as_width, as_type);
-        const uintptr_t map_end       = map_start + map_size;
         MESOSPHERE_ABORT_UNLESS(start_address == 0);
 
         /* Default fields in parameter to zero. */
         *out = {};
 
         /* Set fields in parameter. */
-        out->code_address              = map_start + start_address;
+        out->code_address              = 0;
         out->code_num_pages            = util::AlignUp(end_address - start_address, PageSize) / PageSize;
         out->program_id                = m_kip_header.GetProgramId();
         out->version                   = m_kip_header.GetVersion();
         out->flags                     = 0;
         out->reslimit                  = ams::svc::InvalidHandle;
         out->system_resource_num_pages = 0;
-        MESOSPHERE_ABORT_UNLESS((out->code_address / PageSize) + out->code_num_pages <= (map_end / PageSize));
 
         /* Copy name field. */
         m_kip_header.GetName(out->name, sizeof(out->name));
-
-        /* Apply ASLR, if needed. */
-        if (enable_aslr) {
-            const size_t choices = (map_end / KernelAslrAlignment) - (util::AlignUp(out->code_address + out->code_num_pages * PageSize, KernelAslrAlignment) / KernelAslrAlignment);
-            out->code_address += KSystemControl::GenerateRandomRange(0, choices) * KernelAslrAlignment;
-            out->flags |= ams::svc::CreateProcessFlag_EnableAslr;
-        }
 
         /* Apply other flags. */
         if (this->Is64Bit()) {
@@ -236,9 +221,27 @@ namespace ams::kern {
         } else {
             out->flags |= ams::svc::CreateProcessFlag_AddressSpace32Bit;
         }
+        if (enable_aslr) {
+            out->flags |= ams::svc::CreateProcessFlag_EnableAslr;
+        }
 
         /* All initial processes should disable device address space merge. */
         out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+
+        /* Set and check code address. */
+        using ASType = KAddressSpaceInfo::Type;
+        const ASType    as_type       = this->Is64BitAddressSpace() ? ((GetTargetFirmware() >= TargetFirmware_2_0_0) ? KAddressSpaceInfo::Type_Map39Bit : KAddressSpaceInfo::Type_MapSmall) : KAddressSpaceInfo::Type_MapSmall;
+        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type);
+        const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type);
+        const uintptr_t map_end       = map_start + map_size;
+        out->code_address             = map_start + start_address;
+        MESOSPHERE_ABORT_UNLESS((out->code_address / PageSize) + out->code_num_pages <= (map_end / PageSize));
+
+        /* Apply ASLR, if needed. */
+        if (enable_aslr) {
+            const size_t choices = (map_end / KernelAslrAlignment) - (util::AlignUp(out->code_address + out->code_num_pages * PageSize, KernelAslrAlignment) / KernelAslrAlignment);
+            out->code_address += KSystemControl::GenerateRandomRange(0, choices) * KernelAslrAlignment;
+        }
 
         R_SUCCEED();
     }

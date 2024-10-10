@@ -56,8 +56,9 @@ namespace ams::kern {
             {
                 const auto &management_region = KMemoryLayout::GetPoolManagementRegion();
                 MESOSPHERE_ABORT_UNLESS(management_region.GetEndAddress() != 0);
+                static_assert(util::size(MinimumMemoryManagerAlignmentShifts) == KMemoryManager::Pool_Count);
 
-                Kernel::GetMemoryManager().Initialize(management_region.GetAddress(), management_region.GetSize());
+                Kernel::GetMemoryManager().Initialize(management_region.GetAddress(), management_region.GetSize(), MinimumMemoryManagerAlignmentShifts);
             }
 
             /* Copy the Initial Process Binary to safe memory. */

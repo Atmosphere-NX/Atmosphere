@@ -126,6 +126,20 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm:
     mov     x0, #1
     ret
 
+/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize64Bit(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv:
+    /* Just load and store a u64. */
+    ldtr    x2, [x1]
+    str     x2, [x0]
+
+    /* We're done. */
+    mov     x0, #1
+    ret
+
 /* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize32Bit(void *dst, const void *src) */
 .section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv
@@ -134,6 +148,21 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm:
 _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv:
     /* Just load and store a u32. */
     ldtr    w2, [x1]
+    str     w2, [x0]
+
+    /* We're done. */
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize32BitWithSupervisorAccessImpl(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv:
+    /* Just load and store a u32. */
+    /* NOTE: This is done with supervisor access permissions. */
+    ldr     w2, [x1]
     str     w2, [x0]
 
     /* We're done. */

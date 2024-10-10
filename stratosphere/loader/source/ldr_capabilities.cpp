@@ -308,10 +308,19 @@ namespace ams::ldr {
         );
 
         DEFINE_CAPABILITY_CLASS(DebugFlags,
-            DEFINE_CAPABILITY_FIELD(AllowDebug, IdBits,     1, bool);
-            DEFINE_CAPABILITY_FIELD(ForceDebug, AllowDebug, 1, bool);
+            DEFINE_CAPABILITY_FIELD(AllowDebug,     IdBits,         1, bool);
+            DEFINE_CAPABILITY_FIELD(ForceDebugProd, AllowDebug,     1, bool);
+            DEFINE_CAPABILITY_FIELD(ForceDebug,     ForceDebugProd, 1, bool);
 
             bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
+                u32 total = 0;
+                if (this->GetAllowDebug()) { ++total; }
+                if (this->GetForceDebugProd()) { ++total; }
+                if (this->GetForceDebug()) { ++total; }
+                if (total > 1) {
+                    return false;
+                }
+
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == Id) {
                         const auto restriction = Decode(kac[i]);
@@ -319,12 +328,14 @@ namespace ams::ldr {
                         return (restriction.GetValue() & this->GetValue()) == this->GetValue();
                     }
                 }
+
                 return false;
             }
 
-            static constexpr util::BitPack32 Encode(bool allow_debug, bool force_debug) {
+            static constexpr util::BitPack32 Encode(bool allow_debug, bool force_debug_prod, bool force_debug) {
                 util::BitPack32 encoded{IdBitsValue};
                 encoded.Set<AllowDebug>(allow_debug);
+                encoded.Set<ForceDebugProd>(force_debug_prod);
                 encoded.Set<ForceDebug>(force_debug);
                 return encoded;
             }
@@ -406,7 +417,21 @@ namespace ams::ldr {
                     kac[i] = CapabilityApplicationType::Encode(flags & ProgramInfoFlag_ApplicationTypeMask);
                     break;
                 case CapabilityId::DebugFlags:
-                    kac[i] = CapabilityDebugFlags::Encode((flags & ProgramInfoFlag_AllowDebug) != 0, CapabilityDebugFlags::Decode(cap).GetForceDebug());
+                    kac[i] = CapabilityDebugFlags::Encode((flags & ProgramInfoFlag_AllowDebug) != 0, CapabilityDebugFlags::Decode(cap).GetForceDebugProd(), CapabilityDebugFlags::Decode(cap).GetForceDebug());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    void FixDebugCapabilityForHbl(util::BitPack32 *kac, size_t count) {
+        for (size_t i = 0; i < count; ++i) {
+            const auto cap = kac[i];
+            switch (GetCapabilityId(cap)) {
+                case CapabilityId::DebugFlags:
+                    /* 19.0.0+ disallows more than one flag set; we are always DebugMode for kernel, so ForceDebug is the most powerful/flexible flag to set. */
+                    kac[i] = CapabilityDebugFlags::Encode(false, false, true);
                     break;
                 default:
                     break;

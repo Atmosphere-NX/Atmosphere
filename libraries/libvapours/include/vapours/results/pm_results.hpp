@@ -27,5 +27,6 @@ namespace ams::pm {
     R_DEFINE_ERROR_RESULT(DebugHookInUse,     4);
     R_DEFINE_ERROR_RESULT(ApplicationRunning, 5);
     R_DEFINE_ERROR_RESULT(InvalidSize,        6);
+    R_DEFINE_ERROR_RESULT(Unknown7,           7);
 
 }

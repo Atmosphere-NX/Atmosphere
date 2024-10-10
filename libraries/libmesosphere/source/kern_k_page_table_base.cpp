@@ -141,10 +141,10 @@ namespace ams::kern {
 
         /* Define helpers. */
         auto GetSpaceStart = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
-            return KAddressSpaceInfo::GetAddressSpaceStart(m_address_space_width, type);
+            return KAddressSpaceInfo::GetAddressSpaceStart(flags, type);
         };
         auto GetSpaceSize = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
-            return KAddressSpaceInfo::GetAddressSpaceSize(m_address_space_width, type);
+            return KAddressSpaceInfo::GetAddressSpaceSize(flags, type);
         };
 
         /* Default to zero alias region extra size. */
@@ -664,11 +664,11 @@ namespace ams::kern {
         }
     }
 
-    Result KPageTableBase::CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
+    Result KPageTableBase::CheckMemoryState(KMemoryBlockManager::const_iterator it, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
         /* Validate the states match expectation. */
-        R_UNLESS((info.m_state      & state_mask) == state, svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.m_permission & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.m_attribute  & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
+        R_UNLESS((it->GetState()      & state_mask) == state, svc::ResultInvalidCurrentMemory());
+        R_UNLESS((it->GetPermission() & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
+        R_UNLESS((it->GetAttribute()  & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
 
         R_SUCCEED();
     }
@@ -679,28 +679,26 @@ namespace ams::kern {
         /* Get information about the first block. */
         const KProcessAddress last_addr = addr + size - 1;
         KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(addr);
-        KMemoryInfo info = it->GetMemoryInfo();
 
         /* If the start address isn't aligned, we need a block. */
-        const size_t blocks_for_start_align = (util::AlignDown(GetInteger(addr), PageSize) != info.GetAddress()) ? 1 : 0;
+        const size_t blocks_for_start_align = (util::AlignDown(GetInteger(addr), PageSize) != it->GetAddress()) ? 1 : 0;
 
         while (true) {
             /* Validate against the provided masks. */
-            R_TRY(this->CheckMemoryState(info, state_mask, state, perm_mask, perm, attr_mask, attr));
+            R_TRY(this->CheckMemoryState(it, state_mask, state, perm_mask, perm, attr_mask, attr));
 
             /* Break once we're done. */
-            if (last_addr <= info.GetLastAddress()) {
+            if (last_addr <= it->GetLastAddress()) {
                 break;
             }
 
             /* Advance our iterator. */
             it++;
             MESOSPHERE_ASSERT(it != m_memory_block_manager.cend());
-            info = it->GetMemoryInfo();
         }
 
         /* If the end address isn't aligned, we need a block. */
-        const size_t blocks_for_end_align = (util::AlignUp(GetInteger(addr) + size, PageSize) != info.GetEndAddress()) ? 1 : 0;
+        const size_t blocks_for_end_align = (util::AlignUp(GetInteger(addr) + size, PageSize) != it->GetEndAddress()) ? 1 : 0;
 
         if (out_blocks_needed != nullptr) {
             *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
@@ -712,31 +710,27 @@ namespace ams::kern {
     Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KMemoryBlockManager::const_iterator it, KProcessAddress last_addr, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-        /* Get information about the first block. */
-        KMemoryInfo info = it->GetMemoryInfo();
-
         /* Validate all blocks in the range have correct state. */
-        const KMemoryState      first_state = info.m_state;
-        const KMemoryPermission first_perm  = info.m_permission;
-        const KMemoryAttribute  first_attr  = info.m_attribute;
+        const KMemoryState      first_state = it->GetState();
+        const KMemoryPermission first_perm  = it->GetPermission();
+        const KMemoryAttribute  first_attr  = it->GetAttribute();
         while (true) {
             /* Validate the current block. */
-            R_UNLESS(info.m_state == first_state,                                    svc::ResultInvalidCurrentMemory());
-            R_UNLESS(info.m_permission == first_perm,                                svc::ResultInvalidCurrentMemory());
-            R_UNLESS((info.m_attribute | ignore_attr) == (first_attr | ignore_attr), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(it->GetState() == first_state,                                    svc::ResultInvalidCurrentMemory());
+            R_UNLESS(it->GetPermission() == first_perm,                                svc::ResultInvalidCurrentMemory());
+            R_UNLESS((it->GetAttribute() | ignore_attr) == (first_attr | ignore_attr), svc::ResultInvalidCurrentMemory());
 
             /* Validate against the provided masks. */
-            R_TRY(this->CheckMemoryState(info, state_mask, state, perm_mask, perm, attr_mask, attr));
+            R_TRY(this->CheckMemoryState(it, state_mask, state, perm_mask, perm, attr_mask, attr));
 
             /* Break once we're done. */
-            if (last_addr <= info.GetLastAddress()) {
+            if (last_addr <= it->GetLastAddress()) {
                 break;
             }
 
             /* Advance our iterator. */
             it++;
             MESOSPHERE_ASSERT(it != m_memory_block_manager.cend());
-            info = it->GetMemoryInfo();
         }
 
         /* Write output state. */
@@ -752,7 +746,7 @@ namespace ams::kern {
 
         /* If the end address isn't aligned, we need a block. */
         if (out_blocks_needed != nullptr) {
-            const size_t blocks_for_end_align = (util::AlignDown(GetInteger(last_addr), PageSize) + PageSize != info.GetEndAddress()) ? 1 : 0;
+            const size_t blocks_for_end_align = (util::AlignDown(GetInteger(last_addr), PageSize) + PageSize != it->GetEndAddress()) ? 1 : 0;
             *out_blocks_needed = blocks_for_end_align;
         }
 
@@ -1176,17 +1170,14 @@ namespace ams::kern {
         {
             KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(dst_address);
             while (true) {
-                /* Get the memory info. */
-                const KMemoryInfo info = it->GetMemoryInfo();
-
                 /* Check if the memory has code flag. */
-                if ((info.GetState() & KMemoryState_FlagCode) != 0) {
+                if ((it->GetState() & KMemoryState_FlagCode) != 0) {
                     any_code_pages = true;
                     break;
                 }
 
                 /* Check if we're done. */
-                if (dst_address + size - 1 <= info.GetLastAddress()) {
+                if (dst_address + size - 1 <= it->GetLastAddress()) {
                     break;
                 }
 
@@ -1355,14 +1346,13 @@ namespace ams::kern {
                     const size_t random_offset = KSystemControl::GenerateRandomRange(0, (region_num_pages - num_pages - guard_pages) * PageSize / alignment) * alignment;
                     const KProcessAddress candidate = util::AlignDown(GetInteger(region_start + random_offset), alignment) + offset;
 
-                    KMemoryInfo info;
-                    ams::svc::PageInfo page_info;
-                    MESOSPHERE_R_ABORT_UNLESS(this->QueryInfoImpl(std::addressof(info), std::addressof(page_info), candidate));
+                    KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(candidate);
+                    MESOSPHERE_ABORT_UNLESS(it != m_memory_block_manager.end());
 
-                    if (info.m_state != KMemoryState_Free) { continue; }
+                    if (it->GetState() != KMemoryState_Free) { continue; }
                     if (!(region_start <= candidate)) { continue; }
-                    if (!(info.GetAddress() + guard_pages * PageSize <= GetInteger(candidate))) { continue; }
-                    if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= info.GetLastAddress())) { continue; }
+                    if (!(it->GetAddress() + guard_pages * PageSize <= GetInteger(candidate))) { continue; }
+                    if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= it->GetLastAddress())) { continue; }
                     if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= region_start + region_num_pages * PageSize - 1)) { continue; }
 
                     address = candidate;
@@ -1393,10 +1383,8 @@ namespace ams::kern {
         /* Iterate, counting blocks with the desired state. */
         size_t total_size = 0;
         for (KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(m_address_space_start); it != m_memory_block_manager.end(); ++it) {
-            /* Get the memory info. */
-            const KMemoryInfo info = it->GetMemoryInfo();
-            if (info.GetState() == state) {
-                total_size += info.GetSize();
+            if (it->GetState() == state) {
+                total_size += it->GetSize();
             }
         }
 
@@ -1488,17 +1476,14 @@ namespace ams::kern {
             /* Check that the iterator is valid. */
             MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-            /* Get the memory info. */
-            const KMemoryInfo info = it->GetMemoryInfo();
-
             /* Determine the range to map. */
-                  KProcessAddress map_address     = std::max(info.GetAddress(), GetInteger(start_address));
-            const KProcessAddress map_end_address = std::min(info.GetEndAddress(), GetInteger(end_address));
+                  KProcessAddress map_address     = std::max(GetInteger(it->GetAddress()), GetInteger(start_address));
+            const KProcessAddress map_end_address = std::min(GetInteger(it->GetEndAddress()), GetInteger(end_address));
             MESOSPHERE_ABORT_UNLESS(map_end_address != map_address);
 
             /* Determine if we should disable head merge. */
-            const bool disable_head_merge = info.GetAddress() >= GetInteger(start_address) && (info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Normal) != 0;
-            const KPageProperties map_properties = { info.GetPermission(), false, false, disable_head_merge ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
+            const bool disable_head_merge = it->GetAddress() >= GetInteger(start_address) && (it->GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Normal) != 0;
+            const KPageProperties map_properties = { it->GetPermission(), false, false, disable_head_merge ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
 
             /* While we have pages to map, map them. */
             size_t map_pages = (map_end_address - map_address) / PageSize;
@@ -1527,7 +1512,7 @@ namespace ams::kern {
             }
 
             /* Check if we're done. */
-            if (last_address <= info.GetLastAddress()) {
+            if (last_address <= it->GetLastAddress()) {
                 break;
             }
 
@@ -1802,6 +1787,11 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
+        /* If we're creating an executable mapping, take and immediately release the scheduler lock. This will force a reschedule. */
+        if (is_x) {
+            KScopedSchedulerLock sl;
+        }
+
         /* Perform mapping operation. */
         const KPageProperties properties = { new_perm, false, false, DisableMergeAttribute_None };
         const auto operation = was_x ? OperationType_ChangePermissionsAndRefreshAndFlush : OperationType_ChangePermissions;
@@ -2032,19 +2022,18 @@ namespace ams::kern {
         address = util::AlignDown(GetInteger(address), PageSize);
 
         /* Verify that we can query the address. */
-        KMemoryInfo info;
-        ams::svc::PageInfo page_info;
-        R_TRY(this->QueryInfoImpl(std::addressof(info), std::addressof(page_info), address));
+        KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(address);
+        R_UNLESS(it != m_memory_block_manager.end(), svc::ResultInvalidCurrentMemory());
 
         /* Check the memory state. */
-        R_TRY(this->CheckMemoryState(info, KMemoryState_FlagCanQueryPhysical, KMemoryState_FlagCanQueryPhysical, KMemoryPermission_UserReadExecute, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryState(it, KMemoryState_FlagCanQueryPhysical, KMemoryState_FlagCanQueryPhysical, KMemoryPermission_UserReadExecute, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Prepare to traverse. */
         KPhysicalAddress phys_addr;
         size_t phys_size;
 
-        KProcessAddress virt_addr = info.GetAddress();
-        KProcessAddress end_addr  = info.GetEndAddress();
+        KProcessAddress virt_addr = it->GetAddress();
+        KProcessAddress end_addr  = it->GetEndAddress();
 
         /* Perform traversal. */
         {
@@ -2711,18 +2700,37 @@ namespace ams::kern {
         R_RETURN(cpu::InvalidateDataCache(GetVoidPointer(address), size));
     }
 
-    Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
+    bool KPageTableBase::CanReadWriteDebugMemory(KProcessAddress address, size_t size, bool force_debug_prod) {
+        /* Check pre-conditions. */
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* If the memory is debuggable and user-readable, we can perform the access. */
+        if (R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_NotMapped | KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
+            return true;
+        }
+
+        /* If we're in debug mode, and the process isn't force debug prod, check if the memory is debuggable and kernel-readable and user-executable. */
+        if (KTargetSystem::IsDebugMode() && !force_debug_prod) {
+            if (R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_KernelRead | KMemoryPermission_UserExecute, KMemoryPermission_KernelRead | KMemoryPermission_UserExecute, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                return true;
+            }
+        }
+
+        /* If neither of the above checks passed, we can't access the memory. */
+        return false;
+    }
+
+    Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size, bool force_debug_prod) {
         /* Lightly validate the region is in range. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
-        /* Require that the memory either be user readable or debuggable. */
-        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+        /* Require that the memory either be user-readable-and-mapped or debug-accessible. */
+        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_NotMapped | KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
         if (!can_read) {
-            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
-            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+            R_UNLESS(this->CanReadWriteDebugMemory(address, size, force_debug_prod), svc::ResultInvalidCurrentMemory());
         }
 
         /* Get the impl. */
@@ -2804,11 +2812,10 @@ namespace ams::kern {
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
-        /* Require that the memory either be user writable or debuggable. */
-        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
-        if (!can_read) {
-            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
-            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+        /* Require that the memory either be user-writable-and-mapped or debug-accessible. */
+        const bool can_write = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_NotMapped | KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
+        if (!can_write) {
+            R_UNLESS(this->CanReadWriteDebugMemory(address, size, false), svc::ResultInvalidCurrentMemory());
         }
 
         /* Get the impl. */
@@ -3827,15 +3834,15 @@ namespace ams::kern {
         switch (dst_state) {
             case KMemoryState_Ipc:
                 test_state     = KMemoryState_FlagCanUseIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_IpcLocked));
                 break;
             case KMemoryState_NonSecureIpc:
                 test_state     = KMemoryState_FlagCanUseNonSecureIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_IpcLocked));
                 break;
             case KMemoryState_NonDeviceIpc:
                 test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_IpcLocked));
                 break;
             default:
                 R_THROW(svc::ResultInvalidCombination());
@@ -3854,27 +3861,25 @@ namespace ams::kern {
         /* Iterate, mapping as needed. */
         KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(aligned_src_start);
         while (true) {
-            const KMemoryInfo info = it->GetMemoryInfo();
-
             /* Validate the current block. */
-            R_TRY(this->CheckMemoryState(info, test_state, test_state, test_perm, test_perm, test_attr_mask, KMemoryAttribute_None));
+            R_TRY(this->CheckMemoryState(it, test_state, test_state, test_perm, test_perm, test_attr_mask, KMemoryAttribute_None));
 
-            if (mapping_src_start < mapping_src_end && GetInteger(mapping_src_start) < info.GetEndAddress() && info.GetAddress() < GetInteger(mapping_src_end)) {
-                const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
-                const auto cur_end    = mapping_src_last >= info.GetLastAddress() ? info.GetEndAddress() : GetInteger(mapping_src_end);
+            if (mapping_src_start < mapping_src_end && GetInteger(mapping_src_start) < GetInteger(it->GetEndAddress()) && GetInteger(it->GetAddress()) < GetInteger(mapping_src_end)) {
+                const auto cur_start  = it->GetAddress() >= GetInteger(mapping_src_start) ? GetInteger(it->GetAddress()) : GetInteger(mapping_src_start);
+                const auto cur_end    = mapping_src_last >= GetInteger(it->GetLastAddress()) ? GetInteger(it->GetEndAddress()) : GetInteger(mapping_src_end);
                 const size_t cur_size = cur_end - cur_start;
 
-                if (info.GetAddress() < GetInteger(mapping_src_start)) {
+                if (GetInteger(it->GetAddress()) < GetInteger(mapping_src_start)) {
                     ++blocks_needed;
                 }
-                if (mapping_src_last < info.GetLastAddress()) {
+                if (mapping_src_last < GetInteger(it->GetLastAddress())) {
                     ++blocks_needed;
                 }
 
                 /* Set the permissions on the block, if we need to. */
-                if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
-                    const DisableMergeAttribute head_body_attr = (GetInteger(mapping_src_start) >= info.GetAddress()) ? DisableMergeAttribute_DisableHeadAndBody : DisableMergeAttribute_None;
-                    const DisableMergeAttribute tail_attr      = (cur_end == GetInteger(mapping_src_end))             ? DisableMergeAttribute_DisableTail        : DisableMergeAttribute_None;
+                if ((it->GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
+                    const DisableMergeAttribute head_body_attr = (GetInteger(mapping_src_start) >= GetInteger(it->GetAddress()))  ? DisableMergeAttribute_DisableHeadAndBody : DisableMergeAttribute_None;
+                    const DisableMergeAttribute tail_attr      = (cur_end == GetInteger(mapping_src_end))                         ? DisableMergeAttribute_DisableTail        : DisableMergeAttribute_None;
                     const KPageProperties properties = { src_perm, false, false, static_cast<DisableMergeAttribute>(head_body_attr | tail_attr) };
                     R_TRY(this->Operate(page_list, cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
                 }
@@ -3884,7 +3889,7 @@ namespace ams::kern {
             }
 
             /* If the block is at the end, we're done. */
-            if (aligned_src_last <= info.GetLastAddress()) {
+            if (aligned_src_last <= GetInteger(it->GetLastAddress())) {
                 break;
             }
 
@@ -4248,56 +4253,50 @@ namespace ams::kern {
                 const auto mapped_last = mapped_end - 1;
 
                 /* Get current and next iterators. */
-                KMemoryBlockManager::const_iterator start_it = m_memory_block_manager.FindIterator(mapping_start);
-                KMemoryBlockManager::const_iterator next_it  = start_it;
+                KMemoryBlockManager::const_iterator cur_it  = m_memory_block_manager.FindIterator(mapping_start);
+                KMemoryBlockManager::const_iterator next_it = cur_it;
                 ++next_it;
 
-                /* Get the current block info. */
-                KMemoryInfo cur_info = start_it->GetMemoryInfo();
-
                 /* Create tracking variables. */
-                KProcessAddress cur_address = cur_info.GetAddress();
-                size_t cur_size             = cur_info.GetSize();
-                bool cur_perm_eq            = cur_info.GetPermission() == cur_info.GetOriginalPermission();
-                bool cur_needs_set_perm     = !cur_perm_eq && cur_info.GetIpcLockCount() == 1;
-                bool first                  = cur_info.GetIpcDisableMergeCount() == 1 && (cur_info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
+                KProcessAddress cur_address = cur_it->GetAddress();
+                size_t cur_size             = cur_it->GetSize();
+                bool cur_perm_eq            = cur_it->GetPermission() == cur_it->GetOriginalPermission();
+                bool cur_needs_set_perm     = !cur_perm_eq && cur_it->GetIpcLockCount() == 1;
+                bool first                  = cur_it->GetIpcDisableMergeCount() == 1 && (cur_it->GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
 
                 while ((GetInteger(cur_address) + cur_size - 1) < mapped_last) {
                     /* Check that we have a next block. */
                     MESOSPHERE_ABORT_UNLESS(next_it != m_memory_block_manager.end());
 
-                    /* Get the next info. */
-                    const KMemoryInfo next_info = next_it->GetMemoryInfo();
-
                     /* Check if we can consolidate the next block's permission set with the current one. */
-                    const bool next_perm_eq        = next_info.GetPermission() == next_info.GetOriginalPermission();
-                    const bool next_needs_set_perm = !next_perm_eq && next_info.GetIpcLockCount() == 1;
-                    if (cur_perm_eq == next_perm_eq && cur_needs_set_perm == next_needs_set_perm && cur_info.GetOriginalPermission() == next_info.GetOriginalPermission()) {
+                    const bool next_perm_eq        = next_it->GetPermission() == next_it->GetOriginalPermission();
+                    const bool next_needs_set_perm = !next_perm_eq && next_it->GetIpcLockCount() == 1;
+                    if (cur_perm_eq == next_perm_eq && cur_needs_set_perm == next_needs_set_perm && cur_it->GetOriginalPermission() == next_it->GetOriginalPermission()) {
                         /* We can consolidate the reprotection for the current and next block into a single call. */
-                        cur_size += next_info.GetSize();
+                        cur_size += next_it->GetSize();
                     } else {
                         /* We have to operate on the current block. */
                         if ((cur_needs_set_perm || first) && !cur_perm_eq) {
-                            const KPageProperties properties = { cur_info.GetPermission(), false, false, first ? DisableMergeAttribute_EnableAndMergeHeadBodyTail : DisableMergeAttribute_None };
+                            const KPageProperties properties = { cur_it->GetPermission(), false, false, first ? DisableMergeAttribute_EnableAndMergeHeadBodyTail : DisableMergeAttribute_None };
                             MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
                         }
 
                         /* Advance. */
-                        cur_address = next_info.GetAddress();
-                        cur_size    = next_info.GetSize();
+                        cur_address = next_it->GetAddress();
+                        cur_size    = next_it->GetSize();
                         first       = false;
                     }
 
                     /* Advance. */
-                    cur_info           = next_info;
                     cur_perm_eq        = next_perm_eq;
                     cur_needs_set_perm = next_needs_set_perm;
-                    ++next_it;
+
+                    cur_it             = next_it++;
                 }
 
                 /* Process the last block. */
                 if ((first || cur_needs_set_perm) && !cur_perm_eq) {
-                    const KPageProperties properties = { cur_info.GetPermission(), false, false, first ? DisableMergeAttribute_EnableAndMergeHeadBodyTail : DisableMergeAttribute_None };
+                    const KPageProperties properties = { cur_it->GetPermission(), false, false, first ? DisableMergeAttribute_EnableAndMergeHeadBodyTail : DisableMergeAttribute_None };
                     MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
                 }
             }
@@ -4306,41 +4305,37 @@ namespace ams::kern {
         /* Iterate, reprotecting as needed. */
         {
             /* Get current and next iterators. */
-            KMemoryBlockManager::const_iterator start_it = m_memory_block_manager.FindIterator(mapping_start);
-            KMemoryBlockManager::const_iterator next_it  = start_it;
+            KMemoryBlockManager::const_iterator cur_it = m_memory_block_manager.FindIterator(mapping_start);
+            KMemoryBlockManager::const_iterator next_it  = cur_it;
             ++next_it;
 
             /* Validate the current block. */
-            KMemoryInfo cur_info = start_it->GetMemoryInfo();
-            MESOSPHERE_R_ABORT_UNLESS(this->CheckMemoryState(cur_info, test_state, test_state, KMemoryPermission_None, KMemoryPermission_None, test_attr_mask | KMemoryAttribute_IpcLocked, KMemoryAttribute_IpcLocked));
+            MESOSPHERE_R_ABORT_UNLESS(this->CheckMemoryState(cur_it, test_state, test_state, KMemoryPermission_None, KMemoryPermission_None, test_attr_mask | KMemoryAttribute_IpcLocked, KMemoryAttribute_IpcLocked));
 
             /* Create tracking variables. */
-            KProcessAddress cur_address = cur_info.GetAddress();
-            size_t cur_size             = cur_info.GetSize();
-            bool cur_perm_eq            = cur_info.GetPermission() == cur_info.GetOriginalPermission();
-            bool cur_needs_set_perm     = !cur_perm_eq && cur_info.GetIpcLockCount() == 1;
-            bool first                  = cur_info.GetIpcDisableMergeCount() == 1 && (cur_info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
+            KProcessAddress cur_address = cur_it->GetAddress();
+            size_t cur_size             = cur_it->GetSize();
+            bool cur_perm_eq            = cur_it->GetPermission() == cur_it->GetOriginalPermission();
+            bool cur_needs_set_perm     = !cur_perm_eq && cur_it->GetIpcLockCount() == 1;
+            bool first                  = cur_it->GetIpcDisableMergeCount() == 1 && (cur_it->GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
 
             while ((cur_address + cur_size - 1) < mapping_last) {
                 /* Check that we have a next block. */
                 MESOSPHERE_ABORT_UNLESS(next_it != m_memory_block_manager.end());
 
-                /* Get the next info. */
-                const KMemoryInfo next_info = next_it->GetMemoryInfo();
-
                 /* Validate the next block. */
-                MESOSPHERE_R_ABORT_UNLESS(this->CheckMemoryState(next_info, test_state, test_state, KMemoryPermission_None, KMemoryPermission_None, test_attr_mask | KMemoryAttribute_IpcLocked, KMemoryAttribute_IpcLocked));
+                MESOSPHERE_R_ABORT_UNLESS(this->CheckMemoryState(next_it, test_state, test_state, KMemoryPermission_None, KMemoryPermission_None, test_attr_mask | KMemoryAttribute_IpcLocked, KMemoryAttribute_IpcLocked));
 
                 /* Check if we can consolidate the next block's permission set with the current one. */
-                const bool next_perm_eq        = next_info.GetPermission() == next_info.GetOriginalPermission();
-                const bool next_needs_set_perm = !next_perm_eq && next_info.GetIpcLockCount() == 1;
-                if (cur_perm_eq == next_perm_eq && cur_needs_set_perm == next_needs_set_perm && cur_info.GetOriginalPermission() == next_info.GetOriginalPermission()) {
+                const bool next_perm_eq        = next_it->GetPermission() == next_it->GetOriginalPermission();
+                const bool next_needs_set_perm = !next_perm_eq && next_it->GetIpcLockCount() == 1;
+                if (cur_perm_eq == next_perm_eq && cur_needs_set_perm == next_needs_set_perm && cur_it->GetOriginalPermission() == next_it->GetOriginalPermission()) {
                     /* We can consolidate the reprotection for the current and next block into a single call. */
-                    cur_size += next_info.GetSize();
+                    cur_size += next_it->GetSize();
                 } else {
                     /* We have to operate on the current block. */
                     if ((cur_needs_set_perm || first) && !cur_perm_eq) {
-                        const KPageProperties properties = { cur_needs_set_perm ? cur_info.GetOriginalPermission() : cur_info.GetPermission(), false, false, first ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None };
+                        const KPageProperties properties = { cur_needs_set_perm ? cur_it->GetOriginalPermission() : cur_it->GetPermission(), false, false, first ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None };
                         R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
                     }
 
@@ -4348,24 +4343,24 @@ namespace ams::kern {
                     mapped_size += cur_size;
 
                     /* Advance. */
-                    cur_address = next_info.GetAddress();
-                    cur_size    = next_info.GetSize();
+                    cur_address = next_it->GetAddress();
+                    cur_size    = next_it->GetSize();
                     first       = false;
                 }
 
                 /* Advance. */
-                cur_info           = next_info;
                 cur_perm_eq        = next_perm_eq;
                 cur_needs_set_perm = next_needs_set_perm;
-                ++next_it;
+
+                cur_it             = next_it++;
             }
 
             /* Process the last block. */
-            const auto lock_count = cur_info.GetIpcLockCount() + (next_it != m_memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
+            const auto lock_count = cur_it->GetIpcLockCount() + (next_it != m_memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
             if ((first || cur_needs_set_perm || (lock_count == 1)) && !cur_perm_eq) {
                 const DisableMergeAttribute head_body_attr = first ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None;
                 const DisableMergeAttribute tail_attr      = lock_count == 1 ? DisableMergeAttribute_EnableTail : DisableMergeAttribute_None;
-                const KPageProperties properties = { cur_needs_set_perm ? cur_info.GetOriginalPermission() : cur_info.GetPermission(), false, false, static_cast<DisableMergeAttribute>(head_body_attr | tail_attr) };
+                const KPageProperties properties = { cur_needs_set_perm ? cur_it->GetOriginalPermission() : cur_it->GetPermission(), false, false, static_cast<DisableMergeAttribute>(head_body_attr | tail_attr) };
                 R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
             }
         }
@@ -4398,38 +4393,36 @@ namespace ams::kern {
         /* Iterate over blocks, fixing permissions. */
         KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(address);
         while (true) {
-            const KMemoryInfo info = it->GetMemoryInfo();
-
-            const auto cur_start = info.GetAddress() >= GetInteger(src_map_start) ? info.GetAddress() : GetInteger(src_map_start);
-            const auto cur_end   = src_map_last <= info.GetLastAddress() ? src_map_end : info.GetEndAddress();
+            const auto cur_start = it->GetAddress() >= GetInteger(src_map_start) ? it->GetAddress() : GetInteger(src_map_start);
+            const auto cur_end   = src_map_last <= it->GetLastAddress() ? src_map_end : it->GetEndAddress();
 
             /* If we can, fix the protections on the block. */
-            if ((info.GetIpcLockCount() == 0 && (info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) ||
-                (info.GetIpcLockCount() != 0 && (info.GetOriginalPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm))
+            if ((it->GetIpcLockCount() == 0 && (it->GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) ||
+                (it->GetIpcLockCount() != 0 && (it->GetOriginalPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm))
             {
                 /* Check if we actually need to fix the protections on the block. */
-                if (cur_end == src_map_end || info.GetAddress() <= GetInteger(src_map_start) || (info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) {
-                    const bool start_nc = (info.GetAddress() == GetInteger(src_map_start)) ? ((info.GetDisableMergeAttribute() & (KMemoryBlockDisableMergeAttribute_Locked | KMemoryBlockDisableMergeAttribute_IpcLeft)) == 0) : info.GetAddress() <= GetInteger(src_map_start);
+                if (cur_end == src_map_end || it->GetAddress() <= GetInteger(src_map_start) || (it->GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) {
+                    const bool start_nc = (it->GetAddress() == GetInteger(src_map_start)) ? ((it->GetDisableMergeAttribute() & (KMemoryBlockDisableMergeAttribute_Locked | KMemoryBlockDisableMergeAttribute_IpcLeft)) == 0) : it->GetAddress() <= GetInteger(src_map_start);
 
                     const DisableMergeAttribute head_body_attr = start_nc ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None;
                     DisableMergeAttribute tail_attr;
-                    if (cur_end == src_map_end && info.GetEndAddress() == src_map_end) {
+                    if (cur_end == src_map_end && it->GetEndAddress() == src_map_end) {
                         auto next_it = it;
                         ++next_it;
 
-                        const auto lock_count = info.GetIpcLockCount() + (next_it != m_memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
+                        const auto lock_count = it->GetIpcLockCount() + (next_it != m_memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
                         tail_attr = lock_count == 0 ? DisableMergeAttribute_EnableTail : DisableMergeAttribute_None;
                     } else {
                         tail_attr = DisableMergeAttribute_None;
                     }
 
-                    const KPageProperties properties = { info.GetPermission(), false, false, static_cast<DisableMergeAttribute>(head_body_attr | tail_attr) };
+                    const KPageProperties properties = { it->GetPermission(), false, false, static_cast<DisableMergeAttribute>(head_body_attr | tail_attr) };
                     MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, cur_start, (cur_end - cur_start) / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
                 }
             }
 
             /* If we're past the end of the region, we're done. */
-            if (src_map_last <= info.GetLastAddress()) {
+            if (src_map_last <= it->GetLastAddress()) {
                 break;
             }
 
@@ -4468,24 +4461,21 @@ namespace ams::kern {
                     /* Check that the iterator is valid. */
                     MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-                    /* Get the memory info. */
-                    const KMemoryInfo info = it->GetMemoryInfo();
-
                     /* Check if we're done. */
-                    if (last_address <= info.GetLastAddress()) {
-                        if (info.GetState() != KMemoryState_Free) {
+                    if (last_address <= it->GetLastAddress()) {
+                        if (it->GetState() != KMemoryState_Free) {
                             mapped_size += (last_address + 1 - cur_address);
                         }
                         break;
                     }
 
                     /* Track the memory if it's mapped. */
-                    if (info.GetState() != KMemoryState_Free) {
-                        mapped_size += KProcessAddress(info.GetEndAddress()) - cur_address;
+                    if (it->GetState() != KMemoryState_Free) {
+                        mapped_size += it->GetEndAddress() - cur_address;
                     }
 
                     /* Advance. */
-                    cur_address = info.GetEndAddress();
+                    cur_address = it->GetEndAddress();
                     ++it;
                 }
 
@@ -4527,21 +4517,18 @@ namespace ams::kern {
                             /* Check that the iterator is valid. */
                             MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-                            /* Get the memory info. */
-                            const KMemoryInfo info = it->GetMemoryInfo();
-
-                            const bool is_free = info.GetState() == KMemoryState_Free;
+                            const bool is_free = it->GetState() == KMemoryState_Free;
                             if (is_free) {
-                                if (info.GetAddress() < GetInteger(address)) {
+                                if (it->GetAddress() < GetInteger(address)) {
                                     ++num_allocator_blocks;
                                 }
-                                if (last_address < info.GetLastAddress()) {
+                                if (last_address < it->GetLastAddress()) {
                                     ++num_allocator_blocks;
                                 }
                             }
 
                             /* Check if we're done. */
-                            if (last_address <= info.GetLastAddress()) {
+                            if (last_address <= it->GetLastAddress()) {
                                 if (!is_free) {
                                     checked_mapped_size += (last_address + 1 - cur_address);
                                 }
@@ -4550,11 +4537,11 @@ namespace ams::kern {
 
                             /* Track the memory if it's mapped. */
                             if (!is_free) {
-                                checked_mapped_size += KProcessAddress(info.GetEndAddress()) - cur_address;
+                                checked_mapped_size += it->GetEndAddress() - cur_address;
                             }
 
                             /* Advance. */
-                            cur_address = info.GetEndAddress();
+                            cur_address = it->GetEndAddress();
                             ++it;
                         }
 
@@ -4594,26 +4581,23 @@ namespace ams::kern {
                                 /* Check that the iterator is valid. */
                                 MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-                                /* Get the memory info. */
-                                const KMemoryInfo info = it->GetMemoryInfo();
-
                                 /* If the memory state is free, we mapped it and need to unmap it. */
-                                if (info.GetState() == KMemoryState_Free) {
+                                if (it->GetState() == KMemoryState_Free) {
                                     /* Determine the range to unmap. */
                                     const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
-                                    const size_t cur_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_unmap_address + 1 - cur_address) / PageSize;
+                                    const size_t cur_pages = std::min(it->GetEndAddress() - cur_address, last_unmap_address + 1 - cur_address) / PageSize;
 
                                     /* Unmap. */
                                     MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
                                 }
 
                                 /* Check if we're done. */
-                                if (last_unmap_address <= info.GetLastAddress()) {
+                                if (last_unmap_address <= it->GetLastAddress()) {
                                     break;
                                 }
 
                                 /* Advance. */
-                                cur_address = info.GetEndAddress();
+                                cur_address = it->GetEndAddress();
                                 ++it;
                             }
                         }
@@ -4632,14 +4616,11 @@ namespace ams::kern {
                         /* Check that the iterator is valid. */
                         MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-                        /* Get the memory info. */
-                        const KMemoryInfo info = it->GetMemoryInfo();
-
                         /* If it's unmapped, we need to map it. */
-                        if (info.GetState() == KMemoryState_Free) {
+                        if (it->GetState() == KMemoryState_Free) {
                             /* Determine the range to map. */
                             const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, cur_address == this->GetAliasRegionStart() ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
-                            size_t map_pages                     = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_address + 1 - cur_address) / PageSize;
+                            size_t map_pages                     = std::min(it->GetEndAddress() - cur_address, last_address + 1 - cur_address) / PageSize;
 
                             /* While we have pages to map, map them. */
                             {
@@ -4680,12 +4661,12 @@ namespace ams::kern {
                         }
 
                         /* Check if we're done. */
-                        if (last_address <= info.GetLastAddress()) {
+                        if (last_address <= it->GetLastAddress()) {
                             break;
                         }
 
                         /* Advance. */
-                        cur_address = info.GetEndAddress();
+                        cur_address = it->GetEndAddress();
                         ++it;
                     }
 
@@ -4737,26 +4718,23 @@ namespace ams::kern {
                 /* Check that the iterator is valid. */
                 MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-                /* Get the memory info. */
-                const KMemoryInfo info = it->GetMemoryInfo();
-
                 /* Verify the memory's state. */
-                const bool is_normal = info.GetState() == KMemoryState_Normal && info.GetAttribute() == 0;
-                const bool is_free   = info.GetState() == KMemoryState_Free;
+                const bool is_normal = it->GetState() == KMemoryState_Normal && it->GetAttribute() == 0;
+                const bool is_free   = it->GetState() == KMemoryState_Free;
                 R_UNLESS(is_normal || is_free, svc::ResultInvalidCurrentMemory());
 
                 if (is_normal) {
-                    R_UNLESS(info.GetAttribute() == KMemoryAttribute_None, svc::ResultInvalidCurrentMemory());
+                    R_UNLESS(it->GetAttribute() == KMemoryAttribute_None, svc::ResultInvalidCurrentMemory());
 
                     if (map_start_address == Null<KProcessAddress>) {
                         map_start_address = cur_address;
                     }
-                    map_last_address = (last_address >= info.GetLastAddress()) ? info.GetLastAddress() : last_address;
+                    map_last_address = (last_address >= it->GetLastAddress()) ? it->GetLastAddress() : last_address;
 
-                    if (info.GetAddress() < GetInteger(address)) {
+                    if (it->GetAddress() < GetInteger(address)) {
                         ++num_allocator_blocks;
                     }
-                    if (last_address < info.GetLastAddress()) {
+                    if (last_address < it->GetLastAddress()) {
                         ++num_allocator_blocks;
                     }
 
@@ -4764,12 +4742,12 @@ namespace ams::kern {
                 }
 
                 /* Check if we're done. */
-                if (last_address <= info.GetLastAddress()) {
+                if (last_address <= it->GetLastAddress()) {
                     break;
                 }
 
                 /* Advance. */
-                cur_address = info.GetEndAddress();
+                cur_address = it->GetEndAddress();
                 ++it;
             }
 
@@ -4802,26 +4780,23 @@ namespace ams::kern {
             /* Check that the iterator is valid. */
             MESOSPHERE_ASSERT(it != m_memory_block_manager.end());
 
-            /* Get the memory info. */
-            const KMemoryInfo info = it->GetMemoryInfo();
-
             /* If the memory state is normal, we need to unmap it. */
-            if (info.GetState() == KMemoryState_Normal) {
+            if (it->GetState() == KMemoryState_Normal) {
                 /* Determine the range to unmap. */
                 const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
-                const size_t cur_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_address + 1 - cur_address) / PageSize;
+                const size_t cur_pages = std::min(it->GetEndAddress() - cur_address, last_address + 1 - cur_address) / PageSize;
 
                 /* Unmap. */
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
             }
 
             /* Check if we're done. */
-            if (last_address <= info.GetLastAddress()) {
+            if (last_address <= it->GetLastAddress()) {
                 break;
             }
 
             /* Advance. */
-            cur_address = info.GetEndAddress();
+            cur_address = it->GetEndAddress();
             ++it;
         }
 

@@ -125,6 +125,8 @@ SECTIONS
 	.gnu.version_r     : { *(.gnu.version_r) } :rodata
 	.note.gnu.build-id : { *(.note.gnu.build-id) } :rodata
 
+    __rodata_end = .;
+
 	/* =========== DATA section =========== */
 	. = ALIGN(0x1000);
 	__data_start = . ;

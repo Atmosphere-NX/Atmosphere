@@ -38,6 +38,11 @@ namespace ams::mitm::ns {
         R_RETURN(nswebGetRunningApplicationProgramId(m_srv.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id)));
     }
 
+    Result NsDocumentService::GetApplicationContentPath2(const sf::OutBuffer &out_path, sf::Out<ncm::ProgramId> out_program_id, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type) {
+        static_assert(sizeof(*out_attr.GetPointer()) == sizeof(u8));
+        R_RETURN(nswebGetApplicationContentPath2(m_srv.get(), out_path.GetPointer(), out_path.GetSize(), reinterpret_cast<u64 *>(out_program_id.GetPointer()), reinterpret_cast<u8 *>(out_attr.GetPointer()), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type)));
+    }
+
     Result NsWebMitmService::GetDocumentInterface(sf::Out<sf::SharedPointer<impl::IDocumentInterface>> out) {
         /* Open a document interface. */
         NsDocumentInterface doc;

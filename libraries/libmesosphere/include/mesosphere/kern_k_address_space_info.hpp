@@ -37,8 +37,8 @@ namespace ams::kern {
             size_t m_size;
             Type m_type;
         public:
-            static uintptr_t GetAddressSpaceStart(size_t width, Type type);
-            static size_t GetAddressSpaceSize(size_t width, Type type);
+            static uintptr_t GetAddressSpaceStart(ams::svc::CreateProcessFlag flags, Type type);
+            static size_t GetAddressSpaceSize(ams::svc::CreateProcessFlag flags, Type type);
 
             static void SetAddressSpaceSize(size_t width, Type type, size_t size);
 

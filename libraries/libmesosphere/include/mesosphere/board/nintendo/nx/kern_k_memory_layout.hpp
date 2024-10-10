@@ -24,4 +24,8 @@ namespace ams::kern {
     constexpr inline size_t MainMemorySize    = 4_GB;
     constexpr inline size_t MainMemorySizeMax = 8_GB;
 
+    constexpr inline u32 MinimumMemoryManagerAlignmentShifts[] = {
+        0, 0, 0, 0
+    };
+
 }

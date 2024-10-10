@@ -21,10 +21,22 @@ namespace ams::kern::arch::arm64 {
     void UserspaceAccessFunctionAreaBegin();
 
     class UserspaceAccess {
+        private:
+            static bool CopyMemoryFromUserSize32BitWithSupervisorAccessImpl(void *dst, const void *src);
         public:
+            static bool CopyMemoryFromUserSize32BitWithSupervisorAccess(void *dst, const void *src) {
+                /* Check that the address is within the valid userspace range. */
+                if (const uintptr_t src_uptr = reinterpret_cast<uintptr_t>(src); src_uptr < ams::svc::AddressNullGuard32Size || (src_uptr + sizeof(u32) - 1) >= ams::svc::AddressMemoryRegion39Size) {
+                    return false;
+                }
+
+                return CopyMemoryFromUserSize32BitWithSupervisorAccessImpl(dst, src);
+            }
+
             static bool CopyMemoryFromUser(void *dst, const void *src, size_t size);
             static bool CopyMemoryFromUserAligned32Bit(void *dst, const void *src, size_t size);
             static bool CopyMemoryFromUserAligned64Bit(void *dst, const void *src, size_t size);
+            static bool CopyMemoryFromUserSize64Bit(void *dst, const void *src);
             static bool CopyMemoryFromUserSize32Bit(void *dst, const void *src);
             static s32  CopyStringFromUser(void *dst, const void *src, size_t size);
 

@@ -76,6 +76,9 @@ _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv:
     /* v                                                                        */
     /* | u64 argument | u64 entrypoint | KThread::StackParameters (size 0x30) | */
 
+    /* Clear the link register. */
+    mov x30, #0
+
     /* Load the argument and entrypoint. */
     ldp x0, x1, [sp], #0x10
 
@@ -84,4 +87,6 @@ _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv:
 
     /*  Mask I bit in DAIF */
     msr daifclr, #2
-    br x1
+
+    /* Invoke the function (by calling ams::kern::arch::arm64::InvokeSupervisorModeThread(argument, entrypoint)). */
+    b _ZN3ams4kern4arch5arm6426InvokeSupervisorModeThreadEmm
