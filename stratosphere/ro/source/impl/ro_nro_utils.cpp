@@ -51,10 +51,14 @@ namespace ams::ro::impl {
         R_SUCCEED();
     }
 
-    Result SetNroPerms(os::NativeHandle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
-        const u64 rx_offset = 0;
+    Result SetNroPerms(os::NativeHandle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size, bool is_aligned_header) {
+        const u64 rx_offset = is_aligned_header ? os::MemoryPageSize : 0;
         const u64 ro_offset = rx_offset + rx_size;
         const u64 rw_offset = ro_offset + ro_size;
+
+        if (is_aligned_header) {
+            R_TRY(os::SetProcessMemoryPermission(process_handle, base_address, os::MemoryPageSize, os::MemoryPermission_ReadOnly));
+        }
 
         R_TRY(os::SetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, os::MemoryPermission_ReadExecute));
         R_TRY(os::SetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, os::MemoryPermission_ReadOnly));
