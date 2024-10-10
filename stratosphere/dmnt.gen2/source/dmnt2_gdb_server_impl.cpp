@@ -1127,7 +1127,7 @@ namespace ams::dmnt {
             case STACK: {
                 u64 value;
                 if (R_FAILED(m_debug_process.ReadMemory(&value, thread_context.sp + m_watch_data.caller_SP_offset * 8, sizeof(value)))) {
-                    m_watch_data.failed++;
+                    m_watch_data.failed = 11;
                     m_from_stack.address = thread_context.pc;
                     break;
                 };
@@ -1197,7 +1197,7 @@ namespace ams::dmnt {
                                     if (is_instr) {
                                         if (address == m_watch_data.next_pc || address == m_watch_data.address) {
                                             m_watch_data.intercepted = true;
-                                            if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(address, m_watch_data.size))) {
+                                            if (R_FAILED(m_debug_process.ClearHardwareBreakPoint(address, (address == m_watch_data.next_pc) ? 4 : m_watch_data.size))) {
                                                 m_watch_data.failed = 5;
                                             } else {
                                                 if (!m_watch_data.read && !m_watch_data.write) {
@@ -1228,7 +1228,7 @@ namespace ams::dmnt {
                                                                     break;
                                                                 case STACK:
                                                                     if (R_FAILED(m_debug_process.ReadMemory(&X30_alternative, thread_context.sp + m_watch_data.caller_SP_offset*8, sizeof(X30_alternative)))) {
-                                                                        m_watch_data.failed++;
+                                                                        m_watch_data.failed = 8;
                                                                         X30_alternative = 0;
                                                                     };
                                                                     X30_alternative = X30_alternative & (-4);
@@ -1284,7 +1284,7 @@ namespace ams::dmnt {
                                                                         if (m_watch_data.range_check) {
                                                                             u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
                                                                             if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
-                                                                                m_watch_data.failed++;
+                                                                                m_watch_data.failed = 9;
                                                                             };
                                                                         }
                                                                         if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
@@ -1305,7 +1305,7 @@ namespace ams::dmnt {
                                                                         if (m_watch_data.range_check) {
                                                                             u64 address = thread_context.r[m_watch_data.i] + m_watch_data.offset;
                                                                             if (R_FAILED(m_debug_process.ReadMemory(&value, address, m_watch_data.vsize))) {
-                                                                                m_watch_data.failed++;
+                                                                                m_watch_data.failed = 10;
                                                                             };
                                                                         }
                                                                         if (!m_watch_data.range_check || (m_watch_data.v1 <= value && value <= m_watch_data.v2)) {
@@ -2395,6 +2395,7 @@ namespace ams::dmnt {
         char *reply_cur = m_buffer;
         char *reply_end = m_buffer + sizeof(m_buffer);
         m_watch_data.failed = 0;
+        m_watch_data.next_pc = 0;
         if ((m_watch_data.read || m_watch_data.write) && m_debug_process.IsValidWatchPoint(m_watch_data.address, m_watch_data.size)) {
             if (R_SUCCEEDED(m_debug_process.SetWatchPoint(m_watch_data.address, m_watch_data.size, m_watch_data.read, m_watch_data.write))) {
                 AppendReplyFormat(reply_cur, reply_end, "Watching 0x%010lx read=%d write=%d\n", m_watch_data.address, m_watch_data.read, m_watch_data.write);
@@ -2605,7 +2606,7 @@ namespace ams::dmnt {
             //     AppendReplyFormat(reply_cur, reply_end, "Cannot Continue\n");
             // }
         } else if (ParsePrefix(command, "getw")) {
-            AppendReplyFormat(reply_cur, reply_end, "Watch hit count = %d \n", m_watch_data.count);
+            AppendReplyFormat(reply_cur, reply_end, "Watch hit count = %d trig = %ld\n", m_watch_data.count, m_watch_data.total_trigger);
             get_region(m_watch_data.address);
             AppendReplyFormat(reply_cur, reply_end, "address = %010lx %s %010lx\n", m_watch_data.address, m_watch_data.module_name, m_watch_data.offset);
             AppendReplyFormat(reply_cur, reply_end, "fail code = %d \n", m_watch_data.failed);
