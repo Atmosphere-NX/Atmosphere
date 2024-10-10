@@ -45,7 +45,7 @@ namespace ams::kern::arch::arm64 {
             };
 
             struct TraversalContext {
-                const PageTableEntry *level_entries[EntryLevel_Count];
+                PageTableEntry *level_entries[EntryLevel_Count];
                 EntryLevel level;
                 bool is_contiguous;
             };
@@ -125,6 +125,10 @@ namespace ams::kern::arch::arm64 {
             ALWAYS_INLINE L3PageTableEntry *GetL3Entry(const L2PageTableEntry *entry, KProcessAddress address) const {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
+
+            static constexpr size_t GetBlockSize(EntryLevel level, bool contiguous = false) {
+                return 1 << (PageBits + LevelBits * level + 4 * contiguous);
+            }
         public:
             constexpr explicit KPageTableImpl(util::ConstantInitializeTag) : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
 
@@ -141,6 +145,9 @@ namespace ams::kern::arch::arm64 {
             bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const;
+
+            static bool MergePages(KVirtualAddress *out, TraversalContext *context);
+            void SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const;
     };
 
 }

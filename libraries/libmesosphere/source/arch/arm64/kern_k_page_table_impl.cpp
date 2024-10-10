@@ -33,94 +33,6 @@ namespace ams::kern::arch::arm64 {
         return m_table;
     }
 
-    // bool KPageTableImpl::ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const {
-    //     /* Set the L3 entry. */
-    //     out_context->l3_entry = l3_entry;
-    //
-    //     if (l3_entry->IsBlock()) {
-    //         /* Set the output entry. */
-    //         out_entry->phys_addr = l3_entry->GetBlock() + (virt_addr & (L3BlockSize - 1));
-    //         if (l3_entry->IsContiguous()) {
-    //             out_entry->block_size = L3ContiguousBlockSize;
-    //         } else {
-    //             out_entry->block_size = L3BlockSize;
-    //         }
-    //         out_entry->sw_reserved_bits = l3_entry->GetSoftwareReservedBits();
-    //         out_entry->attr             = 0;
-    //
-    //         return true;
-    //     } else {
-    //         out_entry->phys_addr        = Null<KPhysicalAddress>;
-    //         out_entry->block_size       = L3BlockSize;
-    //         out_entry->sw_reserved_bits = 0;
-    //         out_entry->attr             = 0;
-    //         return false;
-    //     }
-    // }
-    //
-    // bool KPageTableImpl::ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const {
-    //     /* Set the L2 entry. */
-    //     out_context->l2_entry = l2_entry;
-    //
-    //     if (l2_entry->IsBlock()) {
-    //         /* Set the output entry. */
-    //         out_entry->phys_addr = l2_entry->GetBlock() + (virt_addr & (L2BlockSize - 1));
-    //         if (l2_entry->IsContiguous()) {
-    //             out_entry->block_size = L2ContiguousBlockSize;
-    //         } else {
-    //             out_entry->block_size = L2BlockSize;
-    //         }
-    //         out_entry->sw_reserved_bits = l2_entry->GetSoftwareReservedBits();
-    //         out_entry->attr             = 0;
-    //
-    //         /* Set the output context. */
-    //         out_context->l3_entry = nullptr;
-    //         return true;
-    //     } else if (l2_entry->IsTable()) {
-    //         return this->ExtractL3Entry(out_entry, out_context, this->GetL3EntryFromTable(GetPageTableVirtualAddress(l2_entry->GetTable()), virt_addr), virt_addr);
-    //     } else {
-    //         out_entry->phys_addr        = Null<KPhysicalAddress>;
-    //         out_entry->block_size       = L2BlockSize;
-    //         out_entry->sw_reserved_bits = 0;
-    //         out_entry->attr             = 0;
-    //
-    //         out_context->l3_entry = nullptr;
-    //         return false;
-    //     }
-    // }
-    //
-    // bool KPageTableImpl::ExtractL1Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L1PageTableEntry *l1_entry, KProcessAddress virt_addr) const {
-    //     /* Set the L1 entry. */
-    //     out_context->level_entries[EntryLevel_L1] = l1_entry;
-    //
-    //     if (l1_entry->IsBlock()) {
-    //         /* Set the output entry. */
-    //         out_entry->phys_addr = l1_entry->GetBlock() + (virt_addr & (L1BlockSize - 1));
-    //         if (l1_entry->IsContiguous()) {
-    //             out_entry->block_size = L1ContiguousBlockSize;
-    //         } else {
-    //             out_entry->block_size = L1BlockSize;
-    //         }
-    //         out_entry->sw_reserved_bits = l1_entry->GetSoftwareReservedBits();
-    //
-    //         /* Set the output context. */
-    //         out_context->l2_entry = nullptr;
-    //         out_context->l3_entry = nullptr;
-    //         return true;
-    //     } else if (l1_entry->IsTable()) {
-    //         return this->ExtractL2Entry(out_entry, out_context, this->GetL2EntryFromTable(GetPageTableVirtualAddress(l1_entry->GetTable()), virt_addr), virt_addr);
-    //     } else {
-    //         out_entry->phys_addr        = Null<KPhysicalAddress>;
-    //         out_entry->block_size       = L1BlockSize;
-    //         out_entry->sw_reserved_bits = 0;
-    //         out_entry->attr             = 0;
-    //
-    //         out_context->l2_entry = nullptr;
-    //         out_context->l3_entry = nullptr;
-    //         return false;
-    //     }
-    // }
-
     bool KPageTableImpl::BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const {
         /* Setup invalid defaults. */
         *out_entry   = {};
@@ -176,9 +88,8 @@ namespace ams::kern::arch::arm64 {
 
     bool KPageTableImpl::ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const {
         /* Advance entry. */
-
         auto *cur_pte = context->level_entries[context->level];
-        auto *next_pte = reinterpret_cast<PageTableEntry *>(context->is_contiguous ? util::AlignDown(reinterpret_cast<uintptr_t>(cur_pte), 0x10 * sizeof(PageTableEntry)) + 0x10 * sizeof(PageTableEntry) : reinterpret_cast<uintptr_t>(cur_pte) + sizeof(PageTableEntry));
+        auto *next_pte = reinterpret_cast<PageTableEntry *>(context->is_contiguous ? util::AlignDown(reinterpret_cast<uintptr_t>(cur_pte), BlocksPerContiguousBlock * sizeof(PageTableEntry)) + BlocksPerContiguousBlock * sizeof(PageTableEntry) : reinterpret_cast<uintptr_t>(cur_pte) + sizeof(PageTableEntry));
 
         /* Set the pte. */
         context->level_entries[context->level] = next_pte;
@@ -253,6 +164,53 @@ namespace ams::kern::arch::arm64 {
         }
 
         return is_block;
+    }
+
+    bool KPageTableImpl::MergePages(KVirtualAddress *out, TraversalContext *context) {
+        /* TODO */
+        MESOSPHERE_UNUSED(out, context);
+        MESOSPHERE_PANIC("page tables");
+    }
+
+    void KPageTableImpl::SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const {
+        /* We want to downgrade the pages by one step. */
+        if (context->is_contiguous) {
+            /* We want to downgrade a contiguous mapping to a non-contiguous mapping. */
+            pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)));
+
+            auto * const first = pte;
+            const KPhysicalAddress block = this->GetBlock(first, context->level);
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * context->level)), PageTableEntry(first->GetEntryTemplateForSeparateContiguous(i)), PageTableEntry::SeparateContiguousTag{});
+            }
+
+            context->is_contiguous = false;
+
+            context->level_entries[context->level] = pte + (this->GetLevelIndex(address, context->level) & (BlocksPerContiguousBlock - 1));
+        } else {
+            /* We want to downgrade a block into a table. */
+            auto * const first = context->level_entries[context->level];
+            const KPhysicalAddress block = this->GetBlock(first, context->level);
+            for (size_t i = 0; i < BlocksPerTable; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * (context->level - 1))), PageTableEntry(first->GetEntryTemplateForSeparate(i)), PageTableEntry::SoftwareReservedBit_None, true, context->level == EntryLevel_L3);
+            }
+
+            context->is_contiguous = true;
+            context->level         = static_cast<EntryLevel>(util::ToUnderlying(context->level) - 1);
+
+            /* Wait for pending stores to complete. */
+            cpu::DataSynchronizationBarrierInnerShareableStore();
+
+            /* Update the block entry to be a table entry. */
+            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(KVirtualAddress(first)), m_is_kernel, true, BlocksPerTable);
+
+            context->level_entries[context->level] = pte + this->GetLevelIndex(address, context->level);
+        }
+
+        entry->sw_reserved_bits = 0;
+        entry->attr             = 0;
+        entry->phys_addr        = this->GetBlock(context->level_entries[context->level], context->level) + this->GetOffset(address, context->level);
+        entry->block_size       = static_cast<size_t>(1) << (PageBits + LevelBits * context->level + 4 * context->is_contiguous);
     }
 
     void KPageTableImpl::Dump(uintptr_t start, size_t size) const {
