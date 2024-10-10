@@ -924,7 +924,6 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(m_main_thread_stack_size == 0);
 
         /* Ensure that we're allocating a valid stack. */
-        stack_size = util::AlignUp(stack_size, PageSize);
         R_UNLESS(stack_size + m_code_size <= m_max_process_memory, svc::ResultOutOfMemory());
         R_UNLESS(stack_size + m_code_size >= m_code_size,          svc::ResultOutOfMemory());
 
