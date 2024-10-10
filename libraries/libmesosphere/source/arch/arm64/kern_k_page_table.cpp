@@ -678,13 +678,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Perform what coalescing we can. */
-        this->MergePages(orig_virt_addr, page_list);
-        if (num_pages > 1) {
-            this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
-        }
-
-        /* Wait for pending stores to complete. */
-        cpu::DataSynchronizationBarrierInnerShareableStore();
+        this->MergePages(orig_virt_addr, num_pages, page_list);
 
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
@@ -776,207 +770,20 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_ASSERT(mapped_pages == num_pages);
 
         /* Perform what coalescing we can. */
-        this->MergePages(orig_virt_addr, page_list);
-        if (num_pages > 1) {
-            this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
-        }
-
-        /* Wait for pending stores to complete. */
-        cpu::DataSynchronizationBarrierInnerShareableStore();
+        this->MergePages(orig_virt_addr, num_pages, page_list);
 
         /* We succeeded! We want to persist the reference to the pages. */
         spg.CancelClose();
         R_SUCCEED();
     }
 
-    bool KPageTable::MergePages(KProcessAddress virt_addr, PageLinkedList *page_list) {
-        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-
-        auto &impl = this->GetImpl();
-        bool merged = false;
-
-        /* If there's no L1 table, don't bother. */
-        L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr);
-        if (!l1_entry->IsTable()) {
-            /* Ensure the table is not corrupted. */
-            MESOSPHERE_ABORT_UNLESS(l1_entry->IsBlock() || l1_entry->IsEmpty());
-            return merged;
-        }
-
-        /* Examine and try to merge the L2 table. */
-        L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, virt_addr);
-        if (l2_entry->IsTable()) {
-            /* We have an L3 entry. */
-            L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);
-            if (!l3_entry->IsBlock()) {
-                return merged;
-            }
-
-            /* If it's not contiguous, try to make it so. */
-            if (!l3_entry->IsContiguous()) {
-                virt_addr = util::AlignDown(GetInteger(virt_addr), L3ContiguousBlockSize);
-                const KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L3ContiguousBlockSize);
-                const u64 entry_template = l3_entry->GetEntryTemplateForMerge();
-
-                /* Validate that we can merge. */
-                for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                    const L3PageTableEntry *check_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i);
-                    if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3BlockSize * i) | PageTableEntry::Type_L3Block)) {
-                        return merged;
-                    }
-                    if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
-                        return merged;
-                    }
-                    if ((i < (L3ContiguousBlockSize / L3BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
-                        return merged;
-                    }
-                }
-
-                /* Determine the new software reserved bits. */
-                const L3PageTableEntry *head_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * 0);
-                const L3PageTableEntry *tail_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * ((L3ContiguousBlockSize / L3BlockSize) - 1));
-                auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
-
-                /* Merge! */
-                for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                    *impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + L3BlockSize * i, PageTableEntry(entry_template), sw_reserved_bits, true);
-                    sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-                }
-
-                /* Note that we updated. */
-                this->NoteUpdated();
-                merged = true;
-            }
-
-            /* We might be able to upgrade a contiguous set of L3 entries into an L2 block. */
-            virt_addr = util::AlignDown(GetInteger(virt_addr), L2BlockSize);
-            KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L2BlockSize);
-            const u64 entry_template = l3_entry->GetEntryTemplateForMerge();
-
-            /* Validate that we can merge. */
-            for (size_t i = 0; i < L2BlockSize / L3ContiguousBlockSize; i++) {
-                const L3PageTableEntry *check_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * i);
-                if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L3Block)) {
-                    return merged;
-                }
-                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
-                    return merged;
-                }
-                if ((i < (L2BlockSize / L3ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
-                    return merged;
-                }
-            }
-
-            /* Determine the new software reserved bits. */
-            const L3PageTableEntry *head_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * 0);
-            const L3PageTableEntry *tail_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * ((L2BlockSize / L3ContiguousBlockSize) - 1));
-            auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
-
-            /* Merge! */
-            *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
-
-            /* Note that we updated. */
-            this->NoteUpdated();
-            merged = true;
-
-            /* Free the L3 table. */
-            KVirtualAddress l3_table = util::AlignDown(reinterpret_cast<uintptr_t>(l3_entry), PageSize);
-            if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
-                this->GetPageTableManager().Close(l3_table, L2BlockSize / L3BlockSize);
-                ClearPageTable(l3_table);
-                this->FreePageTable(page_list, l3_table);
-            }
-        }
-
-        /* If the l2 entry is not a block or we can't make it contiguous, we're done. */
-        if (!l2_entry->IsBlock()) {
-            return merged;
-        }
-
-        /* If it's not contiguous, try to make it so. */
-        if (!l2_entry->IsContiguous()) {
-            virt_addr = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
-            KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
-            const u64 entry_template = l2_entry->GetEntryTemplateForMerge();
-
-            /* Validate that we can merge. */
-            for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                const L2PageTableEntry *check_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i);
-                if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2BlockSize * i) | PageTableEntry::Type_L2Block)) {
-                    return merged;
-                }
-                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
-                    return merged;
-                }
-                if ((i < (L2ContiguousBlockSize / L2BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
-                    return merged;
-                }
-            }
-
-            /* Determine the new software reserved bits. */
-            const L2PageTableEntry *head_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * 0);
-            const L2PageTableEntry *tail_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * ((L2ContiguousBlockSize / L2BlockSize) - 1));
-            auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
-
-            /* Merge! */
-            for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                *impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + L2BlockSize * i, PageTableEntry(entry_template), sw_reserved_bits, true);
-                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-            }
-
-            /* Note that we updated. */
-            this->NoteUpdated();
-            merged = true;
-        }
-
-        /* We might be able to upgrade a contiguous set of L2 entries into an L1 block. */
-        virt_addr = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
-        KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L1BlockSize);
-        const u64 entry_template = l2_entry->GetEntryTemplateForMerge();
-
-        /* Validate that we can merge. */
-        for (size_t i = 0; i < L1BlockSize / L2ContiguousBlockSize; i++) {
-            const L2PageTableEntry *check_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * i);
-            if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L2Block)) {
-                return merged;
-            }
-            if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
-                return merged;
-            }
-            if ((i < (L1ContiguousBlockSize / L2ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
-                return merged;
-            }
-        }
-
-        /* Determine the new software reserved bits. */
-        const L2PageTableEntry *head_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * 0);
-        const L2PageTableEntry *tail_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * ((L1BlockSize / L2ContiguousBlockSize) - 1));
-        auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
-
-        /* Merge! */
-        *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
-
-        /* Note that we updated. */
-        this->NoteUpdated();
-        merged = true;
-
-        /* Free the L2 table. */
-        KVirtualAddress l2_table = util::AlignDown(reinterpret_cast<uintptr_t>(l2_entry), PageSize);
-        if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
-            this->GetPageTableManager().Close(l2_table, L1BlockSize / L2BlockSize);
-            ClearPageTable(l2_table);
-            this->FreePageTable(page_list, l2_table);
-        }
-
-        return merged;
-    }
-
-    void KPageTable::MergePages(TraversalContext *context, PageLinkedList *page_list) {
+    bool KPageTable::MergePages(TraversalContext *context, PageLinkedList *page_list) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         auto &impl = this->GetImpl();
 
         /* Iteratively merge, until we can't. */
+        bool merged = false;
         while (true) {
             /* Try to merge. */
             KVirtualAddress freed_table = Null<KVirtualAddress>;
@@ -988,9 +795,16 @@ namespace ams::kern::arch::arm64 {
             this->NoteUpdated();
 
             /* Free the page. */
-            ClearPageTable(freed_table);
-            this->FreePageTable(page_list, freed_table);
+            if (freed_table != Null<KVirtualAddress>) {
+                ClearPageTable(freed_table);
+                this->FreePageTable(page_list, freed_table);
+            }
+
+            /* We performed at least one merge. */
+            merged = true;
         }
+
+        return merged;
     }
 
     void KPageTable::MergePages(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list) {
@@ -1231,7 +1045,7 @@ namespace ams::kern::arch::arm64 {
                     if (util::IsAligned(GetInteger(cur_virt_addr) + next_entry.block_size, larger_align)) {
                         const uintptr_t aligned_start = util::AlignDown(GetInteger(cur_virt_addr), larger_align);
                         if (orig_virt_addr <= aligned_start && aligned_start + larger_align - 1 < GetInteger(orig_virt_addr) + (num_pages * PageSize) - 1) {
-                            merge = this->MergePages(cur_virt_addr, page_list);
+                            merge = this->MergePages(std::addressof(context), page_list);
                         } else {
                             merge = false;
                         }
