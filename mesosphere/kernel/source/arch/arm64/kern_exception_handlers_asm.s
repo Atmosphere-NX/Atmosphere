@@ -444,6 +444,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     ERET_WITH_SPECULATION_BARRIER
 
 2:  /* The exception wasn't an triggered by copying memory from userspace. */
+    /* NOTE: The following is, as of 19.0.0, now ifdef'd out on NX non-debug kernel. */
     ldr     x0, [sp, #8]
     ldr     x1, [sp, #16]
 
