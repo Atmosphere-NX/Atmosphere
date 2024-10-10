@@ -293,6 +293,10 @@ namespace ams::kern::arch::arm64 {
 
             switch (operation) {
                 case OperationType_Map:
+                    /* If mapping io or uncached pages, ensure that there is no pending reschedule. */
+                    if (properties.io || properties.uncached) {
+                        KScopedSchedulerLock sl;
+                    }
                     R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
                     R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, false, page_list, reuse_ll));
@@ -317,6 +321,10 @@ namespace ams::kern::arch::arm64 {
         switch (operation) {
             case OperationType_MapGroup:
             case OperationType_MapFirstGroup:
+                /* If mapping io or uncached pages, ensure that there is no pending reschedule. */
+                if (properties.io || properties.uncached) {
+                    KScopedSchedulerLock sl;
+                }
                 R_RETURN(this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, operation != OperationType_MapFirstGroup, page_list, reuse_ll));
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
@@ -900,6 +908,9 @@ namespace ams::kern::arch::arm64 {
     Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, bool flush_mapping, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
+        /* Ensure there are no pending data writes. */
+        cpu::DataSynchronizationBarrier();
+
         /* Separate pages before we change permissions. */
         R_TRY(this->SeparatePages(virt_addr, num_pages, page_list, reuse_ll));
 
@@ -990,59 +1001,15 @@ namespace ams::kern::arch::arm64 {
                 }
 
                 /* Apply the entry template. */
-                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_virt_addr);
-                switch (next_entry.block_size) {
-                    case L1BlockSize:
-                        {
-                            /* Write the updated entry. */
-                            *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr, entry_template, sw_reserved_bits, false);
-                        }
-                        break;
-                    case L2ContiguousBlockSize:
-                    case L2BlockSize:
-                        {
-                            /* Get the number of L2 blocks. */
-                            const size_t num_l2_blocks = next_entry.block_size / L2BlockSize;
+                {
+                    const size_t num_entries = context.is_contiguous ? BlocksPerContiguousBlock : 1;
 
-                            /* Get the L2 entry. */
-                            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-                            MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
-                            const KVirtualAddress l2_virt = GetPageTableVirtualAddress(l2_phys);
-
-                            /* Write the updated entry. */
-                            const bool contig = next_entry.block_size == L2ContiguousBlockSize;
-                            for (size_t i = 0; i < num_l2_blocks; i++) {
-                                *impl.GetL2EntryFromTable(l2_virt, cur_virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L2BlockSize * i, entry_template, sw_reserved_bits, contig);
-                                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-                            }
-                        }
-                        break;
-                    case L3ContiguousBlockSize:
-                    case L3BlockSize:
-                        {
-                            /* Get the number of L3 blocks. */
-                            const size_t num_l3_blocks = next_entry.block_size / L3BlockSize;
-
-                            /* Get the L2 entry. */
-                            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-                            MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
-                            const KVirtualAddress l2_virt = GetPageTableVirtualAddress(l2_phys);
-                            L2PageTableEntry *l2_entry = impl.GetL2EntryFromTable(l2_virt, cur_virt_addr);
-
-                            /* Get the L3 entry. */
-                            KPhysicalAddress l3_phys = Null<KPhysicalAddress>;
-                            MESOSPHERE_ABORT_UNLESS(l2_entry->GetTable(l3_phys));
-                            const KVirtualAddress l3_virt = GetPageTableVirtualAddress(l3_phys);
-
-                            /* Write the updated entry. */
-                            const bool contig = next_entry.block_size == L3ContiguousBlockSize;
-                            for (size_t i = 0; i < num_l3_blocks; i++) {
-                                *impl.GetL3EntryFromTable(l3_virt, cur_virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L3BlockSize * i, entry_template, sw_reserved_bits, contig);
-                                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-                            }
-                        }
-                        break;
-                    MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                    auto * const pte = context.level_entries[context.level];
+                    const size_t block_size = impl.GetBlockSize(context.level);
+                    for (size_t i = 0; i < num_entries; ++i) {
+                        pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + i * block_size, entry_template, sw_reserved_bits, context.is_contiguous, context.level == KPageTableImpl::EntryLevel_L3);
+                        sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
+                    }
                 }
 
                 /* If our option asks us to, try to merge mappings. */
