@@ -21,6 +21,15 @@ namespace ams::kern::arch::arm64 {
     void UserModeThreadStarter();
     void SupervisorModeThreadStarter();
 
+    void InvokeSupervisorModeThread(uintptr_t argument, uintptr_t entrypoint) {
+        /* Invoke the function. */
+        using SupervisorModeFunctionType = void (*)(uintptr_t);
+        reinterpret_cast<SupervisorModeFunctionType>(entrypoint)(argument);
+
+        /* Wait forever. */
+        AMS_INFINITE_LOOP();
+    }
+
     void OnThreadStart() {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
         /* Send KDebug event for this thread's creation. */
