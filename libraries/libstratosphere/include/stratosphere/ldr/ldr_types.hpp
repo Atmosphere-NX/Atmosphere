@@ -226,6 +226,7 @@ namespace ams::ldr {
             MetaFlag_OptimizeMemoryAllocation       = (1 << 4),
             MetaFlag_DisableDeviceAddressSpaceMerge = (1 << 5),
             MetaFlag_EnableAliasRegionExtraSize     = (1 << 6),
+            MetaFlag_PreventCodeReads               = (1 << 7),
         };
 
         enum AddressSpaceType {

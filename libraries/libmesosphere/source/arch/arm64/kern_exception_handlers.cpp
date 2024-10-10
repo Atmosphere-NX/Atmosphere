@@ -100,6 +100,8 @@ namespace ams::kern::arch::arm64 {
                 u32 insn_value = 0;
                 if (UserspaceAccess::CopyMemoryFromUser(std::addressof(insn_value), reinterpret_cast<u32 *>(context->pc), sizeof(insn_value))) {
                     insn = insn_value;
+                } else if (KTargetSystem::IsDebugMode() && (context->pc & 3) == 0 && UserspaceAccess::CopyMemoryFromUserSize32BitWithSupervisorAccess(std::addressof(insn_value), reinterpret_cast<u32 *>(context->pc))) {
+                    insn = insn_value;
                 } else {
                     insn = 0;
                 }
@@ -112,33 +114,6 @@ namespace ams::kern::arch::arm64 {
             bool should_process_user_exception = KTargetSystem::IsUserExceptionHandlersEnabled();
 
             const u64 ec = (esr >> 26) & 0x3F;
-            switch (ec) {
-                case EsrEc_Unknown:
-                case EsrEc_IllegalExecution:
-                case EsrEc_Svc32:
-                case EsrEc_Svc64:
-                case EsrEc_PcAlignmentFault:
-                case EsrEc_SpAlignmentFault:
-                case EsrEc_SErrorInterrupt:
-                case EsrEc_BreakPointEl0:
-                case EsrEc_SoftwareStepEl0:
-                case EsrEc_WatchPointEl0:
-                case EsrEc_BkptInstruction:
-                case EsrEc_BrkInstruction:
-                    break;
-                default:
-                    {
-                        /* If the fault address's state is KMemoryState_Code and the user can't read the address, force processing exception. */
-                        KMemoryInfo info;
-                        ams::svc::PageInfo pi;
-                        if (R_SUCCEEDED(cur_process.GetPageTable().QueryInfo(std::addressof(info), std::addressof(pi), far))) {
-                            if (info.GetState() == KMemoryState_Code && ((info.GetPermission() & KMemoryPermission_UserRead) != KMemoryPermission_UserRead)) {
-                                should_process_user_exception = true;
-                            }
-                        }
-                    }
-                    break;
-            }
 
             /* In the event that we return from this exception, we want SPSR.SS set so that we advance an instruction if single-stepping. */
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
