@@ -78,8 +78,6 @@ namespace ams::kern::arch::arm64 {
             static constexpr ALWAYS_INLINE uintptr_t GetL2Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 2), LevelBits>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetL3Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 3), LevelBits>(GetInteger(addr)); }
 
-            static constexpr ALWAYS_INLINE uintptr_t GetLevelIndex(KProcessAddress addr, EntryLevel level) { return GetBits(GetInteger(addr), PageBits + LevelBits * level, LevelBits); }
-
             static constexpr ALWAYS_INLINE uintptr_t GetL1Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 1)>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetL2Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 2)>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetL3Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 3)>(GetInteger(addr)); }
@@ -93,10 +91,8 @@ namespace ams::kern::arch::arm64 {
             static ALWAYS_INLINE KVirtualAddress GetPageTableVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);
             }
-
-            //ALWAYS_INLINE bool ExtractL1Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L1PageTableEntry *l1_entry, KProcessAddress virt_addr) const;
-            //ALWAYS_INLINE bool ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const;
-            //ALWAYS_INLINE bool ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const;
+        public:
+            static constexpr ALWAYS_INLINE uintptr_t GetLevelIndex(KProcessAddress addr, EntryLevel level) { return GetBits(GetInteger(addr), PageBits + LevelBits * level, LevelBits); }
         private:
             L1PageTableEntry *m_table;
             bool m_is_kernel;
@@ -133,6 +129,8 @@ namespace ams::kern::arch::arm64 {
             constexpr explicit KPageTableImpl(util::ConstantInitializeTag) : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
 
             explicit KPageTableImpl() { /* ... */ }
+
+            size_t GetNumL1Entries() const { return m_num_entries; }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);

@@ -330,194 +330,11 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KPageTable::MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
-        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L1BlockSize));
-        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L1BlockSize));
-
-        /* Allocation is never needed for L1 block mapping. */
-        MESOSPHERE_UNUSED(page_list, reuse_ll);
-
-        auto &impl = this->GetImpl();
-
-        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
-
-        /* Iterate, mapping each block. */
-        for (size_t i = 0; i < num_pages; i += L1BlockSize / PageSize) {
-            /* Map the block. */
-            *impl.GetL1Entry(virt_addr) = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
-            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-            virt_addr += L1BlockSize;
-            phys_addr += L1BlockSize;
-        }
-
-        R_SUCCEED();
-    }
-
-    Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
-        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L2BlockSize));
-        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L2BlockSize));
-
-        auto &impl = this->GetImpl();
-        KVirtualAddress l2_virt = Null<KVirtualAddress>;
-        int l2_open_count = 0;
-
-        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
-
-        /* Iterate, mapping each block. */
-        for (size_t i = 0; i < num_pages; i += L2BlockSize / PageSize) {
-            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-
-            /* If we have no L2 table, we should get or allocate one. */
-            if (l2_virt == Null<KVirtualAddress>) {
-                if (L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr); !l1_entry->GetTable(l2_phys)) {
-                    /* Allocate table. */
-                    l2_virt = AllocatePageTable(page_list, reuse_ll);
-                    R_UNLESS(l2_virt != Null<KVirtualAddress>, svc::ResultOutOfResource());
-
-                    /* Set the entry. */
-                    l2_phys = GetPageTablePhysicalAddress(l2_virt);
-                    PteDataMemoryBarrier();
-                    *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
-                } else {
-                    l2_virt = GetPageTableVirtualAddress(l2_phys);
-                }
-            }
-            MESOSPHERE_ASSERT(l2_virt != Null<KVirtualAddress>);
-
-            /* Map the block. */
-            *impl.GetL2EntryFromTable(l2_virt, virt_addr) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
-            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-            l2_open_count++;
-            virt_addr += L2BlockSize;
-            phys_addr += L2BlockSize;
-
-            /* Account for hitting end of table. */
-            if (util::IsAligned(GetInteger(virt_addr), L1BlockSize)) {
-                if (this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
-                    this->GetPageTableManager().Open(l2_virt, l2_open_count);
-                }
-                l2_virt = Null<KVirtualAddress>;
-                l2_open_count = 0;
-            }
-        }
-
-        /* Perform any remaining opens. */
-        if (l2_open_count > 0 && this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
-            this->GetPageTableManager().Open(l2_virt, l2_open_count);
-        }
-
-        R_SUCCEED();
-    }
-
-    Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
-        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
-
-        auto &impl = this->GetImpl();
-        KVirtualAddress l2_virt = Null<KVirtualAddress>;
-        KVirtualAddress l3_virt = Null<KVirtualAddress>;
-        int l2_open_count = 0;
-        int l3_open_count = 0;
-
-        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
-
-        /* Iterate, mapping each page. */
-        for (size_t i = 0; i < num_pages; i++) {
-            KPhysicalAddress l3_phys = Null<KPhysicalAddress>;
-            bool l2_allocated = false;
-
-            /* If we have no L3 table, we should get or allocate one. */
-            if (l3_virt == Null<KVirtualAddress>) {
-                KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-
-                /* If we have no L2 table, we should get or allocate one. */
-                if (l2_virt == Null<KVirtualAddress>) {
-                    if (L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr); !l1_entry->GetTable(l2_phys)) {
-                        /* Allocate table. */
-                        l2_virt = AllocatePageTable(page_list, reuse_ll);
-                        R_UNLESS(l2_virt != Null<KVirtualAddress>, svc::ResultOutOfResource());
-
-                        /* Set the entry. */
-                        l2_phys = GetPageTablePhysicalAddress(l2_virt);
-                        PteDataMemoryBarrier();
-                        *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
-                        l2_allocated = true;
-                    } else {
-                        l2_virt = GetPageTableVirtualAddress(l2_phys);
-                    }
-                }
-                MESOSPHERE_ASSERT(l2_virt != Null<KVirtualAddress>);
-
-                if (L2PageTableEntry *l2_entry = impl.GetL2EntryFromTable(l2_virt, virt_addr); !l2_entry->GetTable(l3_phys)) {
-                        /* Allocate table. */
-                        l3_virt = AllocatePageTable(page_list, reuse_ll);
-                        if (l3_virt == Null<KVirtualAddress>) {
-                            /* Cleanup the L2 entry. */
-                            if (l2_allocated) {
-                                *impl.GetL1Entry(virt_addr) = InvalidL1PageTableEntry;
-                                this->NoteUpdated();
-                                FreePageTable(page_list, l2_virt);
-                            } else if (this->GetPageTableManager().IsInPageTableHeap(l2_virt) && l2_open_count > 0) {
-                                this->GetPageTableManager().Open(l2_virt, l2_open_count);
-                            }
-
-                            R_THROW(svc::ResultOutOfResource());
-                        }
-
-                        /* Set the entry. */
-                        l3_phys = GetPageTablePhysicalAddress(l3_virt);
-                        PteDataMemoryBarrier();
-                        *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, l3_phys, this->IsKernel(), true);
-                        l2_open_count++;
-                } else {
-                    l3_virt = GetPageTableVirtualAddress(l3_phys);
-                }
-            }
-            MESOSPHERE_ASSERT(l3_virt != Null<KVirtualAddress>);
-
-            /* Map the page. */
-            *impl.GetL3EntryFromTable(l3_virt, virt_addr) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
-            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
-            l3_open_count++;
-            virt_addr += PageSize;
-            phys_addr += PageSize;
-
-            /* Account for hitting end of table. */
-            if (util::IsAligned(GetInteger(virt_addr), L2BlockSize)) {
-                if (this->GetPageTableManager().IsInPageTableHeap(l3_virt)) {
-                    this->GetPageTableManager().Open(l3_virt, l3_open_count);
-                }
-                l3_virt = Null<KVirtualAddress>;
-                l3_open_count = 0;
-
-                if (util::IsAligned(GetInteger(virt_addr), L1BlockSize)) {
-                    if (this->GetPageTableManager().IsInPageTableHeap(l2_virt) && l2_open_count > 0) {
-                        this->GetPageTableManager().Open(l2_virt, l2_open_count);
-                    }
-                    l2_virt = Null<KVirtualAddress>;
-                    l2_open_count = 0;
-                }
-            }
-        }
-
-        /* Perform any remaining opens. */
-        if (l2_open_count > 0 && this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
-            this->GetPageTableManager().Open(l2_virt, l2_open_count);
-        }
-        if (l3_open_count > 0 && this->GetPageTableManager().IsInPageTableHeap(l3_virt)) {
-            this->GetPageTableManager().Open(l3_virt, l3_open_count);
-        }
-
-        R_SUCCEED();
-    }
-
     Result KPageTable::Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Ensure there are no pending data writes. */
+        cpu::DataSynchronizationBarrier();
 
         auto &impl = this->GetImpl();
 
@@ -630,6 +447,126 @@ namespace ams::kern::arch::arm64 {
         }
 
         R_SUCCEED();
+    }
+
+    Result KPageTable::Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        /* MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize)); */
+        /* MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize)); */
+
+        auto &impl = this->GetImpl();
+        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   entry;
+        bool valid = impl.BeginTraversal(std::addressof(entry), std::addressof(context), virt_addr);
+
+        /* Iterate, mapping each page. */
+        while (num_pages > 0) {
+            /* If we're mapping at the address, there must be nothing there. */
+            MESOSPHERE_ABORT_UNLESS(!valid);
+
+            /* If we fail, clean up any empty tables we may have allocated. */
+            ON_RESULT_FAILURE {
+                /* Remove entries for and free any tables. */
+                while (context.level < KPageTableImpl::EntryLevel_L1) {
+                    /* If the higher-level table has entries, we don't need to do a free. */
+                    if (context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
+                        break;
+                    }
+
+                    /* If there's no table, we also don't need to do a free. */
+                    const KVirtualAddress table = KVirtualAddress(util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level]), PageSize));
+                    if (table == Null<KVirtualAddress>) {
+                        break;
+                    }
+
+                    /* Clear the entry for the table we're removing. */
+                    *context.level_entries[context.level + 1] = InvalidPageTableEntry;
+
+                    /* Remove the entry for the table one level higher. */
+                    if (context.level + 1 < KPageTableImpl::EntryLevel_L1) {
+                        context.level_entries[context.level + 2]->RemoveTableEntries(1);
+                    }
+
+                    /* Advance our level. */
+                    context.level = static_cast<KPageTableImpl::EntryLevel>(util::ToUnderlying(context.level) + 1);
+
+                    /* Note that we performed an update and free the table. */
+                    this->NoteUpdated();
+                    this->FreePageTable(page_list, table);
+                }
+            };
+
+            /* If necessary, allocate page tables for the entry. */
+            size_t mapping_size = entry.block_size;
+            while (mapping_size > page_size) {
+                /* Allocate the table. */
+                const auto table = AllocatePageTable(page_list, reuse_ll);
+                R_UNLESS(table != Null<KVirtualAddress>, svc::ResultOutOfResource());
+
+                /* Wait for pending stores to complete. */
+                cpu::DataSynchronizationBarrierInnerShareableStore();
+
+                /* Update the block entry to be a table entry. */
+                *context.level_entries[context.level] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(table), this->IsKernel(), true, 0);
+
+                /* Add the entry to the table containing this one. */
+                if (context.level != KPageTableImpl::EntryLevel_L1) {
+                    context.level_entries[context.level + 1]->AddTableEntries(1);
+                }
+
+                /* Decrease our level. */
+                context.level = static_cast<KPageTableImpl::EntryLevel>(util::ToUnderlying(context.level) - 1);
+
+                /* Add our new entry to the context. */
+                context.level_entries[context.level] = GetPointer<PageTableEntry>(table) + impl.GetLevelIndex(virt_addr, context.level);
+
+                /* Update our mapping size. */
+                mapping_size = impl.GetBlockSize(context.level);
+            }
+
+            /* Determine how many pages we can set up on this iteration. */
+            const size_t block_size = impl.GetBlockSize(context.level);
+            const size_t max_ptes  = (context.level == KPageTableImpl::EntryLevel_L1 ? impl.GetNumL1Entries() : BlocksPerTable) - ((reinterpret_cast<uintptr_t>(context.level_entries[context.level]) / sizeof(PageTableEntry)) & (BlocksPerTable - 1));
+            const size_t max_pages = (block_size * max_ptes) / PageSize;
+
+            const size_t cur_pages = std::min(max_pages, num_pages);
+
+            /* Determine the new base attribute. */
+            const bool contig = page_size >= BlocksPerContiguousBlock * mapping_size;
+
+            const size_t num_ptes = cur_pages / (block_size / PageSize);
+            auto *pte = context.level_entries[context.level];
+            for (size_t i = 0; i < num_ptes; ++i) {
+                *pte = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + i * block_size, entry_template, sw_reserved_bits, contig, context.level == KPageTableImpl::EntryLevel_L3);
+                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
+            }
+
+            /* Add the entries to the table containing this one. */
+            if (context.level != KPageTableImpl::EntryLevel_L1) {
+                context.level_entries[context.level + 1]->AddTableEntries(num_ptes);
+            }
+
+            /* Update our context. */
+            context.is_contiguous = contig;
+            context.level_entries[context.level] = pte + num_ptes - (contig ? BlocksPerContiguousBlock : 1);
+
+            /* Advance our addresses. */
+            phys_addr += cur_pages * PageSize;
+            virt_addr += cur_pages * PageSize;
+            num_pages -= cur_pages;
+
+            /* Continue traversal. */
+            valid = impl.ContinueTraversal(std::addressof(entry), std::addressof(context));
+        }
+
+        /* We mapped, so wait for our writes to take. */
+        cpu::DataSynchronizationBarrierInnerShareableStore();
+
+        R_SUCCEED();
+
     }
 
     Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {

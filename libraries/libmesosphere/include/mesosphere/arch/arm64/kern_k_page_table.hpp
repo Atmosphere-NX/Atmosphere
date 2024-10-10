@@ -201,32 +201,9 @@ namespace ams::kern::arch::arm64 {
             NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
             Result Finalize();
         private:
-            Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
-            Result MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
-            Result MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
-
             Result Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll);
 
-            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
-                switch (page_size) {
-                    case L1BlockSize:
-                        R_RETURN(this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
-                    case L2ContiguousBlockSize:
-                        entry_template.SetContiguous(true);
-                        [[fallthrough]];
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-                    case L2TegraSmmuBlockSize:
-#endif
-                    case L2BlockSize:
-                        R_RETURN(this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
-                    case L3ContiguousBlockSize:
-                        entry_template.SetContiguous(true);
-                        [[fallthrough]];
-                    case L3BlockSize:
-                        R_RETURN(this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
-                    MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-                }
-            }
+            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll);
 
             Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
             Result MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, bool not_first, PageLinkedList *page_list, bool reuse_ll);
