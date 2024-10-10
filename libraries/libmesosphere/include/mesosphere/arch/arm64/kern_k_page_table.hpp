@@ -233,8 +233,11 @@ namespace ams::kern::arch::arm64 {
 
             bool MergePages(KProcessAddress virt_addr, PageLinkedList *page_list);
 
-            ALWAYS_INLINE Result SeparatePagesImpl(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
-            Result SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
+            void MergePages(TraversalContext *context, PageLinkedList *page_list);
+            void MergePages(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list);
+
+            Result SeparatePagesImpl(TraversalEntry *entry, TraversalContext *context, KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
+            Result SeparatePages(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool reuse_ll);
 
             Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, bool flush_mapping, PageLinkedList *page_list, bool reuse_ll);
 
