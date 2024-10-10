@@ -3834,15 +3834,15 @@ namespace ams::kern {
         switch (dst_state) {
             case KMemoryState_Ipc:
                 test_state     = KMemoryState_FlagCanUseIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_IpcLocked));
                 break;
             case KMemoryState_NonSecureIpc:
                 test_state     = KMemoryState_FlagCanUseNonSecureIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_IpcLocked));
                 break;
             case KMemoryState_NonDeviceIpc:
                 test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
-                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_All & (~(KMemoryAttribute_PermissionLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_IpcLocked));
                 break;
             default:
                 R_THROW(svc::ResultInvalidCombination());
