@@ -170,9 +170,17 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE bool IsReadOnly()                       const { return this->GetBits(7, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsUserAccessible()                 const { return this->GetBits(6, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsNonSecure()                      const { return this->GetBits(5, 1) != 0; }
+
+            constexpr ALWAYS_INLINE u64 GetTestTableMask()                  const { return (m_attributes & ExtensionFlag_TestTableMask); }
+
             constexpr ALWAYS_INLINE bool IsBlock()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
+            constexpr ALWAYS_INLINE bool IsPage()                           const { return (m_attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_TestTableMask; }
             constexpr ALWAYS_INLINE bool IsTable()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == 2; }
             constexpr ALWAYS_INLINE bool IsEmpty()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == 0; }
+
+            constexpr ALWAYS_INLINE KPhysicalAddress GetTable()             const { return this->SelectBits(12, 36); }
+
+            constexpr ALWAYS_INLINE bool IsMappedTable()                    const { return this->GetBits(0, 2) == 3; }
             constexpr ALWAYS_INLINE bool IsMapped()                         const { return this->GetBits(0, 1) != 0; }
 
             constexpr ALWAYS_INLINE decltype(auto) SetUserExecuteNever(bool en)       { this->SetBit(54, en); return *this; }
@@ -196,10 +204,13 @@ namespace ams::kern::arch::arm64 {
                 return (m_attributes & BaseMaskForMerge) == attr;
             }
 
-            constexpr ALWAYS_INLINE u64 GetRawAttributesUnsafeForSwap() const {
+            constexpr ALWAYS_INLINE u64 GetRawAttributesUnsafe() const {
                 return m_attributes;
             }
 
+            constexpr ALWAYS_INLINE u64 GetRawAttributesUnsafeForSwap() const {
+                return m_attributes;
+            }
         protected:
             constexpr ALWAYS_INLINE u64 GetRawAttributes() const {
                 return m_attributes;
