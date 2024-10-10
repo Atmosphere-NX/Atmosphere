@@ -22,9 +22,11 @@ namespace ams::fssystem {
 
         constexpr inline const size_t KeySize = crypto::AesDecryptor128::KeySize;
 
-        constexpr inline const size_t AcidSignatureKeyGenerationMax = 1;
+        constexpr inline const size_t NxAcidSignatureKeyGenerationMax = 1;
 
-        constexpr inline const u8 AcidSignatureKeyModulusDev[AcidSignatureKeyGenerationMax + 1][AcidSignatureKeyModulusSize] = {
+        constexpr inline const size_t NxAcidSignatureKeyModulusSize = NcaCryptoConfiguration::Rsa2048KeyModulusSize;
+
+        constexpr inline const u8 NxAcidSignatureKeyModulusDev[NxAcidSignatureKeyGenerationMax + 1][NxAcidSignatureKeyModulusSize] = {
             {
                 0xD6, 0x34, 0xA5, 0x78, 0x6C, 0x68, 0xCE, 0x5A, 0xC2, 0x37, 0x17, 0xF3, 0x82, 0x45, 0xC6, 0x89,
                 0xE1, 0x2D, 0x06, 0x67, 0xBF, 0xB4, 0x06, 0x19, 0x55, 0x6B, 0x27, 0x66, 0x0C, 0xA4, 0xB5, 0x87,
@@ -63,7 +65,7 @@ namespace ams::fssystem {
             }
         };
 
-        constexpr inline const u8 AcidSignatureKeyModulusProd[AcidSignatureKeyGenerationMax + 1][AcidSignatureKeyModulusSize] = {
+        constexpr inline const u8 NxAcidSignatureKeyModulusProd[NxAcidSignatureKeyGenerationMax + 1][NxAcidSignatureKeyModulusSize] = {
             {
                 0xDD, 0xC8, 0xDD, 0xF2, 0x4E, 0x6D, 0xF0, 0xCA, 0x9E, 0xC7, 0x5D, 0xC7, 0x7B, 0xAD, 0xFE, 0x7D,
                 0x23, 0x89, 0x69, 0xB6, 0xF2, 0x06, 0xA2, 0x02, 0x88, 0xE1, 0x55, 0x91, 0xAB, 0xCB, 0x4D, 0x50,
@@ -102,7 +104,7 @@ namespace ams::fssystem {
             }
         };
 
-        static_assert(sizeof(AcidSignatureKeyModulusProd) == sizeof(AcidSignatureKeyModulusDev));
+        static_assert(sizeof(NxAcidSignatureKeyModulusProd) == sizeof(NxAcidSignatureKeyModulusDev));
 
         constexpr inline const u8 AcidSignatureKeyPublicExponent[] = {
             0x01, 0x00, 0x01
@@ -295,10 +297,36 @@ namespace ams::fssystem {
         }
     }
 
-    const u8 *GetAcidSignatureKeyModulus(bool prod, size_t key_generation) {
-        AMS_ASSERT(key_generation <= AcidSignatureKeyGenerationMax);
-        const size_t used_keygen = (key_generation % (AcidSignatureKeyGenerationMax + 1));
-        return prod ? AcidSignatureKeyModulusProd[used_keygen] : AcidSignatureKeyModulusDev[used_keygen];
+    bool IsValidSignatureKeyGeneration(ldr::PlatformId platform, size_t key_generation) {
+        switch (platform) {
+            case ldr::PlatformId_Nx:
+                return key_generation <= NxAcidSignatureKeyGenerationMax;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    const u8 *GetAcidSignatureKeyModulus(ldr::PlatformId platform, bool prod, size_t key_generation, bool unk_unused) {
+        AMS_ASSERT(IsValidSignatureKeyGeneration(platform, key_generation));
+        AMS_UNUSED(unk_unused);
+
+        switch (platform) {
+            case ldr::PlatformId_Nx:
+                {
+                    const size_t used_keygen = (key_generation % (NxAcidSignatureKeyGenerationMax + 1));
+                    return prod ? NxAcidSignatureKeyModulusProd[used_keygen] : NxAcidSignatureKeyModulusDev[used_keygen];
+                }
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    size_t GetAcidSignatureKeyModulusSize(ldr::PlatformId platform, bool unk_unused) {
+        AMS_UNUSED(unk_unused);
+
+        switch (platform) {
+            case ldr::PlatformId_Nx:
+                return NxAcidSignatureKeyModulusSize;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
     }
 
     const u8 *GetAcidSignatureKeyPublicExponent() {

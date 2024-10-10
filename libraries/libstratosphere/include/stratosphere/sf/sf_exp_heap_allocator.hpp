@@ -57,7 +57,7 @@ namespace ams::sf {
 
         struct Globals {
             ExpHeapAllocator allocator;
-            typename std::aligned_storage<Size == 0 ? 1 : Size>::type buffer;
+            alignas(0x10) std::byte buffer[Size == 0 ? 1 : Size];
         };
 
         static constinit inline Globals _globals = {};

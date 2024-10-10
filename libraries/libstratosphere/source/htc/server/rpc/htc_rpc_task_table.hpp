@@ -41,7 +41,7 @@ namespace ams::htc::server::rpc {
             #else
             static constexpr size_t MaxTaskSize = 0xE1D8;
             #endif
-            using TaskStorage = typename std::aligned_storage<MaxTaskSize, alignof(void *)>::type;
+            struct TaskStorage { alignas(alignof(void *)) std::byte _storage[MaxTaskSize]; };
         private:
             bool m_valid[MaxRpcCount]{};
             TaskStorage m_storages[MaxRpcCount]{};

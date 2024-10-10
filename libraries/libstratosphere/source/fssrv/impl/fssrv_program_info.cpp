@@ -20,7 +20,7 @@ namespace ams::fssrv::impl {
 
     namespace {
 
-        constinit std::aligned_storage<0x80>::type g_static_buffer_for_program_info_for_initial_process = {};
+        alignas(0x10) constinit std::byte g_static_buffer_for_program_info_for_initial_process[0x80] = {};
 
         template<typename T>
         class StaticAllocatorForProgramInfoForInitialProcess : public std::allocator<T> {

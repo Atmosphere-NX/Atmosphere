@@ -461,7 +461,7 @@ namespace ams::svc::codegen::impl {
                 if constexpr (CodeGenKind == CodeGenerationKind::SvcInvocationToKernelProcedure) {
                     return Operation::ImplType::template CanGenerateCodeForSvcInvocationToKernelProcedure<Operation>(allocator);
                 } else {
-                    static_assert(CodeGenKind != CodeGenKind, "Invalid CodeGenerationKind");
+                    static_assert(false, "Invalid CodeGenerationKind");
                 }
             }
 
@@ -474,7 +474,7 @@ namespace ams::svc::codegen::impl {
                 } else if constexpr (CodeGenKind == CodeGenerationKind::KernelProcedureToSvcInvocation) {
                     Operation::ImplType::template GenerateCodeForKernelProcedureToSvcInvocation<Operation>(mcg);
                 } else {
-                    static_assert(CodeGenKind != CodeGenKind, "Invalid CodeGenerationKind");
+                    static_assert(false, "Invalid CodeGenerationKind");
                 }
             }
     };

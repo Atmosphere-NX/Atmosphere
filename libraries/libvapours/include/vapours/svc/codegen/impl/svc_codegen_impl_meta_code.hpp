@@ -127,7 +127,7 @@ namespace ams::svc::codegen::impl {
         META_CODE_OPERATION_KIND_GENERATE_CODE(Pack)
         META_CODE_OPERATION_KIND_GENERATE_CODE(Unpack)
         META_CODE_OPERATION_KIND_GENERATE_CODE(LoadStackAddress)
-        else { static_assert(Kind != Kind, "Unknown MetaOperationKind"); }
+        else { static_assert(false, "Unknown MetaOperationKind"); }
         #undef META_CODE_OPERATION_KIND_GENERATE_CODE
     }
 

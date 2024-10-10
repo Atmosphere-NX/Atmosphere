@@ -13,31 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
 namespace ams::ldr {
 
-    struct Meta {
-        Npdm *npdm;
-        Acid *acid;
-        Aci *aci;
-
-        void *acid_fac;
-        void *acid_sac;
-        void *acid_kac;
-
-        void *aci_fah;
-        void *aci_sac;
-        void *aci_kac;
-
-        void *modulus;
-        bool check_verification_data;
+    /* TODO: Is this really a FS type? What namespace does this actually live inside? */
+    enum PlatformId {
+        PlatformId_Nx = 0,
     };
-
-    /* Meta API. */
-    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform, bool unk_unused);
-    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform);
-    void   InvalidateMetaCache();
 
 }

@@ -34,8 +34,8 @@ namespace ams::ldr {
             bool m_mounted_sd_or_code;
             bool m_mounted_code;
         public:
-            ScopedCodeMount(const ncm::ProgramLocation &loc);
-            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, PlatformId platform);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, PlatformId platform);
             ~ScopedCodeMount();
 
             Result GetResult() const {
@@ -59,21 +59,27 @@ namespace ams::ldr {
                 return m_base_code_verification_data;
             }
         private:
-            Result Initialize(const ncm::ProgramLocation &loc);
+            Result Initialize(const ncm::ProgramLocation &loc, PlatformId platform);
             void EnsureOverrideStatus(const ncm::ProgramLocation &loc);
     };
 
-    constexpr inline const char * const AtmosphereCodeMountName = "ams-code";
-    constexpr inline const char * const SdOrCodeMountName       = "sd-code";
-    constexpr inline const char * const CodeMountName           = "code";
+    constexpr inline const char * const AtmosphereCodeMountName   = "ams-code";
+    constexpr inline const char * const AtmosphereCompatMountName = "ams-cmpt";
+    constexpr inline const char * const SdOrCodeMountName         = "sd-code";
+    constexpr inline const char * const CodeMountName             = "code";
+    constexpr inline const char * const CompatMountName           = "cmpt";
 
     #define ENCODE_ATMOSPHERE_CODE_PATH(relative) "ams-code:" relative
+    #define ENCODE_ATMOSPHERE_CMPT_PATH(relative) "ams-cmpt:" relative
     #define ENCODE_SD_OR_CODE_PATH(relative) "sd-code:" relative
     #define ENCODE_CODE_PATH(relative) "code:" relative
+    #define ENCODE_CMPT_PATH(relative) "cmpt:" relative
 
     /* Redirection API. */
-    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc);
+    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, PlatformId platform);
     Result RedirectProgramPath(const char *path, size_t size, const ncm::ProgramLocation &loc);
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc);
+
+    fs::ContentAttributes GetPlatformContentAttributes(PlatformId platform);
 
 }
