@@ -245,7 +245,6 @@ namespace ams::kern::arch::arm64 {
 
             static ALWAYS_INLINE void ClearPageTable(KVirtualAddress table) {
                 cpu::ClearPageToZero(GetVoidPointer(table));
-                cpu::DataSynchronizationBarrierInnerShareable();
             }
 
             ALWAYS_INLINE void OnTableUpdated() const {
