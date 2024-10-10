@@ -224,7 +224,7 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE decltype(auto) RemoveTableEntries(size_t num) { return this->SetTableNumEntries(this->GetTableNumEntries() - num); }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForMerge() const {
-                constexpr u64 BaseMask = (0xFFF0000000000FFFul & ~static_cast<u64>((0x1ul << 52) | ExtensionFlag_TestTableMask | ExtensionFlag_DisableMergeHead | ExtensionFlag_DisableMergeHeadAndBody | ExtensionFlag_DisableMergeTail));
+                constexpr u64 BaseMask = (0xFFFF000000000FFFul & ~static_cast<u64>((0x1ul << 52) | ExtensionFlag_TestTableMask | ExtensionFlag_DisableMergeHead | ExtensionFlag_DisableMergeHeadAndBody | ExtensionFlag_DisableMergeTail));
                 return m_attributes & BaseMask;
             }
 

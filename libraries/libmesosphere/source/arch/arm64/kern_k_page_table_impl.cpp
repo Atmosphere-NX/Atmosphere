@@ -167,9 +167,78 @@ namespace ams::kern::arch::arm64 {
     }
 
     bool KPageTableImpl::MergePages(KVirtualAddress *out, TraversalContext *context) {
-        /* TODO */
-        MESOSPHERE_UNUSED(out, context);
-        MESOSPHERE_PANIC("page tables");
+        /* We want to upgrade the pages by one step. */
+        if (context->is_contiguous) {
+            /* We can't merge an L1 table. */
+            if (context->level == EntryLevel_L1) {
+                return false;
+            }
+
+            /* We want to upgrade a contiguous mapping in a table to a block. */
+            PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerTable * sizeof(PageTableEntry)));
+            const KPhysicalAddress phys_addr = GetBlock(pte, context->level);
+
+            /* First, check that all entries are valid for us to merge. */
+            const u64 entry_template = pte->GetEntryTemplateForMerge();
+            for (size_t i = 0; i < BlocksPerTable; ++i) {
+                if (!pte[i].IsForMerge(entry_template | GetInteger(phys_addr + (i << (PageBits + LevelBits * context->level))) | PageTableEntry::ContigType_Contiguous | pte->GetTestTableMask())) {
+                    return false;
+                }
+                if (i > 0 && pte[i].IsHeadOrHeadAndBodyMergeDisabled()) {
+                    return false;
+                }
+                if (i < BlocksPerTable - 1 && pte[i].IsTailMergeDisabled()) {
+                    return false;
+                }
+            }
+
+            /* The entries are valid for us to merge, so merge them. */
+            const auto *head_pte = pte;
+            const auto *tail_pte = pte + BlocksPerTable - 1;
+            const auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_pte->IsHeadMergeDisabled(), head_pte->IsHeadAndBodyMergeDisabled(), tail_pte->IsTailMergeDisabled());
+
+            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false, false);
+
+            /* Update our context. */
+            context->is_contiguous = false;
+            context->level         = static_cast<EntryLevel>(util::ToUnderlying(context->level) + 1);
+
+            /* Set the output to the table we just freed. */
+            *out = KVirtualAddress(pte);
+        } else {
+            /* We want to upgrade a non-contiguous mapping to a contiguous mapping. */
+            PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)));
+            const KPhysicalAddress phys_addr = GetBlock(pte, context->level);
+
+            /* First, check that all entries are valid for us to merge. */
+            const u64 entry_template = pte->GetEntryTemplateForMerge();
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                if (!pte[i].IsForMerge(entry_template | GetInteger(phys_addr + (i << (PageBits + LevelBits * context->level))) | pte->GetTestTableMask())) {
+                    return false;
+                }
+                if (i > 0 && pte[i].IsHeadOrHeadAndBodyMergeDisabled()) {
+                    return false;
+                }
+                if (i < BlocksPerContiguousBlock - 1 && pte[i].IsTailMergeDisabled()) {
+                    return false;
+                }
+            }
+
+            /* The entries are valid for us to merge, so merge them. */
+            const auto *head_pte = pte;
+            const auto *tail_pte = pte + BlocksPerContiguousBlock - 1;
+            const auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_pte->IsHeadMergeDisabled(), head_pte->IsHeadAndBodyMergeDisabled(), tail_pte->IsTailMergeDisabled());
+
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + (i << (PageBits + LevelBits * context->level)), PageTableEntry(entry_template), sw_reserved_bits, true, context->level == EntryLevel_L3);
+            }
+
+            /* Update our context. */
+            context->level_entries[context->level] = pte;
+            context->is_contiguous = true;
+        }
+
+        return true;
     }
 
     void KPageTableImpl::SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const {
