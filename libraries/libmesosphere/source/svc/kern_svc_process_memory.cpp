@@ -27,6 +27,7 @@ namespace ams::kern::svc {
                 case ams::svc::MemoryPermission_Read:
                 case ams::svc::MemoryPermission_ReadWrite:
                 case ams::svc::MemoryPermission_ReadExecute:
+                case ams::svc::MemoryPermission_Execute:
                     return true;
                 default:
                     return false;

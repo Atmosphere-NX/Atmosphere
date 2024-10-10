@@ -555,7 +555,7 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
+        Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size, bool prevent_code_reads) {
             /* Map and read data from file. */
             {
                 /* Map the process memory. */
@@ -594,7 +594,7 @@ namespace ams::ldr {
             const size_t ro_size   = util::AlignUp(nso_header->ro_size, os::MemoryPageSize);
             const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
             if (text_size) {
-                R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, os::MemoryPermission_ReadExecute));
+                R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, prevent_code_reads ? os::MemoryPermission_ExecuteOnly : os::MemoryPermission_ReadExecute));
             }
             if (ro_size) {
                 R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->ro_dst_offset,   ro_size,   os::MemoryPermission_ReadOnly));
@@ -606,7 +606,7 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
+        Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument, bool prevent_code_reads) {
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
@@ -614,7 +614,7 @@ namespace ams::ldr {
                     R_TRY(fs::OpenFile(std::addressof(file), GetNsoPath(i), fs::OpenMode_Read));
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-                    R_TRY(LoadAutoLoadModule(process_info->process_handle, file, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
+                    R_TRY(LoadAutoLoadModule(process_info->process_handle, file, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i], prevent_code_reads));
                 }
             }
 
@@ -658,7 +658,7 @@ namespace ams::ldr {
             ON_RESULT_FAILURE { svc::CloseHandle(process_handle); };
 
             /* Load all auto load modules. */
-            R_RETURN(LoadAutoLoadModules(out, nso_headers, has_nso, argument));
+            R_RETURN(LoadAutoLoadModules(out, nso_headers, has_nso, argument, (meta->npdm->flags & ldr::Npdm::MetaFlag_PreventCodeReads) != 0));
         }
 
     }

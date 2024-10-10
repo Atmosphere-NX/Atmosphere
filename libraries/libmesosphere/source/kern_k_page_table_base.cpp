@@ -1787,6 +1787,11 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
+        /* If we're creating an executable mapping, take and immediately release the scheduler lock. This will force a reschedule. */
+        if (is_x) {
+            KScopedSchedulerLock sl;
+        }
+
         /* Perform mapping operation. */
         const KPageProperties properties = { new_perm, false, false, DisableMergeAttribute_None };
         const auto operation = was_x ? OperationType_ChangePermissionsAndRefreshAndFlush : OperationType_ChangePermissions;

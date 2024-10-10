@@ -109,6 +109,9 @@ namespace ams::kern::arch::arm64 {
             KPageTableManager &GetPageTableManager() const { return *m_manager; }
         private:
             constexpr PageTableEntry GetEntryTemplate(const KPageProperties properties) const {
+                /* Check that the property is not kernel execute. */
+                MESOSPHERE_ABORT_UNLESS((properties.perm & KMemoryPermission_KernelExecute) == 0);
+
                 /* Set basic attributes. */
                 PageTableEntry entry{PageTableEntry::ExtensionFlag_Valid};
                 entry.SetPrivilegedExecuteNever(true);
@@ -122,22 +125,24 @@ namespace ams::kern::arch::arm64 {
                 /* Set page attribute. */
                 if (properties.io) {
                     MESOSPHERE_ABORT_UNLESS(!properties.uncached);
-                    MESOSPHERE_ABORT_UNLESS((properties.perm & (KMemoryPermission_KernelExecute | KMemoryPermission_UserExecute)) == 0);
+                    MESOSPHERE_ABORT_UNLESS((properties.perm & KMemoryPermission_UserExecute) == 0);
 
                     entry.SetPageAttribute(PageTableEntry::PageAttribute_Device_nGnRnE)
                          .SetUserExecuteNever(true);
                 } else if (properties.uncached) {
-                    MESOSPHERE_ABORT_UNLESS((properties.perm & (KMemoryPermission_KernelExecute | KMemoryPermission_UserExecute)) == 0);
+                    MESOSPHERE_ABORT_UNLESS((properties.perm & KMemoryPermission_UserExecute) == 0);
 
-                    entry.SetPageAttribute(PageTableEntry::PageAttribute_NormalMemoryNotCacheable);
+                    entry.SetPageAttribute(PageTableEntry::PageAttribute_NormalMemoryNotCacheable)
+                         .SetUserExecuteNever(true);
                 } else {
                     entry.SetPageAttribute(PageTableEntry::PageAttribute_NormalMemory);
-                }
 
-                /* Set user execute never bit. */
-                if (properties.perm != KMemoryPermission_UserReadExecute) {
-                    MESOSPHERE_ABORT_UNLESS((properties.perm & (KMemoryPermission_KernelExecute | KMemoryPermission_UserExecute)) == 0);
-                    entry.SetUserExecuteNever(true);
+                    if ((properties.perm & KMemoryPermission_UserExecute) != 0) {
+                        /* Check that the permission is either r--/--x or r--/r-x. */
+                        MESOSPHERE_ABORT_UNLESS((properties.perm & ~ams::svc::MemoryPermission_Read) == (KMemoryPermission_KernelRead | KMemoryPermission_UserExecute));
+                    } else {
+                        entry.SetUserExecuteNever(true);
+                    }
                 }
 
                 /* Set AP[1] based on perm. */
