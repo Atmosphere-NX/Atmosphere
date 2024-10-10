@@ -425,6 +425,20 @@ namespace ams::ldr {
         }
     }
 
+    void FixDebugCapabilityForHbl(util::BitPack32 *kac, size_t count) {
+        for (size_t i = 0; i < count; ++i) {
+            const auto cap = kac[i];
+            switch (GetCapabilityId(cap)) {
+                case CapabilityId::DebugFlags:
+                    /* 19.0.0+ disallows more than one flag set; we are always DebugMode for kernel, so ForceDebug is the most powerful/flexible flag to set. */
+                    kac[i] = CapabilityDebugFlags::Encode(false, false, true);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     void PreProcessCapability(util::BitPack32 *kac, size_t count) {
         for (size_t i = 0; i < count; ++i) {
             const auto cap = kac[i];
