@@ -261,7 +261,7 @@ namespace ams::kern::arch::arm64 {
             auto * const first = context->level_entries[context->level];
             const KPhysicalAddress block = this->GetBlock(first, context->level);
             for (size_t i = 0; i < BlocksPerTable; ++i) {
-                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * (context->level - 1))), PageTableEntry(first->GetEntryTemplateForSeparate(i)), PageTableEntry::SoftwareReservedBit_None, true, context->level == EntryLevel_L3);
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * (context->level - 1))), PageTableEntry(first->GetEntryTemplateForSeparate(i)), PageTableEntry::SoftwareReservedBit_None, true, context->level - 1 == EntryLevel_L3);
             }
 
             context->is_contiguous = true;
@@ -271,7 +271,8 @@ namespace ams::kern::arch::arm64 {
             cpu::DataSynchronizationBarrierInnerShareableStore();
 
             /* Update the block entry to be a table entry. */
-            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(KVirtualAddress(first)), m_is_kernel, true, BlocksPerTable);
+            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(KVirtualAddress(pte)), m_is_kernel, true, BlocksPerTable);
+
 
             context->level_entries[context->level] = pte + this->GetLevelIndex(address, context->level);
         }

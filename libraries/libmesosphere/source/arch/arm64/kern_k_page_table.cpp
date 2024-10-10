@@ -540,7 +540,7 @@ namespace ams::kern::arch::arm64 {
             const size_t num_ptes = cur_pages / (block_size / PageSize);
             auto *pte = context.level_entries[context.level];
             for (size_t i = 0; i < num_ptes; ++i) {
-                *pte = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + i * block_size, entry_template, sw_reserved_bits, contig, context.level == KPageTableImpl::EntryLevel_L3);
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + i * block_size, entry_template, sw_reserved_bits, contig, context.level == KPageTableImpl::EntryLevel_L3);
                 sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
             }
 
@@ -803,7 +803,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Separate. */
-            impl.SeparatePages(entry, context, virt_addr, nullptr);
+            impl.SeparatePages(entry, context, virt_addr, GetPointer<PageTableEntry>(table));
             this->NoteUpdated();
         }
 
