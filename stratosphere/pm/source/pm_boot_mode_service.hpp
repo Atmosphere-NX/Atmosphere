@@ -22,6 +22,8 @@ namespace ams::pm {
         public:
             void GetBootMode(sf::Out<u32> out);
             void SetMaintenanceBoot();
+            void GetUnknown(sf::Out<u32> out);
+            Result SetUnknown(u32 val);
     };
     static_assert(pm::impl::IsIBootModeInterface<BootModeService>);
 
