@@ -176,7 +176,7 @@ namespace ams::kern::arch::arm64 {
 
             /* We want to upgrade a contiguous mapping in a table to a block. */
             PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerTable * sizeof(PageTableEntry)));
-            const KPhysicalAddress phys_addr = GetBlock(pte, context->level);
+            const KPhysicalAddress phys_addr = util::AlignDown(GetBlock(pte, context->level), GetBlockSize(static_cast<EntryLevel>(context->level + 1), false));
 
             /* First, check that all entries are valid for us to merge. */
             const u64 entry_template = pte->GetEntryTemplateForMerge();
@@ -208,7 +208,7 @@ namespace ams::kern::arch::arm64 {
         } else {
             /* We want to upgrade a non-contiguous mapping to a contiguous mapping. */
             PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)));
-            const KPhysicalAddress phys_addr = GetBlock(pte, context->level);
+            const KPhysicalAddress phys_addr = util::AlignDown(GetBlock(pte, context->level), GetBlockSize(context->level, true));
 
             /* First, check that all entries are valid for us to merge. */
             const u64 entry_template = pte->GetEntryTemplateForMerge();

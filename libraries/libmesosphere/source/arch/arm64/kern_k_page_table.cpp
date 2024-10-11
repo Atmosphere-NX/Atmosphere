@@ -226,6 +226,9 @@ namespace ams::kern::arch::arm64 {
                             /* If we cleared a table, we need to note that we updated and free the table. */
                             if (freeing_table) {
                                 KVirtualAddress table = KVirtualAddress(util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level - 1]), PageSize));
+                                if (table == Null<KVirtualAddress>) {
+                                    break;
+                                }
                                 ClearPageTable(table);
                                 this->GetPageTableManager().Free(table);
                             }
@@ -243,11 +246,14 @@ namespace ams::kern::arch::arm64 {
                             context.level = static_cast<KPageTableImpl::EntryLevel>(util::ToUnderlying(context.level) + 1);
                             freeing_table = true;
                         }
-
                     }
 
                     /* Continue the traversal. */
                     cur_valid = impl.ContinueTraversal(std::addressof(entry), std::addressof(context));
+
+                    if (entry.block_size == 0) {
+                        break;
+                    }
                 }
 
                 /* Free any remaining pages. */
@@ -265,7 +271,6 @@ namespace ams::kern::arch::arm64 {
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
         }
-
 
         R_SUCCEED();
     }
@@ -379,6 +384,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Unmap the block. */
             bool freeing_table = false;
+            bool need_recalculate_virt_addr = false;
             while (true) {
                 /* Clear the entries. */
                 const size_t num_to_clear = (!freeing_table && context.is_contiguous) ? BlocksPerContiguousBlock : 1;
@@ -394,8 +400,14 @@ namespace ams::kern::arch::arm64 {
 
                 /* If we cleared a table, we need to note that we updated and free the table. */
                 if (freeing_table) {
+                    /* If there's no table, we also don't need to do a free. */
+                    const KVirtualAddress table = KVirtualAddress(util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level - 1]), PageSize));
+                    if (table == Null<KVirtualAddress>) {
+                        break;
+                    }
                     this->NoteUpdated();
-                    this->FreePageTable(page_list, KVirtualAddress(util::AlignDown(reinterpret_cast<uintptr_t>(context.level_entries[context.level - 1]), PageSize)));
+                    this->FreePageTable(page_list, table);
+                    need_recalculate_virt_addr = true;
                 }
 
                 /* Advance; we're no longer contiguous. */
@@ -424,9 +436,10 @@ namespace ams::kern::arch::arm64 {
 
             /* Advance. */
             size_t freed_size = next_entry.block_size;
-            if (freeing_table) {
+            if (need_recalculate_virt_addr) {
                 /* We advanced more than by the block, so we need to calculate the actual advanced size. */
-                const KProcessAddress new_virt_addr = util::AlignUp(GetInteger(virt_addr), impl.GetBlockSize(context.level, context.is_contiguous));
+                const size_t block_size = impl.GetBlockSize(context.level, context.is_contiguous);
+                const KProcessAddress new_virt_addr = util::AlignDown(GetInteger(impl.GetAddressForContext(std::addressof(context))) + block_size, block_size);
                 MESOSPHERE_ABORT_UNLESS(new_virt_addr >= virt_addr + next_entry.block_size);
 
                 freed_size = std::min<size_t>(new_virt_addr - virt_addr, remaining_pages * PageSize);
@@ -451,8 +464,8 @@ namespace ams::kern::arch::arm64 {
 
     Result KPageTable::Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-        /* MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize)); */
-        /* MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize)); */
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
 
         auto &impl = this->GetImpl();
         u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
