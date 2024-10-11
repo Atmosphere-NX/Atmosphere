@@ -146,6 +146,14 @@ namespace ams::kern::arch::arm64 {
 
             static bool MergePages(KVirtualAddress *out, TraversalContext *context);
             void SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const;
+
+            KProcessAddress GetAddressForContext(const TraversalContext *context) const {
+                KProcessAddress addr = m_is_kernel ? static_cast<uintptr_t>(-GetBlockSize(EntryLevel_L1)) * m_num_entries : 0;
+                for (u32 level = context->level; level <= EntryLevel_L1; ++level) {
+                    addr += ((reinterpret_cast<uintptr_t>(context->level_entries[level]) / sizeof(PageTableEntry)) & (BlocksPerTable - 1)) << (PageBits + LevelBits * level);
+                }
+                return addr;
+            }
     };
 
 }
