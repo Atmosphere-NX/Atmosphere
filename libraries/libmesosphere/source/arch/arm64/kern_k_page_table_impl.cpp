@@ -27,6 +27,60 @@ namespace ams::kern::arch::arm64 {
         m_table       = static_cast<L1PageTableEntry *>(tb);
         m_is_kernel   = false;
         m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+
+        /* Page table entries created by KInitialPageTable need to be iterated and modified to ensure KPageTable invariants. */
+        PageTableEntry *level_entries[EntryLevel_Count] = { nullptr, nullptr, m_table };
+        u32 level = EntryLevel_L1;
+        while (level != EntryLevel_L1 || (level_entries[EntryLevel_L1] - static_cast<PageTableEntry *>(m_table)) < m_num_entries) {
+            /* Get the pte; it must never have the validity-extension flag set. */
+            auto *pte = level_entries[level];
+            MESOSPHERE_ASSERT((pte->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_Valid) == 0);
+
+            /* While we're a table, recurse, fixing up the reference counts. */
+            while (level > EntryLevel_L3 && pte->IsMappedTable()) {
+                /* Count how many references are in the table. */
+                auto *table = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(pte->GetTable()));
+
+                size_t ref_count = 0;
+                for (size_t i = 0; i < BlocksPerTable; ++i) {
+                    if (table[i].IsMapped()) {
+                        ++ref_count;
+                    }
+                }
+
+                /* Set the reference count for our new page, adding one additional uncloseable reference; kernel pages must never be unreferenced. */
+                pte->SetTableReferenceCount(ref_count + 1).SetValid();
+
+                /* Iterate downwards. */
+                level -= 1;
+                level_entries[level] = table;
+                pte = level_entries[level];
+
+                /* Check that the entry isn't unexpected. */
+                MESOSPHERE_ASSERT((pte->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_Valid) == 0);
+            }
+
+            /* We're dealing with some block. If it's mapped, set it valid. */
+            if (pte->IsMapped()) {
+                pte->SetValid();
+            }
+
+            /* Advance. */
+            while (true) {
+                /* Advance to the next entry at the current level. */
+                ++level_entries[level];
+                if (!util::IsAligned(reinterpret_cast<uintptr_t>(++level_entries[level]), PageSize)) {
+                    break;
+                }
+
+                /* If we're at the end of a level, advance upwards. */
+                level_entries[level++] = nullptr;
+
+                if (level > EntryLevel_L1) {
+                    return;
+                }
+            }
+        }
     }
 
     L1PageTableEntry *KPageTableImpl::Finalize() {

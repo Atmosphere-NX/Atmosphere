@@ -128,8 +128,8 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Construct a table. */
-            constexpr explicit ALWAYS_INLINE PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool is_kernel, bool pxn, size_t num_blocks)
-                : PageTableEntry(((is_kernel ? 0x3ul : 0) << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | (num_blocks << 2) | 0x3)
+            constexpr explicit ALWAYS_INLINE PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool is_kernel, bool pxn, size_t ref_count)
+                : PageTableEntry(((is_kernel ? 0x3ul : 0) << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | (ref_count << 2) | 0x3)
             {
                 /* ... */
             }
@@ -203,6 +203,7 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE KPhysicalAddress GetTable()             const { return this->SelectBits(12, 36); }
 
+            constexpr ALWAYS_INLINE bool IsMappedBlock()                    const { return this->GetBits(0, 2) == 1; }
             constexpr ALWAYS_INLINE bool IsMappedTable()                    const { return this->GetBits(0, 2) == 3; }
             constexpr ALWAYS_INLINE bool IsMapped()                         const { return this->GetBits(0, 1) != 0; }
 
@@ -217,11 +218,13 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE decltype(auto) SetPageAttribute(PageAttribute a)  { this->SetBitsDirect(2, 3, a); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetMapped(bool m)                  { static_assert(static_cast<u64>(MappingFlag_Mapped == (1 << 0))); this->SetBit(0, m); return *this; }
 
-            constexpr ALWAYS_INLINE size_t GetTableNumEntries() const { return this->GetBits(2, 10); }
-            constexpr ALWAYS_INLINE decltype(auto) SetTableNumEntries(size_t num) { this->SetBits(2, 10, num); }
+            constexpr ALWAYS_INLINE size_t GetTableReferenceCount() const { return this->GetBits(2, 10); }
+            constexpr ALWAYS_INLINE decltype(auto) SetTableReferenceCount(size_t num) { this->SetBits(2, 10, num); return *this; }
 
-            constexpr ALWAYS_INLINE decltype(auto) AddTableEntries(size_t num) { return this->SetTableNumEntries(this->GetTableNumEntries() + num); }
-            constexpr ALWAYS_INLINE decltype(auto) RemoveTableEntries(size_t num) { return this->SetTableNumEntries(this->GetTableNumEntries() - num); }
+            constexpr ALWAYS_INLINE decltype(auto) OpenTableReferences(size_t num) { MESOSPHERE_ASSERT(this->GetTableReferenceCount() + num <= BlocksPerTable + 1); return this->SetTableReferenceCount(this->GetTableReferenceCount() + num); }
+            constexpr ALWAYS_INLINE decltype(auto) CloseTableReferences(size_t num) { MESOSPHERE_ASSERT(this->GetTableReferenceCount() >= num); return this->SetTableReferenceCount(this->GetTableReferenceCount() - num); }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetValid() { MESOSPHERE_ASSERT((m_attributes & ExtensionFlag_Valid) == 0); m_attributes |= ExtensionFlag_Valid; return *this; }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForMerge() const {
                 constexpr u64 BaseMask = (0xFFFF000000000FFFul & ~static_cast<u64>((0x1ul << 52) | ExtensionFlag_TestTableMask | ExtensionFlag_DisableMergeHead | ExtensionFlag_DisableMergeHeadAndBody | ExtensionFlag_DisableMergeTail));
@@ -301,7 +304,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr explicit ALWAYS_INLINE L1PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, u8 sw_reserved_bits, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionFlag_Valid)
+                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x1)
             {
                 /* ... */
             }
@@ -363,7 +366,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr explicit ALWAYS_INLINE L2PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, u8 sw_reserved_bits, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionFlag_Valid)
+                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x1)
             {
                 /* ... */
             }
@@ -428,12 +431,13 @@ namespace ams::kern::arch::arm64 {
             constexpr explicit ALWAYS_INLINE L3PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
 
             constexpr explicit ALWAYS_INLINE L3PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, u8 sw_reserved_bits, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | static_cast<u64>(ExtensionFlag_TestTableMask))
+                : PageTableEntry(attr, (static_cast<u64>(sw_reserved_bits) << 55) | (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
 
             constexpr ALWAYS_INLINE bool IsBlock() const { return (GetRawAttributes() & ExtensionFlag_TestTableMask) == ExtensionFlag_TestTableMask; }
+            constexpr ALWAYS_INLINE bool IsMappedBlock() const { return this->GetBits(0, 2) == 3; }
 
             constexpr ALWAYS_INLINE KPhysicalAddress GetBlock() const {
                 return this->SelectBits(12, 36);
