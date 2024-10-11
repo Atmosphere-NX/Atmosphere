@@ -220,7 +220,7 @@ namespace ams::kern::arch::arm64 {
 
                             /* Remove the entries from the previous table. */
                             if (context.level != KPageTableImpl::EntryLevel_L1) {
-                                context.level_entries[context.level + 1]->RemoveTableEntries(num_to_clear);
+                                context.level_entries[context.level + 1]->CloseTableReferences(num_to_clear);
                             }
 
                             /* If we cleared a table, we need to note that we updated and free the table. */
@@ -238,7 +238,7 @@ namespace ams::kern::arch::arm64 {
                             context.level_entries[context.level] = pte + num_to_clear - 1;
 
                             /* We may have removed the last entries in a table, in which case we can free and unmap the tables. */
-                            if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
+                            if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableReferenceCount() != 0) {
                                 break;
                             }
 
@@ -395,7 +395,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Remove the entries from the previous table. */
                 if (context.level != KPageTableImpl::EntryLevel_L1) {
-                    context.level_entries[context.level + 1]->RemoveTableEntries(num_to_clear);
+                    context.level_entries[context.level + 1]->CloseTableReferences(num_to_clear);
                 }
 
                 /* If we cleared a table, we need to note that we updated and free the table. */
@@ -415,7 +415,7 @@ namespace ams::kern::arch::arm64 {
                 context.level_entries[context.level] = pte + num_to_clear - 1;
 
                 /* We may have removed the last entries in a table, in which case we can free and unmap the tables. */
-                if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
+                if (context.level >= KPageTableImpl::EntryLevel_L1 || context.level_entries[context.level + 1]->GetTableReferenceCount() != 0) {
                     break;
                 }
 
@@ -485,7 +485,7 @@ namespace ams::kern::arch::arm64 {
                 /* Remove entries for and free any tables. */
                 while (context.level < KPageTableImpl::EntryLevel_L1) {
                     /* If the higher-level table has entries, we don't need to do a free. */
-                    if (context.level_entries[context.level + 1]->GetTableNumEntries() != 0) {
+                    if (context.level_entries[context.level + 1]->GetTableReferenceCount() != 0) {
                         break;
                     }
 
@@ -500,7 +500,7 @@ namespace ams::kern::arch::arm64 {
 
                     /* Remove the entry for the table one level higher. */
                     if (context.level + 1 < KPageTableImpl::EntryLevel_L1) {
-                        context.level_entries[context.level + 2]->RemoveTableEntries(1);
+                        context.level_entries[context.level + 2]->CloseTableReferences(1);
                     }
 
                     /* Advance our level. */
@@ -527,7 +527,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Add the entry to the table containing this one. */
                 if (context.level != KPageTableImpl::EntryLevel_L1) {
-                    context.level_entries[context.level + 1]->AddTableEntries(1);
+                    context.level_entries[context.level + 1]->OpenTableReferences(1);
                 }
 
                 /* Decrease our level. */
@@ -559,7 +559,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Add the entries to the table containing this one. */
             if (context.level != KPageTableImpl::EntryLevel_L1) {
-                context.level_entries[context.level + 1]->AddTableEntries(num_ptes);
+                context.level_entries[context.level + 1]->OpenTableReferences(num_ptes);
             }
 
             /* Update our context. */
