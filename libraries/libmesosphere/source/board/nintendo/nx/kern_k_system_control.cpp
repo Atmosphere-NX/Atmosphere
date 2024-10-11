@@ -623,13 +623,8 @@ namespace ams::kern::board::nintendo::nx {
                 for (size_t i = 0; i < RebootPayloadSize / sizeof(u32); ++i) {
                     GetPointer<volatile u32>(iram_address)[i] = GetPointer<volatile u32>(reboot_payload)[i];
                 }
-
-                /* Reboot. */
-                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToPayload);
-            } else {
-                /* If we don't have a payload, reboot to rcm. */
-                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToRcm);
             }
+            smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToFatalError);
         }
 
         if (g_call_smc_on_panic) {
