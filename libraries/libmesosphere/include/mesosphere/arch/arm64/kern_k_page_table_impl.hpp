@@ -37,10 +37,17 @@ namespace ams::kern::arch::arm64 {
                 constexpr bool IsTailMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadTail) != 0; }
             };
 
+            enum EntryLevel : u32 {
+                EntryLevel_L3    = 0,
+                EntryLevel_L2    = 1,
+                EntryLevel_L1    = 2,
+                EntryLevel_Count = 3,
+            };
+
             struct TraversalContext {
-                const L1PageTableEntry *l1_entry;
-                const L2PageTableEntry *l2_entry;
-                const L3PageTableEntry *l3_entry;
+                PageTableEntry *level_entries[EntryLevel_Count];
+                EntryLevel level;
+                bool is_contiguous;
             };
         private:
             static constexpr size_t PageBits  = util::CountTrailingZeros(PageSize);
@@ -53,9 +60,17 @@ namespace ams::kern::arch::arm64 {
                 return (value >> Offset) & ((1ul << Count) - 1);
             }
 
+            static constexpr ALWAYS_INLINE u64 GetBits(u64 value, size_t offset, size_t count) {
+                return (value >> offset) & ((1ul << count) - 1);
+            }
+
             template<size_t Offset, size_t Count>
-            constexpr ALWAYS_INLINE u64 SelectBits(u64 value) {
+            static constexpr ALWAYS_INLINE u64 SelectBits(u64 value) {
                 return value & (((1ul << Count) - 1) << Offset);
+            }
+
+            static constexpr ALWAYS_INLINE u64 SelectBits(u64 value, size_t offset, size_t count) {
+                return value & (((1ul << count) - 1) << offset);
             }
 
             static constexpr ALWAYS_INLINE uintptr_t GetL0Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 0), LevelBits>(GetInteger(addr)); }
@@ -70,13 +85,14 @@ namespace ams::kern::arch::arm64 {
             static constexpr ALWAYS_INLINE uintptr_t GetContiguousL2Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 2) + 4>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetContiguousL3Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 3) + 4>(GetInteger(addr)); }
 
+            static constexpr ALWAYS_INLINE uintptr_t GetBlock(const PageTableEntry *pte, EntryLevel level) { return SelectBits(pte->GetRawAttributesUnsafe(), PageBits + LevelBits * level, LevelBits * (NumLevels + 1 - level)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetOffset(KProcessAddress addr, EntryLevel level) { return GetBits(GetInteger(addr), 0, PageBits + LevelBits * level); }
+
             static ALWAYS_INLINE KVirtualAddress GetPageTableVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);
             }
-
-            ALWAYS_INLINE bool ExtractL1Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L1PageTableEntry *l1_entry, KProcessAddress virt_addr) const;
-            ALWAYS_INLINE bool ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const;
-            ALWAYS_INLINE bool ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const;
+        public:
+            static constexpr ALWAYS_INLINE uintptr_t GetLevelIndex(KProcessAddress addr, EntryLevel level) { return GetBits(GetInteger(addr), PageBits + LevelBits * level, LevelBits); }
         private:
             L1PageTableEntry *m_table;
             bool m_is_kernel;
@@ -105,10 +121,16 @@ namespace ams::kern::arch::arm64 {
             ALWAYS_INLINE L3PageTableEntry *GetL3Entry(const L2PageTableEntry *entry, KProcessAddress address) const {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
+
+            static constexpr size_t GetBlockSize(EntryLevel level, bool contiguous = false) {
+                return 1 << (PageBits + LevelBits * level + 4 * contiguous);
+            }
         public:
             constexpr explicit KPageTableImpl(util::ConstantInitializeTag) : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
 
             explicit KPageTableImpl() { /* ... */ }
+
+            size_t GetNumL1Entries() const { return m_num_entries; }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);
@@ -121,6 +143,17 @@ namespace ams::kern::arch::arm64 {
             bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const;
+
+            static bool MergePages(KVirtualAddress *out, TraversalContext *context);
+            void SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const;
+
+            KProcessAddress GetAddressForContext(const TraversalContext *context) const {
+                KProcessAddress addr = m_is_kernel ? static_cast<uintptr_t>(-GetBlockSize(EntryLevel_L1)) * m_num_entries : 0;
+                for (u32 level = context->level; level <= EntryLevel_L1; ++level) {
+                    addr += ((reinterpret_cast<uintptr_t>(context->level_entries[level]) / sizeof(PageTableEntry)) & (BlocksPerTable - 1)) << (PageBits + LevelBits * level);
+                }
+                return addr;
+            }
     };
 
 }

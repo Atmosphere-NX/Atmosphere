@@ -20,7 +20,7 @@ endif
 DEFINES	    := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) $(ATMOSPHERE_OPTIMIZATION_FLAG) -mgeneral-regs-only -ffixed-x18 -Wextra -Werror -fno-non-call-exceptions
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
-CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit -flto
+CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 
 SOURCES     += $(foreach v,$(call ALL_SOURCE_DIRS,../libvapours/source),$(if $(findstring ../libvapours/source/sdmmc,$v),,$v))

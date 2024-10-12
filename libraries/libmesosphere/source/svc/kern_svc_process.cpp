@@ -71,6 +71,9 @@ namespace ams::kern::svc {
         }
 
         Result GetProcessList(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
             /* Validate that the out count is valid. */
             R_UNLESS((0 <= max_out_count && max_out_count <= static_cast<int32_t>(std::numeric_limits<int32_t>::max() / sizeof(u64))), svc::ResultOutOfRange());
 
@@ -110,8 +113,8 @@ namespace ams::kern::svc {
                 case ams::svc::CreateProcessFlag_AddressSpace32Bit:
                 case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
                     {
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(32, KAddressSpaceInfo::Type_MapSmall);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(32, KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
@@ -120,8 +123,8 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(36, KAddressSpaceInfo::Type_MapSmall);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(36, KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
@@ -130,10 +133,10 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(39, KAddressSpaceInfo::Type_Map39Bit);
-                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Map39Bit);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
 
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Heap);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
                     }
                     break;
                 default:
@@ -293,7 +296,9 @@ namespace ams::kern::svc {
 
         Result StartProcess(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
             /* Validate stack size. */
-            R_UNLESS(main_thread_stack_size == static_cast<size_t>(main_thread_stack_size), svc::ResultOutOfMemory());
+            const uint64_t aligned_stack_size = util::AlignUp(main_thread_stack_size, Kernel::GetMemoryManager().GetMinimumAlignment(GetCurrentProcess().GetMemoryPool()));
+            R_UNLESS(aligned_stack_size >= main_thread_stack_size,                  svc::ResultOutOfMemory());
+            R_UNLESS(aligned_stack_size == static_cast<size_t>(aligned_stack_size), svc::ResultOutOfMemory());
 
             /* Get the target process. */
             KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
@@ -311,7 +316,7 @@ namespace ams::kern::svc {
             process->SetIdealCoreId(core_id);
 
             /* Run the process. */
-            R_RETURN(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
+            R_RETURN(process->Run(priority, static_cast<size_t>(aligned_stack_size)));
         }
 
         Result TerminateProcess(ams::svc::Handle process_handle) {

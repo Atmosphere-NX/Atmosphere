@@ -79,6 +79,12 @@ namespace ams::kern::arch::arm {
 
         /* Setup all interrupt lines. */
         SetupInterruptLines(core_id);
+
+        /* Clear pointers, if needed. */
+        if (core_id == 0) {
+            m_gicd = nullptr;
+            m_gicc = nullptr;
+        }
     }
 
     void KInterruptController::SaveCoreLocal(LocalState *state) const {

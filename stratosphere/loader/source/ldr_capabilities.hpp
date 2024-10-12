@@ -23,6 +23,8 @@ namespace ams::ldr {
     u16 MakeProgramInfoFlag(const util::BitPack32 *kac, size_t count);
     void UpdateProgramInfoFlag(u16 flags, util::BitPack32 *kac, size_t count);
 
+    void FixDebugCapabilityForHbl(util::BitPack32 *kac, size_t count);
+
     void PreProcessCapability(util::BitPack32 *kac, size_t count);
 
 }

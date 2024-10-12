@@ -18,10 +18,11 @@
 
 #include "ns_shim.h"
 
-#define AMS_NS_DOCUMENT_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                               \
-    AMS_SF_METHOD_INFO(C, H, 21, Result, GetApplicationContentPath,      (const sf::OutBuffer &out_path, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type), (out_path, out_attr, application_id, content_type))                     \
-    AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type),                                                                              (application_id, content_type))                                         \
-    AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                                                                  (out, application_id),                              hos::Version_6_0_0)
+#define AMS_NS_DOCUMENT_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                                                                          \
+    AMS_SF_METHOD_INFO(C, H, 21,   Result, GetApplicationContentPath,      (const sf::OutBuffer &out_path, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type),                                         (out_path, out_attr, application_id, content_type))                                      \
+    AMS_SF_METHOD_INFO(C, H, 23,   Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type),                                                                                                                      (application_id, content_type))                                                          \
+    AMS_SF_METHOD_INFO(C, H, 92,   Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                                                                                                          (out, application_id),                                              hos::Version_6_0_0)  \
+    AMS_SF_METHOD_INFO(C, H, 2524, Result, GetApplicationContentPath2,     (const sf::OutBuffer &out_path, sf::Out<ncm::ProgramId> out_program_id, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type), (out_path, out_program_id, out_attr, application_id, content_type), hos::Version_19_0_0)
 
 AMS_SF_DEFINE_INTERFACE(ams::mitm::ns::impl, IDocumentInterface, AMS_NS_DOCUMENT_MITM_INTERFACE_INFO, 0x0F9B1C00)
 
@@ -47,6 +48,7 @@ namespace ams::mitm::ns {
             Result GetApplicationContentPath(const sf::OutBuffer &out_path, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type);
             Result ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type);
             Result GetRunningApplicationProgramId(sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id);
+            Result GetApplicationContentPath2(const sf::OutBuffer &out_path, sf::Out<ncm::ProgramId> out_program_id, sf::Out<ams::fs::ContentAttributes> out_attr, ncm::ProgramId application_id, u8 content_type);
     };
     static_assert(impl::IsIDocumentInterface<NsDocumentService>);
 
