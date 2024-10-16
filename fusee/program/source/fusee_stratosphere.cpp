@@ -499,6 +499,10 @@ namespace ams::nxboot {
             0xE0, 0x03, 0x1F, 0x2A,
         };
 
+        constexpr const u8 NoNcaHeaderSignatureCheckPatch2[] = {
+            0x10, 0x00, 0x00, 0x14,
+        };
+
         void AddNoNcaHeaderSignatureCheckPatches(InitialProcessMeta *fs_meta, FsVersion fs_version) {
             switch (fs_version) {
                 case FsVersion_1_0_0:
@@ -705,6 +709,12 @@ namespace ams::nxboot {
                 case FsVersion_18_1_0_Exfat:
                     AddPatch(fs_meta, 0x0246F4, NoNcaHeaderSignatureCheckPatch0, sizeof(NoNcaHeaderSignatureCheckPatch0));
                     AddPatch(fs_meta, 0x0744BC, NoNcaHeaderSignatureCheckPatch1, sizeof(NoNcaHeaderSignatureCheckPatch1));
+                    break;
+                case FsVersion_19_0_0:
+                case FsVersion_19_0_0_Exfat:
+                    AddPatch(fs_meta, 0x021578, NoNcaHeaderSignatureCheckPatch0, sizeof(NoNcaHeaderSignatureCheckPatch0));
+                    AddPatch(fs_meta, 0x0746A0, NoNcaHeaderSignatureCheckPatch1, sizeof(NoNcaHeaderSignatureCheckPatch1));
+                    AddPatch(fs_meta, 0x074624, NoNcaHeaderSignatureCheckPatch2, sizeof(NoNcaHeaderSignatureCheckPatch1));
                     break;
                 default:
                     break;

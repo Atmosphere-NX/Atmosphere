@@ -200,7 +200,8 @@ namespace ams::kern {
         KMemoryBlockDisableMergeAttribute_DeviceLeft  = (1u << 1),
         KMemoryBlockDisableMergeAttribute_IpcLeft     = (1u << 2),
         KMemoryBlockDisableMergeAttribute_Locked      = (1u << 3),
-        KMemoryBlockDisableMergeAttribute_DeviceRight = (1u << 4),
+        /* ... */
+        KMemoryBlockDisableMergeAttribute_DeviceRight = (1u << 5),
 
         KMemoryBlockDisableMergeAttribute_AllLeft  = KMemoryBlockDisableMergeAttribute_Normal | KMemoryBlockDisableMergeAttribute_DeviceLeft | KMemoryBlockDisableMergeAttribute_IpcLeft | KMemoryBlockDisableMergeAttribute_Locked,
         KMemoryBlockDisableMergeAttribute_AllRight = KMemoryBlockDisableMergeAttribute_DeviceRight,
@@ -288,18 +289,18 @@ namespace ams::kern {
 
     class KMemoryBlock : public util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock> {
         private:
-            u16 m_device_disable_merge_left_count;
-            u16 m_device_disable_merge_right_count;
-            KProcessAddress m_address;
-            size_t m_num_pages;
-            KMemoryState m_memory_state;
-            u16 m_ipc_lock_count;
-            u16 m_device_use_count;
-            u16 m_ipc_disable_merge_count;
             KMemoryPermission m_permission;
             KMemoryPermission m_original_permission;
             KMemoryAttribute m_attribute;
             KMemoryBlockDisableMergeAttribute m_disable_merge_attribute;
+            KProcessAddress m_address;
+            u32 m_num_pages;
+            KMemoryState m_memory_state;
+            u16 m_ipc_lock_count;
+            u16 m_ipc_disable_merge_count;
+            u16 m_device_use_count;
+            u16 m_device_disable_merge_left_count;
+            u16 m_device_disable_merge_right_count;
         public:
             static constexpr ALWAYS_INLINE int Compare(const KMemoryBlock &lhs, const KMemoryBlock &rhs) {
                 if (lhs.GetAddress() < rhs.GetAddress()) {
@@ -343,6 +344,10 @@ namespace ams::kern {
                 return m_ipc_disable_merge_count;
             }
 
+            constexpr u16 GetDeviceUseCount() const {
+                return m_device_use_count;
+            }
+
             constexpr KMemoryPermission GetPermission() const {
                 return m_permission;
             }
@@ -374,16 +379,15 @@ namespace ams::kern {
         public:
             explicit KMemoryBlock() { /* ... */ }
 
-            constexpr KMemoryBlock(util::ConstantInitializeTag, KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
-                : util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock>(util::ConstantInitialize), m_device_disable_merge_left_count(),
-                  m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0),
-                  m_device_use_count(0), m_ipc_disable_merge_count(), m_permission(p), m_original_permission(KMemoryPermission_None),
-                  m_attribute(attr), m_disable_merge_attribute()
+            constexpr KMemoryBlock(util::ConstantInitializeTag, KProcessAddress addr, u32 np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
+                : util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock>(util::ConstantInitialize), m_permission(p), m_original_permission(KMemoryPermission_None),
+                  m_attribute(attr), m_disable_merge_attribute(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0),
+                  m_ipc_disable_merge_count(), m_device_use_count(0), m_device_disable_merge_left_count(), m_device_disable_merge_right_count()
             {
                 /* ... */
             }
 
-            constexpr void Initialize(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr) {
+            constexpr void Initialize(KProcessAddress addr, u32 np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr) {
                 MESOSPHERE_ASSERT_THIS();
                 m_device_disable_merge_left_count  = 0;
                 m_device_disable_merge_right_count = 0;

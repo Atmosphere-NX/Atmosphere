@@ -27,109 +27,70 @@ namespace ams::kern::arch::arm64 {
         m_table       = static_cast<L1PageTableEntry *>(tb);
         m_is_kernel   = false;
         m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+
+        /* Page table entries created by KInitialPageTable need to be iterated and modified to ensure KPageTable invariants. */
+        PageTableEntry *level_entries[EntryLevel_Count] = { nullptr, nullptr, m_table };
+        u32 level = EntryLevel_L1;
+        while (level != EntryLevel_L1 || (level_entries[EntryLevel_L1] - static_cast<PageTableEntry *>(m_table)) < m_num_entries) {
+            /* Get the pte; it must never have the validity-extension flag set. */
+            auto *pte = level_entries[level];
+            MESOSPHERE_ASSERT((pte->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_Valid) == 0);
+
+            /* While we're a table, recurse, fixing up the reference counts. */
+            while (level > EntryLevel_L3 && pte->IsMappedTable()) {
+                /* Count how many references are in the table. */
+                auto *table = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(pte->GetTable()));
+
+                size_t ref_count = 0;
+                for (size_t i = 0; i < BlocksPerTable; ++i) {
+                    if (table[i].IsMapped()) {
+                        ++ref_count;
+                    }
+                }
+
+                /* Set the reference count for our new page, adding one additional uncloseable reference; kernel pages must never be unreferenced. */
+                pte->SetTableReferenceCount(ref_count + 1).SetValid();
+
+                /* Iterate downwards. */
+                level -= 1;
+                level_entries[level] = table;
+                pte = level_entries[level];
+
+                /* Check that the entry isn't unexpected. */
+                MESOSPHERE_ASSERT((pte->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_Valid) == 0);
+            }
+
+            /* We're dealing with some block. If it's mapped, set it valid. */
+            if (pte->IsMapped()) {
+                pte->SetValid();
+            }
+
+            /* Advance. */
+            while (true) {
+                /* Advance to the next entry at the current level. */
+                ++level_entries[level];
+                if (!util::IsAligned(reinterpret_cast<uintptr_t>(++level_entries[level]), PageSize)) {
+                    break;
+                }
+
+                /* If we're at the end of a level, advance upwards. */
+                level_entries[level++] = nullptr;
+
+                if (level > EntryLevel_L1) {
+                    return;
+                }
+            }
+        }
     }
 
     L1PageTableEntry *KPageTableImpl::Finalize() {
         return m_table;
     }
 
-    bool KPageTableImpl::ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const {
-        /* Set the L3 entry. */
-        out_context->l3_entry = l3_entry;
-
-        if (l3_entry->IsBlock()) {
-            /* Set the output entry. */
-            out_entry->phys_addr = l3_entry->GetBlock() + (virt_addr & (L3BlockSize - 1));
-            if (l3_entry->IsContiguous()) {
-                out_entry->block_size = L3ContiguousBlockSize;
-            } else {
-                out_entry->block_size = L3BlockSize;
-            }
-            out_entry->sw_reserved_bits = l3_entry->GetSoftwareReservedBits();
-            out_entry->attr             = 0;
-
-            return true;
-        } else {
-            out_entry->phys_addr        = Null<KPhysicalAddress>;
-            out_entry->block_size       = L3BlockSize;
-            out_entry->sw_reserved_bits = 0;
-            out_entry->attr             = 0;
-            return false;
-        }
-    }
-
-    bool KPageTableImpl::ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const {
-        /* Set the L2 entry. */
-        out_context->l2_entry = l2_entry;
-
-        if (l2_entry->IsBlock()) {
-            /* Set the output entry. */
-            out_entry->phys_addr = l2_entry->GetBlock() + (virt_addr & (L2BlockSize - 1));
-            if (l2_entry->IsContiguous()) {
-                out_entry->block_size = L2ContiguousBlockSize;
-            } else {
-                out_entry->block_size = L2BlockSize;
-            }
-            out_entry->sw_reserved_bits = l2_entry->GetSoftwareReservedBits();
-            out_entry->attr             = 0;
-
-            /* Set the output context. */
-            out_context->l3_entry = nullptr;
-            return true;
-        } else if (l2_entry->IsTable()) {
-            return this->ExtractL3Entry(out_entry, out_context, this->GetL3EntryFromTable(GetPageTableVirtualAddress(l2_entry->GetTable()), virt_addr), virt_addr);
-        } else {
-            out_entry->phys_addr        = Null<KPhysicalAddress>;
-            out_entry->block_size       = L2BlockSize;
-            out_entry->sw_reserved_bits = 0;
-            out_entry->attr             = 0;
-
-            out_context->l3_entry = nullptr;
-            return false;
-        }
-    }
-
-    bool KPageTableImpl::ExtractL1Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L1PageTableEntry *l1_entry, KProcessAddress virt_addr) const {
-        /* Set the L1 entry. */
-        out_context->l1_entry = l1_entry;
-
-        if (l1_entry->IsBlock()) {
-            /* Set the output entry. */
-            out_entry->phys_addr = l1_entry->GetBlock() + (virt_addr & (L1BlockSize - 1));
-            if (l1_entry->IsContiguous()) {
-                out_entry->block_size = L1ContiguousBlockSize;
-            } else {
-                out_entry->block_size = L1BlockSize;
-            }
-            out_entry->sw_reserved_bits = l1_entry->GetSoftwareReservedBits();
-
-            /* Set the output context. */
-            out_context->l2_entry = nullptr;
-            out_context->l3_entry = nullptr;
-            return true;
-        } else if (l1_entry->IsTable()) {
-            return this->ExtractL2Entry(out_entry, out_context, this->GetL2EntryFromTable(GetPageTableVirtualAddress(l1_entry->GetTable()), virt_addr), virt_addr);
-        } else {
-            out_entry->phys_addr        = Null<KPhysicalAddress>;
-            out_entry->block_size       = L1BlockSize;
-            out_entry->sw_reserved_bits = 0;
-            out_entry->attr             = 0;
-
-            out_context->l2_entry = nullptr;
-            out_context->l3_entry = nullptr;
-            return false;
-        }
-    }
-
     bool KPageTableImpl::BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const {
         /* Setup invalid defaults. */
-        out_entry->phys_addr        = Null<KPhysicalAddress>;
-        out_entry->block_size       = L1BlockSize;
-        out_entry->sw_reserved_bits = 0;
-        out_entry->attr             = 0;
-        out_context->l1_entry = m_table + m_num_entries;
-        out_context->l2_entry = nullptr;
-        out_context->l3_entry = nullptr;
+        *out_entry   = {};
+        *out_context = {};
 
         /* Validate that we can read the actual entry. */
         const size_t l0_index = GetL0Index(address);
@@ -146,125 +107,78 @@ namespace ams::kern::arch::arm64 {
             }
         }
 
-        /* Extract the entry. */
-        const bool valid = this->ExtractL1Entry(out_entry, out_context, this->GetL1Entry(address), address);
+        /* Get the L1 entry, and check if it's a table. */
+        out_context->level_entries[EntryLevel_L1] = this->GetL1Entry(address);
+        if (out_context->level_entries[EntryLevel_L1]->IsMappedTable()) {
+            /* Get the L2 entry, and check if it's a table. */
+            out_context->level_entries[EntryLevel_L2] = this->GetL2EntryFromTable(GetPageTableVirtualAddress(out_context->level_entries[EntryLevel_L1]->GetTable()), address);
+            if (out_context->level_entries[EntryLevel_L2]->IsMappedTable()) {
+                /* Get the L3 entry. */
+                out_context->level_entries[EntryLevel_L3] = this->GetL3EntryFromTable(GetPageTableVirtualAddress(out_context->level_entries[EntryLevel_L2]->GetTable()), address);
 
-        /* Update the context for next traversal. */
-        switch (out_entry->block_size) {
-            case L1ContiguousBlockSize:
-                out_context->l1_entry += (L1ContiguousBlockSize / L1BlockSize) - GetContiguousL1Offset(address) / L1BlockSize;
-                break;
-            case L1BlockSize:
-                out_context->l1_entry += 1;
-                break;
-            case L2ContiguousBlockSize:
-                out_context->l1_entry += 1;
-                out_context->l2_entry += (L2ContiguousBlockSize / L2BlockSize) - GetContiguousL2Offset(address) / L2BlockSize;
-                break;
-            case L2BlockSize:
-                out_context->l1_entry += 1;
-                out_context->l2_entry += 1;
-                break;
-            case L3ContiguousBlockSize:
-                out_context->l1_entry += 1;
-                out_context->l2_entry += 1;
-                out_context->l3_entry += (L3ContiguousBlockSize / L3BlockSize) - GetContiguousL3Offset(address) / L3BlockSize;
-                break;
-            case L3BlockSize:
-                out_context->l1_entry += 1;
-                out_context->l2_entry += 1;
-                out_context->l3_entry += 1;
-                break;
-            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                /* It's either a page or not. */
+                out_context->level = EntryLevel_L3;
+            } else {
+                /* Not a L2 table, so possibly an L2 block. */
+                out_context->level = EntryLevel_L2;
+            }
+        } else {
+            /* Not a L1 table, so possibly an L1 block. */
+            out_context->level = EntryLevel_L1;
         }
 
-        return valid;
+        /* Determine other fields. */
+        const auto *pte = out_context->level_entries[out_context->level];
+
+        out_context->is_contiguous = pte->IsContiguous();
+
+        out_entry->sw_reserved_bits = pte->GetSoftwareReservedBits();
+        out_entry->attr             = 0;
+        out_entry->phys_addr        = this->GetBlock(pte, out_context->level) + this->GetOffset(address, out_context->level);
+        out_entry->block_size       = static_cast<size_t>(1) << (PageBits + LevelBits * out_context->level + 4 * out_context->is_contiguous);
+
+        return out_context->level == EntryLevel_L3 ? pte->IsPage() : pte->IsBlock();
     }
 
     bool KPageTableImpl::ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const {
-        bool valid = false;
+        /* Advance entry. */
+        auto *cur_pte = context->level_entries[context->level];
+        auto *next_pte = reinterpret_cast<PageTableEntry *>(context->is_contiguous ? util::AlignDown(reinterpret_cast<uintptr_t>(cur_pte), BlocksPerContiguousBlock * sizeof(PageTableEntry)) + BlocksPerContiguousBlock * sizeof(PageTableEntry) : reinterpret_cast<uintptr_t>(cur_pte) + sizeof(PageTableEntry));
 
-        /* Check if we're not at the end of an L3 table. */
-        if (!util::IsAligned(reinterpret_cast<uintptr_t>(context->l3_entry), PageSize)) {
-            valid = this->ExtractL3Entry(out_entry, context, context->l3_entry, Null<KProcessAddress>);
+        /* Set the pte. */
+        context->level_entries[context->level] = next_pte;
 
-            switch (out_entry->block_size) {
-                case L3ContiguousBlockSize:
-                    context->l3_entry += (L3ContiguousBlockSize / L3BlockSize);
-                    break;
-                case L3BlockSize:
-                    context->l3_entry += 1;
-                    break;
-                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-            }
-        } else if (!util::IsAligned(reinterpret_cast<uintptr_t>(context->l2_entry), PageSize)) {
-            /* We're not at the end of an L2 table. */
-            valid = this->ExtractL2Entry(out_entry, context, context->l2_entry, Null<KProcessAddress>);
+        /* Advance appropriately. */
+        while (context->level < EntryLevel_L1 && util::IsAligned(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), PageSize)) {
+            /* Advance the above table by one entry. */
+            context->level_entries[context->level + 1]++;
+            context->level = static_cast<EntryLevel>(util::ToUnderlying(context->level) + 1);
+        }
 
-            switch (out_entry->block_size) {
-                case L2ContiguousBlockSize:
-                    context->l2_entry += (L2ContiguousBlockSize / L2BlockSize);
-                    break;
-                case L2BlockSize:
-                    context->l2_entry += 1;
-                    break;
-                case L3ContiguousBlockSize:
-                    context->l2_entry += 1;
-                    context->l3_entry += (L3ContiguousBlockSize / L3BlockSize);
-                    break;
-                case L3BlockSize:
-                    context->l2_entry += 1;
-                    context->l3_entry += 1;
-                    break;
-                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-            }
-        } else {
-            /* We need to update the l1 entry. */
-            const size_t l1_index = context->l1_entry - m_table;
-            if (l1_index < m_num_entries) {
-                valid = this->ExtractL1Entry(out_entry, context, context->l1_entry, Null<KProcessAddress>);
-            } else {
-                /* Invalid, end traversal. */
-                out_entry->phys_addr        = Null<KPhysicalAddress>;
-                out_entry->block_size       = L1BlockSize;
-                out_entry->sw_reserved_bits = 0;
-                out_entry->attr             = 0;
-                context->l1_entry = m_table + m_num_entries;
-                context->l2_entry = nullptr;
-                context->l3_entry = nullptr;
+        /* Check if we've hit the end of the L1 table. */
+        if (context->level == EntryLevel_L1) {
+            if (context->level_entries[EntryLevel_L1] - static_cast<const PageTableEntry *>(m_table) >= m_num_entries) {
+                *context   = {};
+                *out_entry = {};
                 return false;
-            }
-
-            switch (out_entry->block_size) {
-                case L1ContiguousBlockSize:
-                    context->l1_entry += (L1ContiguousBlockSize / L1BlockSize);
-                    break;
-                case L1BlockSize:
-                    context->l1_entry += 1;
-                    break;
-                case L2ContiguousBlockSize:
-                    context->l1_entry += 1;
-                    context->l2_entry += (L2ContiguousBlockSize / L2BlockSize);
-                    break;
-                case L2BlockSize:
-                    context->l1_entry += 1;
-                    context->l2_entry += 1;
-                    break;
-                case L3ContiguousBlockSize:
-                    context->l1_entry += 1;
-                    context->l2_entry += 1;
-                    context->l3_entry += (L3ContiguousBlockSize / L3BlockSize);
-                    break;
-                case L3BlockSize:
-                    context->l1_entry += 1;
-                    context->l2_entry += 1;
-                    context->l3_entry += 1;
-                    break;
-                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
-        return valid;
+        /* We may have advanced to a new table, and if we have we should descend. */
+        while (context->level > EntryLevel_L3 && context->level_entries[context->level]->IsMappedTable()) {
+            context->level_entries[context->level - 1] = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(context->level_entries[context->level]->GetTable()));
+            context->level = static_cast<EntryLevel>(util::ToUnderlying(context->level) - 1);
+        }
+
+        const auto *pte = context->level_entries[context->level];
+
+        context->is_contiguous = pte->IsContiguous();
+
+        out_entry->sw_reserved_bits = pte->GetSoftwareReservedBits();
+        out_entry->attr             = 0;
+        out_entry->phys_addr        = this->GetBlock(pte, context->level);
+        out_entry->block_size       = static_cast<size_t>(1) << (PageBits + LevelBits * context->level + 4 * context->is_contiguous);
+        return context->level == EntryLevel_L3 ? pte->IsPage() : pte->IsBlock();
     }
 
     bool KPageTableImpl::GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
@@ -283,32 +197,144 @@ namespace ams::kern::arch::arm64 {
             }
         }
 
-        /* Try to get from l1 table. */
-        const L1PageTableEntry *l1_entry = this->GetL1Entry(address);
-        if (l1_entry->IsBlock()) {
-            *out = l1_entry->GetBlock() + GetL1Offset(address);
-            return true;
-        } else if (!l1_entry->IsTable()) {
-            return false;
+        /* Get the L1 entry, and check if it's a table. */
+        const PageTableEntry *pte = this->GetL1Entry(address);
+        EntryLevel level          = EntryLevel_L1;
+        if (pte->IsMappedTable()) {
+            /* Get the L2 entry, and check if it's a table. */
+            pte   = this->GetL2EntryFromTable(GetPageTableVirtualAddress(pte->GetTable()), address);
+            level = EntryLevel_L2;
+            if (pte->IsMappedTable()) {
+                pte   = this->GetL3EntryFromTable(GetPageTableVirtualAddress(pte->GetTable()), address);
+                level = EntryLevel_L3;
+            }
         }
 
-        /* Try to get from l2 table. */
-        const L2PageTableEntry *l2_entry = this->GetL2Entry(l1_entry, address);
-        if (l2_entry->IsBlock()) {
-            *out = l2_entry->GetBlock() + GetL2Offset(address);
-            return true;
-        } else if (!l2_entry->IsTable()) {
-            return false;
+        const bool is_block = level == EntryLevel_L3 ? pte->IsPage() : pte->IsBlock();
+        if (is_block) {
+            *out = this->GetBlock(pte, level) + this->GetOffset(address, level);
+        } else {
+            *out = Null<KPhysicalAddress>;
         }
 
-        /* Try to get from l3 table. */
-        const L3PageTableEntry *l3_entry = this->GetL3Entry(l2_entry, address);
-        if (l3_entry->IsBlock()) {
-            *out = l3_entry->GetBlock() + GetL3Offset(address);
-            return true;
+        return is_block;
+    }
+
+    bool KPageTableImpl::MergePages(KVirtualAddress *out, TraversalContext *context) {
+        /* We want to upgrade the pages by one step. */
+        if (context->is_contiguous) {
+            /* We can't merge an L1 table. */
+            if (context->level == EntryLevel_L1) {
+                return false;
+            }
+
+            /* We want to upgrade a contiguous mapping in a table to a block. */
+            PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerTable * sizeof(PageTableEntry)));
+            const KPhysicalAddress phys_addr = util::AlignDown(GetBlock(pte, context->level), GetBlockSize(static_cast<EntryLevel>(context->level + 1), false));
+
+            /* First, check that all entries are valid for us to merge. */
+            const u64 entry_template = pte->GetEntryTemplateForMerge();
+            for (size_t i = 0; i < BlocksPerTable; ++i) {
+                if (!pte[i].IsForMerge(entry_template | GetInteger(phys_addr + (i << (PageBits + LevelBits * context->level))) | PageTableEntry::ContigType_Contiguous | pte->GetTestTableMask())) {
+                    return false;
+                }
+                if (i > 0 && pte[i].IsHeadOrHeadAndBodyMergeDisabled()) {
+                    return false;
+                }
+                if (i < BlocksPerTable - 1 && pte[i].IsTailMergeDisabled()) {
+                    return false;
+                }
+            }
+
+            /* The entries are valid for us to merge, so merge them. */
+            const auto *head_pte = pte;
+            const auto *tail_pte = pte + BlocksPerTable - 1;
+            const auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_pte->IsHeadMergeDisabled(), head_pte->IsHeadAndBodyMergeDisabled(), tail_pte->IsTailMergeDisabled());
+
+            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false, false);
+
+            /* Update our context. */
+            context->is_contiguous = false;
+            context->level         = static_cast<EntryLevel>(util::ToUnderlying(context->level) + 1);
+
+            /* Set the output to the table we just freed. */
+            *out = KVirtualAddress(pte);
+        } else {
+            /* We want to upgrade a non-contiguous mapping to a contiguous mapping. */
+            PageTableEntry *pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)));
+            const KPhysicalAddress phys_addr = util::AlignDown(GetBlock(pte, context->level), GetBlockSize(context->level, true));
+
+            /* First, check that all entries are valid for us to merge. */
+            const u64 entry_template = pte->GetEntryTemplateForMerge();
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                if (!pte[i].IsForMerge(entry_template | GetInteger(phys_addr + (i << (PageBits + LevelBits * context->level))) | pte->GetTestTableMask())) {
+                    return false;
+                }
+                if (i > 0 && pte[i].IsHeadOrHeadAndBodyMergeDisabled()) {
+                    return false;
+                }
+                if (i < BlocksPerContiguousBlock - 1 && pte[i].IsTailMergeDisabled()) {
+                    return false;
+                }
+            }
+
+            /* The entries are valid for us to merge, so merge them. */
+            const auto *head_pte = pte;
+            const auto *tail_pte = pte + BlocksPerContiguousBlock - 1;
+            const auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_pte->IsHeadMergeDisabled(), head_pte->IsHeadAndBodyMergeDisabled(), tail_pte->IsTailMergeDisabled());
+
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + (i << (PageBits + LevelBits * context->level)), PageTableEntry(entry_template), sw_reserved_bits, true, context->level == EntryLevel_L3);
+            }
+
+            /* Update our context. */
+            context->level_entries[context->level] = pte;
+            context->is_contiguous = true;
         }
 
-        return false;
+        return true;
+    }
+
+    void KPageTableImpl::SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const {
+        /* We want to downgrade the pages by one step. */
+        if (context->is_contiguous) {
+            /* We want to downgrade a contiguous mapping to a non-contiguous mapping. */
+            pte = reinterpret_cast<PageTableEntry *>(util::AlignDown(reinterpret_cast<uintptr_t>(context->level_entries[context->level]), BlocksPerContiguousBlock * sizeof(PageTableEntry)));
+
+            auto * const first = pte;
+            const KPhysicalAddress block = this->GetBlock(first, context->level);
+            for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * context->level)), PageTableEntry(first->GetEntryTemplateForSeparateContiguous(i)), PageTableEntry::SeparateContiguousTag{});
+            }
+
+            context->is_contiguous = false;
+
+            context->level_entries[context->level] = pte + (this->GetLevelIndex(address, context->level) & (BlocksPerContiguousBlock - 1));
+        } else {
+            /* We want to downgrade a block into a table. */
+            auto * const first = context->level_entries[context->level];
+            const KPhysicalAddress block = this->GetBlock(first, context->level);
+            for (size_t i = 0; i < BlocksPerTable; ++i) {
+                pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * (context->level - 1))), PageTableEntry(first->GetEntryTemplateForSeparate(i)), PageTableEntry::SoftwareReservedBit_None, true, context->level - 1 == EntryLevel_L3);
+            }
+
+            context->is_contiguous = true;
+            context->level         = static_cast<EntryLevel>(util::ToUnderlying(context->level) - 1);
+
+            /* Wait for pending stores to complete. */
+            cpu::DataSynchronizationBarrierInnerShareableStore();
+
+            /* Update the block entry to be a table entry. */
+            *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(KVirtualAddress(pte)), m_is_kernel, true, BlocksPerTable);
+
+
+            context->level_entries[context->level] = pte + this->GetLevelIndex(address, context->level);
+        }
+
+        entry->sw_reserved_bits = 0;
+        entry->attr             = 0;
+        entry->phys_addr        = this->GetBlock(context->level_entries[context->level], context->level) + this->GetOffset(address, context->level);
+        entry->block_size       = static_cast<size_t>(1) << (PageBits + LevelBits * context->level + 4 * context->is_contiguous);
     }
 
     void KPageTableImpl::Dump(uintptr_t start, size_t size) const {

@@ -35,7 +35,7 @@ namespace ams::kern {
 
     }
 
-    void KMemoryManager::Initialize(KVirtualAddress management_region, size_t management_region_size) {
+    void KMemoryManager::Initialize(KVirtualAddress management_region, size_t management_region_size, const u32 *min_align_shifts) {
         /* Clear the management region to zero. */
         const KVirtualAddress management_region_end = management_region + management_region_size;
         std::memset(GetVoidPointer(management_region), 0, management_region_size);
@@ -154,6 +154,17 @@ namespace ams::kern {
         for (size_t i = 0; i < m_num_managers; ++i) {
             m_managers[i].SetInitialUsedHeapSize(reserved_sizes[i]);
         }
+
+        /* Determine the min heap size for all pools. */
+        for (size_t i = 0; i < Pool_Count; ++i) {
+            /* Determine the min alignment for the pool in pages. */
+            const size_t min_align_pages = 1 << min_align_shifts[i];
+
+            /* Determine a heap index. */
+            if (const auto heap_index = KPageHeap::GetAlignedBlockIndex(min_align_pages, min_align_pages); heap_index >= 0) {
+                m_min_heap_indexes[i] = heap_index;
+            }
+        }
     }
 
     Result KMemoryManager::InitializeOptimizedMemory(u64 process_id, Pool pool) {
@@ -192,8 +203,19 @@ namespace ams::kern {
             return Null<KPhysicalAddress>;
         }
 
-        /* Lock the pool that we're allocating from. */
+        /* Determine the pool and direction we're allocating from. */
         const auto [pool, dir] = DecodeOption(option);
+
+        /* Check that we're allocating a correctly aligned number of pages. */
+        const size_t min_align_pages = KPageHeap::GetBlockNumPages(m_min_heap_indexes[pool]);
+        if (!util::IsAligned(num_pages, min_align_pages)) {
+            return Null<KPhysicalAddress>;
+        }
+
+        /* Update our alignment. */
+        align_pages = std::max(align_pages, min_align_pages);
+
+        /* Lock the pool that we're allocating from. */
         KScopedLightLock lk(m_pool_locks[pool]);
 
         /* Choose a heap based on our page size request. */
@@ -226,6 +248,13 @@ namespace ams::kern {
     }
 
     Result KMemoryManager::AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random, s32 min_heap_index) {
+        /* Check that we're allocating a correctly aligned number of pages. */
+        const size_t min_align_pages = KPageHeap::GetBlockNumPages(m_min_heap_indexes[pool]);
+        R_UNLESS(util::IsAligned(num_pages, min_align_pages), svc::ResultInvalidSize());
+
+        /* Adjust our min heap index to the pool minimum if needed. */
+        min_heap_index = std::max(min_heap_index, m_min_heap_indexes[pool]);
+
         /* Choose a heap based on our page size request. */
         const s32 heap_index = KPageHeap::GetBlockIndex(num_pages);
         R_UNLESS(0 <= heap_index, svc::ResultOutOfMemory());

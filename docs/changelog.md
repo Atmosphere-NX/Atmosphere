@@ -1,4 +1,19 @@
 # Changelog
+## 1.8.0
++ Basic support was added for 19.0.0.
+  + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
+    + There shouldn't be anything user visible resulting from this, but it will be addressed in a future atmosphère update. There is still one action item from 18.0.0 to be addressed, as well.
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `loader` was updated to reflect the latest official behavior.
+  + `pm` was updated to reflect the latest official behavior.
+  + `ro` was updated to reflect the latest official behavior.
++ `creport`'s file acces patterns were optimized, greatly improving performance when generating a crash report.
++ Atmosphère now uses `relr` relocations where possible.
+  + This reduces the filesize of a number of atmosphère's modules.
++ A number of minor issues were fixed and improvements were made, including:
+  + Support was fixed for running Atmosphère on newer units with specific Hynix/Micron DRAM chips.
++ General system stability improvements to enhance the user's experience.
 ## 1.7.1
 + Support was added for 18.1.0.
 + Atmosphère was updated to use GCC 14/newlib (latest devkitA64/devkitARM releases).
