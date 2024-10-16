@@ -164,6 +164,7 @@ namespace ams::kern {
             size_t m_num_managers;
             u64 m_optimized_process_ids[Pool_Count];
             bool m_has_optimized_process[Pool_Count];
+            s32 m_min_heap_indexes[Pool_Count];
         private:
             Impl &GetManager(KPhysicalAddress address) {
                 return m_managers[KMemoryLayout::GetPhysicalLinearRegion(address).GetAttributes()];
@@ -188,12 +189,12 @@ namespace ams::kern {
             Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random, s32 min_heap_index);
         public:
             KMemoryManager()
-                : m_pool_locks(), m_pool_managers_head(), m_pool_managers_tail(), m_managers(), m_num_managers(), m_optimized_process_ids(), m_has_optimized_process()
+                : m_pool_locks(), m_pool_managers_head(), m_pool_managers_tail(), m_managers(), m_num_managers(), m_optimized_process_ids(), m_has_optimized_process(), m_min_heap_indexes()
             {
                 /* ... */
             }
 
-            NOINLINE void Initialize(KVirtualAddress management_region, size_t management_region_size);
+            NOINLINE void Initialize(KVirtualAddress management_region, size_t management_region_size, const u32 *min_align_shifts);
 
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
@@ -298,6 +299,10 @@ namespace ams::kern {
                 for (auto *manager = this->GetFirstManager(pool, DumpDirection); manager != nullptr; manager = this->GetNextManager(manager, DumpDirection)) {
                     manager->DumpFreeList();
                 }
+            }
+
+            size_t GetMinimumAlignment(Pool pool) {
+                return KPageHeap::GetBlockSize(m_min_heap_indexes[pool]);
             }
         public:
             static size_t CalculateManagementOverheadSize(size_t region_size) {

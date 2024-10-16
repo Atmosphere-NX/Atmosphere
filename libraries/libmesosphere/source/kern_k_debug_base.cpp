@@ -27,7 +27,8 @@ namespace ams::kern {
 
     void KDebugBase::Initialize() {
         /* Clear the continue flags. */
-        m_continue_flags = 0;
+        m_continue_flags      = 0;
+        m_is_force_debug_prod = GetCurrentProcess().CanForceDebugProd();
     }
 
     bool KDebugBase::Is64Bit() const {
@@ -120,8 +121,11 @@ namespace ams::kern {
             /* Read the memory. */
             if (info.GetSvcState() != ams::svc::MemoryState_Io) {
                 /* The memory is normal memory. */
-                R_TRY(target_pt.ReadDebugMemory(GetVoidPointer(buffer), cur_address, cur_size));
+                R_TRY(target_pt.ReadDebugMemory(GetVoidPointer(buffer), cur_address, cur_size, this->IsForceDebugProd()));
             } else {
+                /* Only allow IO memory to be read if not force debug prod. */
+                R_UNLESS(!this->IsForceDebugProd(), svc::ResultInvalidCurrentMemory());
+
                 /* The memory is IO memory. */
                 R_TRY(target_pt.ReadDebugIoMemory(GetVoidPointer(buffer), cur_address, cur_size, info.GetState()));
             }
@@ -269,6 +273,9 @@ namespace ams::kern {
                 switch (state) {
                     case KProcess::State_Created:
                     case KProcess::State_Running:
+                        /* Created and running processes can only be debugged if the debugger is not ForceDebugProd. */
+                        R_UNLESS(!this->IsForceDebugProd(), svc::ResultInvalidState());
+                        break;
                     case KProcess::State_Crashed:
                         break;
                     case KProcess::State_CreatedAttached:
@@ -407,69 +414,6 @@ namespace ams::kern {
 
         /* Get the process pointer. */
         KProcess * const target = this->GetProcessUnsafe();
-
-        /* Detach from the process. */
-        {
-            /* Lock both ourselves and the target process. */
-            KScopedLightLock state_lk(target->GetStateLock());
-            KScopedLightLock list_lk(target->GetListLock());
-            KScopedLightLock this_lk(m_lock);
-
-            /* Check that we're still attached. */
-            if (this->IsAttached()) {
-                /* Lock the scheduler. */
-                KScopedSchedulerLock sl;
-
-                /* Get the process's state. */
-                const KProcess::State state = target->GetState();
-
-                /* Check that the process is in a state where we can terminate it. */
-                R_UNLESS(state != KProcess::State_Created,         svc::ResultInvalidState());
-                R_UNLESS(state != KProcess::State_CreatedAttached, svc::ResultInvalidState());
-
-                /* Decide on a new state for the process. */
-                KProcess::State new_state;
-                if (state == KProcess::State_RunningAttached) {
-                    /* If the process is running, transition it accordingly. */
-                    new_state = KProcess::State_Running;
-                } else if (state == KProcess::State_DebugBreak) {
-                    /* If the process is debug breaked, transition it accordingly. */
-                    new_state = KProcess::State_Crashed;
-
-                    /* Suspend all the threads in the process. */
-                    {
-                        auto end = target->GetThreadList().end();
-                        for (auto it = target->GetThreadList().begin(); it != end; ++it) {
-                            /* Request that we suspend the thread. */
-                            it->RequestSuspend(KThread::SuspendType_Debug);
-                        }
-                    }
-                } else {
-                    /* Otherwise, don't transition. */
-                    new_state = state;
-                }
-
-                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-                /* Clear single step on all threads. */
-                {
-                    auto end = target->GetThreadList().end();
-                    for (auto it = target->GetThreadList().begin(); it != end; ++it) {
-                        it->ClearHardwareSingleStep();
-                    }
-                }
-                #endif
-
-                /* Detach from the process. */
-                target->ClearDebugObject(new_state);
-                m_is_attached = false;
-
-                /* Close the initial reference opened to our process. */
-                this->CloseProcess();
-
-                /* Clear our continue flags. */
-                m_continue_flags = 0;
-            }
-        }
 
         /* Terminate the process. */
         target->Terminate();
@@ -962,7 +906,12 @@ namespace ams::kern {
                         case ams::svc::DebugException_UndefinedInstruction:
                             {
                                 MESOSPHERE_ASSERT(info->info.exception.exception_data_count == 1);
-                                out->info.exception.specific.undefined_instruction.insn = info->info.exception.exception_data[0];
+                                /* Only save the instruction if the caller is not force debug prod. */
+                                if (this->IsForceDebugProd()) {
+                                    out->info.exception.specific.undefined_instruction.insn = 0;
+                                } else {
+                                    out->info.exception.specific.undefined_instruction.insn = info->info.exception.exception_data[0];
+                                }
                             }
                             break;
                         case ams::svc::DebugException_BreakPoint:

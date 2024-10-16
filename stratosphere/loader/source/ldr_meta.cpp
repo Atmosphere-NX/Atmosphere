@@ -252,6 +252,10 @@ namespace ams::ldr {
                     meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
                 }
             }
+
+            /* Fix the debug capabilities, to prevent needing a hbl recompilation. */
+            FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+            FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
         } else if (hos::GetVersion() >= hos::Version_10_0_0) {
             /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
             /* However, if we're an application, we are guaranteed a base code filesystem. */

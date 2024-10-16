@@ -23,13 +23,13 @@ namespace ams::kern::arch::arm64 {
         private:
             KPageTable m_page_table;
         public:
-            void Activate(u64 id) {
+            void Activate(size_t process_index, u64 id) {
                 /* Activate the page table with the specified contextidr. */
-                m_page_table.Activate(id);
+                m_page_table.ActivateProcess(process_index, id);
             }
 
-            Result Initialize(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
-                R_RETURN(m_page_table.InitializeForProcess(flags, from_back, pool, code_address, code_size, system_resource, resource_limit));
+            Result Initialize(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index) {
+                R_RETURN(m_page_table.InitializeForProcess(flags, from_back, pool, code_address, code_size, system_resource, resource_limit, process_index));
             }
 
             void Finalize() { m_page_table.Finalize(); }
@@ -154,8 +154,8 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.InvalidateCurrentProcessDataCache(address, size));
             }
 
-            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
-                R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size));
+            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size, bool force_debug_prod) {
+                R_RETURN(m_page_table.ReadDebugMemory(buffer, address, size, force_debug_prod));
             }
 
             Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size, KMemoryState state) {

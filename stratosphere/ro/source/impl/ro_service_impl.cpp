@@ -247,7 +247,7 @@ namespace ams::ro::impl {
                     R_THROW(ro::ResultNotAuthorized());
                 }
 
-                Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
+                Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, bool *out_aligned_header, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
                     /* Map the NRO. */
                     void *mapped_memory = nullptr;
                     R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
@@ -306,6 +306,7 @@ namespace ams::ro::impl {
                     *out_rx_size = text_size;
                     *out_ro_size = ro_size;
                     *out_rw_size = rw_size;
+                    *out_aligned_header = header->IsAlignedHeader();
                     R_SUCCEED();
                 }
 
@@ -557,10 +558,11 @@ namespace ams::ro::impl {
 
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
-        R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
+        bool aligned_header = false;
+        R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), std::addressof(aligned_header), nro_info->base_address, nro_size, bss_size));
 
         /* Set NRO perms. */
-        R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
+        R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size, aligned_header));
 
         context->SetNroInfoInUse(nro_info, true);
         nro_info->code_size = rx_size + ro_size;
