@@ -1346,7 +1346,7 @@ namespace ams::fssystem {
                 R_UNLESS(::GetLastError() == ERROR_ACCESS_DENIED, last_error_result);
 
                 /* Check if we tried to open a directory. */
-                fs::DirectoryEntryType type;
+                fs::DirectoryEntryType type{};
                 R_TRY(GetEntryTypeImpl(std::addressof(type), native_path.get()));
 
                 /* If the type is anything other than directory, perform generic result conversion. */
@@ -1459,7 +1459,7 @@ namespace ams::fssystem {
         R_TRY(this->ResolveFullPath(std::addressof(native_new_path), new_path, MaxFilePathLength, 0, false));
 
         /* Check that the old path is a file. */
-        fs::DirectoryEntryType type;
+        fs::DirectoryEntryType type{};
         R_TRY(GetEntryTypeImpl(std::addressof(type), native_old_path.get()));
         R_UNLESS(type == fs::DirectoryEntryType_File, fs::ResultPathNotFound());
 
@@ -1509,7 +1509,7 @@ namespace ams::fssystem {
         R_TRY(this->ResolveFullPath(std::addressof(native_new_path), new_path, MaxDirectoryPathLength, 0, false));
 
         /* Check that the old path is a file. */
-        fs::DirectoryEntryType type;
+        fs::DirectoryEntryType type{};
         R_TRY(GetEntryTypeImpl(std::addressof(type), native_old_path.get()));
         R_UNLESS(type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
@@ -1577,7 +1577,7 @@ namespace ams::fssystem {
                 R_UNLESS(::GetLastError() == ERROR_ACCESS_DENIED, last_error_result);
 
                 /* Check if we tried to open a directory. */
-                fs::DirectoryEntryType type;
+                fs::DirectoryEntryType type{};
                 R_TRY(GetEntryTypeImpl(std::addressof(type), native_path.get()));
 
                 /* If the type isn't file, return path not found. */
@@ -1623,7 +1623,7 @@ namespace ams::fssystem {
             ON_RESULT_FAILURE { ::CloseHandle(dir_handle); };
 
             /* Check that we tried to open a directory. */
-            fs::DirectoryEntryType type;
+            fs::DirectoryEntryType type{};
             R_TRY(GetEntryTypeImpl(std::addressof(type), native_path.get()));
 
             /* If the type isn't directory, return path not found. */
