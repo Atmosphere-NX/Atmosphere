@@ -25,11 +25,11 @@ namespace ams::ldr {
     }
 
     /* ScopedCodeMount functionality. */
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, PlatformId platform) : m_lk(g_scoped_code_mount_lock), m_has_status(false), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, ncm::ContentMetaPlatform platform) : m_lk(g_scoped_code_mount_lock), m_has_status(false), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
         m_result = this->Initialize(loc, platform);
     }
 
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o, PlatformId platform) : m_lk(g_scoped_code_mount_lock), m_override_status(o), m_has_status(true), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o, ncm::ContentMetaPlatform platform) : m_lk(g_scoped_code_mount_lock), m_override_status(o), m_has_status(true), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
         m_result = this->Initialize(loc, platform);
     }
 
@@ -46,7 +46,7 @@ namespace ams::ldr {
         }
     }
 
-    Result ScopedCodeMount::Initialize(const ncm::ProgramLocation &loc, PlatformId platform) {
+    Result ScopedCodeMount::Initialize(const ncm::ProgramLocation &loc, ncm::ContentMetaPlatform platform) {
         /* Capture override status, if necessary. */
         this->EnsureOverrideStatus(loc);
         AMS_ABORT_UNLESS(m_has_status);
@@ -83,7 +83,7 @@ namespace ams::ldr {
     }
 
     /* Redirection API. */
-    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, PlatformId platform) {
+    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, ncm::ContentMetaPlatform platform) {
         /* Check for storage id none. */
         if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::None) {
             std::memset(out_path, 0, out_size);
@@ -166,9 +166,9 @@ namespace ams::ldr {
         R_SUCCEED();
     }
 
-    fs::ContentAttributes GetPlatformContentAttributes(PlatformId platform) {
+    fs::ContentAttributes GetPlatformContentAttributes(ncm::ContentMetaPlatform platform) {
         switch (platform) {
-            case PlatformId_Nx:
+            case ncm::ContentMetaPlatform::Nx:
                 return fs::ContentAttributes_None;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

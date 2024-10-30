@@ -103,15 +103,15 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        const u8 *GetAcidSignatureModulus(PlatformId platform, u8 key_generation, bool unk_unused) {
+        const u8 *GetAcidSignatureModulus(ncm::ContentMetaPlatform platform, u8 key_generation, bool unk_unused) {
             return fssystem::GetAcidSignatureKeyModulus(platform, !IsDevelopmentForAcidSignatureCheck(), key_generation, unk_unused);
         }
 
-        size_t GetAcidSignatureModulusSize(PlatformId platform, bool unk_unused) {
+        size_t GetAcidSignatureModulusSize(ncm::ContentMetaPlatform platform, bool unk_unused) {
             return fssystem::GetAcidSignatureKeyModulusSize(platform, unk_unused);
         }
 
-        Result ValidateAcidSignature(Meta *meta, PlatformId platform, bool unk_unused) {
+        Result ValidateAcidSignature(Meta *meta, ncm::ContentMetaPlatform platform, bool unk_unused) {
             /* Loader did not check signatures prior to 10.0.0. */
             if (hos::GetVersion() < hos::Version_10_0_0) {
                 meta->check_verification_data = false;
@@ -190,7 +190,7 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform, bool unk_unused) {
+    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused) {
         /* Set the cached program id back to zero. */
         g_cached_program_id = {};
 
@@ -282,7 +282,7 @@ namespace ams::ldr {
         R_SUCCEED();
     }
 
-    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, PlatformId platform) {
+    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform) {
         if (g_cached_program_id != loc.program_id || g_cached_override_status != status) {
             R_RETURN(LoadMeta(out_meta, loc, status, platform, false));
         }

@@ -27,11 +27,11 @@ namespace ams::ldr {
 
         constinit ArgumentStore g_argument_store;
 
-        bool IsValidPlatform(PlatformId platform) {
-            return platform == PlatformId_Nx;
+        bool IsValidPlatform(ncm::ContentMetaPlatform platform) {
+            return platform == ncm::ContentMetaPlatform::Nx;
         }
 
-        Result CreateProcessByPlatform(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
+        Result CreateProcessByPlatform(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit, ncm::ContentMetaPlatform platform) {
             /* Check that the platform is valid. */
             R_UNLESS(IsValidPlatform(platform), ldr::ResultInvalidPlatformId());
 
@@ -49,7 +49,7 @@ namespace ams::ldr {
             R_RETURN(ldr::CreateProcess(out, pin_id, loc, override_status, path, g_argument_store.Get(loc.program_id), flags, resource_limit, platform));
         }
 
-        Result GetProgramInfoByPlatform(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, PlatformId platform) {
+        Result GetProgramInfoByPlatform(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, ncm::ContentMetaPlatform platform) {
             /* Check that the platform is valid. */
             R_UNLESS(IsValidPlatform(platform), ldr::ResultInvalidPlatformId());
 
@@ -88,11 +88,11 @@ namespace ams::ldr {
 
 
     Result LoaderService::CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit) {
-        R_RETURN(CreateProcessByPlatform(out, pin_id, flags, resource_limit, PlatformId_Nx));
+        R_RETURN(CreateProcessByPlatform(out, pin_id, flags, resource_limit, ncm::ContentMetaPlatform::Nx));
     }
 
     Result LoaderService::GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
-        R_RETURN(GetProgramInfoByPlatform(out, out_status, loc, PlatformId_Nx));
+        R_RETURN(GetProgramInfoByPlatform(out, out_status, loc, ncm::ContentMetaPlatform::Nx));
     }
 
     Result LoaderService::PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
