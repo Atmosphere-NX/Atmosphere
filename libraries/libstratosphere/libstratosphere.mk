@@ -154,12 +154,14 @@ spl_secure_monitor_api.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/l
 fs_id_string_impl.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 
 ifeq ($(ATMOSPHERE_OS_NAME),windows)
-# I do not remember why these had fno-lto, but it appears to
-# work without no-lto (2023/03/09), so I am disabling these. I may regret this later.
-#os_%.o: CXXFLAGS += -fno-lto
-#fssystem_%.o: CXXFLAGS += -fno-lto
-#fssrv_%.o: CXXFLAGS += -fno-lto
-#fs_%.o: CXXFLAGS += -fno-lto
+# Audit builds fail when these have lto disabled.
+# Noting 10/29/24:
+# In member function '__ct ':
+# internal compiler error: in binds_to_current_def_p, at symtab.cc:2589
+os_%.o: CXXFLAGS += -fno-lto
+fssystem_%.o: CXXFLAGS += -fno-lto
+fssrv_%.o: CXXFLAGS += -fno-lto
+fs_%.o: CXXFLAGS += -fno-lto
 endif
 
 #---------------------------------------------------------------------------------
