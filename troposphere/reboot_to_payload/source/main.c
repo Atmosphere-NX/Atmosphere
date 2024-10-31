@@ -14,14 +14,17 @@ void userAppExit(void)
     setsysExit();
     spsmExit();
 }
-
+static bool shutdown = false;
 static void reboot_to_payload(void) {
     Result rc = amsBpcSetRebootPayload(g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE);
     if (R_FAILED(rc)) {
         printf("Failed to set reboot payload: 0x%x\n", rc);
     }
     else {
-        spsmShutdown(true);
+        if (shutdown) {
+            spsmShutdown(false);
+        } else
+            spsmShutdown(true);
     }
 }
 
@@ -45,8 +48,8 @@ int main(int argc, char **argv)
         SetSysProductModel model;
         setsysGetProductModel(&model);
         if (model != SetSysProductModel_Nx && model != SetSysProductModel_Copper) {
-            printf("Reboot to payload cannot be used on a Mariko system\n");
-            can_reboot = false;
+            // printf("shut down on a Mariko system\n");
+            shutdown = true;
         }
     }
 
@@ -64,14 +67,16 @@ int main(int argc, char **argv)
     }
 
     if (can_reboot) {
-        FILE *f = fopen("sdmc:/atmosphere/reboot_payload.bin", "rb");
+        FILE *f = fopen("sdmc:/bootloader/update.bin", "rb");
         if (f == NULL) {
-            printf("Failed to open atmosphere/reboot_payload.bin!\n");
+            printf("Failed to open bootloader/update.bin!\n");
             can_reboot = false;
         } else {
             fread(g_reboot_payload, 1, sizeof(g_reboot_payload), f);
             fclose(f);
-            printf("Press [-] to reboot to payload\n");
+            if (shutdown) printf("Press [-] to shutdown Press [+] to restart\n");
+            else
+            printf("Press [+] to reboot to hekate\n");
         }
     }
 
@@ -83,6 +88,10 @@ int main(int argc, char **argv)
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
 
+        if (can_reboot && (kDown & HidNpadButton_Plus)) {
+            shutdown = false;
+            reboot_to_payload();
+        }
         if (can_reboot && (kDown & HidNpadButton_Minus)) {
             reboot_to_payload();
         }
