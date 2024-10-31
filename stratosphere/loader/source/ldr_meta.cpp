@@ -244,7 +244,7 @@ namespace ams::ldr {
                 }
             }
 
-            /* When hbl is applet, adjust main thread priority. */
+            /* When hbl is applet, adjust main thread priority. */ 
             if ((MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
                 constexpr auto HblMainThreadPriorityApplication = 44;
                 constexpr auto HblMainThreadPriorityApplet      = 40;
