@@ -78,7 +78,7 @@ hekate:
 	git merge master --no-edit
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	$(MAKE) hekate
+	# $(MAKE) hekate
 	mkdir -p /mnt/f/git/dev/_kefir/8gb/atmosphere/
 	mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
@@ -98,7 +98,7 @@ hekate:
 	$(MAKE) clean -j12
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	$(MAKE) hekate
+	# $(MAKE) hekate
 	mkdir -p /mnt/f/git/dev/_kefir/8gb/atmosphere/
 	mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
