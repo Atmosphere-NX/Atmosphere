@@ -61,14 +61,14 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623/exefs.nsp
 	@build_romfs $(DIST_DIR)/stratosphere_romfs $(DIST_DIR)/atmosphere/stratosphere.romfs
 	rm -r $(DIST_DIR)/stratosphere_romfs
-	cp troposphere/daybreak/daybreak.nro $(DIST_DIR)/switch/daybreak/daybreak.nro
+	# cp troposphere/daybreak/daybreak.nro $(DIST_DIR)/switch/daybreak/daybreak.nro
 	cp fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin $(DIST_DIR)/bootloader/payloads/fusee.bin
 	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(DIST_DIR)/atmosphere/package3
 	cd $(DIST_DIR); ls; rm -rf ../../../../../atmosphere-$(ATMOSPHERE_VERSION).zip; ls
 	cd $(DIST_DIR); zip -r ../../../../../atmosphere-$(ATMOSPHERE_VERSION).zip ./*; cd ../;
 	rm -rf $(DIST_DIR)
 
-package3: emummc fusee stratosphere mesosphere exosphere troposphere
+package3: emummc fusee stratosphere mesosphere exosphere
 	@python fusee/build_package3.py $(CURRENT_DIRECTORY) $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BOOT_OUT_DIR) $(ATMOSPHERE_GIT_HASH) $(ATMOSPHERE_MAJOR_VERSION) $(ATMOSPHERE_MINOR_VERSION) $(ATMOSPHERE_MICRO_VERSION) 0 $(ATMOSPHERE_SUPPORTED_HOS_MAJOR_VERSION) $(ATMOSPHERE_SUPPORTED_HOS_MINOR_VERSION) $(ATMOSPHERE_SUPPORTED_HOS_MICRO_VERSION) 0
 	@echo "Built package3!"
 
@@ -112,7 +112,7 @@ clean:
 	$(MAKE) -C $(CURRENT_DIRECTORY)/exosphere -f $(CURRENT_DIRECTORY)/exosphere/exosphere.mk clean
 	$(MAKE) -C $(CURRENT_DIRECTORY)/mesosphere -f $(CURRENT_DIRECTORY)/mesosphere/mesosphere.mk clean
 	$(MAKE) -C $(CURRENT_DIRECTORY)/stratosphere -f $(CURRENT_DIRECTORY)/stratosphere/stratosphere.mk clean
-	$(MAKE) -C $(CURRENT_DIRECTORY)/troposphere clean
+	# $(MAKE) -C $(CURRENT_DIRECTORY)/troposphere clean
 	$(MAKE) -C $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere -f $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/libstratosphere.mk clean
 	$(MAKE) -C $(ATMOSPHERE_LIBRARIES_DIR)/libmesosphere -f $(ATMOSPHERE_LIBRARIES_DIR)/libmesosphere/libmesosphere.mk clean
 	$(MAKE) -C $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere -f $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/libexosphere.mk clean
@@ -122,4 +122,4 @@ clean:
 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR) $(CURRENT_DIRECTORY)/$(ATMOSPHERE_BUILD_DIR):
 	@[ -d $@ ] || mkdir -p $@
 
-.PHONY: dist-no-debug clean package3 emummc fusee stratosphere mesosphere exosphere troposphere
+.PHONY: dist-no-debug clean package3 emummc fusee stratosphere mesosphere exosphere
