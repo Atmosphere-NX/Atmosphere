@@ -19,7 +19,7 @@
 #include <stratosphere/ncm/ncm_ids.hpp>
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
-#include <stratosphere/ldr/ldr_platform_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_platform.hpp>
 
 namespace ams::ldr {
 

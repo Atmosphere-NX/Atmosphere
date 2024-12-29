@@ -537,6 +537,8 @@ namespace ams::erpt::srv {
             /* NOTE: Nintendo ignores the result of this call. */
             SubmitFsInfo();
         }
+        #else
+        AMS_UNUSED(flags);
         #endif
 
 

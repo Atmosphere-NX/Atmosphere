@@ -64,11 +64,11 @@ clear:
 hekate:
 	@echo "Building Hekate"
 	@cd ../hekate && git pull && make clean && make -j12
-	@mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/sys/
-	@find /mnt/f/git/dev/_kefir/8gb/ -type f ! -name 'run.te' -delete
-	@cp ../hekate/output/*.bso /mnt/f/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
-	@cp ../hekate/output/nyx.bin /mnt/f/git/dev/_kefir/8gb/bootloader/sys/nyx.bin || echo "Warning: nyx.bin not found or copy failed"
-	@cp ../hekate/output/payload.bin /mnt/f/git/dev/_kefir/8gb/payload.bin || echo "Warning: payload.bin not found or copy failed"
+	@mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/sys/
+	@find /mnt/d/git/dev/_kefir/8gb/ -type f ! -name 'run.te' -delete
+	@cp ../hekate/output/*.bso /mnt/d/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
+	@cp ../hekate/output/nyx.bin /mnt/d/git/dev/_kefir/8gb/bootloader/sys/nyx.bin || echo "Warning: nyx.bin not found or copy failed"
+	@cp ../hekate/output/payload.bin /mnt/d/git/dev/_kefir/8gb/payload.bin || echo "Warning: payload.bin not found or copy failed"
 
 8gb_DRAM:
 	$(info ---------------------------------------------------------)
@@ -79,11 +79,11 @@ hekate:
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
 	# $(MAKE) hekate
-	mkdir -p /mnt/f/git/dev/_kefir/8gb/atmosphere/
-	mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
+	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
+	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building with 8GB DRAM!)
 	$(info ---------------------------------------------------------)
@@ -99,11 +99,11 @@ hekate:
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
 	# $(MAKE) hekate
-	mkdir -p /mnt/f/git/dev/_kefir/8gb/atmosphere/
-	mkdir -p /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/f/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/f/git/dev/_kefir/8gb/atmosphere/package3
+	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
+	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building with 8GB DRAM!)
 	$(info ---------------------------------------------------------)
@@ -116,7 +116,7 @@ oc:
 	git checkout oc
 	git merge master --no-edit
 	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/f/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
@@ -130,7 +130,7 @@ oc-clean:
 	git merge master --no-edit
 	$(MAKE) clean -j12
 	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/f/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
