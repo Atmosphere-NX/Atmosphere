@@ -7,7 +7,7 @@ include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../libraries/config/te
 
 ATMOSPHERE_SYSTEM_MODULE_TARGETS := kip
 
-export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat /mnt/f/git/dev/_kefir/version)
+export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat /mnt/d/git/dev/_kefir/version)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

@@ -233,7 +233,7 @@ endif
 #---------------------------------------------------------------------------------
 export ATMOSPHERE_GIT_BRANCH   := $(shell git symbolic-ref --short HEAD)
 
-export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat /mnt/f/git/dev/_kefir/version)
+export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat /mnt/d/git/dev/_kefir/version)
 
 export ATMOSPHERE_GIT_HASH := $(shell git rev-parse --short=16 HEAD)
 
