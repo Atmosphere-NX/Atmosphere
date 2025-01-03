@@ -324,6 +324,7 @@ C0TcS2Ra aaaaaaaa
 C0TcS3Rr
 C0TcS400 VVVVVVVV (VVVVVVVV)
 C0TcS5X0
+C0Tcr6Ma aaaaaaaa VVVVVVVV (VVVVVVVV)
 ```
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
@@ -344,6 +345,7 @@ C0TcS5X0
 + 3: Register + Offset Register
 + 4: Static Value
 + 5: Other Register
++ 6: Memory Base + Offset Register + Relative Offset vs Static Value
 
 #### Conditions
 + 1: >
