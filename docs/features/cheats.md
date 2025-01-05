@@ -200,7 +200,7 @@ Code type 0x8 enters or skips a conditional block based on whether a key combina
 
 + k: Keypad mask to check against, see below.
 
-Note that for multiple button combinations, the bitmasks should be ORd together.
+Note that for multiple button combinations, the bitmasks should be OR'd together. Also, bit 27 does not correspond to a button and instead acts as a no auto-repeat flag.
 
 #### Keypad Values
 Note: This is the direct output of `hidKeysDown()`.
