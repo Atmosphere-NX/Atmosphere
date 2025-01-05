@@ -49,7 +49,7 @@ Code type 0x0 allows writing a static value to a memory address.
 `0TMR00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
 + R: Register to use as an offset from memory region base.
 + A: Immediate offset to use from memory region base.
 + V: Value to write.
@@ -137,6 +137,22 @@ Code type 0x5 allows loading a value from memory into a register, either using a
 + R: Register to load value into. (This register is also used as the base memory address).
 + A: Immediate offset to use from register R.
 
+#### Load from Register Address Encoding
+`5T0R2SAA AAAAAAAA`
+
++ T: Width of memory read (1, 2, 4, or 8 bytes).
++ R: Register to load value into. 
++ S: Register to use as the base memory address.
++ A: Immediate offset to use from register R.
+
+#### Load From Fixed Address Encoding with offset register
+`5TMR3SAA AAAAAAAA`
+
++ T: Width of memory read (1, 2, 4, or 8 bytes).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
++ R: Register to load value into.
++ S: Register to use as offset register.
++ A: Immediate offset to use from memory region base.
 ---
 
 ### Code Type 0x6: Store Static Value to Register Memory Address
@@ -215,6 +231,7 @@ Note: This is the direct output of `hidKeysDown()`.
 + 0800000: Right Stick Down
 + 1000000: SL
 + 2000000: SR
++ 8000000: when this is set button only activate code once per keydown, need to be release before the code will run again
 
 ---
 
@@ -250,6 +267,10 @@ Code type 0x9 allows performing arithmetic on registers.
 + 7: Logical Not (discards right-hand operand)
 + 8: Logical Xor
 + 9: None/Move (discards right-hand operand)
++ 10: Float Addition, Width force to 4 bytes
++ 11: Float Multiplication, Width force to 4 bytes
++ 12: Double Addition, Width force to 8 bytes
++ 13: Double Multiplication, Width force to 8 bytes
 
 ---
 
@@ -303,6 +324,7 @@ C0TcS2Ra aaaaaaaa
 C0TcS3Rr
 C0TcS400 VVVVVVVV (VVVVVVVV)
 C0TcS5X0
+C0Tcr6Ma aaaaaaaa VVVVVVVV (VVVVVVVV)
 ```
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
@@ -323,6 +345,7 @@ C0TcS5X0
 + 3: Register + Offset Register
 + 4: Static Value
 + 5: Other Register
++ 6: Compare [Memory Base + Offset Register + Relative Offset] against Static Value
 
 #### Conditions
 + 1: >

@@ -59,6 +59,7 @@ namespace ams::dmnt::cheat::impl {
         MemoryAccessType_Heap    = 1,
         MemoryAccessType_Alias   = 2,
         MemoryAccessType_Aslr    = 3,
+        MemoryAccessType_Blank   = 4,
     };
 
     enum ConditionalComparisonType : u32 {
@@ -84,6 +85,10 @@ namespace ams::dmnt::cheat::impl {
         RegisterArithmeticType_LogicalXor = 8,
 
         RegisterArithmeticType_None = 9,
+        RegisterArithmeticType_FloatAddition = 10,
+        RegisterArithmeticType_FloatMultiplication = 11,
+        RegisterArithmeticType_DoubleAddition = 12,
+        RegisterArithmeticType_DoubleMultiplication = 13,
     };
 
     enum StoreRegisterOffsetType : u32 {
@@ -102,6 +107,7 @@ namespace ams::dmnt::cheat::impl {
         CompareRegisterValueType_RegisterOfsReg = 3,
         CompareRegisterValueType_StaticValue = 4,
         CompareRegisterValueType_OtherRegister = 5,
+        CompareRegisterValueType_OffsetValue = 6,
     };
 
     enum SaveRestoreRegisterOpType : u32 {
@@ -161,7 +167,8 @@ namespace ams::dmnt::cheat::impl {
         u32 bit_width;
         MemoryAccessType mem_type;
         u32 reg_index;
-        bool load_from_reg;
+        u8 load_from_reg;
+        u8 offset_register;
         u64 rel_address;
     };
 
