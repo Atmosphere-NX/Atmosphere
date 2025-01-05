@@ -1000,9 +1000,7 @@ namespace ams::dmnt::cheat::impl {
                 case CheatVmOpcodeType_BeginKeypressConditionalBlock:
                     /* Check for keypress. */
                     if (cur_opcode.begin_keypress_cond.key_mask > 0x8000000) {
-                        const u64 kDown = ~keyold & kHeld;
-                        
-                        if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kDown) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
+                        if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kHeld) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF) || (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & keyold) == (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
                             /* Keys not pressed. Skip conditional block. */
                             this->SkipConditionalBlock(true);
                         }

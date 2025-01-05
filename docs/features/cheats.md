@@ -231,7 +231,7 @@ Note: This is the direct output of `hidKeysDown()`.
 + 0800000: Right Stick Down
 + 1000000: SL
 + 2000000: SR
-+ 8000000: when this is set button only activate code once per keydown, need to be release before the code will run again
++ 8000000: No auto-repeat. When this bit is set, the conditional block executes only once when the keypad mask matches. The mask must stop matching to reset for the next trigger.
 
 ---
 
