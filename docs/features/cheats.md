@@ -200,7 +200,7 @@ Code type 0x8 enters or skips a conditional block based on whether a key combina
 
 + k: Keypad mask to check against, see below.
 
-Note that for multiple button combinations, the bitmasks should be OR'd together. Also, bit 27 does not correspond to a button and instead acts as a no auto-repeat flag.
+Note that for multiple button combinations, the bitmasks should be ORd together.
 
 #### Keypad Values
 Note: This is the direct output of `hidKeysDown()`.
@@ -231,7 +231,6 @@ Note: This is the direct output of `hidKeysDown()`.
 + 0800000: Right Stick Down
 + 1000000: SL
 + 2000000: SR
-+ 8000000: No auto-repeat. When this bit is set, the conditional block executes only once when the keypad mask matches. The mask must stop matching to reset for the next trigger.
 
 ---
 
@@ -402,6 +401,61 @@ Code type 0xC3 reads or writes a static register with a given register.
 + x: Register index.
 
 ---
+
+### Code Type 0xC4: Begin Extended Keypress Conditional Block
+Code type 0xC4 enters or skips a conditional block based on whether a key combination is pressed.
+
+#### Encoding
+`C4r000kk kkkkkkkk`
+
++ r: Auto-repeat, see below.
++ kkkkkkkkkk: Keypad mask to check against output of `hidKeysDown()`.
+
+Note that for multiple button combinations, the bitmasks should be OR'd together.
+
+#### Auto-repeat
+
++ 0: The conditional block executes only once when the keypad mask matches. The mask must stop matching to reset for the next trigger.
++ 1: The conditional block executes as long as the keypad mask matches.
+
+#### Keypad Values
+Note: This is the direct output of `hidKeysDown()`.
+
++ 000000001: A
++ 000000002: B
++ 000000004: X
++ 000000008: Y
++ 000000010: Left Stick Pressed
++ 000000020: Right Stick Pressed
++ 000000040: L
++ 000000080: R
++ 000000100: ZL
++ 000000200: ZR
++ 000000400: Plus
++ 000000800: Minus
++ 000001000: Left
++ 000002000: Up
++ 000004000: Right
++ 000008000: Down
++ 000010000: Left Stick Left
++ 000020000: Left Stick Up
++ 000040000: Left Stick Right
++ 000080000: Left Stick Down
++ 000100000: Right Stick Left
++ 000200000: Right Stick Up
++ 000400000: Right Stick Right
++ 000800000: Right Stick Down
++ 001000000: SL Left Joy-Con
++ 002000000: SR Left Joy-Con
++ 004000000: SL Right Joy-Con
++ 008000000: SR Right Joy-Con
++ 010000000: Top button on Poké Ball Plus (Palma) controller
++ 020000000: Verification
++ 040000000: B button on Left NES/HVC controller in Handheld mode
++ 080000000: Left C button in N64 controller
++ 100000000: Up C button in N64 controller
++ 200000000: Right C button in N64 controller
++ 400000000: Down C button in N64 controller
 
 ### Code Type 0xF0: Double Extended-Width Instruction
 Code Type 0xF0 signals to the VM to treat the upper three nybbles of the first dword as instruction type, instead of just the upper nybble.
