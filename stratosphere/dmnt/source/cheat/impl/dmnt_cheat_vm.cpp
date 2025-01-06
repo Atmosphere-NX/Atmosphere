@@ -158,6 +158,11 @@ namespace ams::dmnt::cheat::impl {
                 this->LogToDebugFile("Opcode: Begin Keypress Conditional\n");
                 this->LogToDebugFile("Key Mask:  %x\n", opcode->begin_keypress_cond.key_mask);
                 break;
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                this->LogToDebugFile("Opcode: Begin Extended Keypress Conditional\n");
+                this->LogToDebugFile("Key Mask:  %x\n", opcode->begin_ext_keypress_cond.key_mask);
+                this->LogToDebugFile("Auto Repeat:  %d\n", opcode->begin_ext_keypress_cond.auto_repeat);
+                break;
             case CheatVmOpcodeType_PerformArithmeticRegister:
                 this->LogToDebugFile("Opcode: Perform Register Arithmetic\n");
                 this->LogToDebugFile("Bit Width: %x\n", opcode->perform_math_reg.bit_width);
@@ -365,6 +370,7 @@ namespace ams::dmnt::cheat::impl {
         switch (opcode.opcode) {
             case CheatVmOpcodeType_BeginConditionalBlock:
             case CheatVmOpcodeType_BeginKeypressConditionalBlock:
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
             case CheatVmOpcodeType_BeginRegisterConditionalBlock:
                 opcode.begin_conditional_block = true;
                 break;
@@ -466,6 +472,14 @@ namespace ams::dmnt::cheat::impl {
                     /* 8kkkkkkk */
                     /* Just parse the mask. */
                     opcode.begin_keypress_cond.key_mask = first_dword & 0x0FFFFFFF;
+                }
+                break;
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                {
+                    /* C4r000kk kkkkkkkk */
+                    /* Read additional words. */
+                    opcode.begin_ext_keypress_cond.key_mask = (((u64)first_dword & 0xFF) << 32ul) | ((u64)GetNextDword());
+                    opcode.begin_ext_keypress_cond.auto_repeat = ((first_dword >> 20) & 0xF) != 0;
                 }
                 break;
             case CheatVmOpcodeType_PerformArithmeticRegister:
@@ -999,12 +1013,19 @@ namespace ams::dmnt::cheat::impl {
                     break;
                 case CheatVmOpcodeType_BeginKeypressConditionalBlock:
                     /* Check for keypress. */
-                    if (cur_opcode.begin_keypress_cond.key_mask > 0x8000000) {
-                        if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kHeld) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF) || (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & keyold) == (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
+                    if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
+                        /* Keys not pressed. Skip conditional block. */
+                        this->SkipConditionalBlock(true);
+                    }
+                    break;
+                case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                    /* Check for keypress. */
+                    if (!cur_opcode.begin_ext_keypress_cond.auto_repeat) {
+                        if ((cur_opcode.begin_ext_keypress_cond.key_mask & kHeld) != (cur_opcode.begin_ext_keypress_cond.key_mask) || (cur_opcode.begin_ext_keypress_cond.key_mask & keyold) == (cur_opcode.begin_ext_keypress_cond.key_mask)) {
                             /* Keys not pressed. Skip conditional block. */
                             this->SkipConditionalBlock(true);
                         }
-                    } else if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
+                    } else if ((cur_opcode.begin_ext_keypress_cond.key_mask & kHeld) != cur_opcode.begin_ext_keypress_cond.key_mask) {
                         /* Keys not pressed. Skip conditional block. */
                         this->SkipConditionalBlock(true);
                     }

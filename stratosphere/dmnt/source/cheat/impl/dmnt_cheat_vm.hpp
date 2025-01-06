@@ -43,6 +43,7 @@ namespace ams::dmnt::cheat::impl {
         CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
         CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
         CheatVmOpcodeType_ReadWriteStaticRegister = 0xC3,
+        CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock = 0xC4,
 
         /* This is a meta entry, and not a real opcode. */
         /* This is to facilitate multi-nybble instruction decoding. */
@@ -192,6 +193,11 @@ namespace ams::dmnt::cheat::impl {
         u32 key_mask;
     };
 
+    struct BeginExtendedKeypressConditionalOpcode {
+        u64 key_mask;
+        bool auto_repeat;
+    };
+
     struct PerformArithmeticRegisterOpcode {
         u32 bit_width;
         RegisterArithmeticType math_type;
@@ -266,6 +272,7 @@ namespace ams::dmnt::cheat::impl {
             StoreStaticToAddressOpcode str_static;
             PerformArithmeticStaticOpcode perform_math_static;
             BeginKeypressConditionalOpcode begin_keypress_cond;
+            BeginExtendedKeypressConditionalOpcode begin_ext_keypress_cond;
             PerformArithmeticRegisterOpcode perform_math_reg;
             StoreRegisterToAddressOpcode str_register;
             BeginRegisterConditionalOpcode begin_reg_cond;
