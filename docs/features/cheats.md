@@ -271,11 +271,10 @@ Code type 0x9 allows performing arithmetic on registers.
 + 7: Logical Not (discards right-hand operand)
 + 8: Logical Xor
 + 9: None/Move (discards right-hand operand)
-+ 10: Float Addition, Width force to 4 bytes
-+ 11: Float Multiplication, Width force to 4 bytes
-+ 12: Double Addition, Width force to 8 bytes
-+ 13: Double Multiplication, Width force to 8 bytes
-
++ 10: Float Addition, T==4 single T==8 double
++ 11: Float Subtraction, T==4 single T==8 double
++ 12: Float Multiplication, T==4 single T==8 double
++ 13: Float Division, T==4 single T==8 double
 ---
 
 ### Code Type 0xA: Store Register to Memory Address

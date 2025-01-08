@@ -1060,21 +1060,29 @@ namespace ams::dmnt::cheat::impl {
                             case RegisterArithmeticType_None:
                                 res_val = operand_1_value;
                                 break;
-                            case RegisterArithmeticType_FloatAddition: {
-                                cur_opcode.perform_math_reg.bit_width = 4;
-                                *(float *)&res_val = *(float *)&operand_1_value + *(float *)&operand_2_value;
+                            case RegisterArithmeticType_FloatAddition:
+                                if (cur_opcode.perform_math_reg.bit_width == 4)
+                                    *(float *)&res_val = *(float *)&operand_1_value + *(float *)&operand_2_value;
+                                if (cur_opcode.perform_math_reg.bit_width == 8)
+                                    *(double *)&res_val = *(double *)&operand_1_value + *(double *)&operand_2_value;
+                                break;
+                            case RegisterArithmeticType_FloatSubtraction: {
+                                if (cur_opcode.perform_math_reg.bit_width == 4)
+                                    *(float *)&res_val = *(float *)&operand_1_value - *(float *)&operand_2_value;
+                                if (cur_opcode.perform_math_reg.bit_width == 8)
+                                    *(double *)&res_val = *(double *)&operand_1_value - *(double *)&operand_2_value;
                             } break;
                             case RegisterArithmeticType_FloatMultiplication: {
-                                cur_opcode.perform_math_reg.bit_width = 4;
-                                *(float *)&res_val = *(float *)&operand_1_value * *(float *)&operand_2_value;
+                                if (cur_opcode.perform_math_reg.bit_width == 4)
+                                    *(float *)&res_val = *(float *)&operand_1_value * *(float *)&operand_2_value;
+                                if (cur_opcode.perform_math_reg.bit_width == 8)
+                                    *(double *)&res_val = *(double *)&operand_1_value * *(double *)&operand_2_value;
                             } break;
-                            case RegisterArithmeticType_DoubleAddition: {
-                                cur_opcode.perform_math_reg.bit_width = 8;
-                                *(double *)&res_val = *(double *)&operand_1_value + *(double *)&operand_2_value;
-                            } break;
-                            case RegisterArithmeticType_DoubleMultiplication: {
-                                cur_opcode.perform_math_reg.bit_width = 8;
-                                *(double *)&res_val = *(double *)&operand_1_value * *(double *)&operand_2_value;
+                            case RegisterArithmeticType_FloatDivision: {
+                                if (cur_opcode.perform_math_reg.bit_width == 4)
+                                    *(float *)&res_val = *(float *)&operand_1_value / *(float *)&operand_2_value;
+                                if (cur_opcode.perform_math_reg.bit_width == 8)
+                                    *(double *)&res_val = *(double *)&operand_1_value / *(double *)&operand_2_value;
                             } break;
                         }
 

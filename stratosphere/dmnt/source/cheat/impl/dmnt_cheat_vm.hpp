@@ -87,9 +87,9 @@ namespace ams::dmnt::cheat::impl {
 
         RegisterArithmeticType_None = 9,
         RegisterArithmeticType_FloatAddition = 10,
-        RegisterArithmeticType_FloatMultiplication = 11,
-        RegisterArithmeticType_DoubleAddition = 12,
-        RegisterArithmeticType_DoubleMultiplication = 13,
+        RegisterArithmeticType_FloatSubtraction = 11,
+        RegisterArithmeticType_FloatMultiplication = 12,
+        RegisterArithmeticType_FloatDivision = 13,
     };
 
     enum StoreRegisterOffsetType : u32 {
