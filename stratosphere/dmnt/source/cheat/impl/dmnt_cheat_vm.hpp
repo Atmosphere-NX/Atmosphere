@@ -108,7 +108,6 @@ namespace ams::dmnt::cheat::impl {
         CompareRegisterValueType_RegisterOfsReg = 3,
         CompareRegisterValueType_StaticValue = 4,
         CompareRegisterValueType_OtherRegister = 5,
-        CompareRegisterValueType_OffsetValue = 6,
     };
 
     enum SaveRestoreRegisterOpType : u32 {

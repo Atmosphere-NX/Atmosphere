@@ -235,13 +235,6 @@ namespace ams::dmnt::cheat::impl {
                         this->LogToDebugFile("A Reg Idx: %x\n", opcode->begin_reg_cond.addr_reg_index);
                         this->LogToDebugFile("O Reg Idx: %x\n", opcode->begin_reg_cond.ofs_reg_index);
                         break;
-                    case CompareRegisterValueType_OffsetValue:
-                        this->LogToDebugFile("Comp Type: Offset Value\n");
-                        this->LogToDebugFile("Mem Type:  %x\n", opcode->begin_reg_cond.mem_type);
-                        this->LogToDebugFile("O Reg Idx: %x\n", opcode->begin_reg_cond.ofs_reg_index);
-                        this->LogToDebugFile("Rel Addr:  %lx\n", opcode->begin_reg_cond.rel_address);
-                        this->LogToDebugFile("Value:     %lx\n", opcode->begin_reg_cond.value.bit64);
-                        break;
                 }
                 break;
             case CheatVmOpcodeType_SaveRestoreRegister:
@@ -551,7 +544,6 @@ namespace ams::dmnt::cheat::impl {
                     /* C0TcS3Rr */
                     /* C0TcS400 VVVVVVVV (VVVVVVVV) */
                     /* C0TcS5X0 */
-                    /* C0Tcr6Ma aaaaaaaa VVVVVVVV (VVVVVVVV) */
                     /* C0 = opcode 0xC0 */
                     /* T = bit width */
                     /* c = condition type. */
@@ -591,12 +583,6 @@ namespace ams::dmnt::cheat::impl {
                         case CompareRegisterValueType_RegisterOfsReg:
                             opcode.begin_reg_cond.addr_reg_index = ((first_dword >> 4) & 0xF);
                             opcode.begin_reg_cond.ofs_reg_index = (first_dword & 0xF);
-                            break;
-                        case CompareRegisterValueType_OffsetValue:
-                            opcode.begin_reg_cond.mem_type = (MemoryAccessType)((first_dword >> 4) & 0xF);
-                            opcode.begin_reg_cond.rel_address = (((u64)(first_dword & 0xF) << 32ul) | ((u64)GetNextDword()));
-                            opcode.begin_reg_cond.ofs_reg_index = ((first_dword >> 12) & 0xF);
-                            opcode.begin_reg_cond.value = GetNextVmInt(opcode.begin_reg_cond.bit_width);
                             break;
                     }
                 }
@@ -1207,10 +1193,6 @@ namespace ams::dmnt::cheat::impl {
                                     break;
                                 case CompareRegisterValueType_RegisterOfsReg:
                                     cond_address = m_registers[cur_opcode.begin_reg_cond.addr_reg_index] + m_registers[cur_opcode.begin_reg_cond.ofs_reg_index];
-                                    break;
-                                case CompareRegisterValueType_OffsetValue:
-                                    cond_address = GetCheatProcessAddress(metadata, cur_opcode.begin_reg_cond.mem_type, cur_opcode.begin_reg_cond.rel_address + m_registers[cur_opcode.begin_reg_cond.ofs_reg_index]);
-                                    src_value = GetVmInt(cur_opcode.begin_reg_cond.value, cur_opcode.begin_reg_cond.bit_width);
                                     break;
                                 default:
                                     break;
