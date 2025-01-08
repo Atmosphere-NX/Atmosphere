@@ -108,6 +108,8 @@ namespace ams::dmnt::cheat::impl {
                 this->LogToDebugFile("Bit Width: %x\n", opcode->begin_cond.bit_width);
                 this->LogToDebugFile("Mem Type:  %x\n", opcode->begin_cond.mem_type);
                 this->LogToDebugFile("Cond Type: %x\n", opcode->begin_cond.cond_type);
+                this->LogToDebugFile("Inc Ofs reg:   %d\n", opcode->begin_cond.include_ofs_reg);
+                this->LogToDebugFile("Ofs Reg Idx: %x\n", opcode->begin_cond.ofs_reg_index);
                 this->LogToDebugFile("Rel Addr:  %lx\n", opcode->begin_cond.rel_address);
                 this->LogToDebugFile("Value:     %lx\n", opcode->begin_cond.value.bit64);
                 break;
@@ -400,6 +402,8 @@ namespace ams::dmnt::cheat::impl {
                     opcode.begin_cond.bit_width = (first_dword >> 24) & 0xF;
                     opcode.begin_cond.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
                     opcode.begin_cond.cond_type = (ConditionalComparisonType)((first_dword >> 16) & 0xF);
+                    opcode.begin_cond.include_ofs_reg = ((first_dword >> 12) & 0xF) != 0;
+                    opcode.begin_cond.ofs_reg_index = ((first_dword >> 8) & 0xF);
                     opcode.begin_cond.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
                     opcode.begin_cond.value = GetNextVmInt(opcode.begin_cond.bit_width);
                 }
@@ -856,7 +860,7 @@ namespace ams::dmnt::cheat::impl {
                 case CheatVmOpcodeType_BeginConditionalBlock:
                     {
                         /* Read value from memory. */
-                        u64 src_address = GetCheatProcessAddress(metadata, cur_opcode.begin_cond.mem_type, cur_opcode.begin_cond.rel_address);
+                        u64 src_address = GetCheatProcessAddress(metadata, cur_opcode.begin_cond.mem_type, (cur_opcode.begin_cond.include_ofs_reg) ? m_registers[cur_opcode.begin_cond.ofs_reg_index] + cur_opcode.begin_cond.rel_address : cur_opcode.begin_cond.rel_address);
                         u64 src_value = 0;
                         switch (cur_opcode.store_static.bit_width) {
                             case 1:

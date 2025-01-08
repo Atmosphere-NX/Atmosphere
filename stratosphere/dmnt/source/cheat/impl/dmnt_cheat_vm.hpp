@@ -145,6 +145,8 @@ namespace ams::dmnt::cheat::impl {
         u32 bit_width;
         MemoryAccessType mem_type;
         ConditionalComparisonType cond_type;
+        bool include_ofs_reg;
+        u32 ofs_reg_index;
         u64 rel_address;
         VmInt value;
     };

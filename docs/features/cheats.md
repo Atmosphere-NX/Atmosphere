@@ -62,11 +62,13 @@ Code type 0x1 performs a comparison of the contents of memory to a static value.
 If the condition is not met, all instructions until the appropriate End or Else conditional block terminator are skipped.
 
 #### Encoding
-`1TMC00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
+`1TMCXrAA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
-+ T: Width of memory write (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
++ T: Width of memory read (1, 2, 4, or 8 bytes).
++ M: Memory region to read from (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
 + C: Condition to use, see below.
++ X: Operand Type, see below.
++ r: Offset Register (operand types 1).
 + A: Immediate offset to use from memory region base.
 + V: Value to compare to.
 
@@ -78,6 +80,9 @@ If the condition is not met, all instructions until the appropriate End or Else 
 + 5: ==
 + 6: !=
 
+#### Operand Type
++ 0: Memory Base + Relative Offset
++ 1: Memory Base + Offset Register + Relative Offset
 ---
 
 ### Code Type 0x2: End Conditional Block
@@ -126,7 +131,7 @@ Code type 0x5 allows loading a value from memory into a register, either using a
 `5TMR00AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
 + R: Register to load value into.
 + A: Immediate offset to use from memory region base.
 
@@ -149,7 +154,7 @@ Code type 0x5 allows loading a value from memory into a register, either using a
 `5TMR3SAA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
 + R: Register to load value into.
 + S: Register to use as offset register.
 + A: Immediate offset to use from memory region base.
