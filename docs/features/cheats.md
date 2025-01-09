@@ -49,7 +49,7 @@ Code type 0x0 allows writing a static value to a memory address.
 `0TMR00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = non-relative).
 + R: Register to use as an offset from memory region base.
 + A: Immediate offset to use from memory region base.
 + V: Value to write.
@@ -65,7 +65,7 @@ If the condition is not met, all instructions until the appropriate End or Else 
 `1TMCXrAA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to read from (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
++ M: Memory region to read from (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = non-relative).
 + C: Condition to use, see below.
 + X: Operand Type, see below.
 + r: Offset Register (operand types 1).
@@ -131,7 +131,7 @@ Code type 0x5 allows loading a value from memory into a register, either using a
 `5TMR00AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = non-relative).
 + R: Register to load value into.
 + A: Immediate offset to use from memory region base.
 
@@ -154,7 +154,7 @@ Code type 0x5 allows loading a value from memory into a register, either using a
 `5TMR3SAA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = none).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr, 4 = non-relative).
 + R: Register to load value into.
 + S: Register to use as offset register.
 + A: Immediate offset to use from memory region base.
@@ -408,7 +408,7 @@ Code type 0xC3 reads or writes a static register with a given register.
 Code type 0xC4 enters or skips a conditional block based on whether a key combination is pressed.
 
 #### Encoding
-`C4r000kk kkkkkkkk`
+`C4r00000 kkkkkkkk kkkkkkkk`
 
 + r: Auto-repeat, see below.
 + kkkkkkkkkk: Keypad mask to check against output of `hidKeysDown()`.
