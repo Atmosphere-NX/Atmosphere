@@ -30,6 +30,7 @@
 #include <vapours/crypto/crypto_aes_ctr_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_xts_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_gcm_encryptor.hpp>
+#include <vapours/crypto/crypto_aes_128_cmac_generator.hpp>
 #include <vapours/crypto/crypto_rsa_pkcs1_sha256_verifier.hpp>
 #include <vapours/crypto/crypto_rsa_pss_sha256_verifier.hpp>
 #include <vapours/crypto/crypto_rsa_oaep_sha256_decoder.hpp>

@@ -297,20 +297,20 @@ namespace ams::fssystem {
         }
     }
 
-    bool IsValidSignatureKeyGeneration(ldr::PlatformId platform, size_t key_generation) {
+    bool IsValidSignatureKeyGeneration(ncm::ContentMetaPlatform platform, size_t key_generation) {
         switch (platform) {
-            case ldr::PlatformId_Nx:
+            case ncm::ContentMetaPlatform::Nx:
                 return key_generation <= NxAcidSignatureKeyGenerationMax;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    const u8 *GetAcidSignatureKeyModulus(ldr::PlatformId platform, bool prod, size_t key_generation, bool unk_unused) {
+    const u8 *GetAcidSignatureKeyModulus(ncm::ContentMetaPlatform platform, bool prod, size_t key_generation, bool unk_unused) {
         AMS_ASSERT(IsValidSignatureKeyGeneration(platform, key_generation));
         AMS_UNUSED(unk_unused);
 
         switch (platform) {
-            case ldr::PlatformId_Nx:
+            case ncm::ContentMetaPlatform::Nx:
                 {
                     const size_t used_keygen = (key_generation % (NxAcidSignatureKeyGenerationMax + 1));
                     return prod ? NxAcidSignatureKeyModulusProd[used_keygen] : NxAcidSignatureKeyModulusDev[used_keygen];
@@ -319,11 +319,11 @@ namespace ams::fssystem {
         }
     }
 
-    size_t GetAcidSignatureKeyModulusSize(ldr::PlatformId platform, bool unk_unused) {
+    size_t GetAcidSignatureKeyModulusSize(ncm::ContentMetaPlatform platform, bool unk_unused) {
         AMS_UNUSED(unk_unused);
 
         switch (platform) {
-            case ldr::PlatformId_Nx:
+            case ncm::ContentMetaPlatform::Nx:
                 return NxAcidSignatureKeyModulusSize;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
