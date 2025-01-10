@@ -108,6 +108,8 @@ namespace ams::dmnt::cheat::impl {
                 this->LogToDebugFile("Bit Width: %x\n", opcode->begin_cond.bit_width);
                 this->LogToDebugFile("Mem Type:  %x\n", opcode->begin_cond.mem_type);
                 this->LogToDebugFile("Cond Type: %x\n", opcode->begin_cond.cond_type);
+                this->LogToDebugFile("Inc Ofs reg:   %d\n", opcode->begin_cond.include_ofs_reg);
+                this->LogToDebugFile("Ofs Reg Idx: %x\n", opcode->begin_cond.ofs_reg_index);
                 this->LogToDebugFile("Rel Addr:  %lx\n", opcode->begin_cond.rel_address);
                 this->LogToDebugFile("Value:     %lx\n", opcode->begin_cond.value.bit64);
                 break;
@@ -157,6 +159,11 @@ namespace ams::dmnt::cheat::impl {
             case CheatVmOpcodeType_BeginKeypressConditionalBlock:
                 this->LogToDebugFile("Opcode: Begin Keypress Conditional\n");
                 this->LogToDebugFile("Key Mask:  %x\n", opcode->begin_keypress_cond.key_mask);
+                break;
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                this->LogToDebugFile("Opcode: Begin Extended Keypress Conditional\n");
+                this->LogToDebugFile("Key Mask:  %x\n", opcode->begin_ext_keypress_cond.key_mask);
+                this->LogToDebugFile("Auto Repeat:  %d\n", opcode->begin_ext_keypress_cond.auto_repeat);
                 break;
             case CheatVmOpcodeType_PerformArithmeticRegister:
                 this->LogToDebugFile("Opcode: Perform Register Arithmetic\n");
@@ -227,13 +234,6 @@ namespace ams::dmnt::cheat::impl {
                         this->LogToDebugFile("Comp Type: Register Offset Register\n");
                         this->LogToDebugFile("A Reg Idx: %x\n", opcode->begin_reg_cond.addr_reg_index);
                         this->LogToDebugFile("O Reg Idx: %x\n", opcode->begin_reg_cond.ofs_reg_index);
-                        break;
-                    case CompareRegisterValueType_OffsetValue:
-                        this->LogToDebugFile("Comp Type: Offset Value\n");
-                        this->LogToDebugFile("Mem Type:  %x\n", opcode->begin_reg_cond.mem_type);
-                        this->LogToDebugFile("O Reg Idx: %x\n", opcode->begin_reg_cond.ofs_reg_index);
-                        this->LogToDebugFile("Rel Addr:  %lx\n", opcode->begin_reg_cond.rel_address);
-                        this->LogToDebugFile("Value:     %lx\n", opcode->begin_reg_cond.value.bit64);
                         break;
                 }
                 break;
@@ -365,6 +365,7 @@ namespace ams::dmnt::cheat::impl {
         switch (opcode.opcode) {
             case CheatVmOpcodeType_BeginConditionalBlock:
             case CheatVmOpcodeType_BeginKeypressConditionalBlock:
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
             case CheatVmOpcodeType_BeginRegisterConditionalBlock:
                 opcode.begin_conditional_block = true;
                 break;
@@ -394,6 +395,8 @@ namespace ams::dmnt::cheat::impl {
                     opcode.begin_cond.bit_width = (first_dword >> 24) & 0xF;
                     opcode.begin_cond.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
                     opcode.begin_cond.cond_type = (ConditionalComparisonType)((first_dword >> 16) & 0xF);
+                    opcode.begin_cond.include_ofs_reg = ((first_dword >> 12) & 0xF) != 0;
+                    opcode.begin_cond.ofs_reg_index = ((first_dword >> 8) & 0xF);
                     opcode.begin_cond.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
                     opcode.begin_cond.value = GetNextVmInt(opcode.begin_cond.bit_width);
                 }
@@ -468,6 +471,14 @@ namespace ams::dmnt::cheat::impl {
                     opcode.begin_keypress_cond.key_mask = first_dword & 0x0FFFFFFF;
                 }
                 break;
+            case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                {
+                    /* C4r00000 kkkkkkkk kkkkkkkk */
+                    /* Read additional words. */
+                    opcode.begin_ext_keypress_cond.key_mask = (u64)GetNextDword() << 32ul | (u64)GetNextDword();
+                    opcode.begin_ext_keypress_cond.auto_repeat = ((first_dword >> 20) & 0xF) != 0;
+                }
+                break;
             case CheatVmOpcodeType_PerformArithmeticRegister:
                 {
                     /* 9TCRSIs0 (VVVVVVVV (VVVVVVVV)) */
@@ -533,7 +544,6 @@ namespace ams::dmnt::cheat::impl {
                     /* C0TcS3Rr */
                     /* C0TcS400 VVVVVVVV (VVVVVVVV) */
                     /* C0TcS5X0 */
-                    /* C0Tcr6Ma aaaaaaaa VVVVVVVV (VVVVVVVV) */
                     /* C0 = opcode 0xC0 */
                     /* T = bit width */
                     /* c = condition type. */
@@ -573,12 +583,6 @@ namespace ams::dmnt::cheat::impl {
                         case CompareRegisterValueType_RegisterOfsReg:
                             opcode.begin_reg_cond.addr_reg_index = ((first_dword >> 4) & 0xF);
                             opcode.begin_reg_cond.ofs_reg_index = (first_dword & 0xF);
-                            break;
-                        case CompareRegisterValueType_OffsetValue:
-                            opcode.begin_reg_cond.mem_type = (MemoryAccessType)((first_dword >> 4) & 0xF);
-                            opcode.begin_reg_cond.rel_address = (((u64)(first_dword & 0xF) << 32ul) | ((u64)GetNextDword()));
-                            opcode.begin_reg_cond.ofs_reg_index = ((first_dword >> 12) & 0xF);
-                            opcode.begin_reg_cond.value = GetNextVmInt(opcode.begin_reg_cond.bit_width);
                             break;
                     }
                 }
@@ -749,7 +753,7 @@ namespace ams::dmnt::cheat::impl {
                 return metadata->alias_extents.base + rel_address;
             case MemoryAccessType_Aslr:
                 return metadata->aslr_extents.base + rel_address;
-            case MemoryAccessType_Blank:
+            case MemoryAccessType_NonRelative:
                 return rel_address;
         }
     }
@@ -786,7 +790,7 @@ namespace ams::dmnt::cheat::impl {
         return true;
     }
 
-    static u64 keyold = 0;
+    static u64 s_keyold = 0;
     void CheatVirtualMachine::Execute(const CheatProcessMetadata *metadata) {
         CheatVmOpcode cur_opcode;
         u64 kHeld = 0;
@@ -842,7 +846,7 @@ namespace ams::dmnt::cheat::impl {
                 case CheatVmOpcodeType_BeginConditionalBlock:
                     {
                         /* Read value from memory. */
-                        u64 src_address = GetCheatProcessAddress(metadata, cur_opcode.begin_cond.mem_type, cur_opcode.begin_cond.rel_address);
+                        u64 src_address = GetCheatProcessAddress(metadata, cur_opcode.begin_cond.mem_type, (cur_opcode.begin_cond.include_ofs_reg) ? m_registers[cur_opcode.begin_cond.ofs_reg_index] + cur_opcode.begin_cond.rel_address : cur_opcode.begin_cond.rel_address);
                         u64 src_value = 0;
                         switch (cur_opcode.store_static.bit_width) {
                             case 1:
@@ -999,14 +1003,19 @@ namespace ams::dmnt::cheat::impl {
                     break;
                 case CheatVmOpcodeType_BeginKeypressConditionalBlock:
                     /* Check for keypress. */
-                    if (cur_opcode.begin_keypress_cond.key_mask > 0x8000000) {
-                        const u64 kDown = ~keyold & kHeld;
-                        
-                        if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kDown) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
+                    if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
+                        /* Keys not pressed. Skip conditional block. */
+                        this->SkipConditionalBlock(true);
+                    }
+                    break;
+                case CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock:
+                    /* Check for keypress. */
+                    if (!cur_opcode.begin_ext_keypress_cond.auto_repeat) {
+                        if ((cur_opcode.begin_ext_keypress_cond.key_mask & kHeld) != (cur_opcode.begin_ext_keypress_cond.key_mask) || (cur_opcode.begin_ext_keypress_cond.key_mask & s_keyold) == (cur_opcode.begin_ext_keypress_cond.key_mask)) {
                             /* Keys not pressed. Skip conditional block. */
                             this->SkipConditionalBlock(true);
                         }
-                    } else if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
+                    } else if ((cur_opcode.begin_ext_keypress_cond.key_mask & kHeld) != cur_opcode.begin_ext_keypress_cond.key_mask) {
                         /* Keys not pressed. Skip conditional block. */
                         this->SkipConditionalBlock(true);
                     }
@@ -1051,22 +1060,34 @@ namespace ams::dmnt::cheat::impl {
                             case RegisterArithmeticType_None:
                                 res_val = operand_1_value;
                                 break;
-                            case RegisterArithmeticType_FloatAddition: {
-                                cur_opcode.perform_math_reg.bit_width = 4;
-                                *(float *)&res_val = *(float *)&operand_1_value + *(float *)&operand_2_value;
-                            } break;
-                            case RegisterArithmeticType_FloatMultiplication: {
-                                cur_opcode.perform_math_reg.bit_width = 4;
-                                *(float *)&res_val = *(float *)&operand_1_value * *(float *)&operand_2_value;
-                            } break;
-                            case RegisterArithmeticType_DoubleAddition: {
-                                cur_opcode.perform_math_reg.bit_width = 8;
-                                *(double *)&res_val = *(double *)&operand_1_value + *(double *)&operand_2_value;
-                            } break;
-                            case RegisterArithmeticType_DoubleMultiplication: {
-                                cur_opcode.perform_math_reg.bit_width = 8;
-                                *(double *)&res_val = *(double *)&operand_1_value * *(double *)&operand_2_value;
-                            } break;
+                            case RegisterArithmeticType_FloatAddition:
+                                if (cur_opcode.perform_math_reg.bit_width == 4) {
+                                    res_val = std::bit_cast<std::uint32_t>(std::bit_cast<float>(static_cast<uint32_t>(operand_1_value)) + std::bit_cast<float>(static_cast<uint32_t>(operand_2_value)));
+                                } else if (cur_opcode.perform_math_reg.bit_width == 8) {
+                                    res_val = std::bit_cast<std::uint64_t>(std::bit_cast<double>(operand_1_value) + std::bit_cast<double>(operand_2_value));
+                                }
+                                break;
+                            case RegisterArithmeticType_FloatSubtraction:
+                                if (cur_opcode.perform_math_reg.bit_width == 4) {
+                                    res_val = std::bit_cast<std::uint32_t>(std::bit_cast<float>(static_cast<uint32_t>(operand_1_value)) - std::bit_cast<float>(static_cast<uint32_t>(operand_2_value)));
+                                } else if (cur_opcode.perform_math_reg.bit_width == 8) {
+                                    res_val = std::bit_cast<std::uint64_t>(std::bit_cast<double>(operand_1_value) - std::bit_cast<double>(operand_2_value));
+                                }
+                                break;
+                            case RegisterArithmeticType_FloatMultiplication:
+                                if (cur_opcode.perform_math_reg.bit_width == 4) {
+                                    res_val = std::bit_cast<std::uint32_t>(std::bit_cast<float>(static_cast<uint32_t>(operand_1_value)) * std::bit_cast<float>(static_cast<uint32_t>(operand_2_value)));
+                                } else if (cur_opcode.perform_math_reg.bit_width == 8) {
+                                    res_val = std::bit_cast<std::uint64_t>(std::bit_cast<double>(operand_1_value) * std::bit_cast<double>(operand_2_value));
+                                }
+                                break;
+                            case RegisterArithmeticType_FloatDivision:
+                                if (cur_opcode.perform_math_reg.bit_width == 4) {
+                                    res_val = std::bit_cast<std::uint32_t>(std::bit_cast<float>(static_cast<uint32_t>(operand_1_value)) / std::bit_cast<float>(static_cast<uint32_t>(operand_2_value)));
+                                } else if (cur_opcode.perform_math_reg.bit_width == 8) {
+                                    res_val = std::bit_cast<std::uint64_t>(std::bit_cast<double>(operand_1_value) / std::bit_cast<double>(operand_2_value));
+                                }
+                                break;
                         }
 
 
@@ -1184,10 +1205,6 @@ namespace ams::dmnt::cheat::impl {
                                     break;
                                 case CompareRegisterValueType_RegisterOfsReg:
                                     cond_address = m_registers[cur_opcode.begin_reg_cond.addr_reg_index] + m_registers[cur_opcode.begin_reg_cond.ofs_reg_index];
-                                    break;
-                                case CompareRegisterValueType_OffsetValue:
-                                    cond_address = GetCheatProcessAddress(metadata, cur_opcode.begin_reg_cond.mem_type, cur_opcode.begin_reg_cond.rel_address + m_registers[cur_opcode.begin_reg_cond.ofs_reg_index]);
-                                    src_value = GetVmInt(cur_opcode.begin_reg_cond.value, cur_opcode.begin_reg_cond.bit_width);
                                     break;
                                 default:
                                     break;
@@ -1353,7 +1370,7 @@ namespace ams::dmnt::cheat::impl {
                     break;
             }
         }
-        keyold = kHeld;
+        s_keyold = kHeld;
     }
 
 }
