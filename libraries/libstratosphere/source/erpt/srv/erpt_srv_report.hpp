@@ -5,13 +5,13 @@
  * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  *
- * This program is distributed in the hope it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
 #include <stratosphere.hpp>
@@ -34,10 +34,11 @@ namespace ams::erpt::srv {
             bool m_redirect_to_sd_card;
         private:
             ReportFileName FileName() const;
+            void CloseStream();
         public:
-            static ReportFileName FileName(ReportId report_id, bool redirect_to_sd);
+            static ReportFileName FileName(ReportId report_id, bool redirect_to_sd = false);
         public:
-            explicit Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd);
+            explicit Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd = false);
             ~Report();
 
             Result Open(ReportOpenType type);
@@ -51,12 +52,15 @@ namespace ams::erpt::srv {
 
             template<typename T>
             Result Write(T val) {
-                R_RETURN(this->WriteStream(reinterpret_cast<const u8 *>(std::addressof(val)), sizeof(val)));
+                (void)val;
+                R_SUCCEED();
             }
 
             template<typename T>
             Result Write(const T *buf, u32 buffer_size) {
-                R_RETURN(this->WriteStream(reinterpret_cast<const u8 *>(buf), buffer_size));
+                (void)buf;
+                (void)buffer_size;
+                R_SUCCEED();
             }
     };
 
