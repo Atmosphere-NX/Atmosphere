@@ -36,7 +36,7 @@ namespace ams::dmnt {
 
                             m_watch_data.target_address = m_watch_data.next_address;
                             m_watch_data.exclusive_search_count = m_watch_data.count;
-                            if ((m_watch_data.read || m_watch_data.write) || (m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) m_watch_data.exclusive_search_from2 = true; else m_watch_data.exclusive_search_from2 = false;
+                            if ((m_watch_data.read || m_watch_data.write) || (m_watch_data.stack_check_count > 0) || m_watch_data.grab_A || m_watch_data.grab_R) m_watch_data.exclusive_search_from2 = true; else m_watch_data.exclusive_search_from2 = false;
                             m_watch_data.exclusive_search_target_trigger = 0;
                             set_next_watch_for_exclusive_search();
                         } else {
@@ -1115,9 +1115,13 @@ namespace ams::dmnt {
                 };
             }
         };
-        if (m_watch_data.grab_A && m_watch_data.stack_check_count < max_call_stack) {
+        if (m_watch_data.stack_check_count < max_call_stack) {
+            if (m_watch_data.grab_A) {
             index = m_watch_data.stack_check_count;
             m_debug_process.ReadMemory(&(m_from_stack.stack[index]), m_watch_data.grab_A_address, (max_call_stack - index) * sizeof(call_stack_t));
+            } else if ((m_watch_data.grab_R)&&(m_watch_data.stack_check_count < max_call_stack - 1)) {
+                memcpy(&(m_from_stack.stack[index]), &(thread_context.r[m_watch_data.Register]), std::min((size_t)8,(max_call_stack - index) * sizeof(call_stack_t)));
+            };
         }
         if (get_address)
         switch (m_watch_data.x30_catch_type) {
@@ -1267,10 +1271,10 @@ namespace ams::dmnt {
                                                                     if Match_U (0)
                                                                         m_watch_data.exclusive_search_target_trigger++;
                                                                 }
-                                                            } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match)) {
+                                                            } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match) || (thread_context.r[m_watch_data.Register] == m_watch_data.Register_match_value)) {
                                                                 u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
                                                                 bool found = false;
-                                                                if ((m_watch_data.stack_check_count > 0) || m_watch_data.grab_A) {
+                                                                if ((m_watch_data.stack_check_count > 0) || m_watch_data.grab_A || m_watch_data.grab_R) {
                                                                     auto entry = get_from_stack(thread_context,false);
                                                                     entry.address = ret_Rvalue;
                                                                     for (int i = 0; i < m_watch_data.count; i++) {

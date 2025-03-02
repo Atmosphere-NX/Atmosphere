@@ -1,7 +1,7 @@
 #define max_watch_buffer 0x200
 #define max_call_stack 5
 #define stack_check_size 100
-#define GEN2_VERSION "v0.13h"
+#define GEN2_VERSION "v0.13i"
         typedef struct {
             u64 address:64;
             u32 count:32;
@@ -52,6 +52,7 @@
             OFFSET,
             NONE,
             STACK,
+            R_MATCH,
             EXCLUSIVE_SEARCH,
             END_OF_TYPE,
         } NX_PACKED;
@@ -97,4 +98,7 @@
             u16 caller_SP_offset = 0;
             u64 grab_A_address = 0;
             bool grab_A = false;
+            bool grab_R = false;
+            u8 Register = 14;
+            u64 Register_match_value = 0;
         } m_watch_data_t;
