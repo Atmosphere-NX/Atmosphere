@@ -105,7 +105,7 @@ namespace ams::creport {
         if (this->OpenProcess(process_id)) {
             /* Parse info from the crashed process. */
             this->ProcessExceptions();
-            m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_crashed_thread, this->Is64Bit());
+            m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_crashed_thread);
             m_thread_list->ReadFromProcess(m_debug_handle, m_thread_tls_map, this->Is64Bit());
 
             /* Associate module list to threads. */
@@ -120,7 +120,7 @@ namespace ams::creport {
             /* Nintendo's creport finds extra modules by looking at all threads if application, */
             /* but there's no reason for us not to always go looking. */
             for (size_t i = 0; i < m_thread_list->GetThreadCount(); i++) {
-                m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_thread_list->GetThreadInfo(i), this->Is64Bit());
+                m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_thread_list->GetThreadInfo(i));
             }
 
             /* Cache the module base address to send to fatal. */
@@ -188,6 +188,7 @@ namespace ams::creport {
 
     void CrashReport::HandleDebugEventInfoCreateProcess(const svc::DebugEventInfo &d) {
         m_process_info = d.info.create_process;
+        m_module_list->SetIs64Bit(Is64Bit());
 
         /* On 5.0.0+, we want to parse out a dying message from application crashes. */
         if (hos::GetVersion() < hos::Version_5_0_0 || !IsApplication()) {

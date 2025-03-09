@@ -37,13 +37,14 @@ namespace ams::creport {
             };
         private:
             os::NativeHandle m_debug_handle;
+            bool m_is_64_bit;
             size_t m_num_modules;
             ModuleInfo m_modules[ModuleCountMax];
 
             /* For pretty-printing. */
             char m_address_str_buf[1_KB];
         public:
-            ModuleList() : m_debug_handle(os::InvalidNativeHandle), m_num_modules(0) {
+            ModuleList() : m_debug_handle(os::InvalidNativeHandle), m_is_64_bit(true), m_num_modules(0) {
                 std::memset(m_modules, 0, sizeof(m_modules));
             }
 
@@ -55,12 +56,16 @@ namespace ams::creport {
                 return m_modules[i].start_address;
             }
 
-            void FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread, bool is_64_bit);
+            void SetIs64Bit(bool is_64_bit) {
+                m_is_64_bit = is_64_bit;
+            }
+
+            void FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread);
             const char *GetFormattedAddressString(uintptr_t address);
             void SaveToFile(ScopedFile &file);
         private:
-            bool TryFindModule(uintptr_t *out_address, uintptr_t guess, bool is_64_bit);
-            void TryAddModule(uintptr_t guess, bool is_64_bit);
+            bool TryFindModule(uintptr_t *out_address, uintptr_t guess);
+            void TryAddModule(uintptr_t guess);
             void GetModuleName(char *out_name, uintptr_t text_start, uintptr_t ro_start);
             void GetModuleId(u8 *out, uintptr_t ro_start);
             void DetectModuleSymbolTable(ModuleInfo &module);
