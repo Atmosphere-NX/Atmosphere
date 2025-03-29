@@ -1271,7 +1271,7 @@ namespace ams::dmnt {
                                                                     if Match_U (0)
                                                                         m_watch_data.exclusive_search_target_trigger++;
                                                                 }
-                                                            } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match) || (thread_context.r[m_watch_data.Register] == m_watch_data.Register_match_value)) {
+                                                            } else if ((m_watch_data.check_x30 == false) || ((X30_alternative & 0xFFFF) == m_watch_data.x30_match) || (m_watch_data.x30_catch_type == R_MATCH && thread_context.r[m_watch_data.Register] == m_watch_data.Register_match_value)) {
                                                                 u64 ret_Rvalue = (thread_context.r[m_watch_data.i] + (m_watch_data.two_register ? (thread_context.r[m_watch_data.j] << m_watch_data.k) : 0)) | ((X30_alternative - m_watch_data.main_start) << (64 - 27));
                                                                 bool found = false;
                                                                 if ((m_watch_data.stack_check_count > 0) || m_watch_data.grab_A || m_watch_data.grab_R) {
