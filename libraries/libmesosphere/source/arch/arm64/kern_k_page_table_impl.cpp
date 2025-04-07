@@ -21,12 +21,6 @@ namespace ams::kern::arch::arm64 {
         m_table       = static_cast<L1PageTableEntry *>(tb);
         m_is_kernel   = true;
         m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
-    }
-
-    void KPageTableImpl::InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        m_table       = static_cast<L1PageTableEntry *>(tb);
-        m_is_kernel   = false;
-        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
 
         /* Page table entries created by KInitialPageTable need to be iterated and modified to ensure KPageTable invariants. */
         PageTableEntry *level_entries[EntryLevel_Count] = { nullptr, nullptr, m_table };
@@ -68,7 +62,6 @@ namespace ams::kern::arch::arm64 {
             /* Advance. */
             while (true) {
                 /* Advance to the next entry at the current level. */
-                ++level_entries[level];
                 if (!util::IsAligned(reinterpret_cast<uintptr_t>(++level_entries[level]), PageSize)) {
                     break;
                 }
@@ -81,6 +74,12 @@ namespace ams::kern::arch::arm64 {
                 }
             }
         }
+    }
+
+    void KPageTableImpl::InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end) {
+        m_table       = static_cast<L1PageTableEntry *>(tb);
+        m_is_kernel   = false;
+        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
     L1PageTableEntry *KPageTableImpl::Finalize() {
