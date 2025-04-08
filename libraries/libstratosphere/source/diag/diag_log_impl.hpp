@@ -20,7 +20,7 @@ namespace ams::diag {
 
     namespace impl {
 
-        constexpr inline size_t DebugPrintBufferLength = 0x80;
+        constexpr inline size_t DebugPrintBufferLength = 0x100;
 
     }
 
