@@ -49,7 +49,7 @@ namespace ams::kern::init::loader {
 
         constinit void *g_final_state[2];
 
-        void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
+        void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout, const uintptr_t &ini_base_address) {
             /* Adjust layout to be correct. */
             {
                 const ptrdiff_t layout_offset = reinterpret_cast<uintptr_t>(layout) - base_address;
@@ -74,6 +74,12 @@ namespace ams::kern::init::loader {
                 const uintptr_t diff = GetInteger(correct_base) - base_address;
                 const size_t size = layout->rw_end_offset;
 
+                /* Check that the new kernel doesn't overlap with us. */
+                MESOSPHERE_INIT_ABORT_UNLESS((GetInteger(correct_base) >= reinterpret_cast<uintptr_t>(__bin_end__)) || (GetInteger(correct_base) + size <= reinterpret_cast<uintptr_t>(__bin_start__)));
+
+                /* Check that the new kernel doesn't overlap with the initial process binary. */
+                MESOSPHERE_INIT_ABORT_UNLESS((ini_base_address + InitialProcessBinarySizeMax <= GetInteger(correct_base)) || (GetInteger(correct_base) + size <= ini_base_address));
+
                 /* Conversion from KPhysicalAddress to void * is safe here, because MMU is not set up yet. */
                 std::memmove(reinterpret_cast<void *>(GetInteger(correct_base)), reinterpret_cast<void *>(base_address), size);
                 base_address += diff;
@@ -90,11 +96,11 @@ namespace ams::kern::init::loader {
             constexpr PageTableEntry KernelLdrRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
             const uintptr_t kernel_ldr_base = util::AlignDown(reinterpret_cast<uintptr_t>(__bin_start__), PageSize);
             const uintptr_t kernel_ldr_size = util::AlignUp(reinterpret_cast<uintptr_t>(__bin_end__), PageSize) - kernel_ldr_base;
-            init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator, 0);
+            init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelLdrRWXIdentityAttribute, allocator, 0);
 
             /* Map in the page table region as RW- for ourselves. */
             constexpr PageTableEntry PageTableRegionRWAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            init_pt.Map(page_table_region, page_table_region_size, page_table_region, KernelRWXIdentityAttribute, allocator, 0);
+            init_pt.Map(page_table_region, page_table_region_size, page_table_region, PageTableRegionRWAttribute, allocator, 0);
 
             /* Place the L1 table addresses in the relevant system registers. */
             cpu::SetTtbr0El1(init_pt.GetTtbr0L1TableAddress());
@@ -165,7 +171,7 @@ namespace ams::kern::init::loader {
     uintptr_t Main(uintptr_t base_address, KernelLayout *layout, uintptr_t ini_base_address) {
         /* Relocate the kernel to the correct physical base address. */
         /* Base address and layout are passed by reference and modified. */
-        RelocateKernelPhysically(base_address, layout);
+        RelocateKernelPhysically(base_address, layout, ini_base_address);
 
         /* Validate kernel layout. */
         const uintptr_t rx_offset      = layout->rx_offset;
@@ -228,6 +234,9 @@ namespace ams::kern::init::loader {
 
         /* Setup initial identity mapping. TTBR1 table passed by reference. */
         SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, resource_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator, reinterpret_cast<KernelSystemRegisters *>(base_address + sysreg_offset));
+
+        /* NOTE: On 19.0.0+, Nintendo calls an unknown function here on init_pt and g_initial_page_allocator. */
+        /* This is stubbed in prod KernelLdr. */
 
         /* Generate a random slide for the kernel's base address. */
         const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(init_pt, base_address, bss_end_offset);

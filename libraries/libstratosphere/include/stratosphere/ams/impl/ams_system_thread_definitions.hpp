@@ -95,7 +95,7 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(16, creport, Main);
 
     /* ro. */
-    AMS_DEFINE_SYSTEM_THREAD(16, ro, Main);
+    AMS_DEFINE_SYSTEM_THREAD(21, ro, Main);
 
     /* gpio. */
     AMS_DEFINE_SYSTEM_THREAD(-12, gpio, InterruptHandler);

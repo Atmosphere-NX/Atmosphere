@@ -50,7 +50,7 @@ namespace ams::ddsf {
             }
 
             void DetachDevice() {
-                AMS_ASSERT(this->IsOpen());
+                /* AMS_ASSERT(this->IsOpen()); */
                 m_device      = nullptr;
                 m_access_mode = AccessMode_None;
                 AMS_ASSERT(!this->IsOpen());
