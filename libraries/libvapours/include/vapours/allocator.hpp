@@ -19,7 +19,7 @@
 
 namespace ams {
 
-    constexpr inline size_t DefaultAlignment = alignof(max_align_t);
+    constexpr inline size_t DefaultAlignment = /*alignof(max_align_t)*/ 0x8;
 
     using AllocateFunction                    = void *(*)(size_t);
     using AllocateFunctionWithUserData        = void *(*)(size_t, void *);
