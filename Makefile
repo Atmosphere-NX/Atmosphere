@@ -136,7 +136,7 @@ oc-clean:
 	$(info ---------------------------------------------------------)
 	git checkout master
 
-build-kefir:
+kefir:
 	git checkout master
 	$(MAKE) clean -j12
 	$(MAKE) clean-logo 
@@ -144,7 +144,7 @@ build-kefir:
 	$(MAKE) oc-clean
 	$(MAKE) nx_release -j12
 
-build-kefir-fast:
+kefir-fast:
 	git checkout master
 	# $(MAKE) clean-logo 
 	$(MAKE) 8gb_DRAM
