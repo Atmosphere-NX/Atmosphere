@@ -47,7 +47,7 @@ namespace ams::crypto {
             "   cmp     %w[xor_acc], #0\n"
             "   cset    %w[result], eq\n"
             : [result]"=r"(result), [lhs]"+r"(lhs), [rhs]"+r"(rhs), [xor_acc]"=&r"(xor_acc), [index]"=&r"(index), [ltmp]"=&r"(ltmp), [rtmp]"=&r"(rtmp)
-            : "m"(*(const u8 (*)[size])lhs), "m"(*(const u8 (*)[size])lhs), [size]"r"(size)
+            : "m"(*(const u8 (*)[size])lhs), "m"(*(const u8 (*)[size])rhs), [size]"r"(size)
             :  "cc"
         );
 

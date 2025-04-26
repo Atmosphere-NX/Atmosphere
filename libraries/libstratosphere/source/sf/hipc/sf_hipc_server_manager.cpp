@@ -21,7 +21,7 @@ namespace ams::sf::hipc {
     #if AMS_SF_MITM_SUPPORTED
     Result ServerManagerBase::InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
-        os::NativeHandle query_handle;
+        os::NativeHandle query_handle = os::InvalidNativeHandle;
         R_TRY(sm::mitm::InstallMitm(out_port_handle, std::addressof(query_handle), service_name));
 
         /* Register the query handle. */
