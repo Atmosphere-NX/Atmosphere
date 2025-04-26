@@ -57,6 +57,22 @@ def main(argc, argv):
             except:
                 pass
             write_file(os.path.join('mtc_tables/lz/%s' % board, '%d.lz4' % i), compressed)
+        try:
+            os.makedirs('mtc_tables/combined/%s' % board)
+        except:
+            pass
+        data_1600 = params[soc][board][-1]
+        data_800 = params[soc][board][-4] if soc == 'erista' else ''
+        data_204  = params[soc][board][0] if soc == 'mariko' else params[soc][board][3]
+        assert up('<I', data_1600[0x40:0x44])[0] == 1600000
+        assert up('<I', data_204[0x40:0x44])[0] == 204000
+        if soc == 'erista':
+            assert up('<I', data_800[0x40:0x44])[0] == 800000
+        if soc == 'mariko':
+            data = lz4_compress(data_204 + data_1600)
+        else:
+            data = data_204 + data_800 + data_1600
+        write_file(os.path.join('mtc_tables/combined/%s' % board, 'table.bin'), data)
     for soc in ('erista', 'mariko'):
         with open('source/mtc/fusee_mtc_tables_%s.inc' % soc, 'w') as f:
             f.write('%s\n' % "/*")
@@ -76,22 +92,8 @@ def main(argc, argv):
             f.write('%s\n' % " */")
             f.write('\n')
             for board in compressed_params[soc].keys():
-                data_1600 = params[soc][board][-1]
-                data_800 = params[soc][board][-4] if soc == 'erista' else ''
-                data_204  = params[soc][board][0] if soc == 'mariko' else params[soc][board][3]
-                assert up('<I', data_1600[0x40:0x44])[0] == 1600000
-                assert up('<I', data_204[0x40:0x44])[0] == 204000
-                if soc == 'erista':
-                    assert up('<I', data_800[0x40:0x44])[0] == 800000
-                if soc == 'mariko':
-                    data = lz4_compress(data_204 + data_1600)
-                else:
-                    data = data_204 + data_800 + data_1600
-                f.write('%s\n' % ('constexpr const u8 %s[0x%03X] = {' % (board, len(data))))
-                while data:
-                    block = data[:0x10]
-                    data = data[0x10:]
-                    f.write('    %s\n' % (', '.join('0x%02X' % ord(c) for c in block) + ','))
+                f.write('%s\n' % ('constexpr const u8 %s[] = {' % (board)))
+                f.write('%s\n' % ('    #embed "../../mtc_tables/combined/%s/table.bin"' % (board)))
                 f.write('};\n\n')
     return 0
 
