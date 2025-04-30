@@ -2,7 +2,7 @@
 *A SDMMC driver replacement for Nintendo's Filesystem Services, by **m4xw***  
 
 ### Supported Horizon Versions
-**1.0.0 - 19.0.0**
+**1.0.0 - 20.0.0**
 
 ## Features
 * Arbitrary SDMMC backend selection  
