@@ -102,10 +102,10 @@ namespace ams::kern {
 
     /* Randomness for Initialization. */
     void KSystemControlBase::Init::GenerateRandom(u64 *dst, size_t count) {
-        if (AMS_UNLIKELY(!s_initialized_random_generator)) {
+        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
             const u64 seed = KHardwareTimer::GetTick();
             s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_initialized_random_generator = true;
+            s_uninitialized_random_generator = false;
         }
 
         for (size_t i = 0; i < count; ++i) {
@@ -114,10 +114,10 @@ namespace ams::kern {
     }
 
     u64 KSystemControlBase::Init::GenerateRandomRange(u64 min, u64 max) {
-        if (AMS_UNLIKELY(!s_initialized_random_generator)) {
+        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
             const u64 seed = KHardwareTimer::GetTick();
             s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_initialized_random_generator = true;
+            s_uninitialized_random_generator = false;
         }
 
         return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
@@ -140,9 +140,9 @@ namespace ams::kern {
 
     void KSystemControlBase::InitializePhase1Base(u64 seed) {
         /* Initialize the rng, if we somehow haven't already. */
-        if (AMS_UNLIKELY(!s_initialized_random_generator)) {
+        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
             s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_initialized_random_generator = true;
+            s_uninitialized_random_generator = false;
         }
 
         /* Initialize debug logging. */
