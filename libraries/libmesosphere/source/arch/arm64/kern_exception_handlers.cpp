@@ -115,7 +115,10 @@ namespace ams::kern::arch::arm64 {
             u64 far = raw_far;
             const u64 ec = (esr >> 26) & 0x3F;
             if (ec == EsrEc_InstructionAbortEl0 || ec == EsrEc_DataAbortEl0) {
-                /* Adjust registers if a memory tagging exception has occurred. */
+                /* Adjust registers if a synchronous external abort has occurred with far not valid. */
+                /*     Mask 0x03F = Low 6 bits IFSC == 0x10: "Synchronous External abort,            */
+                /*     not on translation table walk or hardware update of translation table.        */
+                /*     Mask 0x400 = FnV = "FAR Not Valid"                                            */
                 /* TODO: How would we perform this check using named register accesses? */
                 if ((esr & 0x43F) == 0x410) {
                     /* Clear the faulting register on memory tagging exception. */
@@ -450,7 +453,10 @@ namespace ams::kern::arch::arm64 {
                 /* Pre-process exception registers as needed. */
                 const u64 ec = (esr >> 26) & 0x3F;
                 if (ec == EsrEc_InstructionAbortEl0 || ec == EsrEc_DataAbortEl0) {
-                    /* Adjust registers if a memory tagging exception has occurred. */
+                    /* Adjust registers if a synchronous external abort has occurred with far not valid. */
+                    /*     Mask 0x03F = Low 6 bits IFSC == 0x10: "Synchronous External abort,            */
+                    /*     not on translation table walk or hardware update of translation table.        */
+                    /*     Mask 0x400 = FnV = "FAR Not Valid"                                            */
                     /* TODO: How would we perform this check using named register accesses? */
                     if ((esr & 0x43F) == 0x410) {
                         /* Clear the faulting register on memory tagging exception. */
