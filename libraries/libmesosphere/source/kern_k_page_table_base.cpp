@@ -1333,34 +1333,37 @@ namespace ams::kern {
     KProcessAddress KPageTableBase::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
         KProcessAddress address = Null<KProcessAddress>;
 
-        if (num_pages <= region_num_pages) {
+        KProcessAddress search_start = Null<KProcessAddress>;
+        KProcessAddress search_end   = Null<KProcessAddress>;
+        if (m_memory_block_manager.GetRegionForFindFreeArea(std::addressof(search_start), std::addressof(search_end), region_start, region_num_pages, num_pages, alignment, offset, guard_pages)) {
             if (this->IsAslrEnabled()) {
                 /* Try to directly find a free area up to 8 times. */
                 for (size_t i = 0; i < 8; i++) {
-                    const size_t random_offset = KSystemControl::GenerateRandomRange(0, (region_num_pages - num_pages - guard_pages) * PageSize / alignment) * alignment;
-                    const KProcessAddress candidate = util::AlignDown(GetInteger(region_start + random_offset), alignment) + offset;
+                    const size_t random_offset = KSystemControl::GenerateRandomRange(0, (search_end - search_start) / alignment) * alignment;
+                    const KProcessAddress candidate = search_start + random_offset;
 
                     KMemoryBlockManager::const_iterator it = m_memory_block_manager.FindIterator(candidate);
                     MESOSPHERE_ABORT_UNLESS(it != m_memory_block_manager.end());
 
                     if (it->GetState() != KMemoryState_Free) { continue; }
-                    if (!(region_start <= candidate)) { continue; }
                     if (!(it->GetAddress() + guard_pages * PageSize <= GetInteger(candidate))) { continue; }
                     if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= it->GetLastAddress())) { continue; }
-                    if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= region_start + region_num_pages * PageSize - 1)) { continue; }
 
                     address = candidate;
                     break;
                 }
+
                 /* Fall back to finding the first free area with a random offset. */
                 if (address == Null<KProcessAddress>) {
                     /* NOTE: Nintendo does not account for guard pages here. */
                     /* This may theoretically cause an offset to be chosen that cannot be mapped. */
                     /* We will account for guard pages. */
-                    const size_t offset_pages = KSystemControl::GenerateRandomRange(0, region_num_pages - num_pages - guard_pages);
-                    address = m_memory_block_manager.FindFreeArea(region_start + offset_pages * PageSize, region_num_pages - offset_pages, num_pages, alignment, offset, guard_pages);
+                    const size_t offset_blocks = KSystemControl::GenerateRandomRange(0, (search_end - search_start) / alignment);
+                    const auto   region_end    = region_start + region_num_pages * PageSize;
+                    address = m_memory_block_manager.FindFreeArea(search_start + offset_blocks * alignment, (region_end - (search_start + offset_blocks * alignment)) / PageSize, num_pages, alignment, offset, guard_pages);
                 }
             }
+
             /* Find the first free area. */
             if (address == Null<KProcessAddress>) {
                 address = m_memory_block_manager.FindFreeArea(region_start, region_num_pages, num_pages, alignment, offset, guard_pages);
