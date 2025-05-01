@@ -66,12 +66,39 @@ namespace ams::kern {
 
     }
 
-    uintptr_t KAddressSpaceInfo::GetAddressSpaceStart(ams::svc::CreateProcessFlag flags, KAddressSpaceInfo::Type type) {
+    uintptr_t KAddressSpaceInfo::GetAddressSpaceStart(ams::svc::CreateProcessFlag flags, KAddressSpaceInfo::Type type, size_t code_size) {
+        MESOSPHERE_UNUSED(code_size);
         return GetAddressSpaceInfo(GetAddressSpaceWidth(flags), type).GetAddress();
     }
 
     size_t KAddressSpaceInfo::GetAddressSpaceSize(ams::svc::CreateProcessFlag flags, KAddressSpaceInfo::Type type) {
-        return GetAddressSpaceInfo(GetAddressSpaceWidth(flags), type).GetSize();
+        /* Extract the address space from the create process flags. */
+        const auto as_flags = (flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+
+        /* Get the address space width. */
+        const auto as_width = GetAddressSpaceWidth(flags);
+
+        /* Get the size. */
+        size_t as_size = GetAddressSpaceInfo(as_width, type).GetSize();
+
+        /* If we're getting size for 32-bit without alias, adjust the sizes accordingly. */
+        if (as_flags == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
+            switch (type) {
+                /* The heap space receives space that would otherwise go to the alias space. */
+                case KAddressSpaceInfo::Type_Heap:
+                    as_size += GetAddressSpaceInfo(as_width, KAddressSpaceInfo::Type_Alias).GetSize();
+                    break;
+                /* The alias space doesn't exist. */
+                case KAddressSpaceInfo::Type_Alias:
+                    as_size = 0;
+                    break;
+                /* Nothing to do by default. */
+                default:
+                    break;
+            }
+        }
+
+        return as_size;
     }
 
     void KAddressSpaceInfo::SetAddressSpaceSize(size_t width, Type type, size_t size) {
