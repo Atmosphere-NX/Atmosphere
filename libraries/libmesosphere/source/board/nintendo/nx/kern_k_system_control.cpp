@@ -405,22 +405,22 @@ namespace ams::kern::board::nintendo::nx {
         /* Configure KTargetSystem. */
         volatile auto *ts = const_cast<volatile KTargetSystem::KTargetSystemData *>(std::addressof(KTargetSystem::s_data));
         {
-            /* Set IsDebugMode. */
+            /* Set whether we're in debug mode. */
             {
-                ts->is_debug_mode        = GetConfigBool(smc::ConfigItem::IsDebugMode);
+                ts->is_not_debug_mode    = !GetConfigBool(smc::ConfigItem::IsDebugMode);
 
-                /* If debug mode, we want to initialize uart logging. */
-                ts->enable_debug_logging = ts->is_debug_mode;
+                /* If we're not in debug mode, we don't want to initialize uart logging. */
+                ts->disable_debug_logging = ts->is_not_debug_mode;
             }
 
             /* Set Kernel Configuration. */
             {
                 const auto kernel_config = util::BitPack32{GetConfigU32(smc::ConfigItem::KernelConfiguration)};
 
-                ts->enable_debug_memory_fill       = kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>();
-                ts->enable_user_exception_handlers = kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>();
-                ts->enable_dynamic_resource_limits = !kernel_config.Get<smc::KernelConfiguration::DisableDynamicResourceLimits>();
-                ts->enable_user_pmu_access         = kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>();
+                ts->disable_debug_memory_fill       = !kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>();
+                ts->disable_user_exception_handlers = !kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>();
+                ts->disable_dynamic_resource_limits = kernel_config.Get<smc::KernelConfiguration::DisableDynamicResourceLimits>();
+                ts->disable_user_pmu_access         = !kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>();
 
                 /* Configure call smc on panic. */
                 *const_cast<volatile bool *>(std::addressof(g_call_smc_on_panic)) = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();
@@ -430,7 +430,7 @@ namespace ams::kern::board::nintendo::nx {
             {
                 /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
                 /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
-                ts->enable_kernel_debugging = GetConfigBool(smc::ConfigItem::DisableProgramVerification);
+                ts->disable_kernel_debugging = !GetConfigBool(smc::ConfigItem::DisableProgramVerification);
             }
         }
     }
@@ -524,7 +524,7 @@ namespace ams::kern::board::nintendo::nx {
         KScopedSpinLock lk(s_random_lock);
 
 
-        if (AMS_LIKELY(s_initialized_random_generator)) {
+        if (AMS_LIKELY(!s_uninitialized_random_generator)) {
             return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
         } else {
             return KSystemControlBase::GenerateUniformRange(min, max, GenerateRandomU64FromSmc);
@@ -535,7 +535,7 @@ namespace ams::kern::board::nintendo::nx {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(s_random_lock);
 
-        if (AMS_LIKELY(s_initialized_random_generator)) {
+        if (AMS_LIKELY(!s_uninitialized_random_generator)) {
             return s_random_generator.GenerateRandomU64();
         } else {
             return GenerateRandomU64FromSmc();
