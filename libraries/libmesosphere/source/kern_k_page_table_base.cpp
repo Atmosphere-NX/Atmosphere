@@ -1786,19 +1786,24 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
         }
 
+        /* Ensure cache coherency, if we're setting pages as executable. */
+        if (is_x) {
+            for (const auto &block : pg) {
+                cpu::StoreDataCache(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), block.GetSize());
+            }
+            cpu::InvalidateEntireInstructionCache();
+        }
+
         /* Perform mapping operation. */
         const KPageProperties properties = { new_perm, false, false, DisableMergeAttribute_None };
-        const auto operation = was_x ? OperationType_ChangePermissionsAndRefreshAndFlush : OperationType_ChangePermissions;
+        const auto operation = was_x ? OperationType_ChangePermissionsAndRefresh : OperationType_ChangePermissions;
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, operation, false));
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, new_state, new_perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         /* Ensure cache coherency, if we're setting pages as executable. */
-        if (is_x) {
-            for (const auto &block : pg) {
-                cpu::StoreDataCache(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), block.GetSize());
-            }
+        if (was_x) {
             cpu::InvalidateEntireInstructionCache();
         }
 
@@ -2540,6 +2545,11 @@ namespace ams::kern {
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
 
+        /* Ensure cache coherency, if we're mapping executable pages. */
+        if ((perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute) {
+            cpu::InvalidateEntireInstructionCache();
+        }
+
         /* Perform mapping operation. */
         const KPageProperties properties = { perm, false, false, DisableMergeAttribute_DisableHead };
         R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
@@ -2563,8 +2573,9 @@ namespace ams::kern {
         KScopedLightLock lk(m_general_lock);
 
         /* Check if state allows us to unmap. */
+        KMemoryPermission old_perm;
         size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        R_TRY(this->CheckMemoryState(nullptr, std::addressof(old_perm), nullptr, std::addressof(num_allocator_blocks), address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Check that the page group is valid. */
         R_UNLESS(this->IsValidPageGroup(pg, address, num_pages), svc::ResultInvalidCurrentMemory());
@@ -2580,6 +2591,11 @@ namespace ams::kern {
         /* Perform unmapping operation. */
         const KPageProperties properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
         R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_Unmap, false));
+
+        /* Ensure cache coherency, if we're mapping executable pages. */
+        if ((old_perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute) {
+            cpu::InvalidateEntireInstructionCache();
+        }
 
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
