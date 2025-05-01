@@ -141,7 +141,7 @@ namespace ams::kern {
 
         /* Define helpers. */
         auto GetSpaceStart = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
-            return KAddressSpaceInfo::GetAddressSpaceStart(flags, type);
+            return KAddressSpaceInfo::GetAddressSpaceStart(flags, type, code_size);
         };
         auto GetSpaceSize = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
             return KAddressSpaceInfo::GetAddressSpaceSize(flags, type);
@@ -154,12 +154,6 @@ namespace ams::kern {
         m_address_space_width = GetAddressSpaceWidth(flags);
         size_t alias_region_size  = GetSpaceSize(KAddressSpaceInfo::Type_Alias);
         size_t heap_region_size   = GetSpaceSize(KAddressSpaceInfo::Type_Heap);
-
-        /* Adjust heap/alias size if we don't have an alias region. */
-        if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias) {
-            heap_region_size += alias_region_size;
-            alias_region_size = 0;
-        }
 
         /* Set code regions and determine remaining sizes. */
         KProcessAddress process_code_start;

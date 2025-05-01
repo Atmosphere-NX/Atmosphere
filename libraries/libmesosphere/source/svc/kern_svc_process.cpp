@@ -109,11 +109,12 @@ namespace ams::kern::svc {
             /* Decide on an address space map region. */
             uintptr_t map_start, map_end;
             size_t map_size;
+            const size_t code_size = params.code_num_pages * PageSize;
             switch (params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) {
                 case ams::svc::CreateProcessFlag_AddressSpace32Bit:
                 case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
                     {
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
                         map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
@@ -123,7 +124,7 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
                         map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
@@ -133,7 +134,7 @@ namespace ams::kern::svc {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit, code_size);
                         map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
 
                         map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
@@ -181,7 +182,6 @@ namespace ams::kern::svc {
             const size_t code_num_pages            = params.code_num_pages;
             const size_t system_resource_num_pages = params.system_resource_num_pages;
             const size_t total_pages               = code_num_pages + system_resource_num_pages;
-            const size_t code_size                 = code_num_pages * PageSize;
             const size_t system_resource_size      = system_resource_num_pages * PageSize;
             const size_t total_size                = code_size + system_resource_size;
 
