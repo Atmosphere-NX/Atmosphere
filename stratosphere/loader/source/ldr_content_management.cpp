@@ -59,15 +59,15 @@ namespace ams::ldr {
         const auto content_attributes = GetPlatformContentAttributes(platform);
 
         /* Mount the atmosphere code file system. */
-        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(m_ams_code_verification_data), AtmosphereCodeMountName, content_path, content_attributes, loc.program_id, m_override_status.IsHbl(), m_override_status.IsProgramSpecific()));
+        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(m_ams_code_verification_data), AtmosphereCodeMountName, content_path, content_attributes, loc.program_id, static_cast<ncm::StorageId>(loc.storage_id), m_override_status.IsHbl(), m_override_status.IsProgramSpecific()));
         m_mounted_ams = true;
 
         /* Mount the sd or base code file system. */
-        R_TRY(fs::MountCodeForAtmosphere(std::addressof(m_sd_or_base_code_verification_data), SdOrCodeMountName, content_path, content_attributes, loc.program_id));
+        R_TRY(fs::MountCodeForAtmosphere(std::addressof(m_sd_or_base_code_verification_data), SdOrCodeMountName, content_path, content_attributes, loc.program_id, static_cast<ncm::StorageId>(loc.storage_id)));
         m_mounted_sd_or_code = true;
 
         /* Mount the base code file system. */
-        if (R_SUCCEEDED(fs::MountCode(std::addressof(m_base_code_verification_data), CodeMountName, content_path, content_attributes, loc.program_id))) {
+        if (R_SUCCEEDED(fs::MountCode(std::addressof(m_base_code_verification_data), CodeMountName, content_path, content_attributes, loc.program_id, static_cast<ncm::StorageId>(loc.storage_id)))) {
             m_mounted_code = true;
         }
 
