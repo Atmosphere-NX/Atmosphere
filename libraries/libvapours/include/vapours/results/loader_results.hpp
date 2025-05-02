@@ -21,20 +21,20 @@ R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ldr, 9);
 
 namespace ams::ldr {
 
-    R_DEFINE_ERROR_RESULT(ArgumentOverflow,       1);
-    R_DEFINE_ERROR_RESULT(ArgumentCountOverflow,  2);
-    R_DEFINE_ERROR_RESULT(MetaOverflow,           3);
-    R_DEFINE_ERROR_RESULT(InvalidMeta,            4);
-    R_DEFINE_ERROR_RESULT(InvalidNso,             5);
-    R_DEFINE_ERROR_RESULT(InvalidPath,            6);
-    R_DEFINE_ERROR_RESULT(MaxProcess,             7);
-    R_DEFINE_ERROR_RESULT(NotPinned,              8);
-    R_DEFINE_ERROR_RESULT(InvalidProgramId,       9);
-    R_DEFINE_ERROR_RESULT(InvalidVersion,        10);
-    R_DEFINE_ERROR_RESULT(InvalidAcidSignature,  11);
-    R_DEFINE_ERROR_RESULT(InvalidNcaSignature,   12);
+    R_DEFINE_ERROR_RESULT(ArgumentOverflow,          1);
+    R_DEFINE_ERROR_RESULT(ArgumentCountOverflow,     2);
+    R_DEFINE_ERROR_RESULT(MetaOverflow,              3);
+    R_DEFINE_ERROR_RESULT(InvalidMeta,               4);
+    R_DEFINE_ERROR_RESULT(InvalidNso,                5);
+    R_DEFINE_ERROR_RESULT(InvalidPath,               6);
+    R_DEFINE_ERROR_RESULT(MaxProcess,                7);
+    R_DEFINE_ERROR_RESULT(NotPinned,                 8);
+    R_DEFINE_ERROR_RESULT(InvalidProgramId,          9);
+    R_DEFINE_ERROR_RESULT(InvalidVersion,           10);
+    R_DEFINE_ERROR_RESULT(InvalidAcidSignature,     11);
+    R_DEFINE_ERROR_RESULT(InvalidNcaSignature,      12);
 
-    R_DEFINE_ERROR_RESULT(InvalidPlatformId,     14);
+    R_DEFINE_ERROR_RESULT(InvalidProgramAttributes, 14);
 
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,            51);
     R_DEFINE_ERROR_RESULT(InvalidNroImage,              52);

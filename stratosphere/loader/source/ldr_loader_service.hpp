@@ -21,16 +21,16 @@ namespace ams::ldr {
     class LoaderService {
         public:
             /* Official commands. */
-            Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle &&reslimit_h) {
+            Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle &&reslimit_h, const ProgramAttributes &attrs) {
                 /* Create a handle to set the output to when done. */
                 os::NativeHandle handle = os::InvalidNativeHandle;
                 ON_SCOPE_EXIT { proc_h.SetValue(handle, true); };
 
-                R_RETURN(this->CreateProcess(std::addressof(handle), id, flags, reslimit_h.GetOsHandle()));
+                R_RETURN(this->CreateProcess(std::addressof(handle), id, flags, reslimit_h.GetOsHandle(), attrs));
             }
 
-            Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::ProgramLocation &loc) {
-                R_RETURN(this->GetProgramInfo(out_program_info.GetPointer(), nullptr, loc));
+            Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::ProgramLocation &loc, const ProgramAttributes &attrs) {
+                R_RETURN(this->GetProgramInfo(out_program_info.GetPointer(), nullptr, loc, attrs));
             }
 
             Result PinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc) {
@@ -75,16 +75,16 @@ namespace ams::ldr {
                 return this->HasLaunchedBootProgram(out.GetPointer(), program_id);
             }
 
-            Result AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc) {
-                R_RETURN(this->GetProgramInfo(out_program_info.GetPointer(), out_status.GetPointer(), loc));
+            Result AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc, const ProgramAttributes &attrs) {
+                R_RETURN(this->GetProgramInfo(out_program_info.GetPointer(), out_status.GetPointer(), loc, attrs));
             }
 
             Result AtmospherePinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status) {
                 R_RETURN(this->PinProgram(out_id.GetPointer(), loc, override_status));
             }
         private:
-            Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit);
-            Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc);
+            Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle resource_limit, const ProgramAttributes &attrs);
+            Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const ProgramAttributes &attrs);
             Result PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
             Result SetProgramArgument(ncm::ProgramId program_id, const void *argument, size_t size);
             Result GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id);
