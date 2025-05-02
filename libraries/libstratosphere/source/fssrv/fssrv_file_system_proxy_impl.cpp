@@ -482,9 +482,14 @@ namespace ams::fssrv {
         AMS_UNUSED(out_fs, out_verif, path, attr, program_id);
     }
 
-    Result FileSystemProxyImpl::OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const ams::sf::OutBuffer &out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
+    Result FileSystemProxyImpl::OpenCodeFileSystemDeprecated4(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const ams::sf::OutBuffer &out_verif, const fssrv::sf::Path &path, fs::ContentAttributes attr, ncm::ProgramId program_id) {
         AMS_ABORT("TODO");
         AMS_UNUSED(out_fs, out_verif, path, attr, program_id);
+    }
+
+    Result FileSystemProxyImpl::OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const ams::sf::OutBuffer &out_verif, fs::ContentAttributes attr, ncm::ProgramId program_id, ncm::StorageId storage_id) {
+        AMS_ABORT("TODO");
+        AMS_UNUSED(out_fs, out_verif, attr, program_id, storage_id);
     }
 
     Result FileSystemProxyImpl::IsArchivedProgram(ams::sf::Out<bool> out, u64 process_id) {
