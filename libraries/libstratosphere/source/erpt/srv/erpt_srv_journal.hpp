@@ -82,7 +82,7 @@ namespace ams::erpt::srv {
             static void CleanupAttachments();
             static Result CommitJournal(Stream *stream);
             static Result DeleteAttachments(ReportId report_id);
-            static Result GetAttachmentList(AttachmentList *out, ReportId report_id);
+            static Result GetAttachmentList(u32 *out_count, AttachmentInfo *out_infos, size_t max_out_infos, ReportId report_id);
             static u32    GetUsedStorage();
             static Result RestoreJournal(Stream *stream);
 
@@ -99,7 +99,7 @@ namespace ams::erpt::srv {
             static void       CleanupReports();
             static Result     Commit();
             static Result     Delete(ReportId report_id);
-            static Result     GetAttachmentList(AttachmentList *out, ReportId report_id);
+            static Result     GetAttachmentList(u32 *out_count, AttachmentInfo *out_infos, size_t max_out_infos, ReportId report_id);
             static util::Uuid GetJournalId();
             static s64        GetMaxReportSize();
             static Result     GetReportList(ReportList *out, ReportType type_filter);
