@@ -19,7 +19,7 @@ typedef struct {
 Result ldrPmAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id);
 Result ldrDmntAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id);
 
-Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out, CfgOverrideStatus *out_status, const NcmProgramLocation *loc);
+Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out, CfgOverrideStatus *out_status, const NcmProgramLocation *loc, const LoaderProgramAttributes *attr);
 Result ldrPmAtmospherePinProgram(u64 *out, const NcmProgramLocation *loc, const CfgOverrideStatus *status);
 
 #ifdef __cplusplus

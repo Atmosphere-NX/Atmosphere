@@ -15,6 +15,7 @@
  */
 #pragma once
 #include "pm_process_manager.hpp"
+#include "pm_process_attributes.hpp"
 
 namespace ams::pm::impl {
 
@@ -46,6 +47,7 @@ namespace ams::pm::impl {
             os::NativeHandle m_handle;
             svc::ProcessState m_state;
             u32 m_flags;
+            ProcessAttributes m_attrs;
             os::MultiWaitHolderType m_multi_wait_holder;
         private:
             void SetFlag(Flag flag) {
@@ -60,7 +62,7 @@ namespace ams::pm::impl {
                 return (m_flags & flag);
             }
         public:
-            ProcessInfo(os::NativeHandle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s);
+            ProcessInfo(os::NativeHandle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s, const ProcessAttributes &attrs);
             ~ProcessInfo();
             void Cleanup();
 
@@ -86,6 +88,10 @@ namespace ams::pm::impl {
 
             const cfg::OverrideStatus &GetOverrideStatus() const {
                 return m_status;
+            }
+
+            const ProcessAttributes &GetProcessAttributes() const {
+                return m_attrs;
             }
 
             svc::ProcessState GetState() const {
@@ -235,7 +241,7 @@ namespace ams::pm::impl {
     ProcessListAccessor GetProcessList();
     ProcessListAccessor GetExitList();
 
-    ProcessInfo *AllocateProcessInfo(svc::Handle process_handle, os::ProcessId process_id, ldr::PinId pin_id, const ncm::ProgramLocation &location, const cfg::OverrideStatus &override_status);
+    ProcessInfo *AllocateProcessInfo(svc::Handle process_handle, os::ProcessId process_id, ldr::PinId pin_id, const ncm::ProgramLocation &location, const cfg::OverrideStatus &override_status, const ProcessAttributes &attrs);
     void CleanupProcessInfo(ProcessListAccessor &list, ProcessInfo *process_info);
 
 }
