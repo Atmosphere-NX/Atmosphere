@@ -450,6 +450,9 @@ namespace ams::boot2 {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Migration, ncm::StorageId::BuiltInSystem), 0);
         }
 
+        /* Launch atmosphere's applet memory service program. */
+        LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::AtmosphereProgramId::AtmosphereMemlet, ncm::StorageId::None), 0);
+
         /* Launch user programs off of the SD. */
         LaunchFlaggedProgramsOnSdCard();
     }

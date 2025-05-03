@@ -361,7 +361,9 @@ namespace ams::kern::board::nintendo::nx {
         }();
 
         /* Return (possibly) adjusted size. */
-        constexpr size_t ExtraSystemMemoryForAtmosphere = 40_MB;
+        /* NOTE: On 20.0.0+ the browser requires much more memory in the applet pool in order to function. */
+        /* Thus, we have to reduce our extra system memory size by 26 MB to compensate. */
+        const size_t ExtraSystemMemoryForAtmosphere = kern::GetTargetFirmware() >= ams::TargetFirmware_20_0_0 ? 14_MB : 40_MB;
         return base_pool_size - ExtraSystemMemoryForAtmosphere - KTraceBufferSize;
     }
 

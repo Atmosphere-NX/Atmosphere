@@ -82,7 +82,7 @@ namespace ams::pm::impl {
                 [svc::LimitableResource_ThreadCountMax]         = BaseAppletThreads,
                 [svc::LimitableResource_EventCountMax]          = 0,
                 [svc::LimitableResource_TransferMemoryCountMax] = 32,
-                [svc::LimitableResource_SessionCountMax]        = 5,
+                [svc::LimitableResource_SessionCountMax]        = 5 + 1, /* Add a session for atmosphere's memlet system module. */
             },
         };
 

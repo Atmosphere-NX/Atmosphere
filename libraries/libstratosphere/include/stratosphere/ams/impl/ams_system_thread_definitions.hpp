@@ -171,6 +171,8 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, FileServerHtcsServer);
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, SdCardObserver);
 
+    AMS_DEFINE_SYSTEM_THREAD(16, memlet, Main);
+
     /* ServiceProfile */
     AMS_DEFINE_SYSTEM_THREAD(-1, sprofile, IpcServer);
 

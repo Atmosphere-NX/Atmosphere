@@ -17,6 +17,7 @@
 #include "../amsmitm_fs_utils.hpp"
 #include "fsmitm_romfs.hpp"
 #include "fsmitm_layered_romfs_storage.hpp"
+#include "memlet/memlet.h"
 
 namespace ams::mitm::fs {
 
@@ -25,6 +26,8 @@ namespace ams::mitm::fs {
     namespace romfs {
 
         namespace {
+
+            constexpr size_t MaximumRomfsBuildAppletMemorySize = 32_MB;
 
             struct ApplicationWithDynamicHeapInfo {
                 ncm::ProgramId program_id;
@@ -41,7 +44,7 @@ namespace ams::mitm::fs {
                 /* Fire Emblem: Engage. */
                 /* Requirement ~32+ MB. */
                 /* No particular heap sensitivity. */
-                { 0x0100A6301214E000,  16_MB, 0_MB },
+                { 0x0100A6301214E000,  20_MB, 0_MB },
 
                 /* The Legend of Zelda: Tears of the Kingdom. */
                 /* Requirement ~48 MB. */
@@ -85,10 +88,12 @@ namespace ams::mitm::fs {
                         /* NOTE: Lock not necessary, because this is the only location which do 0 -> non-zero. */
 
                         R_ABORT_UNLESS(MapImpl(std::addressof(this->heap_address), this->heap_size));
-                        AMS_ABORT_UNLESS(this->heap_address != 0);
+                        AMS_ABORT_UNLESS(this->heap_address != 0 || this->heap_size == 0);
 
                         /* Create heap. */
-                        util::ConstructAt(this->heap, reinterpret_cast<void *>(this->heap_address), this->heap_size);
+                        if (this->heap_size > 0) {
+                            util::ConstructAt(this->heap, reinterpret_cast<void *>(this->heap_address), this->heap_size);
+                        }
                     }
                 }
 
@@ -156,6 +161,52 @@ namespace ams::mitm::fs {
                 R_RETURN(os::SetMemoryHeapSize(0));
             }
 
+            constinit os::SharedMemoryType g_applet_shared_memory;
+
+            Result MapAppletMemory(uintptr_t *out, size_t &size) {
+                /* Ensure that we can try to get a native handle for the shared memory. */
+                AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_initialized_memlet, false);
+                if (AMS_UNLIKELY(!s_initialized_memlet)) {
+                    R_ABORT_UNLESS(::memletInitialize());
+                    s_initialized_memlet = true;
+                }
+
+                /* Try to get a shared handle for the memory. */
+                ::Handle shmem_handle = INVALID_HANDLE;
+                u64 shmem_size = 0;
+                if (R_FAILED(::memletCreateAppletSharedMemory(std::addressof(shmem_handle), std::addressof(shmem_size), size))) {
+                    /* If we fail, set the heap size to 0. */
+                    size = 0;
+                    R_SUCCEED();
+                }
+
+                /* Set the output size. */
+                size = shmem_size;
+
+                /* Setup the shared memory. */
+                os::AttachSharedMemory(std::addressof(g_applet_shared_memory), shmem_size, shmem_handle, true);
+
+                /* Map the shared memory. */
+                void *mem = os::MapSharedMemory(std::addressof(g_applet_shared_memory), os::MemoryPermission_ReadWrite);
+                AMS_ABORT_UNLESS(mem != nullptr);
+
+                /* Set the output. */
+                *out = reinterpret_cast<uintptr_t>(mem);
+                R_SUCCEED();
+            }
+
+            Result UnmapAppletMemory(uintptr_t, size_t) {
+                /* Check that it's possible for us to unmap. */
+                AMS_ABORT_UNLESS(os::GetSharedMemoryHandle(std::addressof(g_applet_shared_memory)) != os::InvalidNativeHandle);
+
+                /* Unmap. */
+                os::DestroySharedMemory(std::addressof(g_applet_shared_memory));
+
+                /* Check that we unmapped successfully. */
+                AMS_ABORT_UNLESS(os::GetSharedMemoryHandle(std::addressof(g_applet_shared_memory)) == os::InvalidNativeHandle);
+                R_SUCCEED();
+            }
+
             /* Dynamic allocation globals. */
             constinit os::SdkMutex g_romfs_build_lock;
             constinit ncm::ProgramId g_dynamic_heap_program_id{};
@@ -164,6 +215,7 @@ namespace ams::mitm::fs {
 
             constinit DynamicHeap<os::AllocateUnsafeMemory, os::FreeUnsafeMemory> g_dynamic_app_heap;
             constinit DynamicHeap<MapByHeap, UnmapByHeap> g_dynamic_sys_heap;
+            constinit DynamicHeap<MapAppletMemory, UnmapAppletMemory> g_dynamic_let_heap;
 
             void InitializeDynamicHeapForBuildRomfs(ncm::ProgramId program_id) {
                 if (program_id == g_dynamic_heap_program_id && g_dynamic_app_heap.heap_size > 0) {
@@ -175,6 +227,10 @@ namespace ams::mitm::fs {
                     if (g_dynamic_sys_heap.heap_size > 0) {
                         g_dynamic_sys_heap.Map();
                     }
+
+                    if (g_dynamic_let_heap.heap_size > 0) {
+                        g_dynamic_let_heap.Map();
+                    }
                 }
             }
 
@@ -183,15 +239,33 @@ namespace ams::mitm::fs {
                 g_building_from_dynamic_heap = false;
 
                 g_dynamic_app_heap.TryRelease();
+                g_dynamic_let_heap.Reset();
+            }
+
+            constexpr bool CanAllocateFromDynamicAppletHeap(AllocationType type) {
+                switch (type) {
+                    case AllocationType_FullPath:
+                    case AllocationType_SourceInfo:
+                    case AllocationType_Memory:
+                    case AllocationType_TableCache:
+                        return false;
+                    default:
+                        return true;
+                }
             }
 
         }
 
         void *AllocateTracked(AllocationType type, size_t size) {
-            AMS_UNUSED(type);
-
             if (g_building_from_dynamic_heap) {
-                void *ret = g_dynamic_app_heap.Allocate(size);
+                void *ret = nullptr;
+                if (CanAllocateFromDynamicAppletHeap(type) && g_dynamic_let_heap.heap_address != 0) {
+                    ret = g_dynamic_let_heap.Allocate(size);
+                }
+
+                if (ret == nullptr && g_dynamic_app_heap.heap_address != 0) {
+                    ret = g_dynamic_app_heap.Allocate(size);
+                }
 
                 if (ret == nullptr && g_dynamic_sys_heap.heap_address != 0) {
                     ret = g_dynamic_sys_heap.Allocate(size);
@@ -211,7 +285,11 @@ namespace ams::mitm::fs {
             AMS_UNUSED(type);
             AMS_UNUSED(size);
 
-            if (g_dynamic_app_heap.TryFree(p)) {
+            if (g_dynamic_let_heap.TryFree(p)) {
+                if (!g_building_from_dynamic_heap) {
+                    g_dynamic_let_heap.TryRelease();
+                }
+            } else if (g_dynamic_app_heap.TryFree(p)) {
                 if (!g_building_from_dynamic_heap) {
                     g_dynamic_app_heap.TryRelease();
                 }
@@ -1021,6 +1099,7 @@ namespace ams::mitm::fs {
             g_dynamic_heap_program_id    = program_id;
             g_dynamic_app_heap.heap_size = GetDynamicAppHeapSize(g_dynamic_heap_program_id);
             g_dynamic_sys_heap.heap_size = GetDynamicSysHeapSize(g_dynamic_heap_program_id);
+            g_dynamic_let_heap.heap_size = MaximumRomfsBuildAppletMemorySize;
 
             /* Set output. */
             *out_size = g_dynamic_app_heap.heap_size;
