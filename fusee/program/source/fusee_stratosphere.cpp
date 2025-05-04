@@ -673,8 +673,8 @@ namespace ams::nxboot {
                     AddPatch(fs_meta, 0x17C250, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 case FsVersion_20_0_0_Exfat:
-                    AddPatch(fs_meta, 0x1B3744, NogcPatch0, sizeof(NogcPatch0));
-                    AddPatch(fs_meta, 0x1B3944, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1B3745, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1B3945, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x187B70, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 default:
