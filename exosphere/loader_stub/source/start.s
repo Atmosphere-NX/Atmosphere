@@ -98,8 +98,5 @@ _start:
     ldr x20, =0x7C020000
     mov sp, x20
 
-    adr x0, program_lz4
-    adr x1, boot_code_lz4
-
     /* Uncompress the program and iram boot code images. */
-    b _ZN3ams6secmon6loader20UncompressAndExecuteEPKvS3_
+    b _ZN3ams6secmon6loader20UncompressAndExecuteEv
