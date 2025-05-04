@@ -19,6 +19,7 @@
   + `pm` was updated to reflect the latest official behavior.
   + `ncm` was partially updated to reflect the latest official behavior.
   + `erpt` was updated to reflect the latest official behavior.
++ Atmosphère was updated to use GCC 15/newlib (latest devkitA64/devkitARM releases).
 + A number of improvements were made to the dmnt cheat engine.
   + New instructions were added, and instructions were updated for improved/new functionality.
   + Please see the documents for details -- thanks @tomvita!
