@@ -195,7 +195,7 @@ namespace ams::pm::impl {
             const u8 *aci_fah  = acid_fac + program_info.acid_fac_size;
 
             /* Register with FS and SM. */
-            R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(fixed_location.program_id), static_cast<NcmStorageId>(fixed_location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
+            R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(fixed_location.program_id), static_cast<NcmStorageId>(fixed_location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size, 0));
             R_TRY(sm::manager::RegisterProcess(process_id, fixed_location.program_id, override_status, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
 
             /* Set flags. */
