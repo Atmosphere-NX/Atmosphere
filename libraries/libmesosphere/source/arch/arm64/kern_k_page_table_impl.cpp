@@ -219,7 +219,7 @@ namespace ams::kern::arch::arm64 {
         return is_block;
     }
 
-    bool KPageTableImpl::MergePages(KVirtualAddress *out, TraversalContext *context) {
+    bool KPageTableImpl::MergePages(KVirtualAddress *out, TraversalContext *context, EntryUpdatedCallback on_entry_updated, const void *pt) {
         /* We want to upgrade the pages by one step. */
         if (context->is_contiguous) {
             /* We can't merge an L1 table. */
@@ -251,6 +251,7 @@ namespace ams::kern::arch::arm64 {
             const auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_pte->IsHeadMergeDisabled(), head_pte->IsHeadAndBodyMergeDisabled(), tail_pte->IsTailMergeDisabled());
 
             *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false, false);
+            on_entry_updated(pt);
 
             /* Update our context. */
             context->is_contiguous = false;
@@ -285,6 +286,7 @@ namespace ams::kern::arch::arm64 {
             for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
                 pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + (i << (PageBits + LevelBits * context->level)), PageTableEntry(entry_template), sw_reserved_bits, true, context->level == EntryLevel_L3);
             }
+            on_entry_updated(pt);
 
             /* Update our context. */
             context->level_entries[context->level] = pte;
@@ -294,7 +296,7 @@ namespace ams::kern::arch::arm64 {
         return true;
     }
 
-    void KPageTableImpl::SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const {
+    void KPageTableImpl::SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte, EntryUpdatedCallback on_entry_updated, const void *pt) const {
         /* We want to downgrade the pages by one step. */
         if (context->is_contiguous) {
             /* We want to downgrade a contiguous mapping to a non-contiguous mapping. */
@@ -305,6 +307,7 @@ namespace ams::kern::arch::arm64 {
             for (size_t i = 0; i < BlocksPerContiguousBlock; ++i) {
                 pte[i] = PageTableEntry(PageTableEntry::BlockTag{}, block + (i << (PageBits + LevelBits * context->level)), PageTableEntry(first->GetEntryTemplateForSeparateContiguous(i)), PageTableEntry::SeparateContiguousTag{});
             }
+            on_entry_updated(pt);
 
             context->is_contiguous = false;
 
@@ -325,12 +328,12 @@ namespace ams::kern::arch::arm64 {
 
             /* Update the block entry to be a table entry. */
             *context->level_entries[context->level + 1] = PageTableEntry(PageTableEntry::TableTag{}, KPageTable::GetPageTablePhysicalAddress(KVirtualAddress(pte)), m_is_kernel, true, BlocksPerTable);
-
+            on_entry_updated(pt);
 
             context->level_entries[context->level] = pte + this->GetLevelIndex(address, context->level);
         }
 
-        entry->sw_reserved_bits = 0;
+        entry->sw_reserved_bits = context->level_entries[context->level]->GetSoftwareReservedBits();
         entry->attr             = 0;
         entry->phys_addr        = this->GetBlock(context->level_entries[context->level], context->level) + this->GetOffset(address, context->level);
         entry->block_size       = static_cast<size_t>(1) << (PageBits + LevelBits * context->level + 4 * context->is_contiguous);

@@ -118,29 +118,78 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_memory_block_tree.empty());
     }
 
+    bool KMemoryBlockManager::GetRegionForFindFreeArea(KProcessAddress *out_start, KProcessAddress *out_end, KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) {
+        /* Check that there's room for the pages in the specified region. */
+        if (num_pages + 2 * guard_pages > region_num_pages) {
+            return false;
+        }
+
+        /* Determine the aligned start of the guarded region. */
+        const KProcessAddress guarded_start                     = region_start + guard_pages * PageSize;
+        const KProcessAddress aligned_guarded_start             = util::AlignDown(GetInteger(guarded_start), alignment);
+              KProcessAddress aligned_guarded_start_with_offset = aligned_guarded_start + offset;
+        if (guarded_start > aligned_guarded_start_with_offset) {
+            if (!util::CanAddWithoutOverflow<uintptr_t>(GetInteger(aligned_guarded_start), alignment)) {
+                return false;
+            }
+            aligned_guarded_start_with_offset += alignment;
+        }
+
+        /* Determine the aligned end of the guarded region. */
+        const KProcessAddress guarded_end                     = region_start + ((region_num_pages - (num_pages + guard_pages)) * PageSize);
+        const KProcessAddress aligned_guarded_end             = util::AlignDown(GetInteger(guarded_end), alignment);
+              KProcessAddress aligned_guarded_end_with_offset = aligned_guarded_end + offset;
+        if (aligned_guarded_end_with_offset > guarded_end) {
+            if (aligned_guarded_end < alignment) {
+                return false;
+            }
+            aligned_guarded_end_with_offset -= alignment;
+        }
+
+        /* Check that the extents are valid. */
+        if (aligned_guarded_end_with_offset < aligned_guarded_start_with_offset) {
+            return false;
+        }
+
+        /* Set the output extents. */
+        *out_start = aligned_guarded_start_with_offset;
+        *out_end   = aligned_guarded_end_with_offset;
+        return true;
+    }
+
     KProcessAddress KMemoryBlockManager::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
-        if (num_pages > 0) {
-            const KProcessAddress region_end  = region_start + region_num_pages * PageSize;
-            const KProcessAddress region_last = region_end - 1;
-            for (const_iterator it = this->FindIterator(region_start); it != m_memory_block_tree.cend(); it++) {
-                if (region_last < it->GetAddress()) {
+        /* Determine the range to search in. */
+        KProcessAddress search_start = Null<KProcessAddress>;
+        KProcessAddress search_end   = Null<KProcessAddress>;
+        if (this->GetRegionForFindFreeArea(std::addressof(search_start), std::addressof(search_end), region_start, region_num_pages, num_pages, alignment, offset, guard_pages)) {
+            /* Iterate over blocks in the search space, looking for a suitable one. */
+            for (const_iterator it = this->FindIterator(search_start); it != m_memory_block_tree.cend(); it++) {
+                /* If our block is past the end of our search space, we're done. */
+                if (search_end < it->GetAddress()) {
                     break;
                 }
+
+                /* We only want to consider free blocks. */
                 if (it->GetState() != KMemoryState_Free) {
                     continue;
                 }
 
-                KProcessAddress area = (it->GetAddress() <= GetInteger(region_start)) ? region_start : it->GetAddress();
-                area += guard_pages * PageSize;
+                /* Determine the candidate range. */
+                KProcessAddress candidate_start = Null<KProcessAddress>;
+                KProcessAddress candidate_end   = Null<KProcessAddress>;
+                if (!this->GetRegionForFindFreeArea(std::addressof(candidate_start), std::addressof(candidate_end), it->GetAddress(), it->GetNumPages(), num_pages, alignment, offset, guard_pages)) {
+                    continue;
+                }
 
-                const KProcessAddress offset_area = util::AlignDown(GetInteger(area), alignment) + offset;
-                area = (area <= offset_area) ? offset_area : offset_area + alignment;
+                /* Try the suggested candidate (coercing into the search region if needed). */
+                KProcessAddress candidate = candidate_start;
+                if (candidate < search_start) {
+                    candidate = search_start;
+                }
 
-                const KProcessAddress area_end = area + num_pages * PageSize + guard_pages * PageSize;
-                const KProcessAddress area_last = area_end - 1;
-
-                if (GetInteger(it->GetAddress()) <= GetInteger(area) && area < area_last && area_last <= region_last && GetInteger(area_last) <= GetInteger(it->GetLastAddress())) {
-                    return area;
+                /* Check if the candidate is valid. */
+                if (candidate <= search_end && candidate <= candidate_end) {
+                    return candidate;
                 }
             }
         }

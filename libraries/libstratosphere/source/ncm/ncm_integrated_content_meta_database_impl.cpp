@@ -463,4 +463,28 @@ namespace ams::ncm {
         }));
     }
 
+    Result IntegratedContentMetaDatabaseImpl::HasAttributes(sf::Out<u8> out, u8 attr_mask) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Check that we're enabled. */
+        R_TRY(this->EnsureEnabled());
+
+        /* Test whether we have the attributes on all databases. */
+        u8 combined_attributes = 0;
+        R_TRY(m_list.ForAll([&](const auto &data) {
+            /* Check the current database. */
+            u8 cur_attr = 0;
+            R_TRY(data.interface->HasAttributes(std::addressof(cur_attr), attr_mask));
+
+            /* Accumulate the attributes found in the current interface. */
+            combined_attributes |= cur_attr;
+            R_SUCCEED();
+        }));
+
+        /* Set the output. */
+        *out = combined_attributes;
+        R_SUCCEED();
+    }
+
 }

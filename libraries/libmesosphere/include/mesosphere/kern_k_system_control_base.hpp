@@ -41,7 +41,7 @@ namespace ams::kern {
             /* Nintendo uses std::mt19937_t for randomness. */
             /* To save space (and because mt19337_t isn't secure anyway), */
             /* We will use TinyMT. */
-            static constinit inline bool         s_initialized_random_generator;
+            static constinit inline bool         s_uninitialized_random_generator{true};
             static constinit inline util::TinyMT s_random_generator{util::ConstantInitialize};
             static constinit inline KSpinLock    s_random_lock;
         public:

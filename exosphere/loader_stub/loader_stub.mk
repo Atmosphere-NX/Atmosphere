@@ -15,13 +15,12 @@ ifneq ($(__RECURSIVE__),1)
 export ATMOSPHERE_TOPDIR := $(CURRENT_DIRECTORY)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(CURDIR)/include \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-            $(CURRENT_DIRECTORY)/../program/$(ATMOSPHERE_OUT_DIR)
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
 
 CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
 CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
 SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
-BINFILES    := program.lz4 boot_code.lz4
+BINFILES    :=
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -102,13 +101,7 @@ $(OUTPUT).elf	:	$(OFILES)
 
 $(OFILES)	:	 $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/$(ATMOSPHERE_LIBRARY_DIR)/libexosphere.a
 
-program.lz4.o: program.lz4
-	@echo $(notdir $<)
-	@$(bin2o)
-
-boot_code.lz4.o: boot_code.lz4
-	@echo $(notdir $<)
-	@$(bin2o)
+secmon_loader_main.o: CXXFLAGS += --embed-dir="$(CURRENT_DIRECTORY)/../program/$(ATMOSPHERE_OUT_DIR)/"
 
 %.elf:
 	@echo linking $(notdir $@)
@@ -116,14 +109,6 @@ boot_code.lz4.o: boot_code.lz4
 	@$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(OFILES_SRC)	: $(OFILES_BIN)
-
-#---------------------------------------------------------------------------------
-# you need a rule like this for each extension you use as binary data
-#---------------------------------------------------------------------------------
-%.bin.o	%_bin.h:	%.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
 
 -include $(DEPENDS)
 

@@ -50,7 +50,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, flags));
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, flags, nullptr));
 
         ManagerImpl::NotifyAll();
 
@@ -142,6 +142,11 @@ namespace ams::erpt::srv {
         R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size));
     }
 
+    Result ContextImpl::SubmitAttachmentWithLz4Compression(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) {
+        /* TODO: Implement LZ4 compression on attachments. */
+        R_RETURN(this->SubmitAttachment(out, attachment_name, attachment_data));
+    }
+
     Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result, erpt::CreateReportOptionFlagSet flags) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
@@ -154,7 +159,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments, flags));
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments, flags, nullptr));
 
         ManagerImpl::NotifyAll();
 
@@ -167,6 +172,29 @@ namespace ams::erpt::srv {
 
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
         R_RETURN(this->CreateReportWithAttachmentsDeprecated2(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess()));
+    }
+
+    Result ContextImpl::CreateReportWithSpecifiedReprotId(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result, erpt::CreateReportOptionFlagSet flags, const ReportId &report_id) {
+        const   ContextEntry *ctx  = reinterpret_cast<const   ContextEntry *>( ctx_buffer.GetPointer());
+        const             u8 *data = reinterpret_cast<const             u8 *>(data_buffer.GetPointer());
+        const ReportMetaData *meta = reinterpret_cast<const ReportMetaData *>(meta_buffer.GetPointer());
+
+        const u32 ctx_size  = static_cast<u32>(ctx_buffer.GetSize());
+        const u32 data_size = static_cast<u32>(data_buffer.GetSize());
+        const u32 meta_size = static_cast<u32>(meta_buffer.GetSize());
+
+        const AttachmentId *attachments = reinterpret_cast<const AttachmentId *>(attachment_ids_buffer.GetPointer());
+        const u32 num_attachments = attachment_ids_buffer.GetSize() / sizeof(*attachments);
+
+        R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
+        R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
+        R_UNLESS(num_attachments <= AttachmentsPerReportMax,            erpt::ResultInvalidArgument());
+
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, attachments, num_attachments, flags, std::addressof(report_id)));
+
+        ManagerImpl::NotifyAll();
+
+        R_SUCCEED();
     }
 
     Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {

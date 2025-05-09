@@ -534,4 +534,34 @@ namespace ams::ncm {
         R_SUCCEED();
     }
 
+    Result ContentMetaDatabaseImpl::HasAttributes(sf::Out<u8> out, u8 attribute_mask) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Create a variable to hold the combined attributes. */
+        u8 combined_attributes = 0;
+
+        /* Iterate over all entries. */
+        for (auto &entry : *m_kvs) {
+            /* Obtain the content meta for the key. */
+            const void *meta;
+            size_t meta_size;
+            R_TRY(this->GetContentMetaPointer(&meta, &meta_size, entry.GetKey()));
+
+            /* Create a reader. */
+            ContentMetaReader reader(meta, meta_size);
+
+            /* Accumulate the set attributes from the current entry. */
+            combined_attributes |= (reader.GetHeader()->attributes) & attribute_mask;
+
+            /* If all the attributes we're looking for have been found, we're done. */
+            if ((combined_attributes & attribute_mask) == attribute_mask) {
+                break;
+            }
+        }
+
+        /* Set the output. */
+        *out = combined_attributes;
+        R_SUCCEED();
+    }
+
 }

@@ -80,7 +80,7 @@ namespace ams::nxboot {
             }
 
             /* Check that the key generation is one that we can use. */
-            static_assert(pkg1::KeyGeneration_Count == 19);
+            static_assert(pkg1::KeyGeneration_Count == 20);
             if (key_generation >= pkg1::KeyGeneration_Count) {
                 return false;
             }

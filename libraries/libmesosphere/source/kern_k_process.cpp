@@ -221,7 +221,7 @@ namespace ams::kern {
         }
 
         /* Set max memory. */
-        m_max_process_memory = m_page_table.GetHeapRegionSize();
+        m_max_process_memory = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(m_flags), KAddressSpaceInfo::Type_Heap);
 
         /* Generate random entropy. */
         KSystemControl::GenerateRandom(m_entropy, util::size(m_entropy));
