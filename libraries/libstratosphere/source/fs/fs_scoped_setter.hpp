@@ -33,14 +33,14 @@ namespace ams::fs {
             }
 
             ALWAYS_INLINE ScopedSetter(ScopedSetter &&rhs) {
-                m_ptr = rhs.ptr;
-                m_value = rhs.value;
+                m_ptr = rhs.m_ptr;
+                m_value = rhs.m_value;
                 rhs.Reset();
             }
 
             ALWAYS_INLINE ScopedSetter &operator=(ScopedSetter &&rhs) {
-                m_ptr = rhs.ptr;
-                m_value = rhs.value;
+                m_ptr = rhs.m_ptr;
+                m_value = rhs.m_value;
                 rhs.Reset();
                 return *this;
             }

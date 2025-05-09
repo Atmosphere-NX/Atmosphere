@@ -229,9 +229,12 @@ namespace ams::kern {
         out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
 
         /* Set and check code address. */
+        /* NOTE: Even though Nintendo passes a size to GetAddressSpaceStart at other call sites, they pass */
+        /* a number of pages here. Even though this is presumably only used for debug assertions, this is */
+        /* almost certainly a bug. */
         using ASType = KAddressSpaceInfo::Type;
         const ASType    as_type       = this->Is64BitAddressSpace() ? ((GetTargetFirmware() >= TargetFirmware_2_0_0) ? KAddressSpaceInfo::Type_Map39Bit : KAddressSpaceInfo::Type_MapSmall) : KAddressSpaceInfo::Type_MapSmall;
-        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type);
+        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type, out->code_num_pages);
         const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type);
         const uintptr_t map_end       = map_start + map_size;
         out->code_address             = map_start + start_address;

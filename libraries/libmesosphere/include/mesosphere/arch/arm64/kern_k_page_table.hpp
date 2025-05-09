@@ -200,6 +200,11 @@ namespace ams::kern::arch::arm64 {
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
             NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
             Result Finalize();
+
+            static void NoteUpdatedCallback(const void *pt) {
+                /* Note the update. */
+                static_cast<const KPageTable *>(pt)->NoteUpdated();
+            }
         private:
             Result Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll);
 

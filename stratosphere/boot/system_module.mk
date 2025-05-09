@@ -23,7 +23,7 @@ CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
 CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
 SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
 
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -67,14 +67,17 @@ endif
 .PHONY: clean all check_lib check_fusee
 
 #---------------------------------------------------------------------------------
-all: $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR) $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR)/libstratosphere.a
+all: $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR) $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR)/libstratosphere.a $(ATMOSPHERE_LIBRARIES_DIR)/../fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin
 	@$(MAKE) __RECURSIVE__=1 OUTPUT=$(CURDIR)/$(ATMOSPHERE_OUT_DIR)/$(TARGET) \
 	DEPSDIR=$(CURDIR)/$(ATMOSPHERE_BUILD_DIR) \
 	--no-print-directory -C $(ATMOSPHERE_BUILD_DIR) \
 	-f $(THIS_MAKEFILE)
 
-$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR)/libstratosphere.a: check_lib check_fusee
+$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR)/libstratosphere.a: check_lib
 	@$(SILENTCMD)echo "Checked library."
+
+$(ATMOSPHERE_LIBRARIES_DIR)/../fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin: check_fusee
+	@$(SILENTCMD)echo "Checked fusee."
 
 ifeq ($(ATMOSPHERE_CHECKED_LIBSTRATOSPHERE),1)
 check_lib:
@@ -124,15 +127,7 @@ $(OFILES) : $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR
 	@npdmtool $< $@
 	@echo built ... $(notdir $@)
 
-boot_power_utils.o: fusee.bin.o
-
-#---------------------------------------------------------------------------------
-# you need a rule like this for each extension you use as binary data
-#---------------------------------------------------------------------------------
-fusee.bin.o:	fusee.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
+boot_power_utils.o: CXXFLAGS += --embed-dir="$(ATMOSPHERE_LIBRARIES_DIR)/../fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/"
 
 -include $(DEPENDS)
 

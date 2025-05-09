@@ -59,7 +59,9 @@ namespace ams::kern {
         memory_reservation.Commit();
 
         /* Open reference to our resource limit. */
-        m_resource_limit->Open();
+        if (m_resource_limit != nullptr) {
+            m_resource_limit->Open();
+        }
 
         /* Set ourselves as initialized. */
         m_is_initialized = true;
@@ -76,11 +78,14 @@ namespace ams::kern {
         /* Free our secure memory. */
         KSystemControl::FreeSecureMemory(m_resource_address, m_resource_size, m_resource_pool);
 
-        /* Release the memory reservation. */
-        m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, this->CalculateRequiredSecureMemorySize());
+        /* Clean up our resource usage. */
+        if (m_resource_limit != nullptr) {
+            /* Release the memory reservation. */
+            m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, this->CalculateRequiredSecureMemorySize());
 
-        /* Close reference to our resource limit. */
-        m_resource_limit->Close();
+            /* Close reference to our resource limit. */
+            m_resource_limit->Close();
+        }
     }
 
     size_t KSecureSystemResource::CalculateRequiredSecureMemorySize(size_t size, KMemoryManager::Pool pool) {

@@ -86,7 +86,7 @@ namespace ams::erpt::srv {
             R_TRY(record->Add(FieldId_ErrorCode, error_code_str, std::strlen(error_code_str)));
 
             /* Create report. */
-            R_TRY(Reporter::CreateReport(ReportType_Invisible, ResultSuccess(), std::move(record), nullptr, nullptr, 0, erpt::srv::MakeNoCreateReportOptionFlags()));
+            R_TRY(Reporter::CreateReport(ReportType_Invisible, ResultSuccess(), std::move(record), nullptr, nullptr, 0, erpt::srv::MakeNoCreateReportOptionFlags(), nullptr));
 
             R_SUCCEED();
         }

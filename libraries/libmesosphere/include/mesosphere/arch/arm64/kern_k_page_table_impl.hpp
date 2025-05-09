@@ -49,6 +49,8 @@ namespace ams::kern::arch::arm64 {
                 EntryLevel level;
                 bool is_contiguous;
             };
+
+            using EntryUpdatedCallback = void (*)(const void *);
         private:
             static constexpr size_t PageBits  = util::CountTrailingZeros(PageSize);
             static constexpr size_t NumLevels = 3;
@@ -144,8 +146,8 @@ namespace ams::kern::arch::arm64 {
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const;
 
-            static bool MergePages(KVirtualAddress *out, TraversalContext *context);
-            void SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte) const;
+            static bool MergePages(KVirtualAddress *out, TraversalContext *context, EntryUpdatedCallback on_entry_updated, const void *pt);
+            void SeparatePages(TraversalEntry *entry, TraversalContext *context, KProcessAddress address, PageTableEntry *pte, EntryUpdatedCallback on_entry_updated, const void *pt) const;
 
             KProcessAddress GetAddressForContext(const TraversalContext *context) const {
                 KProcessAddress addr = m_is_kernel ? static_cast<uintptr_t>(-GetBlockSize(EntryLevel_L1)) * m_num_entries : 0;

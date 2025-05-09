@@ -752,12 +752,9 @@ namespace ams::kern::arch::arm64 {
         while (true) {
             /* Try to merge. */
             KVirtualAddress freed_table = Null<KVirtualAddress>;
-            if (!impl.MergePages(std::addressof(freed_table), context)) {
+            if (!impl.MergePages(std::addressof(freed_table), context, &KPageTable::NoteUpdatedCallback, this)) {
                 break;
             }
-
-            /* Note that we updated. */
-            this->NoteUpdated();
 
             /* Free the page. */
             if (freed_table != Null<KVirtualAddress>) {
@@ -816,8 +813,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Separate. */
-            impl.SeparatePages(entry, context, virt_addr, GetPointer<PageTableEntry>(table));
-            this->NoteUpdated();
+            impl.SeparatePages(entry, context, virt_addr, GetPointer<PageTableEntry>(table), &KPageTable::NoteUpdatedCallback, this);
         }
 
         R_SUCCEED();
@@ -1025,6 +1021,9 @@ namespace ams::kern::arch::arm64 {
 
             /* Finally, apply the changes as directed, flushing the mappings before they're applied (if we should). */
             ApplyEntryTemplate(entry_template, flush_mapping ? ApplyOption_FlushDataCache : ApplyOption_None);
+
+            /* Wait for pending stores to complete. */
+            cpu::DataSynchronizationBarrierInnerShareableStore();
         }
 
         /* We've succeeded, now perform what coalescing we can. */

@@ -1,4 +1,29 @@
 # Changelog
+## 1.9.0
++ Basic support was added for 20.0.0.
+  + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
+    + There shouldn't be anything user visible resulting from this, but it will be addressed in a future atmosphère update.
+    + The same action item from 18.0.0 remains, and I believe in my heart of hearts that it will be addressed eventually. Someone has told me they're working on it.
+    + There aren't (to my knowledge) outstanding 19.0.0 items any more.
+  + **Please note**: As a result of changes made to nintendo's software in 20.0.0, there is roughly 10MB less memory available for custom system modules.
+    + We can only steal a maximum of 14MB from the applet pool, down from 40MB.
+    + To compensate for this, `ams.mitm`'s heap usage has been reduced by 20MB.
+      + To facilitate this, a new helper module (`memlet`) was added, so that memory may be temporarily stolen during the romfs building process.
+      + Hopefully, this results in relatively little breakage, however it is possible that user mods which replace extremely large numbers of files in The Legend of Zelda: Tears of the Kingdom may no longer function.
+        + If you are affected by this, you will see "Data abort (0x101)" when trying to launch the game with mods.
+        + Please reach out to `sciresm` on discord if this occurs to share your error report binary. However, some issues may be impossible to fix.
+        + I apologize sincerely if the issue is impossible to resolve, but I have been forced unavoidably to make compromises here, and I think this is the best balance to be struck.
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `loader` was updated to reflect the latest official behavior.
+  + `pm` was updated to reflect the latest official behavior.
+  + `ncm` was partially updated to reflect the latest official behavior.
+  + `erpt` was updated to reflect the latest official behavior.
++ Atmosphère was updated to use GCC 15/newlib (latest devkitA64/devkitARM releases).
++ A number of improvements were made to the dmnt cheat engine.
+  + New instructions were added, and instructions were updated for improved/new functionality.
+  + Please see the documents for details -- thanks @tomvita!
++ General system stability improvements to enhance the user's experience.
 ## 1.8.0
 + Basic support was added for 19.0.0.
   + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.

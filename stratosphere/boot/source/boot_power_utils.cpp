@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
 #include "boot_pmic_driver.hpp"
-#include "fusee_bin.h"
 
 namespace ams::boot {
 
@@ -31,6 +30,10 @@ namespace ams::boot {
 
         /* Globals. */
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
+
+        constexpr const u8 FuseeBin[] = {
+            #embed <fusee.bin>
+        };
 
         /* Helpers. */
         void ClearIram() {
@@ -48,8 +51,8 @@ namespace ams::boot {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
+            for (size_t ofs = 0; ofs < sizeof(FuseeBin); ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, FuseeBin + ofs, std::min(static_cast<size_t>(sizeof(FuseeBin) - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -61,8 +64,8 @@ namespace ams::boot {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
+            for (size_t ofs = 0; ofs < sizeof(FuseeBin); ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, FuseeBin + ofs, std::min(static_cast<size_t>(sizeof(FuseeBin) - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -93,7 +96,7 @@ namespace ams::boot {
     }
 
     void SetInitialRebootPayload() {
-        ::ams::SetInitialRebootPayload(fusee_bin, fusee_bin_size);
+        ::ams::SetInitialRebootPayload(FuseeBin, sizeof(FuseeBin));
     }
 
     void RebootForFatalError(ams::FatalErrorContext *ctx) {

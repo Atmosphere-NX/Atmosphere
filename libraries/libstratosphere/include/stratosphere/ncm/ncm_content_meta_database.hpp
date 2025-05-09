@@ -226,6 +226,11 @@ namespace ams::ncm {
                 AMS_ASSERT(m_interface != nullptr);
                 R_RETURN(m_interface->GetPlatform(out, key));
             }
+
+            Result HasAttributes(u8 *out, u8 attr_mask) {
+                AMS_ASSERT(m_interface != nullptr);
+                R_RETURN(m_interface->HasAttributes(out, attr_mask));
+            }
     };
 
 }

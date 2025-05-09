@@ -18,6 +18,7 @@
 #define _TYPES_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -57,12 +58,6 @@ typedef u32 Result; ///< Function error code result type.
 
 #define INVALID_HANDLE ((Handle) 0)
 #define CUR_PROCESS_HANDLE ((Handle) 0xFFFF8001)
-
-#ifndef __cplusplus
-typedef int bool;
-#define true  1
-#define false 0
-#endif /* __cplusplus */
 
 #define BOOT_CFG_AUTOBOOT_EN (1 << 0)
 #define BOOT_CFG_FROM_LAUNCH (1 << 1)

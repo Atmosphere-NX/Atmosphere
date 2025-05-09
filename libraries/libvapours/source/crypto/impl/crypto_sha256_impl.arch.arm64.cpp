@@ -281,7 +281,7 @@ namespace ams::crypto::impl {
                   [cur_hash0]"+w"(cur_hash0), [cur_hash1]"+w"(cur_hash1),
                   [prev_hash0]"+w"(prev_hash0), [prev_hash1]"+w"(prev_hash1),
                   [tmp_hash]"=w"(tmp_hash), [data]"+r"(data)
-                : [round_constants]"r"(RoundConstants)
+                : "m"(*(const u8 (*)[block_count*BlockSize])data), [round_constants]"r"(RoundConstants)
                 :
             );
         } while (--block_count != 0);
