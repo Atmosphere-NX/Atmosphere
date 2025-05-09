@@ -49,9 +49,13 @@ clean-logo:
 	git checkout master
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
 	make -C $(CURDIR)/stratosphere/boot clean -j12
+	git add .
+	git commit -m "changed logo"
 	git checkout 8gb_DRAM
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
 	make -C $(CURDIR)/stratosphere/boot clean -j12
+	git add .
+	git commit -m "changed logo"
 	git checkout master
 
 kefir-version:
