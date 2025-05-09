@@ -32,7 +32,7 @@ namespace ams::boot {
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
 
         constexpr const u8 FuseeBin[] = {
-            #embed ATMOSPHERE_BOOT_FUSEE_PATH
+            #embed <fusee.bin>
         };
 
         /* Helpers. */

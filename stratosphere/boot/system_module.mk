@@ -127,7 +127,7 @@ $(OFILES) : $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR
 	@npdmtool $< $@
 	@echo built ... $(notdir $@)
 
-boot_power_utils.o: CXXFLAGS += -DATMOSPHERE_BOOT_FUSEE_PATH=\"$(ATMOSPHERE_LIBRARIES_DIR)/../fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/fusee.bin\"
+boot_power_utils.o: CXXFLAGS += --embed-dir="$(ATMOSPHERE_LIBRARIES_DIR)/../fusee/$(ATMOSPHERE_BOOT_OUT_DIR)/"
 
 -include $(DEPENDS)
 
