@@ -49,10 +49,23 @@ clean-logo:
 	git checkout master
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
 	make -C $(CURDIR)/stratosphere/boot clean -j12
+	@if ! git diff --quiet; then \
+		git add . && git commit -m "changed logo"; \
+	else \
+		echo "Nothing to commit on master"; \
+	fi
+
 	git checkout 8gb_DRAM
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
 	make -C $(CURDIR)/stratosphere/boot clean -j12
+	@if ! git diff --quiet; then \
+		git add . && git commit -m "changed logo"; \
+	else \
+		echo "Nothing to commit on 8gb_DRAM"; \
+	fi
+
 	git checkout master
+
 
 kefir-version:
 	cd libraries/libstratosphere && $(MAKE) -j12 clean && cd ../../stratosphere/ams_mitm && $(MAKE) -j12 clean && cd ../.. && $(MAKE) -j12
