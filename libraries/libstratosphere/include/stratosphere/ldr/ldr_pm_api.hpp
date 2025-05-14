@@ -20,15 +20,15 @@
 namespace ams::ldr::pm {
 
     /* Process Manager API. */
-    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle reslimit);
-    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc);
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle reslimit, ldr::ProgramAttributes attrs);
+    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc, ldr::ProgramAttributes attrs);
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc);
     Result UnpinProgram(PinId pin_id);
     Result SetEnabledProgramVerification(bool enabled);
     Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id);
 
     /* Atmosphere extension API. */
-    Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc);
+    Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, ldr::ProgramAttributes attrs);
     Result AtmospherePinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
 
 }

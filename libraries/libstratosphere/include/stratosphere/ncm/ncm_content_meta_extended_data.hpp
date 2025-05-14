@@ -282,7 +282,7 @@ namespace ams::ncm {
             }
 
             const FragmentSet *GetFragmentSet(s32 delta_index, s32 fragment_set_index) const {
-                return reinterpret_cast<const FragmentSet *>(this->GetFragmentSetIndex(delta_index, fragment_set_index));
+                return reinterpret_cast<const FragmentSet *>(this->GetFragmentSetAddress(delta_index, fragment_set_index));
             }
 
             const FragmentIndicator *GetFragmentIndicator(s32 delta_index, s32 fragment_set_index, s32 index) const {

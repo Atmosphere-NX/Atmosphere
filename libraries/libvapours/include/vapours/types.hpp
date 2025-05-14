@@ -16,7 +16,6 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
-#include <cstdbool>
 
 /* NOTE: This file serves as a substitute for libnx <switch/types.h>. */
 

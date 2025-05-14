@@ -19,13 +19,14 @@
 namespace ams::ldr::pm {
 
     /* Information API. */
-    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, Handle reslimit) {
-        R_RETURN(ldrPmCreateProcess(pin_id.value, flags, reslimit, out));
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, Handle reslimit, ldr::ProgramAttributes attrs) {
+        static_assert(sizeof(attrs) == sizeof(::LoaderProgramAttributes));
+        R_RETURN(ldrPmCreateProcess(pin_id.value, flags, reslimit, reinterpret_cast<const ::LoaderProgramAttributes *>(std::addressof(attrs)), out));
     }
 
-    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
+    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc, ldr::ProgramAttributes attrs) {
         static_assert(sizeof(*out) == sizeof(LoaderProgramInfo));
-        R_RETURN(ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<LoaderProgramInfo *>(out)));
+        R_RETURN(ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<const ::LoaderProgramAttributes *>(std::addressof(attrs)), reinterpret_cast<LoaderProgramInfo *>(out)));
     }
 
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc) {
@@ -41,10 +42,10 @@ namespace ams::ldr::pm {
         R_RETURN(ldrPmAtmosphereHasLaunchedBootProgram(out, static_cast<u64>(program_id)));
     }
 
-    Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
+    Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, ldr::ProgramAttributes attrs) {
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition!");
         static_assert(sizeof(*out) == sizeof(LoaderProgramInfo));
-        R_RETURN(ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc))));
+        R_RETURN(ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<const ::LoaderProgramAttributes *>(std::addressof(attrs))));
     }
 
     Result SetEnabledProgramVerification(bool enabled) {

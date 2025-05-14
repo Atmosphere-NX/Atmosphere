@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/fssystem/fssystem_nca_file_system_driver.hpp>
-#include <stratosphere/ldr/ldr_platform_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_platform.hpp>
 
 namespace ams::fssystem {
 
@@ -26,10 +26,10 @@ namespace ams::fssystem {
 
     void InvalidateHardwareAesKey();
 
-    bool IsValidSignatureKeyGeneration(ldr::PlatformId platform, size_t key_generation);
+    bool IsValidSignatureKeyGeneration(ncm::ContentMetaPlatform platform, size_t key_generation);
 
-    const u8 *GetAcidSignatureKeyModulus(ldr::PlatformId platform, bool prod, size_t key_generation, bool unk_unused);
-    size_t GetAcidSignatureKeyModulusSize(ldr::PlatformId platform, bool unk_unused);
+    const u8 *GetAcidSignatureKeyModulus(ncm::ContentMetaPlatform platform, bool prod, size_t key_generation, bool unk_unused);
+    size_t GetAcidSignatureKeyModulusSize(ncm::ContentMetaPlatform platform, bool unk_unused);
 
     const u8 *GetAcidSignatureKeyPublicExponent();
 

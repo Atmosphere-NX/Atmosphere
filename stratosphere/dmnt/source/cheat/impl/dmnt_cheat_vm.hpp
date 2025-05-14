@@ -43,6 +43,7 @@ namespace ams::dmnt::cheat::impl {
         CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
         CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
         CheatVmOpcodeType_ReadWriteStaticRegister = 0xC3,
+        CheatVmOpcodeType_BeginExtendedKeypressConditionalBlock = 0xC4,
 
         /* This is a meta entry, and not a real opcode. */
         /* This is to facilitate multi-nybble instruction decoding. */
@@ -59,6 +60,7 @@ namespace ams::dmnt::cheat::impl {
         MemoryAccessType_Heap    = 1,
         MemoryAccessType_Alias   = 2,
         MemoryAccessType_Aslr    = 3,
+        MemoryAccessType_NonRelative   = 4,
     };
 
     enum ConditionalComparisonType : u32 {
@@ -84,6 +86,10 @@ namespace ams::dmnt::cheat::impl {
         RegisterArithmeticType_LogicalXor = 8,
 
         RegisterArithmeticType_None = 9,
+        RegisterArithmeticType_FloatAddition = 10,
+        RegisterArithmeticType_FloatSubtraction = 11,
+        RegisterArithmeticType_FloatMultiplication = 12,
+        RegisterArithmeticType_FloatDivision = 13,
     };
 
     enum StoreRegisterOffsetType : u32 {
@@ -138,6 +144,8 @@ namespace ams::dmnt::cheat::impl {
         u32 bit_width;
         MemoryAccessType mem_type;
         ConditionalComparisonType cond_type;
+        bool include_ofs_reg;
+        u32 ofs_reg_index;
         u64 rel_address;
         VmInt value;
     };
@@ -161,7 +169,8 @@ namespace ams::dmnt::cheat::impl {
         u32 bit_width;
         MemoryAccessType mem_type;
         u32 reg_index;
-        bool load_from_reg;
+        u8 load_from_reg;
+        u8 offset_register;
         u64 rel_address;
     };
 
@@ -183,6 +192,11 @@ namespace ams::dmnt::cheat::impl {
 
     struct BeginKeypressConditionalOpcode {
         u32 key_mask;
+    };
+
+    struct BeginExtendedKeypressConditionalOpcode {
+        u64 key_mask;
+        bool auto_repeat;
     };
 
     struct PerformArithmeticRegisterOpcode {
@@ -259,6 +273,7 @@ namespace ams::dmnt::cheat::impl {
             StoreStaticToAddressOpcode str_static;
             PerformArithmeticStaticOpcode perform_math_static;
             BeginKeypressConditionalOpcode begin_keypress_cond;
+            BeginExtendedKeypressConditionalOpcode begin_ext_keypress_cond;
             PerformArithmeticRegisterOpcode perform_math_reg;
             StoreRegisterToAddressOpcode str_register;
             BeginRegisterConditionalOpcode begin_reg_cond;

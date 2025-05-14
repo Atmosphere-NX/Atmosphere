@@ -76,10 +76,7 @@ def main(argc, argv):
             for (param_id_l, param_id_h) in sorted(compressed_params[soc.lower()].keys(), key=lambda (l, h): l):
                 compressed = compressed_params[soc.lower()][(param_id_l, param_id_h)]
                 f.write('%s\n' % ('constexpr inline const u8 SdramParams%s%d_%d[0x%03X] = {' % (soc, param_id_l, param_id_h, len(compressed))))
-                while compressed:
-                    block = compressed[:0x10]
-                    compressed = compressed[0x10:]
-                    f.write('    %s\n' % (', '.join('0x%02X' % ord(c) for c in block) + ','))
+                f.write('%s\n' % ('    #embed "../../sdram_params/lz/sdram_params_%s_%d_%d.lz4"' % (soc.lower(), param_id_l, param_id_h)))
                 f.write('};\n\n')
                 f.write('%s\n' % ('constexpr inline const u8 * const SdramParams%s%d = SdramParams%s%d_%d;' % (soc, param_id_l, soc, param_id_l, param_id_h)))
                 f.write('%s\n' % ('constexpr inline const size_t SdramParamsSize%s%d = sizeof(SdramParams%s%d_%d);' % (soc, param_id_l, soc, param_id_l, param_id_h)))

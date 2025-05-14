@@ -19,7 +19,8 @@
 #include <stratosphere/ncm/ncm_ids.hpp>
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
-#include <stratosphere/ldr/ldr_platform_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_platform.hpp>
+#include <stratosphere/fs/fs_content_attributes.hpp>
 
 namespace ams::ldr {
 
@@ -264,5 +265,11 @@ namespace ams::ldr {
         u32 acid_size;
     };
     static_assert(sizeof(Npdm) == 0x80 && util::is_pod<Npdm>::value, "Npdm definition!");
+
+    struct ProgramAttributes {
+        ncm::ContentMetaPlatform platform;
+        fs::ContentAttributes content_attributes;
+    };
+    static_assert(sizeof(ProgramAttributes) == 2 && util::is_pod<ProgramAttributes>::value, "ProgramAttributes definition!");
 
 }

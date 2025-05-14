@@ -109,11 +109,30 @@ namespace ams::kern::arch::arm64 {
             return insn;
         }
 
-        void HandleUserException(KExceptionContext *context, u64 esr, u64 far, u64 afsr0, u64 afsr1, u32 data) {
+        void HandleUserException(KExceptionContext *context, u64 raw_esr, u64 raw_far, u64 afsr0, u64 afsr1, u32 data) {
+            /* Pre-process exception registers as needed. */
+            u64 esr = raw_esr;
+            u64 far = raw_far;
+            const u64 ec = (esr >> 26) & 0x3F;
+            if (ec == EsrEc_InstructionAbortEl0 || ec == EsrEc_DataAbortEl0) {
+                /* Adjust registers if a synchronous external abort has occurred with far not valid. */
+                /*     Mask 0x03F = Low 6 bits IFSC == 0x10: "Synchronous External abort,            */
+                /*     not on translation table walk or hardware update of translation table.        */
+                /*     Mask 0x400 = FnV = "FAR Not Valid"                                            */
+                /* TODO: How would we perform this check using named register accesses? */
+                if ((esr & 0x43F) == 0x410) {
+                    /* Clear the faulting register on memory tagging exception. */
+                    far = 0;
+                } else {
+                    /* If the faulting address is a kernel address, set ISFC = 4. */
+                    if (far >= ams::svc::AddressMemoryRegion39Size) {
+                        esr = (esr & 0xFFFFFFC0) | 4;
+                    }
+                }
+            }
+
             KProcess &cur_process = GetCurrentProcess();
             bool should_process_user_exception = KTargetSystem::IsUserExceptionHandlersEnabled();
-
-            const u64 ec = (esr >> 26) & 0x3F;
 
             /* In the event that we return from this exception, we want SPSR.SS set so that we advance an instruction if single-stepping. */
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
@@ -165,7 +184,7 @@ namespace ams::kern::arch::arm64 {
                     }
 
                     /* Save the debug parameters to the current thread. */
-                    GetCurrentThread().SaveDebugParams(far, esr, data);
+                    GetCurrentThread().SaveDebugParams(raw_far, raw_esr, data);
 
                     /* Get the exception type. */
                     u32 type;
@@ -387,7 +406,6 @@ namespace ams::kern::arch::arm64 {
             ams::svc::aarch32::ExceptionInfo info32;
         } info = {};
 
-
         const bool is_aarch64 = (e_ctx->psr & 0x10) == 0;
         if (is_aarch64) {
             /* We're 64-bit. */
@@ -432,9 +450,28 @@ namespace ams::kern::arch::arm64 {
                 uintptr_t far, esr, data;
                 GetCurrentThread().RestoreDebugParams(std::addressof(far), std::addressof(esr), std::addressof(data));
 
+                /* Pre-process exception registers as needed. */
+                const u64 ec = (esr >> 26) & 0x3F;
+                if (ec == EsrEc_InstructionAbortEl0 || ec == EsrEc_DataAbortEl0) {
+                    /* Adjust registers if a synchronous external abort has occurred with far not valid. */
+                    /*     Mask 0x03F = Low 6 bits IFSC == 0x10: "Synchronous External abort,            */
+                    /*     not on translation table walk or hardware update of translation table.        */
+                    /*     Mask 0x400 = FnV = "FAR Not Valid"                                            */
+                    /* TODO: How would we perform this check using named register accesses? */
+                    if ((esr & 0x43F) == 0x410) {
+                        /* Clear the faulting register on memory tagging exception. */
+                        far = 0;
+                    } else {
+                        /* If the faulting address is a kernel address, set ISFC = 4. */
+                        if (far >= ams::svc::AddressMemoryRegion39Size) {
+                            esr = (esr & 0xFFFFFFC0) | 4;
+                        }
+                    }
+                }
+
                 /* Collect additional information based on the ec. */
                 uintptr_t params[3] = {};
-                switch ((esr >> 26) & 0x3F) {
+                switch (ec) {
                      case EsrEc_Unknown:
                      case EsrEc_IllegalExecution:
                      case EsrEc_BkptInstruction:

@@ -13,7 +13,6 @@ Components
 Atmosphère consists of multiple components, each of which replaces/modifies a different component of the system:
 
 * Fusée: First-stage Loader, responsible for loading and validating stage 2 (custom TrustZone) plus package2 (Kernel/FIRM sysmodules), and patching them as needed. This replaces all functionality normally in Package1loader/NX Bootloader.
-    * Sept: Payload used to enable support for runtime key derivation on 7.0.0.
 * Exosphère: Customized TrustZone, to run a customized Secure Monitor
 * Thermosphère: EL2 EmuNAND support, i.e. backing up and using virtualized/redirected NAND images
 * Stratosphère: Custom Sysmodule(s), both Rosalina style to extend the kernel/provide new features, and of the loader reimplementation style to hook important system actions

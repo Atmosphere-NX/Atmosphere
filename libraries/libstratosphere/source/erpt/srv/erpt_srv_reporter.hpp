@@ -58,8 +58,8 @@ namespace ams::erpt::srv {
         private:
             static Result SubmitReportContexts(const ReportId &report_id, ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const time::PosixTime &user_timestamp, const time::PosixTime &network_timestamp, erpt::CreateReportOptionFlagSet flags);
         public:
-            static Result CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags);
-            static Result CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags);
+            static Result CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id);
+            static Result CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id);
     };
 
 }

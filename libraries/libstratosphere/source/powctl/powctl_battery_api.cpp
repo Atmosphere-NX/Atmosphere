@@ -22,7 +22,7 @@ namespace ams::powctl {
     namespace {
 
         impl::SessionImpl &GetOpenSessionImpl(Session &session) {
-            AMS_ASSERT(session.has_session);
+            /* AMS_ASSERT(session.has_session); */
             auto &impl = GetReference(session.impl_storage);
             AMS_ASSERT(impl.IsOpen());
             return impl;

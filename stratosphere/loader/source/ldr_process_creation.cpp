@@ -664,15 +664,15 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, PlatformId platform) {
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, const ldr::ProgramAttributes &attrs) {
         /* Mount code. */
         AMS_UNUSED(path);
-        ScopedCodeMount mount(loc, override_status, platform);
+        ScopedCodeMount mount(loc, override_status, attrs);
         R_TRY(mount.GetResult());
 
         /* Load meta, possibly from cache. */
         Meta meta;
-        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status, platform));
+        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status, attrs.platform));
 
         /* Validate meta. */
         R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
@@ -720,16 +720,16 @@ namespace ams::ldr {
         R_SUCCEED();
     }
 
-    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path, PlatformId platform) {
+    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path, const ldr::ProgramAttributes &attrs) {
         Meta meta;
 
         /* Load Meta. */
         {
             AMS_UNUSED(path);
 
-            ScopedCodeMount mount(loc, platform);
+            ScopedCodeMount mount(loc, attrs);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), platform, false));
+            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), attrs.platform, false));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }

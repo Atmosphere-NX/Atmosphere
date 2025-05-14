@@ -34,7 +34,9 @@ namespace ams::erpt::srv {
             Result CleanupReports();
             Result DeleteReport(const ReportId &report_id);
             Result GetStorageUsageStatistics(ams::sf::Out<StorageUsageStatistics> out);
-            Result GetAttachmentList(const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
+            Result GetAttachmentListDeprecated(const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
+            Result GetAttachmentList(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
+            Result GetReportSizeMax(ams::sf::Out<u32> out);
     };
     static_assert(erpt::sf::IsIManager<ManagerImpl>);
 

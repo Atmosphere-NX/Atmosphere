@@ -110,6 +110,9 @@ enum FS_VER
     FS_VER_19_0_0,
     FS_VER_19_0_0_EXFAT,
 
+    FS_VER_20_0_0,
+    FS_VER_20_0_0_EXFAT,
+
     FS_VER_MAX,
 };
 
