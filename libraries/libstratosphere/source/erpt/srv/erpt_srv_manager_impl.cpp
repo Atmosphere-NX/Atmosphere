@@ -86,10 +86,23 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result ManagerImpl::GetAttachmentList(const ams::sf::OutBuffer &out_list, const ReportId &report_id) {
+    Result ManagerImpl::GetAttachmentListDeprecated(const ams::sf::OutBuffer &out_list, const ReportId &report_id) {
         R_UNLESS(out_list.GetSize() == sizeof(AttachmentList), erpt::ResultInvalidArgument());
 
-        R_RETURN(Journal::GetAttachmentList(reinterpret_cast<AttachmentList *>(out_list.GetPointer()), report_id));
+        auto *attachment_list = reinterpret_cast<AttachmentList *>(out_list.GetPointer());
+
+        R_RETURN(Journal::GetAttachmentList(std::addressof(attachment_list->attachment_count), attachment_list->attachments, util::size(attachment_list->attachments), report_id));
+    }
+
+    Result ManagerImpl::GetAttachmentList(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buf, const ReportId &report_id) {
+        R_RETURN(Journal::GetAttachmentList(out_count.GetPointer(), reinterpret_cast<AttachmentInfo *>(out_buf.GetPointer()), out_buf.GetSize() / sizeof(AttachmentInfo), report_id));
+    }
+
+    Result ManagerImpl::GetReportSizeMax(ams::sf::Out<u32> out) {
+        /* TODO: Where is this size defined? */
+        constexpr size_t ReportSizeMax = 0x3FF4F;
+        *out = ReportSizeMax;
+        R_SUCCEED();
     }
 
 }

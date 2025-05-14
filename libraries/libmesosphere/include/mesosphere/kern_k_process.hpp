@@ -206,6 +206,10 @@ namespace ams::kern {
                 return m_capabilities.IsPermittedDebug();
             }
 
+            constexpr bool CanForceDebugProd() const {
+                return m_capabilities.CanForceDebugProd();
+            }
+
             constexpr bool CanForceDebug() const {
                 return m_capabilities.CanForceDebug();
             }
@@ -360,7 +364,7 @@ namespace ams::kern {
                 R_RETURN(m_address_arbiter.SignalToAddress(address, signal_type, value, count));
             }
 
-            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
+            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s64 value, s64 timeout) {
                 R_RETURN(m_address_arbiter.WaitForAddress(address, arb_type, value, timeout));
             }
 
@@ -374,7 +378,7 @@ namespace ams::kern {
 
                 /* Update the current page table. */
                 if (next_process) {
-                    next_process->GetPageTable().Activate(next_process->GetProcessId());
+                    next_process->GetPageTable().Activate(next_process->GetSlabIndex(), next_process->GetProcessId());
                 } else {
                     Kernel::GetKernelPageTable().Activate();
                 }

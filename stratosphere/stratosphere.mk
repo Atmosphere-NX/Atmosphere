@@ -5,7 +5,7 @@ THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
 include $(CURRENT_DIRECTORY)/../libraries/config/common.mk
 
-ALL_MODULES := loader boot ncm pm sm ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt pgl jpegdec LogManager cs htc TioServer dmnt.gen2
+ALL_MODULES := loader boot ncm pm sm ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt pgl jpegdec LogManager cs htc TioServer dmnt.gen2 memlet
 
 all: $(ALL_MODULES)
 

@@ -15,13 +15,18 @@
  */
 
 #pragma once
-#include <vapours.hpp>
+#include <switch.h>
 
-namespace ams::ldr {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    /* TODO: Is this really a FS type? What namespace does this actually live inside? */
-    enum PlatformId {
-        PlatformId_Nx = 0,
-    };
+Result memletInitialize(void);
+void memletExit(void);
+Service* memletGetServiceSession(void);
 
+Result memletCreateAppletSharedMemory(Handle *out_shmem_h, u64 *out_size, u64 desired_size);
+
+#ifdef __cplusplus
 }
+#endif

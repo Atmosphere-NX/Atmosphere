@@ -19,7 +19,8 @@
 #include <stratosphere/ncm/ncm_ids.hpp>
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
-#include <stratosphere/ldr/ldr_platform_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_platform.hpp>
+#include <stratosphere/fs/fs_content_attributes.hpp>
 
 namespace ams::ldr {
 
@@ -34,9 +35,10 @@ namespace ams::ldr {
         u32 aci_sac_size;
         u32 acid_fac_size;
         u32 aci_fah_size;
+        u8 unused_20[0x10];
         u8 ac_buffer[0x3E0];
     };
-    static_assert(util::is_pod<ProgramInfo>::value && sizeof(ProgramInfo) == 0x400, "ProgramInfo definition!");
+    static_assert(util::is_pod<ProgramInfo>::value && sizeof(ProgramInfo) == 0x410, "ProgramInfo definition!");
 
     enum ProgramInfoFlag {
         ProgramInfoFlag_SystemModule        = (0 << 0),
@@ -226,6 +228,7 @@ namespace ams::ldr {
             MetaFlag_OptimizeMemoryAllocation       = (1 << 4),
             MetaFlag_DisableDeviceAddressSpaceMerge = (1 << 5),
             MetaFlag_EnableAliasRegionExtraSize     = (1 << 6),
+            MetaFlag_PreventCodeReads               = (1 << 7),
         };
 
         enum AddressSpaceType {
@@ -262,5 +265,11 @@ namespace ams::ldr {
         u32 acid_size;
     };
     static_assert(sizeof(Npdm) == 0x80 && util::is_pod<Npdm>::value, "Npdm definition!");
+
+    struct ProgramAttributes {
+        ncm::ContentMetaPlatform platform;
+        fs::ContentAttributes content_attributes;
+    };
+    static_assert(sizeof(ProgramAttributes) == 2 && util::is_pod<ProgramAttributes>::value, "ProgramAttributes definition!");
 
 }

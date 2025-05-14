@@ -112,6 +112,14 @@ _ZN3ams4kern4init10StartCore0Emm:
     #endif
 
 2:  /* We're EL1. */
+    /* Flush the entire data cache and invalidate the entire TLB. */
+    bl _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
+
+    /* Invalidate the instruction cache, and ensure instruction consistency. */
+    ic ialluis
+    dsb sy
+    isb
+
     /* Disable the MMU/Caches. */
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
@@ -146,11 +154,15 @@ _ZN3ams4kern4init10StartCore0Emm:
     /* Save the offset to virtual address from this page's physical address for our use. */
     mov x24, x1
 
+    /* Clear the platform register (used for Kernel::GetCurrentThreadPointer()) */
+    mov x18, #0
+
     /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */
     /* Next thing to do is to set up our memory management and slabheaps -- all the other core initialization. */
     /* Call ams::kern::init::InitializeCore(uintptr_t, void **) */
     mov x1, x0  /* Kernelldr returns a state object for the kernel to re-use. */
     mov x0, x21 /* Use the address we determined earlier. */
+    nop
     INDIRECT_RELATIVE_CALL(x16, x24, _ZN3ams4kern4init20InitializeCorePhase1EmPPv)
 
     /* Get the init arguments for core 0. */
@@ -164,6 +176,7 @@ _ZN3ams4kern4init10StartCore0Emm:
 
     /* Perform further initialization with the stack pointer set up, as required. */
     /* This will include e.g. unmapping the identity mapping. */
+    nop
     INDIRECT_RELATIVE_CALL(x16, x24, _ZN3ams4kern4init20InitializeCorePhase2Ev)
 
     /* Get the init arguments for core 0. */
@@ -220,6 +233,14 @@ _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
     #endif
 
 2:  /* We're EL1. */
+    /* Flush the entire data cache and invalidate the entire TLB. */
+    bl _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
+
+    /* Invalidate the instruction cache, and ensure instruction consistency. */
+    ic ialluis
+    dsb sy
+    isb
+
     /* Disable the MMU/Caches. */
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
@@ -241,6 +262,7 @@ _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
     b.eq 3f
     b 4f
 3:  /* We're running on a Cortex-A53/Cortex-A57. */
+    /* NOTE: Nintendo compares these values instead of setting them, infinite looping on incorrect value. */
     ldr x1, [x20, #(INIT_ARGUMENTS_CPUACTLR)]
     msr cpuactlr_el1, x1
     ldr x1, [x20, #(INIT_ARGUMENTS_CPUECTLR)]
@@ -264,6 +286,9 @@ _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
 
     /* Set the stack pointer. */
     mov sp, x2
+
+    /* Clear the platform register (used for Kernel::GetCurrentThreadPointer()) */
+    mov x18, #0
 
     /* Invoke the entrypoint. */
     blr x1
@@ -388,14 +413,6 @@ _ZN3ams4kern4init19DisableMmuAndCachesEv:
     /* The stack isn't set up, so we'll need to trash a register. */
     mov x22, x30
 
-    /* Flush the entire data cache and invalidate the entire TLB. */
-    bl _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
-
-    /* Invalidate the instruction cache, and ensure instruction consistency. */
-    ic ialluis
-    dsb sy
-    isb
-
     /* Set SCTLR_EL1 to disable the caches and mmu. */
     /* SCTLR_EL1: */
     /*  - M = 0 */
@@ -413,27 +430,44 @@ _ZN3ams4kern4init19DisableMmuAndCachesEv:
     mov x30, x22
     ret
 
-/* ams::kern::arch::arm64::cpu::FlushEntireDataCacheWithoutStack() */
-.section    .crt0.text._ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
-.type       _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv, %function
-_ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv:
+/* ams::kern::arch::arm64::cpu::FlushEntireDataCacheSharedWithoutStack() */
+.section    .crt0.text._ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
+.type       _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv, %function
+_ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
     /* The stack isn't set up, so we'll need to trash a register. */
-    mov x23, x30
+    mov x24, x30
 
-    /* Ensure that the cache is coherent. */
-    bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
+    /* CacheLineIdAccessor clidr_el1; */
+    mrs x10, clidr_el1
+    /* const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency(); */
+    ubfx x9, x10,  #0x15, 3
+    /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
+    ubfx x10, x10, #0x18, 3
 
-    bl _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
+    /* int level = levels_of_unification */
 
-    bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
+    /* while (level <= levels_of_coherency) { */
+    cmp w9, w10
+    b.hi 1f
 
-    /* Invalidate the entire TLB, and ensure instruction consistency. */
-    tlbi vmalle1is
+0:
+    /*     FlushEntireDataCacheImplWithoutStack(level); */
+    mov w0, w9
+    bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
+
+    /*     level++; */
+    cmp w9, w10
+    add w9, w9, #1
+
+    /* } */
+    b.cc 0b
+
+    /* cpu::DataSynchronizationBarrier(); */
     dsb sy
-    isb
 
-    mov x30, x23
+1:
+    mov x30, x24
     ret
 
 /* ams::kern::arch::arm64::cpu::FlushEntireDataCacheLocalWithoutStack() */
@@ -475,44 +509,27 @@ _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv:
     mov x30, x24
     ret
 
-/* ams::kern::arch::arm64::cpu::FlushEntireDataCacheSharedWithoutStack() */
-.section    .crt0.text._ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
-.type       _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv, %function
-_ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
+/* ams::kern::arch::arm64::cpu::FlushEntireDataCacheWithoutStack() */
+.section    .crt0.text._ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
+.type       _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv, %function
+_ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv:
     /* The stack isn't set up, so we'll need to trash a register. */
-    mov x24, x30
+    mov x23, x30
 
-    /* CacheLineIdAccessor clidr_el1; */
-    mrs x10, clidr_el1
-    /* const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency(); */
-    ubfx x9, x10,  #0x15, 3
-    /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
-    ubfx x10, x10, #0x18, 3
+    /* Ensure that the cache is coherent. */
+    bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
 
-    /* int level = levels_of_unification */
+    bl _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
 
-    /* while (level <= levels_of_coherency) { */
-    cmp w9, w10
-    b.hi 1f
+    bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
 
-0:
-    /*     FlushEntireDataCacheImplWithoutStack(level); */
-    mov w0, w9
-    bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
-
-    /*     level++; */
-    cmp w9, w10
-    add w9, w9, #1
-
-    /* } */
-    b.cc 0b
-
-    /* cpu::DataSynchronizationBarrier(); */
+    /* Invalidate the entire TLB, and ensure instruction consistency. */
+    tlbi vmalle1is
     dsb sy
+    isb
 
-1:
-    mov x30, x24
+    mov x30, x23
     ret
 
 /* ams::kern::arch::arm64::cpu::FlushEntireDataCacheImplWithoutStack() */

@@ -23,6 +23,10 @@ namespace ams::kern {
             return UserspaceAccess::CopyMemoryFromUserSize32Bit(out, GetVoidPointer(address));
         }
 
+        ALWAYS_INLINE bool ReadFromUser(s64 *out, KProcessAddress address) {
+            return UserspaceAccess::CopyMemoryFromUserSize64Bit(out, GetVoidPointer(address));
+        }
+
         ALWAYS_INLINE bool DecrementIfLessThan(s32 *out, KProcessAddress address, s32 value) {
             /* NOTE: If scheduler lock is not held here, interrupt disable is required. */
             /* KScopedInterruptDisable di; */
@@ -249,6 +253,53 @@ namespace ams::kern {
 
             /* Read the value from userspace. */
             s32 user_value;
+            if (!ReadFromUser(std::addressof(user_value), addr)) {
+                slp.CancelSleep();
+                R_THROW(svc::ResultInvalidCurrentMemory());
+            }
+
+            /* Check that the value is equal. */
+            if (value != user_value) {
+                slp.CancelSleep();
+                R_THROW(svc::ResultInvalidState());
+            }
+
+            /* Check that the timeout is non-zero. */
+            if (timeout == 0) {
+                slp.CancelSleep();
+                R_THROW(svc::ResultTimedOut());
+            }
+
+            /* Set the arbiter. */
+            cur_thread->SetAddressArbiter(std::addressof(m_tree), addr);
+            m_tree.insert(*cur_thread);
+
+            /* Wait for the thread to finish. */
+            wait_queue.SetHardwareTimer(timer);
+            cur_thread->BeginWait(std::addressof(wait_queue));
+        }
+
+        /* Get the wait result. */
+        R_RETURN(cur_thread->GetWaitResult());
+    }
+
+    Result KAddressArbiter::WaitIfEqual64(uintptr_t addr, s64 value, s64 timeout) {
+        /* Prepare to wait. */
+        KThread *cur_thread = GetCurrentThreadPointer();
+        KHardwareTimer *timer;
+        ThreadQueueImplForKAddressArbiter wait_queue(std::addressof(m_tree));
+
+        {
+            KScopedSchedulerLockAndSleep slp(std::addressof(timer), cur_thread, timeout);
+
+            /* Check that the thread isn't terminating. */
+            if (cur_thread->IsTerminationRequested()) {
+                slp.CancelSleep();
+                R_THROW(svc::ResultTerminationRequested());
+            }
+
+            /* Read the value from userspace. */
+            s64 user_value;
             if (!ReadFromUser(std::addressof(user_value), addr)) {
                 slp.CancelSleep();
                 R_THROW(svc::ResultInvalidCurrentMemory());

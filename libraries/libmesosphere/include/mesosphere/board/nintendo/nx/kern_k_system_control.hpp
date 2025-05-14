@@ -45,6 +45,7 @@ namespace ams::kern::board::nintendo::nx {
             };
         public:
             /* Initialization. */
+            static NOINLINE void ConfigureKTargetSystem();
             static NOINLINE void InitializePhase1();
             static NOINLINE void InitializePhase2();
             static NOINLINE u32 GetCreateProcessMemoryPool();

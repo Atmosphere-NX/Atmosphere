@@ -1214,7 +1214,7 @@ namespace ams::kern::board::nintendo::nx {
                     for (size_t i = 0; i < map_count; ++i) {
                         /* Get the physical address. */
                         const KPhysicalAddress phys_addr = l2[l2_index + i].GetPhysicalAddress();
-                        MESOSPHERE_ASSERT(IsHeapPhysicalAddress(phys_addr));
+                        MESOSPHERE_ASSERT(phys_addr == Null<KPhysicalAddress> || IsHeapPhysicalAddress(phys_addr));
 
                         /* Fully invalidate the entry. */
                         l2[l2_index + i].Invalidate();

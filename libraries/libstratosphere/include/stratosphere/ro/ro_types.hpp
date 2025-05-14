@@ -135,14 +135,15 @@ namespace ams::ro {
     class NroHeader {
         public:
             static constexpr u32 Magic = util::FourCC<'N','R','O','0'>::Code;
+            static constexpr u32 FlagAlignedHeader = 1;
         private:
             u32 m_entrypoint_insn;
             u32 m_mod_offset;
             u8  m_reserved_08[0x8];
             u32 m_magic;
-            u8  m_reserved_14[0x4];
+            u8  m_version;
             u32 m_size;
-            u8  m_reserved_1C[0x4];
+            u32 m_flags;
             u32 m_text_offset;
             u32 m_text_size;
             u32 m_ro_offset;
@@ -158,8 +159,20 @@ namespace ams::ro {
                 return m_magic == Magic;
             }
 
+            u32 GetVersion() const {
+                return m_version;
+            }
+
             u32 GetSize() const {
                 return m_size;
+            }
+
+            u32 GetFlags() const {
+                return m_flags;
+            }
+
+            bool IsAlignedHeader() const {
+                return m_flags & FlagAlignedHeader;
             }
 
             u32 GetTextOffset() const {

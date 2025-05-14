@@ -24,7 +24,7 @@ namespace ams {
     namespace {
 
         /* TODO: we really shouldn't be using malloc just to avoid dealing with real allocator separation. */
-        constexpr size_t MallocBufferSize = 32_MB;
+        constexpr size_t MallocBufferSize = 12_MB;
         alignas(os::MemoryPageSize) constinit u8 g_malloc_buffer[MallocBufferSize];
 
     }

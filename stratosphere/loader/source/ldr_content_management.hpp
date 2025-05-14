@@ -34,8 +34,8 @@ namespace ams::ldr {
             bool m_mounted_sd_or_code;
             bool m_mounted_code;
         public:
-            ScopedCodeMount(const ncm::ProgramLocation &loc, PlatformId platform);
-            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, PlatformId platform);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs);
             ~ScopedCodeMount();
 
             Result GetResult() const {
@@ -59,7 +59,7 @@ namespace ams::ldr {
                 return m_base_code_verification_data;
             }
         private:
-            Result Initialize(const ncm::ProgramLocation &loc, PlatformId platform);
+            Result Initialize(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs);
             void EnsureOverrideStatus(const ncm::ProgramLocation &loc);
     };
 
@@ -76,10 +76,8 @@ namespace ams::ldr {
     #define ENCODE_CMPT_PATH(relative) "cmpt:" relative
 
     /* Redirection API. */
-    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, PlatformId platform);
+    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs);
     Result RedirectProgramPath(const char *path, size_t size, const ncm::ProgramLocation &loc);
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc);
-
-    fs::ContentAttributes GetPlatformContentAttributes(PlatformId platform);
 
 }

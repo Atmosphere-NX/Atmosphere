@@ -414,7 +414,7 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags) {
+    Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id) {
         /* Create a context record for the report. */
         auto record = std::make_unique<ContextRecord>();
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
@@ -423,10 +423,10 @@ namespace ams::erpt::srv {
         R_TRY(record->Initialize(ctx, data, data_size));
 
         /* Create the report. */
-        R_RETURN(CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments, flags));
+        R_RETURN(CreateReport(type, ctx_result, std::move(record), meta, attachments, num_attachments, flags, specified_report_id));
     }
 
-    Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags) {
+    Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id) {
         /* Clear the automatic categories, when we're done with our report. */
         ON_SCOPE_EXIT {
             Context::ClearContext(CategoryId_ErrorInfo);
@@ -444,7 +444,7 @@ namespace ams::erpt::srv {
         R_TRY(SubmitReportDefaults(ctx));
 
         /* Generate report id. */
-        const ReportId report_id = { .uuid = util::GenerateUuid() };
+        const ReportId report_id = specified_report_id ? *specified_report_id : ReportId{ .uuid = util::GenerateUuid() };
 
         /* Get posix timestamps. */
         time::PosixTime timestamp_user;
@@ -537,6 +537,8 @@ namespace ams::erpt::srv {
             /* NOTE: Nintendo ignores the result of this call. */
             SubmitFsInfo();
         }
+        #else
+        AMS_UNUSED(flags);
         #endif
 
 

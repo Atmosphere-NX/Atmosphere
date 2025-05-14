@@ -65,8 +65,8 @@ namespace ams::mitm::socket::resolver {
         }
 
         constexpr const char DefaultHostsFile[] =
-            "# All Nintendo servers\n"
-            "127.0.0.1 *nintendo*\n";
+            "# Nintendo telemetry servers\n"
+            "127.0.0.1 receive-%.dg.srv.nintendo.net receive-%.er.srv.nintendo.net\n";
 
         constinit os::SdkMutex g_redirection_lock;
         std::vector<std::pair<std::string, ams::socket::InAddrT>> g_redirection_list;
