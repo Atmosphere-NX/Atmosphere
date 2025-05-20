@@ -18,6 +18,7 @@
 #include <exosphere/fuse.hpp>
 #include <exosphere/uart.hpp>
 #include <exosphere/secmon/secmon_emummc_context.hpp>
+#include <exosphere/pkg1.hpp>
 
 namespace ams::secmon {
 
@@ -44,7 +45,8 @@ namespace ams::secmon {
         u8  log_port;
         u8  log_flags;
         u32 log_baud_rate;
-        u32 reserved1[2];
+        u8  memory_mode;
+        u8  reserved1[7];
         EmummcConfiguration emummc_cfg;
 
         constexpr bool IsValid() const { return this->magic == Magic; }
@@ -62,7 +64,7 @@ namespace ams::secmon {
         u32 flags[2];
         u16 lcd_vendor;
         u8  log_flags;
-        u8  reserved0;
+        u8  memory_mode;
         u32 log_baud_rate;
         u32 reserved1[(0x80 - 0x1C) / sizeof(u32)];
 
@@ -74,6 +76,7 @@ namespace ams::secmon {
             this->log_port        = storage.log_port;
             this->log_flags       = storage.log_flags;
             this->log_baud_rate   = storage.log_baud_rate != 0 ? storage.log_baud_rate : 115200;
+            this->memory_mode     = storage.memory_mode;
         }
 
         void SetFuseInfo() {
@@ -95,6 +98,28 @@ namespace ams::secmon {
         constexpr u32 GetLogBaudRate() const { return this->log_baud_rate; }
 
         constexpr bool IsProduction() const { return this->GetHardwareState() != fuse::HardwareState_Development; }
+
+        constexpr bool HasMemoryMode() const { return (this->memory_mode) != 0; }
+        constexpr pkg1::MemoryMode GetMemoryMode() const {
+            switch(this->memory_mode) {
+                case 1:
+                    return pkg1::MemoryMode_Auto; 
+                case 2:
+                    return pkg1::MemoryMode_4GB;
+                case 3:
+                    return pkg1::MemoryMode_4GBAppletDev;
+                case 4:
+                    return pkg1::MemoryMode_4GBSystemDev;
+                case 5:
+                    return pkg1::MemoryMode_6GB;
+                case 6:
+                    return pkg1::MemoryMode_6GBAppletDev;
+                case 7:
+                    return pkg1::MemoryMode_8GB;
+                default:
+                    AMS_ABORT();
+            }
+        }
 
         constexpr bool IsDevelopmentFunctionEnabledForKernel()  const { return (this->flags[0] & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel)  != 0; }
         constexpr bool IsDevelopmentFunctionEnabledForUser()    const { return (this->flags[0] & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser)    != 0; }
@@ -119,7 +144,7 @@ namespace ams::secmon {
         .flags           = { SecureMonitorConfigurationFlag_Default, SecureMonitorConfigurationFlag_None },
         .lcd_vendor      = {},
         .log_flags       = {},
-        .reserved0       = {},
+        .memory_mode     = {},
         .log_baud_rate   = 115200,
         .reserved1       = {},
     };
