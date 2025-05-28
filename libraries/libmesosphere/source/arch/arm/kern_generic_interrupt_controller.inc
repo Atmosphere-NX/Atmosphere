@@ -115,7 +115,6 @@ namespace ams::kern::arch::arm {
         }
 
         /* Save spendsgir. */
-        static_assert(util::size(state->spendsgir) == util::size(m_gicd->spendsgir));
         for (size_t i = 0; i < util::size(state->spendsgir); ++i) {
             state->spendsgir[i] = m_gicd->spendsgir[i];
         }
@@ -176,7 +175,6 @@ namespace ams::kern::arch::arm {
         }
 
         /* Restore spendsgir. */
-        static_assert(util::size(state->spendsgir) == util::size(m_gicd->spendsgir));
         for (size_t i = 0; i < util::size(state->spendsgir); ++i) {
             m_gicd->spendsgir[i] = state->spendsgir[i];
         }
