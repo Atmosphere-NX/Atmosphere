@@ -113,6 +113,12 @@ namespace ams::kern::arch::arm {
             constexpr size_t Offset = 0;
             state->icfgr[i] = m_gicd->icfgr[i + Offset];
         }
+
+        /* Save spendsgir. */
+        static_assert(util::size(state->spendsgir) == util::size(m_gicd->spendsgir));
+        for (size_t i = 0; i < util::size(state->spendsgir); ++i) {
+            state->spendsgir[i] = m_gicd->spendsgir[i];
+        }
     }
 
     void KInterruptController::SaveGlobal(GlobalState *state) const {
@@ -167,6 +173,12 @@ namespace ams::kern::arch::arm {
             constexpr size_t Offset = 0;
             m_gicd->icenabler[i + Offset] = 0xFFFFFFFF;
             m_gicd->isenabler[i + Offset] = state->isenabler[i];
+        }
+
+        /* Restore spendsgir. */
+        static_assert(util::size(state->spendsgir) == util::size(m_gicd->spendsgir));
+        for (size_t i = 0; i < util::size(state->spendsgir); ++i) {
+            m_gicd->spendsgir[i] = state->spendsgir[i];
         }
     }
 
