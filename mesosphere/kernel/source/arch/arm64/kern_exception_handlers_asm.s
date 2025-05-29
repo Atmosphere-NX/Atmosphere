@@ -354,21 +354,12 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     mrs     x17, ttbr0_el1
     and     x17, x17, #(0xFFFF << 48)
 
-    /* Check if FAR is valid by examining the FnV bit. */
-    tbnz    x16, #10, 8f
-
-    /* FAR is valid, so we can invalidate the address it holds. */
+    /* Invalidate the address held by FAR (and assume it is valid). */
     mrs     x16, far_el1
     lsr     x16, x16, #12
     orr     x17, x16, x17
     tlbi    vae1, x17
-    b       9f
 
-8:  /* There's a TLB conflict and FAR isn't valid. */
-    /* Invalidate the entire TLB. */
-    tlbi    aside1, x17
-
-9:  /* Return from a TLB conflict. */
     /* Ensure instruction consistency. */
     dsb     ish
     isb
@@ -485,33 +476,16 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     b       3b
 
 4:  /* Check if there's a TLB conflict that caused the abort. */
-    /* NOTE: There is a Nintendo bug in this code that we correct. */
-    /* Nintendo compares the low 6 bits of x0 without restoring the value. */
-    /* They intend to check the DFSC/IFSC bits of esr_el1, but because they */
-    /* shifted esr earlier, the check is invalid and always fails. */
     mrs     x0, esr_el1
     and     x0, x0, #0x3F
     cmp     x0, #0x30
     b.ne    1b
 
-    /* Check if FAR is valid by examining the FnV bit. */
-    /* NOTE: Nintendo again has a bug here, the same as above. */
-    /* They do not refresh the value of x0, and again compare with */
-    /* the relevant bit already masked out of x0. */
-    mrs     x0, esr_el1
-    tbnz    x0, #10, 5f
-
-    /* FAR is valid, so we can invalidate the address it holds. */
+    /* Invalidate the address held by FAR (and assume it is valid). */
     mrs     x0, far_el1
     lsr     x0, x0, #12
     tlbi    vaae1, x0
-    b       6f
 
-5:  /* There's a TLB conflict and FAR isn't valid. */
-    /* Invalidate the entire TLB. */
-    tlbi    vmalle1
-
-6:  /* Return from a TLB conflict. */
     /* Ensure instruction consistency. */
     dsb     ish
     isb

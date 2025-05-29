@@ -24,7 +24,7 @@ namespace ams::pkg2 {
     constexpr inline int PayloadCount = 3;
 
     constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x18 in Nintendo's code. */
-    constexpr inline int CurrentBootloaderVersion = 0x16;
+    constexpr inline int CurrentBootloaderVersion = 0x17;
 
     struct Package2Meta {
         using Magic = util::FourCC<'P','K','2','1'>;

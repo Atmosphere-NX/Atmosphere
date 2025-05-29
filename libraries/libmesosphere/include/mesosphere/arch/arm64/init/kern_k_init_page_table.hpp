@@ -110,7 +110,7 @@ namespace ams::kern::arch::arm64::init {
                     L1PageTableEntry *l1_entry = this->GetL1Entry(virt_addr);
 
                     /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
-                    if (l1_entry->IsMappedBlock() || l1_entry->IsEmpty()) {
+                    if (l1_entry->IsMappedBlock() || l1_entry->IsMappedEmpty()) {
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
                         MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= L1BlockSize);
                         virt_addr += L1BlockSize;
@@ -126,7 +126,7 @@ namespace ams::kern::arch::arm64::init {
                     /* Table, so check if we're mapped in L2. */
                     L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
 
-                    if (l2_entry->IsMappedBlock() || l2_entry->IsEmpty()) {
+                    if (l2_entry->IsMappedBlock() || l2_entry->IsMappedEmpty()) {
                         const size_t advance_size = (l2_entry->IsMappedBlock() && l2_entry->IsContiguous()) ? L2ContiguousBlockSize : L2BlockSize;
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
                         MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
@@ -144,7 +144,7 @@ namespace ams::kern::arch::arm64::init {
                     L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
 
                     /* L3 must be block or empty. */
-                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsMappedBlock() || l3_entry->IsEmpty());
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsMappedBlock() || l3_entry->IsMappedEmpty());
 
                     const size_t advance_size = (l3_entry->IsMappedBlock() && l3_entry->IsContiguous()) ? L3ContiguousBlockSize : L3BlockSize;
                     MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
@@ -164,7 +164,7 @@ namespace ams::kern::arch::arm64::init {
                     L1PageTableEntry *l1_entry = this->GetL1Entry(virt_addr);
 
                     /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
-                    if (l1_entry->IsMappedBlock() || l1_entry->IsEmpty()) {
+                    if (l1_entry->IsMappedBlock() || l1_entry->IsMappedEmpty()) {
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
                         MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= L1BlockSize);
                         if (l1_entry->IsMappedBlock() && block_size == L1BlockSize) {
@@ -182,7 +182,7 @@ namespace ams::kern::arch::arm64::init {
                     /* Table, so check if we're mapped in L2. */
                     L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
 
-                    if (l2_entry->IsMappedBlock() || l2_entry->IsEmpty()) {
+                    if (l2_entry->IsMappedBlock() || l2_entry->IsMappedEmpty()) {
                         const size_t advance_size = (l2_entry->IsMappedBlock() && l2_entry->IsContiguous()) ? L2ContiguousBlockSize : L2BlockSize;
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
                         MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
@@ -202,7 +202,7 @@ namespace ams::kern::arch::arm64::init {
                     L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
 
                     /* L3 must be block or empty. */
-                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsMappedBlock() || l3_entry->IsEmpty());
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsMappedBlock() || l3_entry->IsMappedEmpty());
 
                     const size_t advance_size = (l3_entry->IsMappedBlock() && l3_entry->IsContiguous()) ? L3ContiguousBlockSize : L3BlockSize;
                     MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));

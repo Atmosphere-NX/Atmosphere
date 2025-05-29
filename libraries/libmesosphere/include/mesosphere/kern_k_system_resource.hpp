@@ -94,7 +94,11 @@ namespace ams::kern {
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             ALWAYS_INLINE size_t CalculateRequiredSecureMemorySize() const {
-                return CalculateRequiredSecureMemorySize(m_resource_size, m_resource_pool);
+                if (m_resource_limit != nullptr) {
+                    return CalculateRequiredSecureMemorySize(m_resource_size, m_resource_pool);
+                } else {
+                    return 0;
+                }
             }
 
             ALWAYS_INLINE size_t GetSize() const { return m_resource_size; }

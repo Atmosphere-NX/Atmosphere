@@ -48,7 +48,7 @@ namespace ams::crypto {
             "   moveq   %[result],  #1\n"
             "   movne   %[result],  #0\n"
             : [result]"=r"(result), [lhs]"+r"(lhs), [rhs]"+r"(rhs), [xor_acc]"=&r"(xor_acc), [index]"=&r"(index), [ltmp]"=&r"(ltmp), [rtmp]"=&r"(rtmp)
-            : [size]"r"(size)
+            : "m"(*(const u8 (*)[size])lhs), "m"(*(const u8 (*)[size])rhs), [size]"r"(size)
             : "cc"
         );
 

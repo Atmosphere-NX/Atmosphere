@@ -95,7 +95,7 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(16, creport, Main);
 
     /* ro. */
-    AMS_DEFINE_SYSTEM_THREAD(16, ro, Main);
+    AMS_DEFINE_SYSTEM_THREAD(21, ro, Main);
 
     /* gpio. */
     AMS_DEFINE_SYSTEM_THREAD(-12, gpio, InterruptHandler);
@@ -170,6 +170,8 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, FileServerHtcsServer);
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, SdCardObserver);
+
+    AMS_DEFINE_SYSTEM_THREAD(16, memlet, Main);
 
     /* ServiceProfile */
     AMS_DEFINE_SYSTEM_THREAD(-1, sprofile, IpcServer);

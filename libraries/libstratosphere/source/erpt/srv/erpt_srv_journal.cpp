@@ -51,8 +51,8 @@ namespace ams::erpt::srv {
         R_RETURN(JournalForReports::DeleteReport(report_id));
     }
 
-    Result Journal::GetAttachmentList(AttachmentList *out, ReportId report_id) {
-        R_RETURN(JournalForAttachments::GetAttachmentList(out, report_id));
+    Result Journal::GetAttachmentList(u32 *out_count, AttachmentInfo *out_infos, size_t max_out_infos, ReportId report_id) {
+        R_RETURN(JournalForAttachments::GetAttachmentList(out_count, out_infos, max_out_infos, report_id));
     }
 
     util::Uuid Journal::GetJournalId() {

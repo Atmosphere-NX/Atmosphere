@@ -24,12 +24,12 @@ _ZN3ams4kern4arch5arm6432UserspaceAccessFunctionAreaBeginEv:
 
 /*  ================ All Userspace Access Functions after this line. ================ */
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUser(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18CopyMemoryFromUserEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyMemoryFromUserEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyMemoryFromUserEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUser(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyMemoryFromUserEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyMemoryFromUserEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyMemoryFromUserEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess18CopyMemoryFromUserEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyMemoryFromUserEPvPKvm:
     /* Check if there's anything to copy. */
     cmp     x2, #0
     b.eq    2f
@@ -48,12 +48,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyMemoryFromUserEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserAligned32Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUserAligned32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned32BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned32BitEPvPKvm:
     /* Check if there are 0x40 bytes to copy */
     cmp     x2, #0x3F
     b.ls    1f
@@ -72,7 +72,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm:
     add     x0, x0, #0x40
     add     x1, x1, #0x40
     sub     x2, x2, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm
+    b       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned32BitEPvPKvm
 
 1:  /* We have less than 0x40 bytes to copy. */
     cmp     x2, #0
@@ -87,12 +87,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned32BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserAligned64Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUserAligned64Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned64BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned64BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned64BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned64BitEPvPKvm:
     /* Check if there are 0x40 bytes to copy */
     cmp     x2, #0x3F
     b.ls    1f
@@ -111,7 +111,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm:
     add     x0, x0, #0x40
     add     x1, x1, #0x40
     sub     x2, x2, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm
+    b       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl30CopyMemoryFromUserAligned64BitEPvPKvm
 
 1:  /* We have less than 0x40 bytes to copy. */
     cmp     x2, #0
@@ -126,12 +126,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess30CopyMemoryFromUserAligned64BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize64Bit(void *dst, const void *src) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUserSize64Bit(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize64BitEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize64BitEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize64BitEPvPKv, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize64BitEPvPKv:
     /* Just load and store a u64. */
     ldtr    x2, [x1]
     str     x2, [x0]
@@ -140,12 +140,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize64BitEPvPKv:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize32Bit(void *dst, const void *src) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUserSize32Bit(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize32BitEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize32BitEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize32BitEPvPKv, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl27CopyMemoryFromUserSize32BitEPvPKv:
     /* Just load and store a u32. */
     ldtr    w2, [x1]
     str     w2, [x0]
@@ -154,12 +154,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess27CopyMemoryFromUserSize32BitEPvPKv:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryFromUserSize32BitWithSupervisorAccessImpl(void *dst, const void *src) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryFromUserSize32BitWithSupervisorAccess(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl47CopyMemoryFromUserSize32BitWithSupervisorAccessEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl47CopyMemoryFromUserSize32BitWithSupervisorAccessEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl47CopyMemoryFromUserSize32BitWithSupervisorAccessEPvPKv, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervisorAccessImplEPvPKv:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl47CopyMemoryFromUserSize32BitWithSupervisorAccessEPvPKv:
     /* Just load and store a u32. */
     /* NOTE: This is done with supervisor access permissions. */
     ldr     w2, [x1]
@@ -169,12 +169,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess51CopyMemoryFromUserSize32BitWithSupervi
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyStringFromUser(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18CopyStringFromUserEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyStringFromUserEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyStringFromUserEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyStringFromUser(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyStringFromUserEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyStringFromUserEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyStringFromUserEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess18CopyStringFromUserEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18CopyStringFromUserEPvPKvm:
     /* Check if there's anything to copy. */
     cmp     x2, #0
     b.eq    3f
@@ -204,12 +204,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18CopyStringFromUserEPvPKvm:
     mov     x0, #0
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryToUser(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16CopyMemoryToUserEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyMemoryToUserEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyMemoryToUserEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUser(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyMemoryToUserEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyMemoryToUserEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyMemoryToUserEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess16CopyMemoryToUserEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyMemoryToUserEPvPKvm:
     /* Check if there's anything to copy. */
     cmp     x2, #0
     b.eq    2f
@@ -228,12 +228,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyMemoryToUserEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryToUserAligned32Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUserAligned32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned32BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned32BitEPvPKvm:
     /* Check if there are 0x40 bytes to copy */
     cmp     x2, #0x3F
     b.ls    1f
@@ -252,7 +252,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm:
     add     x0, x0, #0x40
     add     x1, x1, #0x40
     sub     x2, x2, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm
+    b       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned32BitEPvPKvm
 
 1:  /* We have less than 0x40 bytes to copy. */
     cmp     x2, #0
@@ -267,12 +267,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned32BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryToUserAligned64Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUserAligned64Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPKvm:
     /* Check if there are 0x40 bytes to copy */
     cmp     x2, #0x3F
     b.ls    1f
@@ -291,7 +291,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm:
     add     x0, x0, #0x40
     add     x1, x1, #0x40
     sub     x2, x2, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm
+    b       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPKvm
 
 1:  /* We have less than 0x40 bytes to copy. */
     cmp     x2, #0
@@ -306,12 +306,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess28CopyMemoryToUserAligned64BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyMemoryToUserSize32Bit(void *dst, const void *src) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess25CopyMemoryToUserSize32BitEPvPKv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess25CopyMemoryToUserSize32BitEPvPKv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess25CopyMemoryToUserSize32BitEPvPKv, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUserSize32Bit(void *dst, const void *src) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess25CopyMemoryToUserSize32BitEPvPKv:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv:
     /* Just load and store a u32. */
     ldr     w2, [x1]
     sttr    w2, [x0]
@@ -320,12 +320,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess25CopyMemoryToUserSize32BitEPvPKv:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::CopyStringToUser(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16CopyStringToUserEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyStringToUserEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyStringToUserEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyStringToUser(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyStringToUserEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyStringToUserEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyStringToUserEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess16CopyStringToUserEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16CopyStringToUserEPvPKvm:
     /* Check if there's anything to copy. */
     cmp     x2, #0
     b.eq    3f
@@ -355,114 +355,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16CopyStringToUserEPvPKvm:
     mov     x0, #0
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::ClearMemory(void *dst, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess11ClearMemoryEPvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess11ClearMemoryEPvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess11ClearMemoryEPvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::UpdateLockAtomic(u32 *out, u32 *address, u32 if_zero, u32 new_orr_mask) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16UpdateLockAtomicEPjS5_jj, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16UpdateLockAtomicEPjS5_jj
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16UpdateLockAtomicEPjS5_jj, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess11ClearMemoryEPvm:
-    /* Check if there's anything to clear. */
-    cmp     x1, #0
-    b.eq    2f
-
-    /* Keep track of the last address. */
-    add     x2, x0, x1
-
-1:  /* We're copying memory byte-by-byte. */
-    sttrb   wzr, [x0]
-    add     x0, x0, #1
-    cmp     x0, x2
-    b.ne    1b
-
-2:  /* We're done. */
-    mov     x0, #1
-    ret
-
-/* ams::kern::arch::arm64::UserspaceAccess::ClearMemoryAligned32Bit(void *dst, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned32BitEPvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned32BitEPvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned32BitEPvm, %function
-.balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned32BitEPvm:
-    /* Check if there are 0x40 bytes to clear. */
-    cmp     x1, #0x3F
-    b.ls    2f
-    sttr    xzr, [x0, #0x00]
-    sttr    xzr, [x0, #0x08]
-    sttr    xzr, [x0, #0x10]
-    sttr    xzr, [x0, #0x18]
-    sttr    xzr, [x0, #0x20]
-    sttr    xzr, [x0, #0x28]
-    sttr    xzr, [x0, #0x30]
-    sttr    xzr, [x0, #0x38]
-    add     x0, x0, #0x40
-    sub     x1, x1, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned32BitEPvm
-
-1:  /* We have less than 0x40 bytes to clear. */
-    cmp     x1, #0
-    b.eq    2f
-    sttr    wzr, [x0]
-    add     x0, x0, #4
-    sub     x1, x1, #4
-    b       1b
-
-2:  /* We're done. */
-    mov     x0, #1
-    ret
-
-/* ams::kern::arch::arm64::UserspaceAccess::ClearMemoryAligned64Bit(void *dst, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned64BitEPvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned64BitEPvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned64BitEPvm, %function
-.balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned64BitEPvm:
-    /* Check if there are 0x40 bytes to clear. */
-    cmp     x1, #0x3F
-    b.ls    2f
-    sttr    xzr, [x0, #0x00]
-    sttr    xzr, [x0, #0x08]
-    sttr    xzr, [x0, #0x10]
-    sttr    xzr, [x0, #0x18]
-    sttr    xzr, [x0, #0x20]
-    sttr    xzr, [x0, #0x28]
-    sttr    xzr, [x0, #0x30]
-    sttr    xzr, [x0, #0x38]
-    add     x0, x0, #0x40
-    sub     x1, x1, #0x40
-    b       _ZN3ams4kern4arch5arm6415UserspaceAccess23ClearMemoryAligned64BitEPvm
-
-1:  /* We have less than 0x40 bytes to clear. */
-    cmp     x1, #0
-    b.eq    2f
-    sttr    xzr, [x0]
-    add     x0, x0, #8
-    sub     x1, x1, #8
-    b       1b
-
-2:  /* We're done. */
-    mov     x0, #1
-    ret
-
-/* ams::kern::arch::arm64::UserspaceAccess::ClearMemorySize32Bit(void *dst) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv, %function
-.balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv:
-    /* Just store a zero. */
-    sttr    wzr, [x0]
-
-    /* We're done. */
-    mov     x0, #1
-    ret
-
-/* ams::kern::arch::arm64::UserspaceAccess::UpdateLockAtomic(u32 *out, u32 *address, u32 if_zero, u32 new_orr_mask) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, %function
-.balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16UpdateLockAtomicEPjS5_jj:
     /* Load the value from the address. */
     ldaxr   w4, [x1]
 
@@ -477,7 +375,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj:
     stlxr   w6, w5, [x1]
 
     /* If we failed to store, try again. */
-    cbnz    w6, _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
+    cbnz    w6, _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16UpdateLockAtomicEPjS5_jj
 
     /* We're done. */
     str     w4, [x0]
@@ -485,12 +383,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj:
     ret
 
 
-/* ams::kern::arch::arm64::UserspaceAccess::UpdateIfEqualAtomic(s32 *out, s32 *address, s32 compare_value, s32 new_value) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::UpdateIfEqualAtomic(s32 *out, s32 *address, s32 compare_value, s32 new_value) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19UpdateIfEqualAtomicEPiS5_ii, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19UpdateIfEqualAtomicEPiS5_ii
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19UpdateIfEqualAtomicEPiS5_ii, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19UpdateIfEqualAtomicEPiS5_ii:
     /* Load the value from the address. */
     ldaxr   w4, [x1]
 
@@ -508,19 +406,19 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii:
     stlxr   w5, w3, [x1]
 
     /* If we failed to store, try again. */
-    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19UpdateIfEqualAtomicEPiS5_ii
 
 2:  /* We're done. */
     str     w4, [x0]
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::DecrementIfLessThanAtomic(s32 *out, s32 *address, s32 compare) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::DecrementIfLessThanAtomic(s32 *out, s32 *address, s32 compare) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25DecrementIfLessThanAtomicEPiS5_i, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25DecrementIfLessThanAtomicEPiS5_i
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25DecrementIfLessThanAtomicEPiS5_i, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25DecrementIfLessThanAtomicEPiS5_i:
     /* Load the value from the address. */
     ldaxr   w3, [x1]
 
@@ -539,19 +437,19 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i:
     stlxr   w5, w4, [x1]
 
     /* If we failed to store, try again. */
-    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25DecrementIfLessThanAtomicEPiS5_i
 
 2:  /* We're done. */
     str     w3, [x0]
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::StoreDataCache(uintptr_t start, uintptr_t end) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::StoreDataCache(uintptr_t start, uintptr_t end) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14StoreDataCacheEmm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14StoreDataCacheEmm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14StoreDataCacheEmm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14StoreDataCacheEmm:
     /* Check if we have any work to do. */
     cmp     x1, x0
     b.eq    2f
@@ -566,12 +464,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::FlushDataCache(uintptr_t start, uintptr_t end) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess14FlushDataCacheEmm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess14FlushDataCacheEmm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess14FlushDataCacheEmm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::FlushDataCache(uintptr_t start, uintptr_t end) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14FlushDataCacheEmm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14FlushDataCacheEmm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14FlushDataCacheEmm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess14FlushDataCacheEmm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl14FlushDataCacheEmm:
     /* Check if we have any work to do. */
     cmp     x1, x0
     b.eq    2f
@@ -586,12 +484,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess14FlushDataCacheEmm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::InvalidateDataCache(uintptr_t start, uintptr_t end) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::InvalidateDataCache(uintptr_t start, uintptr_t end) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19InvalidateDataCacheEmm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19InvalidateDataCacheEmm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19InvalidateDataCacheEmm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl19InvalidateDataCacheEmm:
     /* Check if we have any work to do. */
     cmp     x1, x0
     b.eq    2f
@@ -606,12 +504,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory32Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::ReadIoMemory32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory32BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory32BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f
@@ -656,12 +554,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm:
     mov     w9, #0xFFFFFFFF
     b       2b
 
-/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory16Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::ReadIoMemory16Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory16BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory16BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory16BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17ReadIoMemory16BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f
@@ -706,12 +604,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm:
     mov     w9, #0xFFFFFFFF
     b       2b
 
-/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory8Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::ReadIoMemory8Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16ReadIoMemory8BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16ReadIoMemory8BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16ReadIoMemory8BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl16ReadIoMemory8BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f
@@ -756,12 +654,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm:
     mov     w9, #0xFFFFFFFF
     b       2b
 
-/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory32Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::WriteIoMemory32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory32BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory32BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f
@@ -801,12 +699,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory16Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::WriteIoMemory16Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory16BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory16BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory16BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory16BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f
@@ -846,12 +744,12 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory8Bit(void *dst, const void *src, size_t size) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::WriteIoMemory8Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17WriteIoMemory8BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17WriteIoMemory8BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17WriteIoMemory8BitEPvPKvm, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm:
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17WriteIoMemory8BitEPvPKvm:
     /* Check if we have any work to do. */
     cmp     x2, #0
     b.eq    3f

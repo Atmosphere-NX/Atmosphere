@@ -77,14 +77,19 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result JournalForAttachments::GetAttachmentList(AttachmentList *out, ReportId report_id) {
+    Result JournalForAttachments::GetAttachmentList(u32 *out_count, AttachmentInfo *out_infos, size_t max_out_infos, ReportId report_id) {
+        if (hos::GetVersion() >= hos::Version_20_0_0) {
+            /* TODO: What define gives a minimum of 10? */
+            R_UNLESS(max_out_infos >= 10, erpt::ResultInvalidArgument());
+        }
+
         u32 count = 0;
-        for (auto it = s_attachment_list.cbegin(); it != s_attachment_list.cend() && count < util::size(out->attachments); it++) {
+        for (auto it = s_attachment_list.cbegin(); it != s_attachment_list.cend() && count < max_out_infos; it++) {
             if (report_id == it->m_info.owner_report_id) {
-                out->attachments[count++] = it->m_info;
+                out_infos[count++] = it->m_info;
             }
         }
-        out->attachment_count = count;
+        *out_count = count;
         R_SUCCEED();
     }
 

@@ -116,7 +116,9 @@ namespace ams::kern::arch::arm {
                 u32 ipriorityr[NumLocalInterrupts / 4];
                 u32 itargetsr[NumLocalInterrupts / 4];
                 u32 icfgr[NumLocalInterrupts / 16];
+                u32 spendsgir[4];
             };
+            static_assert(sizeof(LocalState{}.spendsgir) == sizeof(GicDistributor{}.spendsgir));
 
             struct GlobalState {
                 u32 isenabler[NumGlobalInterrupts / 32];

@@ -50,6 +50,7 @@ dist: dist-no-debug
 	cp $(CURRENT_DIRECTORY)/stratosphere/sm/$(ATMOSPHERE_OUT_DIR)/sm.elf $(DIST_DIR)/sm.elf
 	cp $(CURRENT_DIRECTORY)/stratosphere/spl/$(ATMOSPHERE_OUT_DIR)/spl.elf $(DIST_DIR)/spl.elf
 	cp $(CURRENT_DIRECTORY)/stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.elf $(DIST_DIR)/TioServer.elf
+	cp $(CURRENT_DIRECTORY)/stratosphere/memlet/$(ATMOSPHERE_OUT_DIR)/memlet.elf $(DIST_DIR)/memlet.elf
 	cp $(CURRENT_DIRECTORY)/troposphere/daybreak/daybreak.elf $(DIST_DIR)/daybreak.elf
 	cp $(CURRENT_DIRECTORY)/troposphere/haze/haze.elf $(DIST_DIR)/haze.elf
 	cp $(CURRENT_DIRECTORY)/troposphere/reboot_to_payload/reboot_to_payload.elf $(DIST_DIR)/reboot_to_payload.elf
@@ -87,6 +88,7 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	#mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000042
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000420
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000421
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d609
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623
@@ -104,6 +106,7 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp stratosphere/htc/$(ATMOSPHERE_OUT_DIR)/htc.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240/exefs.nsp
 	cp stratosphere/dmnt.gen2/$(ATMOSPHERE_OUT_DIR)/dmnt.gen2.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d609/exefs.nsp
 	cp stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623/exefs.nsp
+	cp stratosphere/memlet/$(ATMOSPHERE_OUT_DIR)/memlet.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000421/exefs.nsp
 	@build_romfs $(DIST_DIR)/stratosphere_romfs $(DIST_DIR)/atmosphere/stratosphere.romfs
 	rm -r $(DIST_DIR)/stratosphere_romfs
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro $(DIST_DIR)/switch/reboot_to_payload.nro

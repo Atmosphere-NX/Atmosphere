@@ -43,6 +43,7 @@ namespace ams::os::impl {
         R_TRY_CATCH(svc::CreateSharedMemory(std::addressof(handle), size, svc_my_perm, svc_other_perm)) {
             R_CONVERT(svc::ResultOutOfHandles,  os::ResultOutOfHandles())
             R_CONVERT(svc::ResultOutOfResource, os::ResultOutOfResource())
+            R_CONVERT(svc::ResultLimitReached,  os::ResultOutOfMemory())
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out = handle;

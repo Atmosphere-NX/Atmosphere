@@ -32,8 +32,14 @@ Result ldrPmAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id) {
     return _ldrAtmosphereHasLaunchedBootProgram(ldrPmGetServiceSession(), out, program_id);
 }
 
-Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out_program_info, CfgOverrideStatus *out_status, const NcmProgramLocation *loc) {
-    return serviceDispatchInOut(ldrPmGetServiceSession(), 65001, *loc, *out_status,
+Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out_program_info, CfgOverrideStatus *out_status, const NcmProgramLocation *loc, const LoaderProgramAttributes *attr) {
+    const struct {
+        LoaderProgramAttributes attr;
+        u16 pad1;
+        u32 pad2;
+        NcmProgramLocation loc;
+    } in = { *attr, 0, 0, *loc };
+    return serviceDispatchInOut(ldrPmGetServiceSession(), 65001, in, *out_status,
         .buffer_attrs = { SfBufferAttr_Out | SfBufferAttr_HipcPointer | SfBufferAttr_FixedSize },
         .buffers = { { out_program_info, sizeof(*out_program_info) } },
     );

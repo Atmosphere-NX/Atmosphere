@@ -122,7 +122,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Construct a new attribute. */
             constexpr explicit ALWAYS_INLINE PageTableEntry(Permission perm, PageAttribute p_a, Shareable share, MappingFlag m)
-                : m_attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(ExtensionFlag_Valid) | static_cast<u64>(m))
+                : m_attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(m))
             {
                 /* ... */
             }
@@ -205,6 +205,7 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE bool IsMappedBlock()                    const { return this->GetBits(0, 2) == 1; }
             constexpr ALWAYS_INLINE bool IsMappedTable()                    const { return this->GetBits(0, 2) == 3; }
+            constexpr ALWAYS_INLINE bool IsMappedEmpty()                    const { return this->GetBits(0, 2) == 0; }
             constexpr ALWAYS_INLINE bool IsMapped()                         const { return this->GetBits(0, 1) != 0; }
 
             constexpr ALWAYS_INLINE decltype(auto) SetUserExecuteNever(bool en)       { this->SetBit(54, en); return *this; }
