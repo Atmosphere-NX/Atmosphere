@@ -7,6 +7,11 @@ clean: clean-nx_release
 THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
 
+# --- Configuration for update target ---
+# Шлях до каталогу libnx відносно цього Makefile
+LIBNX_DIR := ../libnx
+# ---------------------------------------
+
 define ATMOSPHERE_ADD_TARGET
 
 ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
@@ -41,6 +46,35 @@ $(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm-cortex-a57,))
 
 clean-all: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
 
+# --- Custom Targets ---
+
+update:
+	@echo "---------------------------------------------------------"
+	@echo ">>> Updating devkitPro packages..."
+	@echo "---------------------------------------------------------"
+	sudo dkp-pacman -Syu
+	@echo "---------------------------------------------------------"
+	@echo ">>> Updating libnx repository in $(abspath $(LIBNX_DIR))..."
+	@echo "---------------------------------------------------------"
+	@if [ -d "$(LIBNX_DIR)" ]; then \
+		(cd $(LIBNX_DIR) && git pull) || exit 1; \
+	else \
+		echo "Error: libnx directory '$(abspath $(LIBNX_DIR))' not found." >&2; \
+		exit 1; \
+	fi
+	@echo "---------------------------------------------------------"
+	@echo ">>> Building and installing libnx from $(abspath $(LIBNX_DIR))..."
+	@echo "---------------------------------------------------------"
+	@if [ -d "$(LIBNX_DIR)" ]; then \
+		(cd $(LIBNX_DIR) && $(MAKE) install -j12) || exit 1; \
+	else \
+		echo "Error: libnx directory '$(abspath $(LIBNX_DIR))' not found (should not happen if previous step passed)." >&2; \
+		exit 1; \
+	fi
+	@echo "---------------------------------------------------------"
+	@echo ">>> devkitPro and libnx update complete."
+	@echo "---------------------------------------------------------"
+
 clean-logo:
 	$(info ---------------------------------------------------------)
 	$(info  Building logo in $(CURDIR))
@@ -48,7 +82,7 @@ clean-logo:
 
 	git checkout master
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
-	make -C $(CURDIR)/stratosphere/boot clean -j12
+	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j12
 	@if ! git diff --quiet; then \
 		git add . && git commit -m "changed logo"; \
 	else \
@@ -57,7 +91,7 @@ clean-logo:
 
 	git checkout 8gb_DRAM
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
-	make -C $(CURDIR)/stratosphere/boot clean -j12
+	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j12
 	@if ! git diff --quiet; then \
 		git add . && git commit -m "changed logo"; \
 	else \
@@ -76,7 +110,7 @@ clear:
 
 hekate:
 	@echo "Building Hekate"
-	@cd ../hekate && git pull && make clean && make -j12
+	@cd ../hekate && git pull && $(MAKE) clean && $(MAKE) -j12
 	@mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/sys/
 	@find /mnt/d/git/dev/_kefir/8gb/ -type f ! -name 'run.te' -delete
 	@cp ../hekate/output/*.bso /mnt/d/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
@@ -149,7 +183,7 @@ oc-clean:
 	$(info ---------------------------------------------------------)
 	git checkout master
 
-kefir:
+kefir: update
 	git checkout master
 	$(MAKE) clean -j12
 	$(MAKE) clean-logo 
@@ -157,11 +191,11 @@ kefir:
 	$(MAKE) oc-clean
 	$(MAKE) nx_release -j12
 
-kefir-fast:
+kefir-fast: update
 	git checkout master
 	# $(MAKE) clean-logo 
 	$(MAKE) 8gb_DRAM
 	$(MAKE) oc
 	$(MAKE) nx_release -j12
 
-.PHONY: all clean clean-all kefir-version $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
+.PHONY: all clean clean-all kefir-version update clean-logo clear hekate 8gb_DRAM 8gb_DRAM-clean oc oc-clean kefir kefir-fast $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
