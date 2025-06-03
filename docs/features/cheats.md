@@ -423,41 +423,41 @@ Note that for multiple button combinations, the bitmasks should be OR'd together
 #### Keypad Values
 Note: This is the direct output of `hidKeysDown()`.
 
-+ 000000001: A
-+ 000000002: B
-+ 000000004: X
-+ 000000008: Y
-+ 000000010: Left Stick Pressed
-+ 000000020: Right Stick Pressed
-+ 000000040: L
-+ 000000080: R
-+ 000000100: ZL
-+ 000000200: ZR
-+ 000000400: Plus
-+ 000000800: Minus
-+ 000001000: Left
-+ 000002000: Up
-+ 000004000: Right
-+ 000008000: Down
-+ 000010000: Left Stick Left
-+ 000020000: Left Stick Up
-+ 000040000: Left Stick Right
-+ 000080000: Left Stick Down
-+ 000100000: Right Stick Left
-+ 000200000: Right Stick Up
-+ 000400000: Right Stick Right
-+ 000800000: Right Stick Down
-+ 001000000: SL Left Joy-Con
-+ 002000000: SR Left Joy-Con
-+ 004000000: SL Right Joy-Con
-+ 008000000: SR Right Joy-Con
-+ 010000000: Top button on Poké Ball Plus (Palma) controller
-+ 020000000: Verification
-+ 040000000: B button on Left NES/HVC controller in Handheld mode
-+ 080000000: Left C button in N64 controller
-+ 100000000: Up C button in N64 controller
-+ 200000000: Right C button in N64 controller
-+ 400000000: Down C button in N64 controller
++ 00000000 00000001: A
++ 00000000 00000002: B
++ 00000000 00000004: X
++ 00000000 00000008: Y
++ 00000000 00000010: Left Stick Pressed
++ 00000000 00000020: Right Stick Pressed
++ 00000000 00000040: L
++ 00000000 00000080: R
++ 00000000 00000100: ZL
++ 00000000 00000200: ZR
++ 00000000 00000400: Plus
++ 00000000 00000800: Minus
++ 00000000 00001000: Left
++ 00000000 00002000: Up
++ 00000000 00004000: Right
++ 00000000 00008000: Down
++ 00000000 00010000: Left Stick Left
++ 00000000 00020000: Left Stick Up
++ 00000000 00040000: Left Stick Right
++ 00000000 00080000: Left Stick Down
++ 00000000 00100000: Right Stick Left
++ 00000000 00200000: Right Stick Up
++ 00000000 00400000: Right Stick Right
++ 00000000 00800000: Right Stick Down
++ 00000000 01000000: SL Left Joy-Con
++ 00000000 02000000: SR Left Joy-Con
++ 00000000 04000000: SL Right Joy-Con
++ 00000000 08000000: SR Right Joy-Con
++ 00000000 10000000: Top button on Poké Ball Plus (Palma) controller
++ 00000000 20000000: Verification
++ 00000000 40000000: B button on Left NES/HVC controller in Handheld mode
++ 00000000 80000000: Left C button in N64 controller
++ 00000001 00000000: Up C button in N64 controller
++ 00000002 00000000: Right C button in N64 controller
++ 00000004 00000000: Down C button in N64 controller
 
 ### Code Type 0xF0: Double Extended-Width Instruction
 Code Type 0xF0 signals to the VM to treat the upper three nybbles of the first dword as instruction type, instead of just the upper nybble.
