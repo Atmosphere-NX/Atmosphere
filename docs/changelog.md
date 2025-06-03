@@ -1,4 +1,7 @@
 # Changelog
+## 1.9.1
++ Basic support was added for 20.1.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.9.0
 + Basic support was added for 20.0.0.
   + The console should boot and atmosphère should be fully functional. However, not all modules have been fully updated to reflect the latest changes.
