@@ -22,6 +22,7 @@
 #include "ui.hpp"
 #include "ui_util.hpp"
 #include "assert.hpp"
+#include <switch/services/set.h>
 
 namespace dbk {
 
@@ -795,12 +796,26 @@ namespace dbk {
         }
 
         /* Print update information. */
-        this->LogText("- Version: %d.%d.%d\n", (m_update_info.version >> 26) & 0x1f, (m_update_info.version >> 20) & 0x1f, (m_update_info.version >> 16) & 0xf);
+        this->LogText("- Target Version: %u.%u.%u\n", (m_update_info.version >> 26) & 0x1f, (m_update_info.version >> 20) & 0x1f, (m_update_info.version >> 16) & 0xf);
         if (m_update_info.exfat_supported) {
-            this->LogText("- exFAT: Supported\n");
+            this->LogText("- Target exFAT: Supported\n");
         } else {
-            this->LogText("- exFAT: Unsupported\n");
+            this->LogText("- Target exFAT: Unsupported\n");
         }
+
+        // Отримати та вивести поточну версію системної прошивки
+        SetSysFirmwareVersion current_fw_version; // Оголошення змінної
+        // memset(¤t_fw_version, 0, sizeof(current_fw_version)); 
+        Result rc_fw = setsysGetFirmwareVersion(&current_fw_version); // Передача адреси оголошеної змінної
+        if (R_SUCCEEDED(rc_fw)) {
+            this->LogText("- Current System Version: %u.%u.%u\n",
+                          current_fw_version.major, 
+                          current_fw_version.minor, 
+                          current_fw_version.micro); 
+        } else {
+            this->LogText("- Current System Version: (Failed to get: 0x%08x)\n", rc_fw);
+        }
+
         this->LogText("- Firmware variations: %d\n", m_update_info.num_firmware_variations);
 
         /* Mark as having obtained update info. */
