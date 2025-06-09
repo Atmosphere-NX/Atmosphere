@@ -759,9 +759,9 @@ namespace ams::mitm::fs {
             /* If there is no romfs folder on the SD, don't bother continuing. */
             {
                 FsDir dir;
-                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), m_program_id, m_root->path, OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
-                    return;
-                }
+               if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), m_program_id, m_root->path, OpenDirectoryMode_Directory, std::addressof(sd_filesystem))) || (hosversionAtLeast(20,0,0) && m_program_id == (ncm::ProgramId) 0x0100000000001000)) {
+                return;
+            }
                 fsDirClose(std::addressof(dir));
             }
 
