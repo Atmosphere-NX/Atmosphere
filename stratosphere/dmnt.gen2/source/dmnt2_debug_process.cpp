@@ -194,10 +194,23 @@ namespace ams::dmnt {
                         u32  zero;
                         s32  path_length;
                         char path[ModuleDefinition::PathLengthMax];
+                        u32  dummy[3];
                     } module_path;
                     if (R_SUCCEEDED(this->ReadMemory(std::addressof(module_path), memory_info.base_address + memory_info.size, sizeof(module_path)))) {
                         if (module_path.zero == 0 && module_path.path_length > 0) {
                             std::memcpy(module_name, module_path.path, std::min<size_t>(ModuleDefinition::PathLengthMax, module_path.path_length));
+                        } else if (module_path.zero == 1) {
+                            struct {
+                                u32 zero;
+                                u32 dummy[3];
+                                s32 path_length;
+                                char path[ModuleDefinition::PathLengthMax];
+                            } *alt_module_path = reinterpret_cast<decltype(alt_module_path)>(&module_path);
+
+                            if (alt_module_path->path_length > 0) {
+                                std::memcpy(module_name, alt_module_path->path, std::min<size_t>(ModuleDefinition::PathLengthMax, alt_module_path->path_length));
+                            }
+                            module_path.path_length = alt_module_path->path_length;
                         }
                     } else {
                         module_path.path_length = 0;
