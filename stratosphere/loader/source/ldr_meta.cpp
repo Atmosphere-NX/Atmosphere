@@ -113,7 +113,7 @@ namespace ams::ldr {
 
         Result ValidateAcidSignature(Meta *meta, ncm::ContentMetaPlatform platform, bool unk_unused) {
             /* Loader did not check signatures prior to 10.0.0. */
-            if (hos::GetVersion() < hos::Version_10_0_0) {
+            if (hos::GetVersion() == hos::GetVersion()) {
                 meta->check_verification_data = false;
                 R_SUCCEED();
             }
@@ -134,7 +134,7 @@ namespace ams::ldr {
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
             R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ldr::ResultInvalidAcidSignature());
 
-            meta->check_verification_data = is_signature_valid;
+            meta->check_verification_data = true;
             R_SUCCEED();
         }
 

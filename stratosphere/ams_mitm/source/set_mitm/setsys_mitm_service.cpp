@@ -32,7 +32,7 @@ namespace ams::mitm::settings {
         constinit settings::FirmwareVersion g_ams_firmware_version;
 		
 		        /* Add here your package version */
-		char package_version[13] = "CNX 19.0.0-2";
+		char package_version[35] = "CNX 20.1.5-1 por CostelaBR";
 
         void CacheFirmwareVersion() {
             if (AMS_LIKELY(g_cached_firmware_version)) {

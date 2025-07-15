@@ -112,7 +112,7 @@ namespace ams::kern::arch::arm64::cpu {
         class KCoreBarrierInterruptHandler : public KInterruptHandler {
             private:
                 util::Atomic<u64> m_target_cores;
-                KSpinLock m_lock;
+                KLightLock m_lock;
             public:
                 constexpr KCoreBarrierInterruptHandler() : KInterruptHandler(), m_target_cores(0), m_lock() { /* ... */ }
 
@@ -123,11 +123,8 @@ namespace ams::kern::arch::arm64::cpu {
                 }
 
                 void SynchronizeCores(u64 core_mask) {
-                    /* Disable dispatch while we synchronize. */
-                    KScopedDisableDispatch dd;
-
                     /* Acquire exclusive access to ourselves. */
-                    KScopedSpinLock lk(m_lock);
+                    KScopedLightLock lk(m_lock);
 
                     /* If necessary, force synchronization with other cores. */
                     if (const u64 other_cores_mask = core_mask & ~(1ul << GetCurrentCoreId()); other_cores_mask != 0) {

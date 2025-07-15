@@ -926,6 +926,7 @@
     HANDLER(GameCardLastAwakenFailureResult,                          732,  GameCardDetailedErrorInfo,           FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(GameCardInsertedTimestamp,                                733,  GameCardDetailedErrorInfo,           FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(GameCardPreviousInsertedTimestamp,                        734,  GameCardDetailedErrorInfo,           FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(WlanChipResetTriggered,                                   735,  WlanInfo,                            FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(TestStringNx,                                             1000, TestNx,                              FieldType_String,     FieldFlag_None   ) \
     HANDLER(BoostModeCurrentLimit,                                    1001, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ChargeConfiguration,                                      1002, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
