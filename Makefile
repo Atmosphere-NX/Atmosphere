@@ -183,7 +183,8 @@ oc-clean:
 	$(info ---------------------------------------------------------)
 	git checkout master
 
-kefir: update
+kefir: 
+	# update
 	git checkout master
 	$(MAKE) clean -j12
 	$(MAKE) clean-logo 
