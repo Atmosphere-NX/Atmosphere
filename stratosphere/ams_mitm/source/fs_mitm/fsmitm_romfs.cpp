@@ -36,6 +36,11 @@ namespace ams::mitm::fs {
             };
 
             constexpr const ApplicationWithDynamicHeapInfo ApplicationsWithDynamicHeap[] = {
+                /* STAR WARS: Knights of the Old Republic II: The Sith Lords. */
+                /* Requirement ? MB. 16 MB stolen heap fixes a crash, though. */
+                /* Unknown heap sensitivity. */
+                { 0x0100B2C016252000,  16_MB, 0_MB },
+
                 /* Animal Crossing: New Horizons. */
                 /* Requirement ~24 MB. */
                 /* No particular heap sensitivity. */
