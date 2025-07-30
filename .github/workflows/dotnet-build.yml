@@ -1,0 +1,51 @@
+name: Build & Release Atmosphère
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.9.2, v2.0.0, etc.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build python3-pip \
+            gcc-arm-none-eabi libarchive-tools
+
+      - name: Build Atmosphère
+        run: make -j$(nproc)
+
+      - name: Create release zip
+        run: |
+          mkdir -p release_output
+          cp -r output/* release_output/ || true
+          zip -r atmosphere_build.zip release_output
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ✅ This is an automated release of Atmosphère based on tag `${{ github.ref_name }}`
+            Built via GitHub Actions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: atmosphere_build.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
