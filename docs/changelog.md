@@ -1,4 +1,8 @@
 # Changelog
+## 1.9.3
++ Basic support was added for 20.3.0.
++ Compatibility was fixed for loading mods with KOTOR 2 (star wars).
++ General system stability improvements to enhance the user's experience.
 ## 1.9.2
 + Basic support was added for 20.2.0.
 + USB 3.0 support force-enable was fixed for 20.1.0+.
