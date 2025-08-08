@@ -44,8 +44,9 @@
 #include <bit>
 #include <span>
 
-/* Stratosphere wants additional libstdc++ headers, others do not. */
-#ifdef ATMOSPHERE_IS_STRATOSPHERE
+/* Stratosphere/Troposphere want additional libstdc++ headers and libnx,
+ * others do not. */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_TROPOSPHERE)
 
 #include <memory>
 #include <mutex>
@@ -71,7 +72,7 @@
 /* Non-EL0 code can't include libnx. */
 #include "types.hpp"
 
-#endif /* ATMOSPHERE_IS_STRATOSPHERE */
+#endif /* defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_TROPOSPHERE) */
 
 /* Atmosphere meta. */
 #include <vapours/ams_version.h>
