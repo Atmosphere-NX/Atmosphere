@@ -84,7 +84,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 
 $(OUTPUT).lz4	:	$(OUTPUT).bin
-	@python $(CURRENT_DIRECTORY)/lz4_compress.py $(OUTPUT).bin $(OUTPUT).lz4
+	$(SILENTCMD)$(PYTHON) $(CURRENT_DIRECTORY)/lz4_compress.py $(OUTPUT).bin $(OUTPUT).lz4
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf
