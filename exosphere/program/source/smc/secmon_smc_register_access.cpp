@@ -54,11 +54,11 @@ namespace ams::secmon::smc {
             for (int last = arr.size() - 1; last >= 0; --last) {
                 if (arr[last] != 0) {
                     const int end = last + 1;
-                    for (int start = 0; start < end; ++start) {
-                        if (arr[start] != 0) {
-                            return std::make_pair(static_cast<size_t>(start), static_cast<size_t>(end));
-                        }
-                    }
+                    //for (int start = 0; start < end; ++start) {
+                    //    if (arr[start] != 0) {
+                    //        return std::make_pair(static_cast<size_t>(start), static_cast<size_t>(end));
+                    //    }
+                    //}
                     return std::make_pair(static_cast<size_t>(0), static_cast<size_t>(end));
                 }
             }
