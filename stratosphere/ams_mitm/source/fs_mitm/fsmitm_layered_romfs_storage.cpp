@@ -215,43 +215,47 @@ namespace ams::mitm::fs {
     using namespace ams::fs;
 
     std::shared_ptr<ams::fs::IStorage> GetLayeredRomfsStorage(ncm::ProgramId program_id, ::FsStorage &data_storage, bool is_process_romfs) {
-        std::scoped_lock lk(g_storage_set_mutex);
+        /*Prepare to find or create a new storage. */
+        LayeredRomfsStorageImpl *impl = nullptr;
+        {
+            std::scoped_lock lk(g_storage_set_mutex);
 
-        /* Find an existing storage. */
-        if (auto it = g_storage_set.find_key(program_id.value); it != g_storage_set.end()) {
-            return std::make_shared<LayeredRomfsStorage>(it->GetImpl());
-        }
+            /* Find an existing storage. */
+            if (auto it = g_storage_set.find_key(program_id.value); it != g_storage_set.end()) {
+                return std::make_shared<LayeredRomfsStorage>(it->GetImpl());
+            }
 
-        /* We don't have an existing storage. If we're creating process romfs, free any unreferenced process romfs. */
-        /* This should help prevent too much memory in use at any time. */
-        if (is_process_romfs) {
-            auto it = g_storage_set.begin();
-            while (it != g_storage_set.end()) {
-                if (it->GetReferenceCount() > 0 || !it->IsProcessRomfs()) {
-                    ++it;
-                } else {
-                    auto *holder = std::addressof(*it);
-                    it = g_storage_set.erase(it);
-                    delete holder;
+            /* We don't have an existing storage. If we're creating process romfs, free any unreferenced process romfs. */
+            /* This should help prevent too much memory in use at any time. */
+            if (is_process_romfs) {
+                auto it = g_storage_set.begin();
+                while (it != g_storage_set.end()) {
+                    if (it->GetReferenceCount() > 0 || !it->IsProcessRomfs()) {
+                        ++it;
+                    } else {
+                        auto *holder = std::addressof(*it);
+                        it = g_storage_set.erase(it);
+                        delete holder;
+                    }
                 }
             }
-        }
 
-        /* Create a new storage. */
-        LayeredRomfsStorageImpl *impl;
-        {
-            ::FsFile data_file;
-            if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), program_id, "romfs.bin", OpenMode_Read))) {
-                impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), program_id);
-            } else {
-                impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, program_id);
+            /* Create a new storage. */
+            {
+                ::FsFile data_file;
+                if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), program_id, "romfs.bin", OpenMode_Read))) {
+                    impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), program_id);
+                } else {
+                    impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, program_id);
+                }
             }
-        }
 
-        /* Insert holder. Reference count will now be one. */
-        g_storage_set.insert(*(new LayeredRomfsStorageHolder(impl, is_process_romfs)));
+            /* Insert holder. Reference count will now be one. */
+            g_storage_set.insert(*(new LayeredRomfsStorageHolder(impl, is_process_romfs)));
+        }
 
         /* Begin initialization. When this finishes, a decref will occur. */
+        AMS_ABORT_UNLESS(impl != nullptr);
         impl->BeginInitialize();
 
         /* Return a new shared storage for the impl. */
