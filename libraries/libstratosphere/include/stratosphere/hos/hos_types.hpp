@@ -94,6 +94,7 @@ namespace ams::hos {
         Version_20_1_5  = ::ams::TargetFirmware_20_1_5,
         Version_20_2_0  = ::ams::TargetFirmware_20_2_0,
         Version_20_3_0  = ::ams::TargetFirmware_20_3_0,
+        Version_20_4_0  = ::ams::TargetFirmware_20_4_0,
 
         Version_Current = ::ams::TargetFirmware_Current,
 

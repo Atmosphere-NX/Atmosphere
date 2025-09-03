@@ -1,5 +1,12 @@
 # Changelog
 ## 1.9.3
++ Basic support was added for 20.4.0.
++ An issue was fixed in `exosphère`'s register accessilibity tables (thanks @CTCaer).
+  + I believe this had no impact on official code, though it would have prevented some homebrew from interacting correctly with the MC0/MC1 registers.
++ An issue was fixed that could cause a deadlock when building multiple romfs images simultaneously (thanks @Ereza).
+  + This fixes support for certain mods, e.g. system language translations overriding content for both overlayDisp and qlaunch.
++ General system stability improvements to enhance the user's experience.
+## 1.9.3
 + Basic support was added for 20.3.0.
 + Compatibility was fixed for loading mods with KOTOR 2 (star wars).
 + General system stability improvements to enhance the user's experience.
