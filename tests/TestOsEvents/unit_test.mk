@@ -95,7 +95,7 @@ $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR):
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(BOARD_TARGET) $(TARGET).elf
-	@for i in $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR); do [ -d $$i ] && rmdir --ignore-fail-on-non-empty $$i || true; done
+	@for i in $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR); do [ -d $$i ] && rmdir $$i 2>/dev/null || true; done
 
 
 #---------------------------------------------------------------------------------

@@ -1277,7 +1277,7 @@ namespace dbk {
         if (InitializeMenu(screen_width, screen_height)) {
 
             /* Set the update path. */
-            strncpy(g_update_path, update_path, sizeof(g_update_path));
+            strncpy(g_update_path, update_path, sizeof(g_update_path)-1);
 
             /* Change the menu. */
             ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
