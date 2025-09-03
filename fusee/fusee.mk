@@ -43,6 +43,6 @@ clean:
 	@$(MAKE) --no-print-directory -C $(CURRENT_DIRECTORY)/loader_stub -f $(CURRENT_DIRECTORY)/loader_stub/loader_stub.mk clean
 	@$(MAKE) --no-print-directory -C $(CURRENT_DIRECTORY)/program -f $(CURRENT_DIRECTORY)/program/program.mk clean
 	@rm -fr $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
-	@for i in $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR); do [ -d $$i ] && rmdir --ignore-fail-on-non-empty $$i || true; done
+	@for i in $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR); do [ -d $$i ] && rmdir $$i 2>/dev/null || true; done
 
 .PHONY: all clean check_lib check_loader_stub check_program

@@ -50,6 +50,8 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
+CFLAGS	+=	-Wno-misleading-indentation -Wno-use-after-free -Wno-unused-function
+
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
 CXXFLAGS	:= $(CFLAGS) -std=gnu++17 -fno-exceptions -fno-rtti

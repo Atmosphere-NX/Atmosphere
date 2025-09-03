@@ -70,6 +70,6 @@ clean:
 	@$(MAKE) --no-print-directory -C $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere -f $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/libexosphere.mk clean
 	@$(MAKE) --no-print-directory -C $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere -f $(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/libexosphere.mk clean ATMOSPHERE_CPU="$(strip $(ATMOSPHERE_BOOT_CPU))"
 	@rm -fr $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
-	@for i in $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR); do [ -d $$i ] && rmdir --ignore-fail-on-non-empty $$i || true; done
+	@for i in $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR); do [ -d $$i ] && rmdir $$i 2>/dev/null || true; done
 
 .PHONY: all clean check_lib check_boot_lib check_loader_stub check_program check_mariko_fatal check_warmboot

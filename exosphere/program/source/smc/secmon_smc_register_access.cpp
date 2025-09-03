@@ -101,10 +101,10 @@ namespace ams::secmon::smc {
         #include "secmon_define_mc01_access_table.inc"
 
         constexpr const AccessTableEntry AccessTables[] = {
-            {  PmcAccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDevicePmc.GetAddress(),                PmcAccessTable::Address,                                                             PmcAccessTable::Size, },
-            {   McAccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceMemoryController.GetAddress(),    McAccessTable::Address,                                                              McAccessTable::Size, },
-            { Mc01AccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceMemoryController0.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController0.GetAddress(), Mc01AccessTable::Size, },
-            { Mc01AccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceMemoryController1.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController1.GetAddress(), Mc01AccessTable::Size, },
+            {  PmcAccessTable::ReducedAccessTable.data(),                            MemoryRegionVirtualDevicePmc.GetAddress(),                PmcAccessTable::Address,                                                             PmcAccessTable::Size, },
+            {   McAccessTable::ReducedAccessTable.data(),                            MemoryRegionVirtualDeviceMemoryController.GetAddress(),    McAccessTable::Address,                                                              McAccessTable::Size, },
+            { Mc01AccessTable::ReducedAccessTable.data(), Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController0.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController0.GetAddress(), Mc01AccessTable::Size, },
+            { Mc01AccessTable::ReducedAccessTable.data(), Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController1.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController1.GetAddress(), Mc01AccessTable::Size, },
         };
 
         constexpr bool IsAccessAllowed(const AccessTableEntry &entry, uintptr_t address) {
