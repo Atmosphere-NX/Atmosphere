@@ -163,7 +163,7 @@ oc:
 	git checkout oc
 	git merge master --no-edit
 	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
@@ -177,7 +177,7 @@ oc-clean:
 	git merge master --no-edit
 	$(MAKE) clean -j12
 	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/uberhand/packages/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
