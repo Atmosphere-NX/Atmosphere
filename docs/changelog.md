@@ -1,5 +1,8 @@
 # Changelog
-## 1.9.3
+## 1.9.5
++ Basic support was added for 20.5.0.
++ General system stability improvements to enhance the user's experience.
+## 1.9.4
 + Basic support was added for 20.4.0.
 + An issue was fixed in `exosphère`'s register accessilibity tables (thanks @CTCaer).
   + I believe this had no impact on official code, though it would have prevented some homebrew from interacting correctly with the MC0/MC1 registers.
