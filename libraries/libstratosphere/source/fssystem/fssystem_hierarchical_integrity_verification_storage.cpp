@@ -220,7 +220,7 @@ namespace ams::fssystem {
 
             /* Initialize the verification storage. */
             fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
-            m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, hash_salt, true, is_writable, allow_cleared_blocks);
+            m_verify_storages[level + 1].Initialize(buffer_storage, storage[HierarchicalStorageInformation::DataStorage], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, hash_salt, true, is_writable, allow_cleared_blocks);
 
             /* Initialize the buffer storage. */
             R_TRY(m_buffer_storages[level + 1].Initialize(m_buffers->buffers[level + 1], m_mutex, std::addressof(m_verify_storages[level + 1]), info.info[level + 1].size, static_cast<s64>(1) << info.info[level + 1].block_order, max_data_cache_entries, true, buffer_level, true, is_writable));
