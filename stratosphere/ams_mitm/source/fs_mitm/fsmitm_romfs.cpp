@@ -36,6 +36,11 @@ namespace ams::mitm::fs {
             };
 
             constexpr const ApplicationWithDynamicHeapInfo ApplicationsWithDynamicHeap[] = {
+                /* Trails in the Sky 1st Chapter. */
+                /* Requirement ? MB. 16 MB stolen heap fixes a crash, though. */
+                /* Unknown heap sensitivity. */
+                { 0x01002C9022770000,  16_MB, 0_MB },
+
                 /* STAR WARS: Knights of the Old Republic II: The Sith Lords. */
                 /* Requirement ? MB. 16 MB stolen heap fixes a crash, though. */
                 /* Unknown heap sensitivity. */
