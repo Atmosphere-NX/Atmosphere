@@ -107,12 +107,10 @@ namespace ams::hos {
             /* there are no breaking IPC changes in minor updates. */
             {
                 constexpr u32 MaxMajor = (static_cast<u32>(hos::Version_Max) >> 24) & 0xFF;
-                constexpr u32 MaxMinor = (static_cast<u32>(hos::Version_Max) >> 16) & 0xFF;
 
                 const u32 major = (static_cast<u32>(current) >> 24) & 0xFF;
-                const u32 minor = (static_cast<u32>(current) >> 16) & 0xFF;
 
-                const bool is_safely_tryable_version = (current <= hos::Version_Max) || (major == MaxMajor && minor <= MaxMinor);
+                const bool is_safely_tryable_version = (current <= hos::Version_Max) || (major == MaxMajor);
                 AMS_ABORT_UNLESS(is_safely_tryable_version);
             }
 
