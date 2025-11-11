@@ -407,11 +407,11 @@ namespace ams::htclow::driver {
         g_usb_break_event.Signal();
         os::WaitThread(std::addressof(g_usb_indication_thread));
         os::DestroyThread(std::addressof(g_usb_indication_thread));
-        g_ds_client.DisableDevice();
-        g_ds_endpoints[1].Finalize();
-        g_ds_endpoints[0].Finalize();
-        g_ds_interface.Finalize();
-        g_ds_client.Finalize();
+        static_cast<void>(g_ds_client.DisableDevice());
+        static_cast<void>(g_ds_endpoints[1].Finalize());
+        static_cast<void>(g_ds_endpoints[0].Finalize());
+        static_cast<void>(g_ds_interface.Finalize());
+        static_cast<void>(g_ds_client.Finalize());
         g_usb_interface_initialized = false;
     }
 
@@ -454,8 +454,8 @@ namespace ams::htclow::driver {
 
     void CancelUsbSendReceive() {
         if (g_usb_interface_initialized) {
-            g_ds_endpoints[0].Cancel();
-            g_ds_endpoints[1].Cancel();
+            static_cast<void>(g_ds_endpoints[0].Cancel());
+            static_cast<void>(g_ds_endpoints[1].Cancel());
         }
     }
 

@@ -77,7 +77,7 @@ namespace ams::kern {
             }
         public:
             Result Initialize(KProcess *process);
-            Result Finalize();
+            void Finalize();
 
             KProcessAddress Reserve();
             void Release(KProcessAddress addr);

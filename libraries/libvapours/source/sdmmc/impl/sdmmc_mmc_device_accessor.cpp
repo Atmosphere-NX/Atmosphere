@@ -432,7 +432,7 @@ namespace ams::sdmmc::impl {
         /* If the mmc is manufactured by toshiba, try to enable bkops auto. */
         if (is_toshiba && !IsBkopAutoEnable(static_cast<const u8 *>(wb))) {
             /* NOTE: Nintendo does not check the result of this. */
-            this->EnableBkopsAuto();
+            static_cast<void>(this->EnableBkopsAuto());
         }
 
         /* Extend the bus speed to as fast as we can. */
@@ -689,7 +689,7 @@ namespace ams::sdmmc::impl {
             m_mmc_device.GetCid(cid, sizeof(cid));
             if (IsToshibaMmc(cid)) {
                 /* NOTE: Nintendo does not check the result of this operation. */
-                this->CancelToshibaMmcModel();
+                static_cast<void>(this->CancelToshibaMmcModel());
             }
         }
 

@@ -211,7 +211,7 @@ namespace ams::erpt::srv {
 
     Result ContextImpl::InvalidateForcedShutdownDetection() {
         /* NOTE: Nintendo does not check the result here. */
-        erpt::srv::InvalidateForcedShutdownDetection();
+        static_cast<void>(erpt::srv::InvalidateForcedShutdownDetection());
         R_SUCCEED();
     }
 

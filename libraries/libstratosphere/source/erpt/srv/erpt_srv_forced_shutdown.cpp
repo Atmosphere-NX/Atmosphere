@@ -228,27 +228,27 @@ namespace ams::erpt::srv {
         /* Check if the forced shutdown context exists; if it doesn't, we should create an empty one. */
         if (!IsForceShutdownDetected()) {
             /* NOTE: Nintendo does not check result here. */
-            CreateForcedShutdownContext();
+            static_cast<void>(CreateForcedShutdownContext());
             return;
         }
 
         /* Load the forced shutdown context. */
         /* NOTE: Nintendo does not check that this succeeds. */
-        LoadForcedShutdownContext();
+        static_cast<void>(LoadForcedShutdownContext());
 
         /* Create report for the forced shutdown. */
         /* NOTE: Nintendo does not check that this succeeds. */
-        CreateReportForForcedShutdown();
+        static_cast<void>(CreateReportForForcedShutdown());
 
         /* Clear the forced shutdown categories. */
         /* NOTE: Nintendo does not check that this succeeds. */
-        Context::ClearContext(CategoryId_RunningApplicationInfo);
-        Context::ClearContext(CategoryId_RunningAppletInfo);
-        Context::ClearContext(CategoryId_FocusedAppletHistoryInfo);
+        static_cast<void>(Context::ClearContext(CategoryId_RunningApplicationInfo));
+        static_cast<void>(Context::ClearContext(CategoryId_RunningAppletInfo));
+        static_cast<void>(Context::ClearContext(CategoryId_FocusedAppletHistoryInfo));
 
         /* Save the forced shutdown context. */
         /* NOTE: Nintendo does not check that this succeeds. */
-        SaveForcedShutdownContext();
+        static_cast<void>(SaveForcedShutdownContext());
     }
 
     void FinalizeForcedShutdownDetection() {
@@ -265,7 +265,7 @@ namespace ams::erpt::srv {
 
     void SaveForcedShutdownContext() {
         /* NOTE: Nintendo does not check that saving the report succeeds. */
-        SaveForcedShutdownContextImpl();
+        static_cast<void>(SaveForcedShutdownContextImpl());
     }
 
     void SubmitContextForForcedShutdownDetection(const ContextEntry *entry, const u8 *data, u32 data_size) {

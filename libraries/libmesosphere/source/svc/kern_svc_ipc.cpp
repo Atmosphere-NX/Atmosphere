@@ -148,7 +148,7 @@ namespace ams::kern::svc {
 
             {
                 /* If we fail to send the message, unlock the message buffer. */
-                ON_RESULT_FAILURE { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+                ON_RESULT_FAILURE { static_cast<void>(page_table.UnlockForIpcUserBuffer(message, buffer_size)); };
 
                 /* Send the request. */
                 MESOSPHERE_ASSERT(message != 0);
@@ -220,7 +220,7 @@ namespace ams::kern::svc {
 
             /* Ensure that if we fail and aren't terminating that we unlock the user buffer. */
             ON_RESULT_FAILURE_BESIDES(svc::ResultTerminationRequested) {
-                page_table.UnlockForIpcUserBuffer(message, buffer_size);
+                static_cast<void>(page_table.UnlockForIpcUserBuffer(message, buffer_size));
             };
 
             /* Send the request. */
@@ -248,7 +248,7 @@ namespace ams::kern::svc {
 
             {
                 /* If we fail to send the message, unlock the message buffer. */
-                ON_RESULT_FAILURE { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+                ON_RESULT_FAILURE { static_cast<void>(page_table.UnlockForIpcUserBuffer(message, buffer_size)); };
 
                 /* Reply/Receive the request. */
                 MESOSPHERE_ASSERT(message != 0);

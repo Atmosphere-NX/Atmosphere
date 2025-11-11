@@ -197,7 +197,7 @@ namespace ams::kern::arch::arm64 {
                 cpu::SwitchProcess(s_ttbr0_entries[proc_idx + 1], proc_id);
             }
 
-            NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE void InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
             NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
             Result Finalize();
 

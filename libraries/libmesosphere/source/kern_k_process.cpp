@@ -404,7 +404,7 @@ namespace ams::kern {
 
     void KProcess::DoWorkerTaskImpl() {
         /* Terminate child threads. */
-        TerminateChildren(this, nullptr);
+        MESOSPHERE_R_ABORT_UNLESS(TerminateChildren(this, nullptr));
 
         /* Finalize the handle table, if we're not immortal. */
         if (!m_is_immortal && m_is_handle_table_initialized) {
@@ -420,7 +420,7 @@ namespace ams::kern {
 
     Result KProcess::StartTermination() {
         /* Finalize the handle table when we're done, if the process isn't immortal. */
-        ON_SCOPE_EXIT {
+        ON_RESULT_SUCCESS {
             if (!m_is_immortal) {
                 this->FinalizeHandleTable();
             }
@@ -471,7 +471,7 @@ namespace ams::kern {
 
         /* If we need to start termination, do so. */
         if (needs_terminate) {
-            this->StartTermination();
+            static_cast<void>(this->StartTermination());
 
             /* Note for debug that we're exiting the process. */
             MESOSPHERE_LOG("KProcess::Exit() pid=%ld name=%-12s\n", m_process_id, m_name);
@@ -507,23 +507,26 @@ namespace ams::kern {
 
         /* If we need to terminate, do so. */
         if (needs_terminate) {
-            /* Start termination. */
-            if (R_SUCCEEDED(this->StartTermination())) {
-                /* Note for debug that we're terminating the process. */
-                MESOSPHERE_LOG("KProcess::Terminate() OK pid=%ld name=%-12s\n", m_process_id, m_name);
-
-                /* Call the debug callback. */
-                KDebug::OnTerminateProcess(this);
-
-                /* Finish termination. */
-                this->FinishTermination();
-            } else {
+            /* If we fail to terminate, register as a worker task. */
+            ON_RESULT_FAILURE {
                 /* Note for debug that we're terminating the process. */
                 MESOSPHERE_LOG("KProcess::Terminate() FAIL pid=%ld name=%-12s\n", m_process_id, m_name);
 
                 /* Register the process as a work task. */
                 KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_ExitProcess, this);
-            }
+            };
+
+            /* Start termination. */
+            R_TRY(this->StartTermination());
+
+            /* Note for debug that we're terminating the process. */
+            MESOSPHERE_LOG("KProcess::Terminate() OK pid=%ld name=%-12s\n", m_process_id, m_name);
+
+            /* Call the debug callback. */
+            KDebug::OnTerminateProcess(this);
+
+            /* Finish termination. */
+            this->FinishTermination();
         }
 
         R_SUCCEED();
@@ -666,7 +669,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KProcess::DeleteThreadLocalRegion(KProcessAddress addr) {
+    void KProcess::DeleteThreadLocalRegion(KProcessAddress addr) {
         KThreadLocalPage *page_to_free = nullptr;
 
         /* Release the region. */
@@ -678,7 +681,7 @@ namespace ams::kern {
             if (it == m_partially_used_tlp_tree.end()) {
                 /* If we don't find it, it has to be in the fully used list. */
                 it = m_fully_used_tlp_tree.find_key(util::AlignDown(GetInteger(addr), PageSize));
-                R_UNLESS(it != m_fully_used_tlp_tree.end(), svc::ResultInvalidAddress());
+                MESOSPHERE_ABORT_UNLESS(it != m_fully_used_tlp_tree.end());
 
                 /* Release the region. */
                 it->Release(addr);
@@ -710,8 +713,6 @@ namespace ams::kern {
 
             KThreadLocalPage::Free(page_to_free);
         }
-
-        R_SUCCEED();
     }
 
     void *KProcess::GetThreadLocalRegionPointer(KProcessAddress addr) {
@@ -767,7 +768,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_num_running_threads.Load() > 0);
 
         if (const auto prev = m_num_running_threads--; prev == 1) {
-            this->Terminate();
+            static_cast<void>(this->Terminate());
         }
     }
 

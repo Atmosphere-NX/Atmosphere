@@ -88,7 +88,7 @@ namespace ams::kern {
         }
     }
 
-    Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
+    void KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize our members. */
         m_address_space_width               = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
         m_address_space_start               = KProcessAddress(GetInteger(start));
@@ -130,7 +130,7 @@ namespace ams::kern {
         m_impl.InitializeForKernel(table, start, end);
 
         /* Initialize our memory block manager. */
-        R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
+        MESOSPHERE_R_ABORT_UNLESS(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
     Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
@@ -1792,7 +1792,7 @@ namespace ams::kern {
         /* Ensure cache coherency, if we're setting pages as executable. */
         if (is_x) {
             for (const auto &block : pg) {
-                cpu::StoreDataCache(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), block.GetSize());
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), block.GetSize()));
             }
             cpu::InvalidateEntireInstructionCache();
         }
@@ -2665,8 +2665,7 @@ namespace ams::kern {
 
                 /* Invalidate the block. */
                 if (cur_size > 0) {
-                    /* NOTE: Nintendo does not check the result of invalidation. */
-                    cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+                    MESOSPHERE_R_ABORT_UNLESS(cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size));
                 }
 
                 /* Advance. */
@@ -2689,8 +2688,7 @@ namespace ams::kern {
 
         /* Invalidate the last block. */
         if (cur_size > 0) {
-            /* NOTE: Nintendo does not check the result of invalidation. */
-            cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+            MESOSPHERE_R_ABORT_UNLESS(cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size));
         }
 
         R_SUCCEED();
@@ -2768,7 +2766,7 @@ namespace ams::kern {
             if (cur_size >= sizeof(u32)) {
                 const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
                 const void * copy_src  = GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr));
-                cpu::FlushDataCache(copy_src, copy_size);
+                MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(copy_src, copy_size));
                 R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(buffer, copy_src, copy_size), svc::ResultInvalidPointer());
                 buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
                 cur_addr += copy_size;
@@ -2778,7 +2776,7 @@ namespace ams::kern {
             /* Copy remaining data. */
             if (cur_size > 0) {
                 const void * copy_src  = GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr));
-                cpu::FlushDataCache(copy_src, cur_size);
+                MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(copy_src, cur_size));
                 R_UNLESS(UserspaceAccess::CopyMemoryToUser(buffer, copy_src, cur_size), svc::ResultInvalidPointer());
             }
 
@@ -2853,7 +2851,7 @@ namespace ams::kern {
             if (cur_size >= sizeof(u32)) {
                 const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, copy_size), svc::ResultInvalidCurrentMemory());
-                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size);
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size));
 
                 buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
                 cur_addr += copy_size;
@@ -2863,7 +2861,7 @@ namespace ams::kern {
             /* Copy remaining data. */
             if (cur_size > 0) {
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, cur_size), svc::ResultInvalidCurrentMemory());
-                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size));
             }
 
             R_SUCCEED();

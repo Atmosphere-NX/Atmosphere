@@ -64,13 +64,13 @@ namespace ams::htclow {
     }
 
     void Worker::ReceiveThread() {
-        this->ProcessReceive();
+        static_cast<void>(this->ProcessReceive());
         m_driver->CancelSendReceive();
         this->Cancel();
     }
 
     void Worker::SendThread() {
-        this->ProcessSend();
+        static_cast<void>(this->ProcessSend());
         m_driver->CancelSendReceive();
         this->Cancel();
     }
@@ -114,7 +114,9 @@ namespace ams::htclow {
         }
 
         /* Process the received packet. */
-        m_service->ProcessReceivePacket(header, m_receive_packet_body, header.body_size);
+        if (R_FAILED(m_service->ProcessReceivePacket(header, m_receive_packet_body, header.body_size))) {
+            /* TODO: PrintIgnorePacket */
+        }
 
         R_SUCCEED();
     }
@@ -129,7 +131,9 @@ namespace ams::htclow {
         }
 
         /* Process the received packet. */
-        m_mux->ProcessReceivePacket(header, m_receive_packet_body, header.body_size);
+        if (R_FAILED(m_mux->ProcessReceivePacket(header, m_receive_packet_body, header.body_size))) {
+            /* TODO: PrintIgnorePacket */
+        }
 
         R_SUCCEED();
     }

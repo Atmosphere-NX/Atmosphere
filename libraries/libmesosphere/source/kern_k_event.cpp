@@ -38,20 +38,20 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
     }
 
-    Result KEvent::Signal() {
+    void KEvent::Signal() {
         KScopedSchedulerLock sl;
 
-        R_SUCCEED_IF(m_readable_event_destroyed);
-
-        R_RETURN(m_readable_event.Signal());
+        if (!m_readable_event_destroyed) {
+            m_readable_event.Signal();
+        }
     }
 
-    Result KEvent::Clear() {
+    void KEvent::Clear() {
         KScopedSchedulerLock sl;
 
-        R_SUCCEED_IF(m_readable_event_destroyed);
-
-        R_RETURN(m_readable_event.Clear());
+        if (!m_readable_event_destroyed) {
+            m_readable_event.Clear();
+        }
     }
 
     void KEvent::PostDestroy(uintptr_t arg) {

@@ -42,7 +42,7 @@ namespace ams::kern {
         R_UNLESS(m_resource_size > rc_size, svc::ResultOutOfMemory());
 
         /* Initialize slab heaps. */
-        m_dynamic_page_manager.Initialize(m_resource_address + rc_size, m_resource_size - rc_size, PageSize);
+        R_TRY(m_dynamic_page_manager.Initialize(m_resource_address + rc_size, m_resource_size - rc_size, PageSize));
         m_page_table_heap.Initialize(std::addressof(m_dynamic_page_manager), 0, GetPointer<KPageTableManager::RefCount>(m_resource_address));
         m_memory_block_heap.Initialize(std::addressof(m_dynamic_page_manager), 0);
         m_block_info_heap.Initialize(std::addressof(m_dynamic_page_manager), 0);

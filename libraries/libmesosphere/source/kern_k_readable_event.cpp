@@ -46,7 +46,7 @@ namespace ams::kern {
         }
     }
 
-    Result KReadableEvent::Signal() {
+    void KReadableEvent::Signal() {
         MESOSPHERE_ASSERT_THIS();
 
         KScopedSchedulerLock lk;
@@ -55,8 +55,6 @@ namespace ams::kern {
             m_is_signaled = true;
             this->NotifyAvailable();
         }
-
-        R_SUCCEED();
     }
 
     Result KReadableEvent::Reset() {

@@ -25,7 +25,7 @@ namespace ams::kern::arch::arm64 {
         m_maximum_time = static_cast<s64>(std::min<u64>(std::numeric_limits<s64>::max(), cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor().GetCompareValue()));
 
         /* Bind the interrupt task for this core. */
-        Kernel::GetInterruptManager().BindHandler(this, KInterruptName_NonSecurePhysicalTimer, GetCurrentCoreId(), KInterruptController::PriorityLevel_Timer, true, true);
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(this, KInterruptName_NonSecurePhysicalTimer, GetCurrentCoreId(), KInterruptController::PriorityLevel_Timer, true, true));
     }
 
     void KHardwareTimer::Finalize() {

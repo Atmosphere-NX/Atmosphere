@@ -750,7 +750,9 @@ namespace ams::htcs::client {
                     if (index = this->Find(set->fds[i], std::addressof(error_code)); index >= 0) {
                         /* Get the primitive, if necessary. */
                         if (m_socket_list[index].m_primitive == InvalidPrimitive && m_socket_list[index].m_socket != nullptr) {
-                            m_socket_list[index].m_socket->GetPrimitive(std::addressof(m_socket_list[index].m_primitive));
+                            if (R_FAILED(m_socket_list[index].m_socket->GetPrimitive(std::addressof(m_socket_list[index].m_primitive)))) {
+                                /* Nintendo doesn't do anything here? */
+                            }
                         }
 
                         primitive = m_socket_list[index].m_primitive;
@@ -769,7 +771,9 @@ namespace ams::htcs::client {
 
                         /* Get the primitive. */
                         if (index = this->Find(set->fds[i], std::addressof(error_code)); index >= 0) {
-                            m_socket_list[index].m_socket->GetPrimitive(std::addressof(m_socket_list[index].m_primitive));
+                            if (R_FAILED(m_socket_list[index].m_socket->GetPrimitive(std::addressof(m_socket_list[index].m_primitive)))) {
+                                /* Nintendo doesn't do anything here? */
+                            }
 
                             primitive = m_socket_list[index].m_primitive;
                         }

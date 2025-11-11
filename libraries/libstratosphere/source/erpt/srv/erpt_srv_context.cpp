@@ -90,16 +90,15 @@ namespace ams::erpt::srv {
 
     Result Context::WriteContextsToReport(Report *report) {
         R_TRY(report->Open(ReportOpenType_Create));
+        ON_SCOPE_EXIT { report->Close(); };
+
         R_TRY(Cipher::Begin(report, ContextRecord::GetRecordCount()));
 
         for (auto it = g_category_list.begin(); it != g_category_list.end(); it++) {
             R_TRY(it->AddCategoryToReport(report));
         }
 
-        Cipher::End(report);
-        report->Close();
-
-        R_SUCCEED();
+        R_RETURN(Cipher::End(report));
     }
 
     Result Context::ClearContext(CategoryId cat) {

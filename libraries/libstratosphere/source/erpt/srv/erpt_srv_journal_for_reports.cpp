@@ -29,7 +29,9 @@ namespace ams::erpt::srv {
             auto *record = std::addressof(*it);
             it = s_record_list.erase(s_record_list.iterator_to(*record));
             if (record->RemoveReference()) {
-                Stream::DeleteStream(Report::FileName(record->m_info.id, false).name);
+                if (R_FAILED(Stream::DeleteStream(Report::FileName(record->m_info.id, false).name))) {
+                    /* TODO: Log failure? */
+                }
                 delete record;
             }
         }
@@ -65,12 +67,14 @@ namespace ams::erpt::srv {
 
         /* Delete any attachments. */
         if (force_delete_attachments || record->m_info.flags.Test<ReportFlag::HasAttachment>()) {
-            JournalForAttachments::DeleteAttachments(record->m_info.id);
+            static_cast<void>(JournalForAttachments::DeleteAttachments(record->m_info.id));
         }
 
         /* Delete the object, if we should. */
         if (record->RemoveReference()) {
-            Stream::DeleteStream(Report::FileName(record->m_info.id, false).name);
+            const auto delete_res = Stream::DeleteStream(Report::FileName(record->m_info.id, false).name);
+            R_ASSERT(delete_res);
+            AMS_UNUSED(delete_res);
             delete record;
         }
     }
@@ -164,8 +168,7 @@ namespace ams::erpt::srv {
 
             record_guard.Cancel();
 
-            /* NOTE: Nintendo does not check the result of storing the new record... */
-            StoreRecord(record);
+            R_TRY(StoreRecord(record));
         }
 
         cleanup_guard.Cancel();
