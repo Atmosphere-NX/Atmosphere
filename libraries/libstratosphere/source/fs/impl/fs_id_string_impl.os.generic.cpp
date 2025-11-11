@@ -21,7 +21,7 @@ namespace ams::fs::impl {
     #define ADD_ENUM_CASE(v) case v: return #v
 
     template<> const char *IdString::ToString<pkg1::KeyGeneration>(pkg1::KeyGeneration id) {
-        static_assert(pkg1::KeyGeneration_Current == pkg1::KeyGeneration_20_0_0);
+        static_assert(pkg1::KeyGeneration_Current == pkg1::KeyGeneration_21_0_0);
         switch (id) {
             using enum pkg1::KeyGeneration;
             case KeyGeneration_1_0_0:  return "1.0.0-2.3.0";
@@ -43,7 +43,8 @@ namespace ams::fs::impl {
             case KeyGeneration_17_0_0: return "17.0.0-17.0.1";
             case KeyGeneration_18_0_0: return "18.0.0-18.1.0";
             case KeyGeneration_19_0_0: return "19.0.0-19.0.1";
-            case KeyGeneration_20_0_0: return "20.0.0-";
+            case KeyGeneration_20_0_0: return "20.0.0-20.5.0";
+            case KeyGeneration_21_0_0: return "21.0.0-";
             default: return "Unknown";
         }
     }
