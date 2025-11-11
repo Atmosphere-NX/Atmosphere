@@ -71,7 +71,9 @@ namespace ams::htclow::mux {
             R_RETURN(m_channel_impl_map[it->second].ProcessReceivePacket(header, body, body_size));
         } else {
             if (header.packet_type == PacketType_Data || header.packet_type == PacketType_MaxData) {
-                this->SendErrorPacket(header.channel);
+                if (R_FAILED(this->SendErrorPacket(header.channel))) {
+                    /* Nintendo doesn't do anything here. */
+                }
             }
             R_THROW(htclow::ResultChannelNotExist());
         }

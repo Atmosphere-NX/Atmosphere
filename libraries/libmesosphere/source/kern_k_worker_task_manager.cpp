@@ -67,7 +67,7 @@ namespace ams::kern {
         KThread::Register(thread);
 
         /* Run the thread. */
-        thread->Run();
+        MESOSPHERE_R_ABORT_UNLESS(thread->Run());
     }
 
     void KWorkerTaskManager::AddTask(WorkerType type, KWorkerTask *task) {

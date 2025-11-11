@@ -269,9 +269,10 @@ namespace ams::fssystem {
 
             /* Setup the key area encryption keys. */
             for (u8 i = 0; i < NcaCryptoConfiguration::KeyGenerationMax; ++i) {
-                spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(0, i))), nca_crypto_cfg->key_area_encryption_key_source[0], KeySize, i, Option);
-                spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(1, i))), nca_crypto_cfg->key_area_encryption_key_source[1], KeySize, i, Option);
-                spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(2, i))), nca_crypto_cfg->key_area_encryption_key_source[2], KeySize, i, Option);
+                /* NOTE: Nintendo allows these to fail, since the loop tries key generations past the maximum known. */
+                static_cast<void>(spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(0, i))), nca_crypto_cfg->key_area_encryption_key_source[0], KeySize, i, Option));
+                static_cast<void>(spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(1, i))), nca_crypto_cfg->key_area_encryption_key_source[1], KeySize, i, Option));
+                static_cast<void>(spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(GetKeyTypeValue(2, i))), nca_crypto_cfg->key_area_encryption_key_source[2], KeySize, i, Option));
             }
 
             /* Setup the header encryption key. */

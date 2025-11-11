@@ -63,7 +63,7 @@ namespace ams::fssystem {
     void BlockCacheBufferedStorage::Finalize() {
         if (m_block_cache_manager.IsInitialized()) {
             /* Invalidate all cache entries. */
-            this->InvalidateAllCacheEntries();
+            static_cast<void>(this->InvalidateAllCacheEntries());
 
             /* Finalize our block cache manager. */
             m_block_cache_manager.Finalize();

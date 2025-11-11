@@ -165,8 +165,8 @@
     HANDLER(NvHostErrInfo,                       124 ) \
     HANDLER(RunningUlaInfo,                      125 ) \
     HANDLER(InternalPanelInfo,                   126 ) \
-    HANDLER(ResourceLimitLimitInfo,              127 ) \
-    HANDLER(ResourceLimitPeakInfo,               128 ) \
+    HANDLER(ResourceLimitInfo,                   127 ) \
+    HANDLER(ResourceLimitPeakInfoDeprecated,     128 ) \
     HANDLER(TouchScreenInfo,                     129 ) \
     HANDLER(AcpUserAccountSettingsInfo,          130 ) \
     HANDLER(AudioDeviceInfo,                     131 ) \
@@ -811,16 +811,16 @@
     HANDLER(ErrorContext,                                             615,  ErrorInfoAuto,                       FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ErrorContextSize,                                         616,  ErrorInfoAuto,                       FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(ErrorContextTotalSize,                                    617,  ErrorInfoAuto,                       FieldType_NumericU64, FieldFlag_None   ) \
-    HANDLER(SystemPhysicalMemoryLimit,                                618,  ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemThreadCountLimit,                                   619,  ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemEventCountLimit,                                    620,  ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemTransferMemoryCountLimit,                           621,  ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemSessionCountLimit,                                  622,  ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemPhysicalMemoryPeak,                                 623,  ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemThreadCountPeak,                                    624,  ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemEventCountPeak,                                     625,  ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemTransferMemoryCountPeak,                            626,  ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemSessionCountPeak,                                   627,  ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemPhysicalMemoryLimit,                                618,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemThreadCountLimit,                                   619,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemEventCountLimit,                                    620,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemTransferMemoryCountLimit,                           621,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemSessionCountLimit,                                  622,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemPhysicalMemoryPeak,                                 623,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemThreadCountPeak,                                    624,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemEventCountPeak,                                     625,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemTransferMemoryCountPeak,                            626,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemSessionCountPeak,                                   627,  ResourceLimitInfo,                   FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(GpuCrashHash,                                             628,  GpuCrashInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(TouchScreenPanelGpioValue,                                629,  TouchScreenInfo,                     FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BrowserCertificateHostName,                               630,  ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \

@@ -523,7 +523,7 @@ namespace ams::kern {
             Result GetCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
             Result SetCoreMask(int32_t ideal_core, u64 affinity_mask);
 
-            Result GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
+            void GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
 
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(m_thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return m_thread_state; }
@@ -717,7 +717,7 @@ namespace ams::kern {
             }
 
             void SetBasePriority(s32 priority);
-            Result SetPriorityToIdle();
+            void SetPriorityToIdle();
 
             Result Run();
             void Exit();
@@ -725,7 +725,7 @@ namespace ams::kern {
             Result Terminate();
             ThreadState RequestTerminate();
 
-            Result Sleep(s64 timeout);
+            void Sleep(s64 timeout);
 
             ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(m_kernel_stack_top) - 1; }
             ALWAYS_INLINE void *GetKernelStackTop() const { return m_kernel_stack_top; }

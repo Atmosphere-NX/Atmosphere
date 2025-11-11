@@ -39,11 +39,10 @@ namespace ams::erpt::srv {
         m_system_event.Signal();
     }
 
-    Result ManagerImpl::NotifyAll() {
+    void ManagerImpl::NotifyAll() {
         for (auto &manager : g_manager_list) {
             manager.NotifyOne();
         }
-        R_SUCCEED();
     }
 
     Result ManagerImpl::GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter) {

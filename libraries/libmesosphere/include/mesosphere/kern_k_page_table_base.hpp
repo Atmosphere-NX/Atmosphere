@@ -226,7 +226,7 @@ namespace ams::kern {
 
             explicit KPageTableBase() { /* ... */ }
 
-            NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE void InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
             NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
 
             void Finalize();

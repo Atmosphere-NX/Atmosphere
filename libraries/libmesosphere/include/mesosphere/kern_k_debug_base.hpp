@@ -93,9 +93,9 @@ namespace ams::kern {
             static Result ProcessDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params);
         public:
             static Result OnDebugEvent(ams::svc::DebugEvent event, const uintptr_t *params, size_t num_params);
-            static Result OnExitProcess(KProcess *process);
-            static Result OnTerminateProcess(KProcess *process);
-            static Result OnExitThread(KThread *thread);
+            static void OnExitProcess(KProcess *process);
+            static void OnTerminateProcess(KProcess *process);
+            static void OnExitThread(KThread *thread);
             static KEventInfo *CreateDebugEvent(ams::svc::DebugEvent event, u64 thread_id, const uintptr_t *params, size_t num_params);
     };
 

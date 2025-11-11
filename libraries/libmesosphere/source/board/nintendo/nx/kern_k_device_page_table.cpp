@@ -660,8 +660,7 @@ namespace ams::kern::board::nintendo::nx {
         ptm.Open(table_virt_addr, 1);
 
         /* Save the page. Note that it is a pre-condition that the page is cleared, when allocated from the system page table manager. */
-        /* NOTE: Nintendo does not check the result of StoreDataCache. */
-        cpu::StoreDataCache(GetVoidPointer(table_virt_addr), PageDirectorySize);
+        MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(table_virt_addr), PageDirectorySize));
         g_reserved_table_phys_addr = table_phys_addr;
 
         /* Reserve an asid to correspond to no device. */
@@ -806,7 +805,7 @@ namespace ams::kern::board::nintendo::nx {
             MESOSPHERE_ASSERT(IsValidPhysicalAddress(GetPageTablePhysicalAddress(table_vaddr)));
 
             ptm.Open(table_vaddr, 1);
-            cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageDirectorySize);
+            MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageDirectorySize));
             m_tables[i] = table_vaddr;
         }
 
@@ -1042,7 +1041,7 @@ namespace ams::kern::board::nintendo::nx {
                 if (l2_index == 0 && util::IsAligned(GetInteger(phys_addr), DeviceLargePageSize) && remaining >= DeviceLargePageSize) {
                     /* Set the large page. */
                     l1[l1_index].SetLargePage(read, write, true, phys_addr);
-                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+                    MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry)));
 
                     /* Synchronize. */
                     InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
@@ -1062,11 +1061,11 @@ namespace ams::kern::board::nintendo::nx {
                     const KVirtualAddress table_vaddr = ptm.Allocate();
                     R_UNLESS(table_vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
                     MESOSPHERE_ASSERT(IsValidPhysicalAddress(GetPageTablePhysicalAddress(table_vaddr)));
-                    cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageTableSize);
+                    MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageTableSize));
 
                     /* Set the l1 table. */
                     l1[l1_index].SetTable(true, true, true, GetPageTablePhysicalAddress(table_vaddr));
-                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+                    MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry)));
 
                     /* Synchronize. */
                     InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
@@ -1093,7 +1092,7 @@ namespace ams::kern::board::nintendo::nx {
                     /* Add a reference to the l2 page (from the l2 entry page). */
                     ptm.Open(KVirtualAddress(l2), 1);
                 }
-                cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry));
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry)));
 
                 /* Invalidate the page table cache. */
                 for (size_t i = util::AlignDown(l2_index, 4); i <= util::AlignDown(l2_index + map_count - 1, 4); i += 4) {
@@ -1199,7 +1198,7 @@ namespace ams::kern::board::nintendo::nx {
                         ++num_closed;
                     }
                 }
-                cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry));
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry)));
 
                 /* Invalidate the page table cache. */
                 for (size_t i = util::AlignDown(l2_index, 4); i <= util::AlignDown(l2_index + map_count - 1, 4); i += 4) {
@@ -1243,7 +1242,7 @@ namespace ams::kern::board::nintendo::nx {
                 if (ptm.Close(KVirtualAddress(l2), num_closed)) {
                     /* Invalidate the l1 entry. */
                     l1[l1_index].Invalidate();
-                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+                    MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry)));
 
                     /* Synchronize. */
                     InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
@@ -1266,7 +1265,7 @@ namespace ams::kern::board::nintendo::nx {
 
                 /* Invalidate the entry. */
                 l1[l1_index].Invalidate();
-                cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+                MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry)));
 
                 /* Synchronize. */
                 InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));

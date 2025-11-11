@@ -129,11 +129,15 @@ namespace ams::fssystem {
         /* Initialize the buffer manager. */
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
         util::ConstructAt(g_buffer_manager);
-        GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
+        const auto bm_res = GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
+        R_ASSERT(bm_res);
+        AMS_UNUSED(bm_res);
 
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
         /* TODO FS-REIMPL: fssrv::storage::CreateDeviceAddressSpace(...); */
-        fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+        const auto ibp_res = fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+        R_ASSERT(ibp_res);
+        AMS_UNUSED(ibp_res);
 
         /* TODO FS-REIMPL: Create Pooled Threads/Stack Usage Reporter, fssystem::RegisterThreadPool. */
 
@@ -231,11 +235,15 @@ namespace ams::fssystem {
         /* Initialize the buffer manager. */
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
         util::ConstructAt(g_buffer_manager);
-        GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
+        const auto bm_res = GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
+        R_ASSERT(bm_res);
+        AMS_UNUSED(bm_res);
 
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
         /* TODO FS-REIMPL: fssrv::storage::CreateDeviceAddressSpace(...); */
-        fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+        const auto ibp_res = fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+        R_ASSERT(ibp_res);
+        AMS_UNUSED(ibp_res);
 
         /* TODO FS-REIMPL: Create Pooled Threads/Stack Usage Reporter, fssystem::RegisterThreadPool. */
 

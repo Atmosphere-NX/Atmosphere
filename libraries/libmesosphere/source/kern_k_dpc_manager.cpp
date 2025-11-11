@@ -167,7 +167,7 @@ namespace ams::kern {
         KThread::Register(new_thread);
 
         /* Run the thread. */
-        new_thread->Run();
+        MESOSPHERE_R_ABORT_UNLESS(new_thread->Run());
     }
 
     void KDpcManager::HandleDpc() {

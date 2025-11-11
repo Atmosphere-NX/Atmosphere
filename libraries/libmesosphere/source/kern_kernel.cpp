@@ -52,8 +52,8 @@ namespace ams::kern {
         void    *idle_thread_stack = GetVoidPointer(KMemoryLayout::GetIdleStackTopAddress(core_id));
         KAutoObject::Create<KThread>(main_thread);
         KAutoObject::Create<KThread>(idle_thread);
-        main_thread->Initialize(nullptr, 0, main_thread_stack, 0, KThread::MainThreadPriority, core_id, nullptr, KThread::ThreadType_Main);
-        idle_thread->Initialize(nullptr, 0, idle_thread_stack, 0, KThread::IdleThreadPriority, core_id, nullptr, KThread::ThreadType_Main);
+        MESOSPHERE_R_ABORT_UNLESS(main_thread->Initialize(nullptr, 0, main_thread_stack, 0, KThread::MainThreadPriority, core_id, nullptr, KThread::ThreadType_Main));
+        MESOSPHERE_R_ABORT_UNLESS(idle_thread->Initialize(nullptr, 0, idle_thread_stack, 0, KThread::IdleThreadPriority, core_id, nullptr, KThread::ThreadType_Main));
 
         /* Set the current thread to be the main thread, and we have no processes running yet. */
         SetCurrentThread(main_thread);
@@ -79,7 +79,7 @@ namespace ams::kern {
         KDynamicPageManager * const sys_dynamic_page_manager = KTargetSystem::IsDynamicResourceLimitsEnabled() ? std::addressof(g_resource_manager_page_manager) : nullptr;
 
         /* Initialize the resource managers' shared page manager. */
-        g_resource_manager_page_manager.Initialize(address, size, std::max<size_t>(PageSize, KPageBufferSlabHeap::BufferSize));
+        MESOSPHERE_R_ABORT_UNLESS(g_resource_manager_page_manager.Initialize(address, size, std::max<size_t>(PageSize, KPageBufferSlabHeap::BufferSize)));
 
         /* Initialize the KPageBuffer slab heap. */
         KPageBuffer::InitializeSlabHeap(g_resource_manager_page_manager);

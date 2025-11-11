@@ -269,7 +269,7 @@ namespace ams::kern {
             void RemoveIoRegion(KIoRegion *io_region);
 
             Result CreateThreadLocalRegion(KProcessAddress *out);
-            Result DeleteThreadLocalRegion(KProcessAddress addr);
+            void DeleteThreadLocalRegion(KProcessAddress addr);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
 
             constexpr KProcessAddress GetProcessLocalRegionAddress() const { return m_plr_address; }

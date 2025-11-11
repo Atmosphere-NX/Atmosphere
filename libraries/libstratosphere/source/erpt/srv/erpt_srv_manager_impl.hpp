@@ -27,7 +27,7 @@ namespace ams::erpt::srv {
         private:
             void NotifyOne();
         public:
-            static Result NotifyAll();
+            static void NotifyAll();
         public:
             Result GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter);
             Result GetEvent(ams::sf::OutCopyHandle out);

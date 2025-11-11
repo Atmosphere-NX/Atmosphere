@@ -67,14 +67,20 @@ namespace ams::htclow::driver {
     }
 
     void SocketDiscoveryManager::ThreadFunc() {
-        for (this->DoDiscovery(); !m_driver_closed; this->DoDiscovery()) {
-            /* Check if the driver is closed five times. */
+        /* Do discovery. */
+        static_cast<void>(this->DoDiscovery());
+
+        while (!m_driver_closed) {
+            /* Check if the driver is closed 5 times. */
             for (size_t i = 0; i < 5; ++i) {
                 os::SleepThread(TimeSpan::FromSeconds(1));
                 if (m_driver_closed) {
                     return;
                 }
             }
+
+            /* Do discovery. */
+            static_cast<void>(this->DoDiscovery());
         }
     }
 

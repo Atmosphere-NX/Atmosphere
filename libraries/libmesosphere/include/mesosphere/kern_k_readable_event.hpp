@@ -35,16 +35,14 @@ namespace ams::kern {
 
             constexpr KEvent *GetParent() const { return m_parent; }
 
-            Result Signal();
+            void Signal();
             Result Reset();
 
-            Result Clear() {
+            void Clear() {
                 MESOSPHERE_ASSERT_THIS();
 
-                /* Try to perform a reset, succeeding unconditionally. */
-                this->Reset();
-
-                R_SUCCEED();
+                /* Try to perform a reset, ignoring whether it succeeds. */
+                static_cast<void>(this->Reset());
             }
 
             virtual bool IsSignaled() const override;

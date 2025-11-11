@@ -56,8 +56,8 @@ namespace ams::erpt::srv {
             fs::DisableAutoSaveDataCreation();
 
             /* Extend the system save data. */
-            /* NOTE: Nintendo does not check result of this. */
-            ExtendSystemSaveData();
+            /* NOTE: Nintendo used to not check the result of this; they do now, but . */
+            static_cast<void>(ExtendSystemSaveData());
 
             R_TRY_CATCH(fs::MountSystemSaveData(ReportStoragePath, SystemSaveDataId)) {
                 R_CATCH(fs::ResultTargetNotFound) {
@@ -97,7 +97,7 @@ namespace ams::erpt::srv {
             }
 
             if (report_count >= MinimumReportCountForCleanup) {
-                fs::CleanDirectoryRecursively(ReportOnSdStorageRootDirectoryPath);
+                static_cast<void>(fs::CleanDirectoryRecursively(ReportOnSdStorageRootDirectoryPath));
             }
         }
 
@@ -110,7 +110,9 @@ namespace ams::erpt::srv {
             AMS_ABORT_UNLESS(ctx != nullptr);
         }
 
-        Journal::Restore();
+        if (R_FAILED(Journal::Restore())) {
+            /* TODO: Nintendo deletes system savedata when this fails. Should we?. */
+        }
 
         Reporter::UpdatePowerOnTime();
         Reporter::UpdateAwakeTime();

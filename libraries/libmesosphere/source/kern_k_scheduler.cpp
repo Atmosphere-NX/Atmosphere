@@ -65,7 +65,7 @@ namespace ams::kern {
         }
 
         /* Bind interrupt handler. */
-        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptHandler(), KInterruptName_Scheduler, m_core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptHandler(), KInterruptName_Scheduler, m_core_id, KInterruptController::PriorityLevel_Scheduler, false, false));
 
         /* Set the current thread. */
         m_current_thread = GetCurrentThreadPointer();
