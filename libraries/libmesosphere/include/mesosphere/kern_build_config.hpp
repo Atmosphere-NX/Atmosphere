@@ -47,13 +47,6 @@
 /* re-enabled by toggling this define. */
 //#define MESOSPHERE_ENABLE_PROCESS_CREATION_TIME
 
-/* NOTE: This enables fast class token storage using a class member. */
-/* This saves a virtual call when doing KAutoObject->DynCast<>(), */
-/* at the cost of storing class tokens inside the class object. */
-/* However, as of (10/16/2021) KAutoObject has an unused class member */
-/* of the right side, and so this does not actually cost any space. */
-#define MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST
-
 /* NOTE: This enables usage of KDebug handles as parameter for svc::GetInfo */
 /* calls which require a process parameter. This enables a debugger to obtain */
 /* address space/layout information, for example. However, it changes abi, and so */
