@@ -510,6 +510,11 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
 
     ENABLE_AND_RESTORE_FPU(x2, x0, x1, w0, w1, 1, 2)
 
+    /* Set new flag at StackParameters + 0x2F. */
+    /* NOTE: This is new in 21.0.0, and does not seem to be used anywhere else in the kernel. */
+    mov     w0, #1
+    strb    w0, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_RESERVED_2F)]
+
     /* Restore registers. */
     ldp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
     ldp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
