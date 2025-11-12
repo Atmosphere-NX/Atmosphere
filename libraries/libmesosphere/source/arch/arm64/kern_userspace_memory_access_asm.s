@@ -306,15 +306,14 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl28CopyMemoryToUserAligned64BitEPvPK
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUserSize32Bit(void *dst, const void *src) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv, %function
+/* ams::kern::arch::arm64::UserspaceAccess::Impl::CopyMemoryToUserSize32Bit(void *dst, u32 value) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvj, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvj
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvj, %function
 .balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvPKv:
-    /* Just load and store a u32. */
-    ldr     w2, [x1]
-    sttr    w2, [x0]
+_ZN3ams4kern4arch5arm6415UserspaceAccess4Impl25CopyMemoryToUserSize32BitEPvj:
+    /* Just store a u32. */
+    sttr    w1, [x0]
 
     /* We're done. */
     mov     x0, #1
