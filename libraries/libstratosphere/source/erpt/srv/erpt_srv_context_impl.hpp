@@ -26,9 +26,13 @@ namespace ams::erpt::srv {
             Result ClearInitialLaunchSettingsCompletionTime();
             Result UpdatePowerOnTime();
             Result UpdateAwakeTime();
+            Result CreateReportWithAdditionalContext(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result, erpt::CreateReportOptionFlagSet flags, const ams::sf::InMapAliasArray<erpt::CategoryEntry> &category_entries, const ams::sf::InMapAliasArray<erpt::FieldEntry> &field_entries, const ams::sf::InBuffer &array_buffer);
             Result SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer);
+            Result SubmitMultipleContext(const ams::sf::InMapAliasArray<erpt::CategoryEntry> &category_entries, const ams::sf::InMapAliasArray<erpt::FieldEntry> &field_entries, const ams::sf::InBuffer &array_buffer);
             Result UpdateApplicationLaunchTime();
+            Result RegisterRunningApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id);
             Result ClearApplicationLaunchTime();
+            Result UnregisterRunningApplicationInfo();
             Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
             Result CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
             Result CreateReportWithAttachmentsDeprecated2(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result);
@@ -41,6 +45,7 @@ namespace ams::erpt::srv {
             Result UnregisterRunningApplet(ncm::ProgramId program_id);
             Result UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration);
             Result InvalidateForcedShutdownDetection();
+            Result WaitForReportCreation();
     };
     static_assert(erpt::sf::IsIContext<ContextImpl>);
 

@@ -23,6 +23,59 @@
 
 namespace ams::erpt::srv {
 
+    namespace {
+
+        ContextEntry MakeContextEntry(const CategoryEntry &cat_entry, Span<const FieldEntry> field_entries) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(cat_entry.field_count <= field_entries.size());
+
+            /* Make the entry. */
+            ContextEntry entry = {};
+
+            entry.version     = 0;
+            entry.category    = cat_entry.category;
+            entry.field_count = cat_entry.field_count;
+
+            for (size_t i = 0; i < cat_entry.field_count; ++i) {
+                entry.fields[i] = field_entries[i];
+            }
+
+            return entry;
+        }
+
+        Result SubmitMultipleContextImpl(Span<const CategoryEntry> category_entries, Span<const FieldEntry> field_entries, Span<const u8> array_buf) {
+            /* Iterate over all category entries. */
+            size_t field_entry_offset = 0;
+            size_t array_buf_offset   = 0;
+            for (const auto &category_entry : category_entries) {
+                /* Check that the category is valid. */
+                R_UNLESS(erpt::srv::IsValidCategory(category_entry.category),  erpt::ResultInvalidArgument());
+
+                /* Check that there aren't too many fields for the category. */
+                R_UNLESS(category_entry.field_count <= FieldsPerContext,          erpt::ResultInvalidArgument());
+
+                /* Check that there isn't too much data in the array buf. */
+                R_UNLESS(category_entry.array_buffer_count <= ArrayBufferSizeMax, erpt::ResultInvalidArgument());
+
+                /* Check that the fields/data fit into the provided buffer. */
+                R_UNLESS(category_entry.field_count + field_entry_offset <= field_entries.size(),        erpt::ResultInvalidArgument());
+                R_UNLESS(category_entry.array_buffer_count + array_buf_offset <= array_buf.size_bytes(), erpt::ResultInvalidArgument());
+
+                /* Make the entry. */
+                const auto ctx_entry = MakeContextEntry(category_entry, field_entries.subspan(field_entry_offset, category_entry.field_count));
+                R_TRY(Context::SubmitContext(std::addressof(ctx_entry), array_buf.data() + array_buf_offset, category_entry.array_buffer_count));
+
+                /* Advance. */
+                field_entry_offset += category_entry.field_count;
+                array_buf_offset   += category_entry.array_buffer_count;
+            }
+
+            /* We succeeded. */
+            R_SUCCEED();
+        }
+
+    }
+
     Result ContextImpl::SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
@@ -85,6 +138,28 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
+    Result ContextImpl::CreateReportWithAdditionalContext(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result, erpt::CreateReportOptionFlagSet flags, const ams::sf::InMapAliasArray<erpt::CategoryEntry> &category_entries, const ams::sf::InMapAliasArray<erpt::FieldEntry> &field_entries, const ams::sf::InBuffer &array_buffer) {
+        /* Submit the additional context. */
+        R_TRY(SubmitMultipleContextImpl(category_entries.ToSpan(), field_entries.ToSpan(), MakeSpan<const u8>(array_buffer.GetPointer(), array_buffer.GetSize())));
+
+        /* Clear the additional context when we're done. */
+        ON_SCOPE_EXIT {
+            const auto category_span = category_entries.ToSpan();
+
+            for (const auto &entry : category_span) {
+                if (erpt::srv::IsValidCategory(entry.category)) {
+                    static_cast<void>(Context::ClearContext(entry.category));
+                }
+            }
+        };
+
+        /* Create the report. */
+        R_TRY(this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, result, flags));
+
+        /* We succeeded. */
+        R_SUCCEED();
+    }
+
     Result ContextImpl::SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) {
         R_UNLESS(ctx_entry.category_count <= CategoriesPerMultipleCategoryContext, erpt::ResultInvalidArgument());
 
@@ -114,6 +189,10 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
+    Result ContextImpl::SubmitMultipleContext(const ams::sf::InMapAliasArray<erpt::CategoryEntry> &category_entries, const ams::sf::InMapAliasArray<erpt::FieldEntry> &field_entries, const ams::sf::InBuffer &array_buffer) {
+        R_RETURN(SubmitMultipleContextImpl(category_entries.ToSpan(), field_entries.ToSpan(), MakeSpan<const u8>(array_buffer.GetPointer(), array_buffer.GetSize())));
+    }
+
     Result ContextImpl::UpdateApplicationLaunchTime() {
         Reporter::UpdateApplicationLaunchTime();
         R_SUCCEED();
@@ -121,6 +200,16 @@ namespace ams::erpt::srv {
 
     Result ContextImpl::ClearApplicationLaunchTime() {
         Reporter::ClearApplicationLaunchTime();
+        R_SUCCEED();
+    }
+
+    Result ContextImpl::RegisterRunningApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id) {
+        Reporter::RegisterRunningApplicationInfo(app_id, program_id);
+        R_SUCCEED();
+    }
+
+    Result ContextImpl::UnregisterRunningApplicationInfo() {
+        Reporter::UnregisterRunningApplicationInfo();
         R_SUCCEED();
     }
 
@@ -212,6 +301,11 @@ namespace ams::erpt::srv {
     Result ContextImpl::InvalidateForcedShutdownDetection() {
         /* NOTE: Nintendo does not check the result here. */
         static_cast<void>(erpt::srv::InvalidateForcedShutdownDetection());
+        R_SUCCEED();
+    }
+
+    Result ContextImpl::WaitForReportCreation() {
+        /* This function currently does nothing. Maybe it only waits on Ounce? */
         R_SUCCEED();
     }
 
