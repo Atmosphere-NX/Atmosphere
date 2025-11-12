@@ -44,8 +44,10 @@ namespace ams::erpt::srv {
                 static constexpr AppletActiveTimeInfo InvalidAppletActiveTimeInfo = { ncm::InvalidProgramId, os::Tick{}, TimeSpan::FromNanoSeconds(0) };
             private:
                 std::array<AppletActiveTimeInfo, 8> m_list;
+                ncm::ApplicationId m_running_app_id;
+                ncm::ProgramId m_running_app_program_id;
             public:
-                constexpr AppletActiveTimeInfoList() : m_list{InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo} {
+                constexpr AppletActiveTimeInfoList() : m_list{InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo}, m_running_app_id{ncm::InvalidApplicationId}, m_running_app_program_id{ncm::InvalidProgramId} {
                     m_list.fill(InvalidAppletActiveTimeInfo);
                 }
             public:
@@ -65,6 +67,32 @@ namespace ams::erpt::srv {
 
                     /* Clear the entry. */
                     *entry = InvalidAppletActiveTimeInfo;
+                }
+
+                void RegisterApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id) {
+                    /* Set the running application info. */
+                    m_running_app_id         = app_id;
+                    m_running_app_program_id = program_id;
+                }
+
+                void UnregisterApplicationInfo() {
+                    m_running_app_id         = ncm::InvalidApplicationId;
+                    m_running_app_program_id = ncm::InvalidProgramId;
+                }
+
+                util::optional<os::Tick> GetApplicationStartTick() {
+                    /* If we have a running application, try to find a matching entry. */
+                    if (m_running_app_id != ncm::InvalidApplicationId) {
+                        /* NOTE: This seems to be a Nintendo bug? They are comparing the running app id to the info's program id, */
+                        /* instead of the running app program id. Granted, these should usually be the same, but I think this code */
+                        /* is literally incorrect. */
+                        const auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == m_running_app_id; });
+                        if (entry != m_list.end()) {
+                            return entry->register_tick;
+                        }
+                    }
+
+                    return util::nullopt;
                 }
 
                 void UpdateSuspendedDuration(ncm::ProgramId program_id, TimeSpan suspended_duration) {
@@ -368,6 +396,14 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
+    void Reporter::RegisterRunningApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id) {
+        g_applet_active_time_info_list.RegisterApplicationInfo(app_id, program_id);
+    }
+
+    void Reporter::UnregisterRunningApplicationInfo() {
+        g_applet_active_time_info_list.UnregisterApplicationInfo();
+    }
+
     Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id) {
         /* Create a context record for the report. */
         auto record = std::make_unique<ContextRecord>();
@@ -464,7 +500,11 @@ namespace ams::erpt::srv {
             }
         }
 
-        if (s_application_launch_time) {
+        if (hos::GetVersion() >= hos::Version_21_0_0) {
+            if (auto start_tick = g_applet_active_time_info_list.GetApplicationStartTick(); start_tick.has_value()) {
+                static_cast<void>(auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *start_tick).ToTimeSpan().GetSeconds()));
+            }
+        } else if (s_application_launch_time) {
             static_cast<void>(auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds()));
         }
 
