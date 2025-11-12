@@ -105,7 +105,7 @@ namespace ams::kern {
                 util::Atomic<u8> dpc_flags;
                 u8 current_svc_id;
                 u8 reserved_2c;
-                u8 exception_flags;
+                util::Atomic<u8> exception_flags;
                 bool is_pinned;
                 u8 reserved_2f;
                 u8 reserved_30[0x10];
@@ -417,17 +417,17 @@ namespace ams::kern {
         private:
             ALWAYS_INLINE void SetExceptionFlag(ExceptionFlag flag) {
                 MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().exception_flags |= flag;
+                this->GetStackParameters().exception_flags.FetchOr<std::memory_order_relaxed>(flag);
             }
 
             ALWAYS_INLINE void ClearExceptionFlag(ExceptionFlag flag) {
                 MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().exception_flags &= ~flag;
+                this->GetStackParameters().exception_flags.FetchAnd<std::memory_order_relaxed>(~flag);
             }
 
             ALWAYS_INLINE bool IsExceptionFlagSet(ExceptionFlag flag) const {
                 MESOSPHERE_ASSERT_THIS();
-                return this->GetStackParameters().exception_flags & flag;
+                return this->GetStackParameters().exception_flags.Load<std::memory_order_relaxed>() & flag;
             }
         public:
             /* ALWAYS_INLINE void SetCallingSvc()      { return this->SetExceptionFlag(ExceptionFlag_IsCallingSvc); }    */
