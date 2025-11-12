@@ -194,6 +194,12 @@ namespace ams::erpt {
         };
     };
 
+    struct CategoryEntry {
+        CategoryId category;
+        u32 field_count;
+        u32 array_buffer_count;
+    };
+
     constexpr inline u32 FieldsPerContext = 20;
     struct ContextEntry {
         u32 version;

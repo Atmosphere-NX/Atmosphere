@@ -172,7 +172,7 @@
     HANDLER(AudioDeviceInfo,                     131 ) \
     HANDLER(AbnormalWakeInfo,                    132 ) \
     HANDLER(ServiceProfileInfo,                  133 ) \
-    HANDLER(BluetoothAudioInfo,                  134 ) \
+    HANDLER(BluetoothAudioInfoDeprecated,        134 ) \
     HANDLER(BluetoothPairingCountInfo,           135 ) \
     HANDLER(FsProxyErrorInfo2,                   136 ) \
     HANDLER(BuiltInWirelessOUIInfo,              137 ) \
@@ -188,9 +188,17 @@
     HANDLER(WlanIoctlErrorInfo,                  147 ) \
     HANDLER(SdCardActivationInfo,                148 ) \
     HANDLER(GameCardDetailedErrorInfo,           149 ) \
+    HANDLER(NetworkInfo2,                        150 ) \
+    HANDLER(SystemSettingInfo,                   151 ) \
+    HANDLER(MigrationStateInfo,                  152 ) \
+    HANDLER(WinVdInfo,                           153 ) \
+    HANDLER(PscTransitionStateInfo,              154 ) \
+    HANDLER(FsProxyErrorInfo3,                   155 ) \
+    HANDLER(BluetoothErrorInfo,                  156 ) \
     HANDLER(TestNx,                              1000) \
     HANDLER(NANDTypeInfo,                        1001) \
     HANDLER(NANDExtendedCsd,                     1002) \
+    HANDLER(BluetoothAudioInfo,                  1003)
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,    Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -839,7 +847,7 @@
     HANDLER(SupportingLimitedApplicationLicenses,                     643,  RunningApplicationInfo,              FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(RuntimeLimitedApplicationLicenseUpgrade,                  644,  RunningApplicationInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ServiceProfileRevisionKey,                                645,  ServiceProfileInfo,                  FieldType_NumericU64, FieldFlag_None   ) \
-    HANDLER(BluetoothAudioConnectionCount,                            646,  BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothAudioConnectionCountDeprecated,                  646,  BluetoothAudioInfoDeprecated,        FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothHidPairingInfoCountDeprecated,                   647,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothAudioPairingInfoCountDeprecated,                 648,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothLePairingInfoCountDeprecated,                    649,  BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
@@ -1000,5 +1008,5 @@
     HANDLER(LastDvfsThresholdTripped,                                 1031, ThermalInfo,                         FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ModuleClockEnableFlags,                                   1032, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModulePowerEnableFlags,                                   1033, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   )
 
