@@ -40,4 +40,8 @@ namespace ams::ldr {
     Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform);
     void   InvalidateMetaCache();
 
+    Result LoadMetaForBrowserCoreDll(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused);
+    Result LoadMetaFromCacheForBrowserCoreDll(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform);
+    void   InvalidateMetaCacheForBrowserCoreDll();
+
 }

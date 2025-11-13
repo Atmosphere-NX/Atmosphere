@@ -25,9 +25,13 @@ namespace ams::ldr {
 
         /* Convenience definitions. */
         constexpr size_t MetaCacheBufferSize = 0x8000;
-        constexpr inline const char AtmosphereMetaPath[] = ENCODE_ATMOSPHERE_CODE_PATH("/main.npdm");
-        constexpr inline const char SdOrBaseMetaPath[]   = ENCODE_SD_OR_CODE_PATH("/main.npdm");
-        constexpr inline const char BaseMetaPath[]       = ENCODE_CODE_PATH("/main.npdm");
+        constexpr inline const char AtmosphereCodeMetaPath[] = ENCODE_ATMOSPHERE_CODE_PATH("/main.npdm");
+        constexpr inline const char SdOrBaseCodeMetaPath[]   = ENCODE_SD_OR_CODE_PATH("/main.npdm");
+        constexpr inline const char BaseCodeMetaPath[]       = ENCODE_CODE_PATH("/main.npdm");
+
+        constexpr inline const char AtmosphereBrowserCoreDllMetaPath[] = ENCODE_ATMOSPHERE_BDLL_PATH("/main.npdm");
+        constexpr inline const char SdOrBaseBrowserCoreDllMetaPath[]   = ENCODE_SD_OR_BDLL_PATH("/main.npdm");
+        constexpr inline const char BaseBrowserCoreDllMetaPath[]       = ENCODE_BDLL_PATH("/main.npdm");
 
         /* Types. */
         struct MetaCache {
@@ -35,11 +39,40 @@ namespace ams::ldr {
             u8 buffer[MetaCacheBufferSize];
         };
 
+        struct MetaLoader {
+            ncm::ProgramId m_cached_program_id;
+            cfg::OverrideStatus m_cached_override_status;
+            MetaCache m_meta_cache;
+            MetaCache m_original_meta_cache;
+
+            Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused, const char *ams_path, const char *sd_or_base_path, const char *base_path);
+            Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, const char *ams_path, const char *sd_or_base_path, const char *base_path);
+            void InvalidateMetaCache();
+        };
+
+        struct MetaLoaderForCode : public MetaLoader {
+            Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused) {
+                R_RETURN(MetaLoader::LoadMeta(out_meta, loc, status, platform, unk_unused, AtmosphereCodeMetaPath, SdOrBaseCodeMetaPath, BaseCodeMetaPath));
+            }
+
+            Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform) {
+                R_RETURN(MetaLoader::LoadMetaFromCache(out_meta, loc, status, platform, AtmosphereCodeMetaPath, SdOrBaseCodeMetaPath, BaseCodeMetaPath));
+            }
+        };
+
+        struct MetaLoaderForBdll : public MetaLoader {
+            Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused) {
+                R_RETURN(MetaLoader::LoadMeta(out_meta, loc, status, platform, unk_unused, AtmosphereBrowserCoreDllMetaPath, SdOrBaseBrowserCoreDllMetaPath, BaseBrowserCoreDllMetaPath));
+            }
+
+            Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform) {
+                R_RETURN(MetaLoader::LoadMetaFromCache(out_meta, loc, status, platform, AtmosphereBrowserCoreDllMetaPath, SdOrBaseBrowserCoreDllMetaPath, BaseBrowserCoreDllMetaPath));
+            }
+        };
+
         /* Global storage. */
-        ncm::ProgramId g_cached_program_id;
-        cfg::OverrideStatus g_cached_override_status;
-        MetaCache g_meta_cache;
-        MetaCache g_original_meta_cache;
+        MetaLoaderForCode g_meta_loader_for_code;
+        MetaLoaderForBdll g_meta_loader_for_bdll;
 
         /* Helpers. */
         Result ValidateSubregion(size_t allowed_start, size_t allowed_end, size_t start, size_t size, size_t min_size = 0) {
@@ -187,112 +220,136 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
+        Result MetaLoader::LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused, const char *ams_path, const char *sd_or_base_path, const char *base_path) {
+            /* Set the cached program id back to zero. */
+            m_cached_program_id = {};
+
+            /* Try to load meta from file. */
+            fs::FileHandle file;
+            R_TRY(fs::OpenFile(std::addressof(file), ams_path, fs::OpenMode_Read));
+            {
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
+                R_TRY(LoadMetaFromFile(file, std::addressof(m_meta_cache)));
+            }
+
+            /* Patch meta. Start by setting all program ids to the current program id. */
+            Meta *meta = std::addressof(m_meta_cache.meta);
+            meta->acid->program_id_min = loc.program_id;
+            meta->acid->program_id_max = loc.program_id;
+            meta->aci->program_id      = loc.program_id;
+
+            /* For HBL, we need to copy some information from the base meta. */
+            if (status.IsHbl()) {
+                if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), sd_or_base_path, fs::OpenMode_Read))) {
+                    ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+
+                    if (R_SUCCEEDED(LoadMetaFromFile(file, std::addressof(m_original_meta_cache)))) {
+                        Meta *o_meta = std::addressof(m_original_meta_cache.meta);
+
+                        /* Fix pool partition. */
+                        if (hos::GetVersion() >= hos::Version_5_0_0) {
+                            meta->acid->flags = (meta->acid->flags & 0xFFFFFFC3) | (o_meta->acid->flags & 0x0000003C);
+                        }
+
+                        /* Fix flags. */
+                        const u16 program_info_flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(o_meta->aci_kac), o_meta->aci->kac_size / sizeof(util::BitPack32));
+                        UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+                        UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
+                    }
+                }
+
+                /* Perform address space override. */
+                if (status.HasOverrideAddressSpace()) {
+                    /* Clear the existing address space. */
+                    meta->npdm->flags &= ~Npdm::MetaFlag_AddressSpaceTypeMask;
+
+                    /* Set the new address space flag. */
+                    switch (status.GetOverrideAddressSpaceFlags()) {
+                        case cfg::impl::OverrideStatusFlag_AddressSpace32Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_32Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                        case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                        case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                        case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                }
+
+                /* When hbl is applet, adjust main thread priority. */
+                if ((MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
+                    constexpr auto HblMainThreadPriorityApplication = 44;
+                    constexpr auto HblMainThreadPriorityApplet      = 40;
+                    if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
+                        meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
+                    }
+                }
+
+                /* Fix the debug capabilities, to prevent needing a hbl recompilation. */
+                FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+                FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
+            } else if (hos::GetVersion() >= hos::Version_10_0_0) {
+                /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
+                /* However, if we're an application, we are guaranteed a base code filesystem. */
+                if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None || ncm::IsApplicationId(loc.program_id)) {
+                    R_TRY(fs::OpenFile(std::addressof(file), base_path, fs::OpenMode_Read));
+                    ON_SCOPE_EXIT { fs::CloseFile(file); };
+                    R_TRY(LoadMetaFromFile(file, std::addressof(m_original_meta_cache)));
+                    R_TRY(ValidateAcidSignature(std::addressof(m_original_meta_cache.meta), platform, unk_unused));
+                    meta->modulus                 = m_original_meta_cache.meta.modulus;
+                    meta->check_verification_data = m_original_meta_cache.meta.check_verification_data;
+                }
+            }
+
+            /* Pre-process the capabilities. */
+            /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
+            PreProcessCapability(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+            PreProcessCapability(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
+
+            /* Set output. */
+            m_cached_program_id = loc.program_id;
+            m_cached_override_status = status;
+            *out_meta = *meta;
+
+            R_SUCCEED();
+        }
+
+        Result MetaLoader::LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, const char *ams_path, const char *sd_or_base_path, const char *base_path) {
+            if (m_cached_program_id != loc.program_id || m_cached_override_status != status) {
+                R_RETURN(this->LoadMeta(out_meta, loc, status, platform, false, ams_path, sd_or_base_path, base_path));
+            }
+            *out_meta = m_meta_cache.meta;
+            R_SUCCEED();
+        }
+
+        void MetaLoader::InvalidateMetaCache() {
+            /* Set the cached program id back to zero. */
+            m_cached_program_id = {};
+        }
+
     }
 
     /* API. */
     Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused) {
-        /* Set the cached program id back to zero. */
-        g_cached_program_id = {};
-
-        /* Try to load meta from file. */
-        fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
-        {
-            ON_SCOPE_EXIT { fs::CloseFile(file); };
-            R_TRY(LoadMetaFromFile(file, std::addressof(g_meta_cache)));
-        }
-
-        /* Patch meta. Start by setting all program ids to the current program id. */
-        Meta *meta = std::addressof(g_meta_cache.meta);
-        meta->acid->program_id_min = loc.program_id;
-        meta->acid->program_id_max = loc.program_id;
-        meta->aci->program_id      = loc.program_id;
-
-        /* For HBL, we need to copy some information from the base meta. */
-        if (status.IsHbl()) {
-            if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), SdOrBaseMetaPath, fs::OpenMode_Read))) {
-                ON_SCOPE_EXIT { fs::CloseFile(file); };
-
-
-                if (R_SUCCEEDED(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)))) {
-                    Meta *o_meta = std::addressof(g_original_meta_cache.meta);
-
-                    /* Fix pool partition. */
-                    if (hos::GetVersion() >= hos::Version_5_0_0) {
-                        meta->acid->flags = (meta->acid->flags & 0xFFFFFFC3) | (o_meta->acid->flags & 0x0000003C);
-                    }
-
-                    /* Fix flags. */
-                    const u16 program_info_flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(o_meta->aci_kac), o_meta->aci->kac_size / sizeof(util::BitPack32));
-                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
-                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
-                }
-            }
-
-            /* Perform address space override. */
-            if (status.HasOverrideAddressSpace()) {
-                /* Clear the existing address space. */
-                meta->npdm->flags &= ~Npdm::MetaFlag_AddressSpaceTypeMask;
-
-                /* Set the new address space flag. */
-                switch (status.GetOverrideAddressSpaceFlags()) {
-                    case cfg::impl::OverrideStatusFlag_AddressSpace32Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_32Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
-                    case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
-                    case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
-                    case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
-                    AMS_UNREACHABLE_DEFAULT_CASE();
-                }
-            }
-
-            /* When hbl is applet, adjust main thread priority. */
-            if ((MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
-                constexpr auto HblMainThreadPriorityApplication = 44;
-                constexpr auto HblMainThreadPriorityApplet      = 40;
-                if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
-                    meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
-                }
-            }
-
-            /* Fix the debug capabilities, to prevent needing a hbl recompilation. */
-            FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
-            FixDebugCapabilityForHbl(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
-        } else if (hos::GetVersion() >= hos::Version_10_0_0) {
-            /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
-            /* However, if we're an application, we are guaranteed a base code filesystem. */
-            if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None || ncm::IsApplicationId(loc.program_id)) {
-                R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
-                ON_SCOPE_EXIT { fs::CloseFile(file); };
-                R_TRY(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)));
-                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta), platform, unk_unused));
-                meta->modulus                 = g_original_meta_cache.meta.modulus;
-                meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
-            }
-        }
-
-        /* Pre-process the capabilities. */
-        /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
-        PreProcessCapability(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
-        PreProcessCapability(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
-
-        /* Set output. */
-        g_cached_program_id = loc.program_id;
-        g_cached_override_status = status;
-        *out_meta = *meta;
-
-        R_SUCCEED();
+        R_RETURN(g_meta_loader_for_code.LoadMeta(out_meta, loc, status, platform, unk_unused));
     }
 
     Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform) {
-        if (g_cached_program_id != loc.program_id || g_cached_override_status != status) {
-            R_RETURN(LoadMeta(out_meta, loc, status, platform, false));
-        }
-        *out_meta = g_meta_cache.meta;
-        R_SUCCEED();
+        R_RETURN(g_meta_loader_for_code.LoadMetaFromCache(out_meta, loc, status, platform));
     }
 
     void InvalidateMetaCache() {
-        /* Set the cached program id back to zero. */
-        g_cached_program_id = {};
+        g_meta_loader_for_code.InvalidateMetaCache();
+    }
+
+    Result LoadMetaForBrowserCoreDll(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform, bool unk_unused) {
+        R_RETURN(g_meta_loader_for_bdll.LoadMeta(out_meta, loc, status, platform, unk_unused));
+    }
+
+    Result LoadMetaFromCacheForBrowserCoreDll(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status, ncm::ContentMetaPlatform platform) {
+        R_RETURN(g_meta_loader_for_bdll.LoadMetaFromCache(out_meta, loc, status, platform));
+    }
+
+    void InvalidateMetaCacheForBrowserCoreDll() {
+        g_meta_loader_for_bdll.InvalidateMetaCache();
     }
 
 }

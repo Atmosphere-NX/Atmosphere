@@ -94,12 +94,13 @@ namespace ams::ldr {
         };
 
         enum Flag : u32 {
-            Flag_CompressedText = (1 << 0),
-            Flag_CompressedRo   = (1 << 1),
-            Flag_CompressedRw   = (1 << 2),
-            Flag_CheckHashText     = (1 << 3),
-            Flag_CheckHashRo       = (1 << 4),
-            Flag_CheckHashRw       = (1 << 5),
+            Flag_CompressedText   = (1 << 0),
+            Flag_CompressedRo     = (1 << 1),
+            Flag_CompressedRw     = (1 << 2),
+            Flag_CheckHashText    = (1 << 3),
+            Flag_CheckHashRo      = (1 << 4),
+            Flag_CheckHashRw      = (1 << 5),
+            Flag_PreventCodeReads = (1 << 6),
         };
 
         struct SegmentInfo {
@@ -180,6 +181,8 @@ namespace ams::ldr {
 
             AcidFlag_PoolPartitionShift = 2,
             AcidFlag_PoolPartitionMask = (0xF << AcidFlag_PoolPartitionShift),
+
+            AcidFlag_LoadBrowserCoreDll = (1 << 7),
         };
 
         enum PoolPartition {
