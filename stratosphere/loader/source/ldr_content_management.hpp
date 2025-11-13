@@ -70,7 +70,7 @@ namespace ams::ldr {
     constexpr inline const char * const AtmosphereCompatMountName         = "ams-cmpt";
     constexpr inline const char * const AtmosphereBrowserCoreDllMountName = "ams-bdll";
     constexpr inline const char * const SdOrCodeMountName                 = "sd-code";
-    constexpr inline const char * const SdOrCompatMountName               = "sd-code";
+    constexpr inline const char * const SdOrCompatMountName               = "sd-cmpt";
     constexpr inline const char * const SdOrBrowserCoreDllMountName       = "sd-bdll";
     constexpr inline const char * const CodeMountName                     = "code";
     constexpr inline const char * const CompatMountName                   = "cmpt";
