@@ -709,7 +709,7 @@ namespace ams::kern::board::nintendo::nx {
         /* Install interrupt handler. */
         #if defined(MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT)
         {
-            Kernel::GetInterruptManager().BindHandler(std::addressof(g_mc_interrupt_task), KInterruptName_MemoryController, GetCurrentCoreId(), KInterruptController::PriorityLevel_High, true, true);
+            MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(std::addressof(g_mc_interrupt_task), KInterruptName_MemoryController, GetCurrentCoreId(), KInterruptController::PriorityLevel_High, true, true));
         }
         #endif
     }
