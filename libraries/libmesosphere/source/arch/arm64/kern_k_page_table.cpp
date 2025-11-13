@@ -151,7 +151,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KPageTable::Finalize() {
+    void KPageTable::Finalize() {
         /* Only process tables should be finalized. */
         MESOSPHERE_ASSERT(!this->IsKernel());
 
@@ -269,8 +269,6 @@ namespace ams::kern::arch::arm64 {
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
         }
-
-        R_SUCCEED();
     }
 
     Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
