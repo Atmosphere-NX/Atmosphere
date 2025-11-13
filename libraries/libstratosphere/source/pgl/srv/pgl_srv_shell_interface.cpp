@@ -67,6 +67,10 @@ namespace ams::pgl::srv {
         R_SUCCEED();
     }
 
+    Result ShellInterfaceCommon::GetProcessId(os::ProcessId *out, ncm::ProgramId program_id) {
+        R_RETURN(pm::shell::GetProcessId(out, program_id));
+    }
+
     Result ShellInterfaceCommon::TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
         AMS_UNUSED(arg_size);
         R_RETURN(pgl::srv::TriggerApplicationSnapShotDumper(dump_type, static_cast<const char *>(arg)));
@@ -114,6 +118,10 @@ namespace ams::pgl::srv {
 
     Result ShellInterfaceCmif::TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) {
         R_RETURN(this->TriggerApplicationSnapShotDumperImpl(dump_type, arg.GetPointer(), arg.GetSize()));
+    }
+
+    Result ShellInterfaceCmif::GetProcessId(ams::sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
+        R_RETURN(ShellInterfaceCommon::GetProcessId(out.GetPointer(), program_id));
     }
 
     Result ShellInterfaceCmif::GetShellEventObserver(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out) {
@@ -168,6 +176,10 @@ namespace ams::pgl::srv {
 
     Result ShellInterfaceTipc::EnableApplicationAllThreadDumpOnCrash(bool enabled) {
         R_RETURN(this->EnableApplicationAllThreadDumpOnCrashImpl(enabled));
+    }
+
+    Result ShellInterfaceTipc::GetProcessId(ams::tipc::Out<os::ProcessId> out, ncm::ProgramId program_id) {
+        R_RETURN(ShellInterfaceCommon::GetProcessId(out.GetPointer(), program_id));
     }
 
     Result ShellInterfaceTipc::GetShellEventObserver(ams::tipc::OutMoveHandle out) {

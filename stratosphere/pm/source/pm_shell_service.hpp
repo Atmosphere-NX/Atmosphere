@@ -34,6 +34,7 @@ namespace ams::pm {
             Result BoostApplicationThreadResourceLimit();
             void   GetBootFinishedEventHandle(sf::OutCopyHandle out);
             Result BoostSystemThreadResourceLimit();
+            Result GetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
     };
     static_assert(pm::impl::IsIShellInterface<ShellService>);
 
