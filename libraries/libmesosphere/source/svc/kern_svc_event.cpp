@@ -42,6 +42,7 @@ namespace ams::kern::svc {
                 KScopedAutoObject event = handle_table.GetObject<KEvent>(event_handle);
                 if (event.IsNotNull()) {
                     event->Clear();
+                    R_SUCCEED();
                 }
             }
 
@@ -54,6 +55,7 @@ namespace ams::kern::svc {
                     } else {
                         readable_event->Clear();
                     }
+                    R_SUCCEED();
                 }
             }
 
