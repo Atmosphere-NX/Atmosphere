@@ -29,21 +29,22 @@ namespace ams::ldr {
 
         /* Convenience defines. */
         constexpr size_t SystemResourceSizeMax = 0x1FE00000;
+        constexpr size_t AutoLoadModuleSizeMax = 0x800000000;
 
         /* Types. */
         enum NsoIndex {
             Nso_Rtld    =  0,
             Nso_Main    =  1,
-            Nso_Compat0 =  2,
-            Nso_Compat1 =  3,
-            Nso_Compat2 =  4,
-            Nso_Compat3 =  5,
-            Nso_Compat4 =  6,
-            Nso_Compat5 =  7,
-            Nso_Compat6 =  8,
-            Nso_Compat7 =  9,
-            Nso_Compat8 = 10,
-            Nso_Compat9 = 11,
+            Nso_Wkc0    =  2,
+            Nso_Wkc1    =  3,
+            Nso_Wkc2    =  4,
+            Nso_Wkc3    =  5,
+            Nso_Wkc4    =  6,
+            Nso_Wkc5    =  7,
+            Nso_Wkc6    =  8,
+            Nso_Wkc7    =  9,
+            Nso_Wkc8    = 10,
+            Nso_Wkc9    = 11,
             Nso_SubSdk0 = 12,
             Nso_SubSdk1 = 13,
             Nso_SubSdk2 = 14,
@@ -61,16 +62,16 @@ namespace ams::ldr {
         constexpr inline const char *NsoPaths[Nso_Count] = {
             ENCODE_ATMOSPHERE_CODE_PATH("/rtld"),
             ENCODE_ATMOSPHERE_CODE_PATH("/main"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat0"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat1"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat2"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat3"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat4"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat5"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat6"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat7"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat8"),
-            ENCODE_ATMOSPHERE_CMPT_PATH("/compat9"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc0"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc1"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc2"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc3"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc4"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc5"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc6"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc7"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc8"),
+            ENCODE_ATMOSPHERE_BDLL_PATH("/wkc9"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk0"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk1"),
             ENCODE_ATMOSPHERE_CODE_PATH("/subsdk2"),
@@ -97,8 +98,15 @@ namespace ams::ldr {
             size_t    nso_size[Nso_Count];
         };
 
+        struct AutoLoadModuleInfo {
+            bool has_rtld;
+            bool has_main;
+            bool has_sdk;
+            bool has_subsdk;
+            bool has_nso[Nso_Count];
+        };
+
         /* Global NSO header cache. */
-        bool g_has_nso[Nso_Count];
         NsoHeader g_nso_headers[Nso_Count];
 
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
@@ -161,12 +169,30 @@ namespace ams::ldr {
             return static_cast<Acid::PoolPartition>((meta->acid->flags & Acid::AcidFlag_PoolPartitionMask) >> Acid::AcidFlag_PoolPartitionShift);
         }
 
-        Result LoadAutoLoadHeaders(NsoHeader *nso_headers, bool *has_nso) {
+        Result LoadAutoLoadHeaders(NsoHeader *nso_headers, AutoLoadModuleInfo *ali, u32 acid_flags) {
             /* Clear NSOs. */
             std::memset(nso_headers, 0, sizeof(*nso_headers) * Nso_Count);
-            std::memset(has_nso, 0, sizeof(*has_nso) * Nso_Count);
+            *ali = {};
 
             for (size_t i = 0; i < Nso_Count; i++) {
+                /* Only load browser DLLs if acid flags say to do so. */
+                switch (i) {
+                    case Nso_Wkc0:
+                    case Nso_Wkc1:
+                    case Nso_Wkc2:
+                    case Nso_Wkc3:
+                    case Nso_Wkc4:
+                    case Nso_Wkc5:
+                    case Nso_Wkc6:
+                    case Nso_Wkc7:
+                    case Nso_Wkc8:
+                    case Nso_Wkc9:
+                        if ((acid_flags & Acid::AcidFlag_LoadBrowserCoreDll) == 0) {
+                            continue;
+                        }
+                        break;
+                }
+
                 fs::FileHandle file;
                 if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), GetNsoPath(i), fs::OpenMode_Read))) {
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
@@ -176,27 +202,82 @@ namespace ams::ldr {
                     R_TRY(fs::ReadFile(std::addressof(read_size), file, 0, nso_headers + i, sizeof(*nso_headers)));
                     R_UNLESS(read_size == sizeof(*nso_headers), ldr::ResultInvalidNso());
 
-                    has_nso[i] = true;
+                    /* Note nso is present. */
+                    switch (i) {
+                        case Nso_Rtld:
+                            ali->has_rtld = true;
+                            break;
+                        case Nso_Main:
+                            ali->has_main = true;
+                            break;
+                        case Nso_SubSdk0:
+                        case Nso_SubSdk1:
+                        case Nso_SubSdk2:
+                        case Nso_SubSdk3:
+                        case Nso_SubSdk4:
+                        case Nso_SubSdk5:
+                        case Nso_SubSdk6:
+                        case Nso_SubSdk7:
+                        case Nso_SubSdk8:
+                        case Nso_SubSdk9:
+                            ali->has_subsdk = true;
+                            break;
+                        case Nso_Sdk:
+                            ali->has_sdk = true;
+                            break;
+                    }
+                    ali->has_nso[i] = true;
                 }
             }
 
             R_SUCCEED();
         }
 
-        Result CheckAutoLoad(const NsoHeader *nso_headers, const bool *has_nso) {
+        Result CheckAutoLoad(const NsoHeader *nso_headers, const AutoLoadModuleInfo *ali, u32 acid_flags) {
             /* We must always have a main. */
-            R_UNLESS(has_nso[Nso_Main], ldr::ResultInvalidNso());
+            R_UNLESS(ali->has_main, ldr::ResultInvalidNso());
 
-            /* If we don't have an RTLD, we must only have a main. */
-            if (!has_nso[Nso_Rtld]) {
-                for (size_t i = Nso_Main + 1; i < Nso_Count; i++) {
-                    R_UNLESS(!has_nso[i], ldr::ResultInvalidNso());
-                }
+            /* All NSOs must not be --X. */
+            /* This is "probably" not checked on Ounce? */
+            for (size_t i = 0; i < Nso_Count; ++i) {
+                R_UNLESS((nso_headers[i].flags & NsoHeader::Flag_PreventCodeReads) == 0, ldr::ResultInvalidNso());
             }
 
-            /* All NSOs must have zero text offset. */
+            /* If we don't have an RTLD, we must only have a main. */
+            const bool has_browser_dll = (acid_flags & Acid::AcidFlag_LoadBrowserCoreDll) != 0;
+            if (ali->has_rtld) {
+                /* If we have rtld, we must also have sdk. */
+                R_UNLESS(ali->has_sdk, ldr::ResultInvalidNso());
+
+                /* We must also only have one of [subsdk, browser dll]. */
+                R_UNLESS(!(ali->has_subsdk && has_browser_dll), ldr::ResultInvalidNso());
+            } else {
+                /* If we don't have rtld, we are not browser, and must not have browser core dll. */
+                R_UNLESS(!has_browser_dll, ldr::ResultInvalidNso());
+            }
+
+            /* Check NSO extents. */
             for (size_t i = 0; i < Nso_Count; i++) {
+                /* Only validate the nsos we have. */
+                if (!ali->has_nso[i]) {
+                    continue;
+                }
+
+                /* NSOs must have page-aligned segments. */
+                R_UNLESS(util::IsAligned(nso_headers[i].text_dst_offset, os::MemoryPageSize), ldr::ResultInvalidNso());
+                R_UNLESS(util::IsAligned(nso_headers[i].ro_dst_offset,   os::MemoryPageSize), ldr::ResultInvalidNso());
+                R_UNLESS(util::IsAligned(nso_headers[i].rw_dst_offset,   os::MemoryPageSize), ldr::ResultInvalidNso());
+
+                /* NSOs must have zero text offset. */
                 R_UNLESS(nso_headers[i].text_dst_offset == 0, ldr::ResultInvalidNso());
+
+                /* NSO .text must precede .rodata. */
+                const size_t text_end = static_cast<size_t>(nso_headers[i].text_dst_offset) + static_cast<size_t>(nso_headers[i].text_size);
+                R_UNLESS(text_end <= static_cast<size_t>(nso_headers[i].ro_dst_offset), ldr::ResultInvalidNso());
+
+                /* NSO .rodata must precede .rwdata. */
+                const size_t ro_end   = static_cast<size_t>(nso_headers[i].ro_dst_offset)   + static_cast<size_t>(nso_headers[i].ro_size);
+                R_UNLESS(ro_end <= static_cast<size_t>(nso_headers[i].rw_dst_offset), ldr::ResultInvalidNso());
             }
 
             R_SUCCEED();
@@ -433,7 +514,7 @@ namespace ams::ldr {
             return rand % (max + 1);
         }
 
-        Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
+        Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const AutoLoadModuleInfo *ali, const ArgumentStore::Entry *argument) {
             /* Clear output. */
             out->args_address = 0;
             out->args_size = 0;
@@ -445,22 +526,32 @@ namespace ams::ldr {
 
             /* Calculate base offsets. */
             for (size_t i = 0; i < Nso_Count; i++) {
-                if (has_nso[i]) {
+                if (ali->has_nso[i]) {
                     out->nso_address[i] = total_size;
-                    const size_t text_end = nso_headers[i].text_dst_offset + nso_headers[i].text_size;
-                    const size_t ro_end   = nso_headers[i].ro_dst_offset   + nso_headers[i].ro_size;
-                    const size_t rw_end   = nso_headers[i].rw_dst_offset   + nso_headers[i].rw_size + nso_headers[i].bss_size;
+                    const size_t text_end = static_cast<size_t>(nso_headers[i].text_dst_offset) + static_cast<size_t>(nso_headers[i].text_size);
+                    const size_t ro_end   = static_cast<size_t>(nso_headers[i].ro_dst_offset)   + static_cast<size_t>(nso_headers[i].ro_size);
+                    const size_t rw_end   = static_cast<size_t>(nso_headers[i].rw_dst_offset)   + static_cast<size_t>(nso_headers[i].rw_size);
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize);
+                    out->nso_size[i] += static_cast<size_t>(nso_headers[i].bss_size);
 
+                    const size_t aligned_up_size = util::AlignUp(out->nso_size[i], os::MemoryPageSize) & (AutoLoadModuleSizeMax - 1);
+                    R_UNLESS(out->nso_size[i] <= aligned_up_size, ldr::ResultInvalidNso());
+                    R_UNLESS(aligned_up_size > 0,                 ldr::ResultInvalidNso());
+
+                    out->nso_size[i] = aligned_up_size;
+
+                    R_UNLESS(util::CanAddWithoutOverflow(total_size, out->nso_size[i]), ldr::ResultInvalidNso());
                     total_size += out->nso_size[i];
 
                     if (!argument_allocated && argument != nullptr) {
                         out->args_address = total_size;
                         out->args_size    = util::AlignUp(2 * sizeof(u32) + argument->argument_size * 2 + ArgumentStore::ArgumentBufferSize, os::MemoryPageSize);
+
+                        R_UNLESS(util::CanAddWithoutOverflow(total_size, out->args_size), ldr::ResultInvalidNso());
                         total_size += out->args_size;
+
                         argument_allocated = true;
                     }
                 }
@@ -508,11 +599,13 @@ namespace ams::ldr {
             /* Set out. */
             aslr_start += aslr_slide;
             for (size_t i = 0; i < Nso_Count; i++) {
-                if (has_nso[i]) {
+                if (ali->has_nso[i]) {
+                    R_UNLESS(util::CanAddWithoutOverflow(out->nso_address[i], aslr_start), ldr::ResultInvalidNso());
                     out->nso_address[i] += aslr_start;
                 }
             }
             if (out->args_address) {
+                R_UNLESS(util::CanAddWithoutOverflow(out->args_address, aslr_start), ldr::ResultInvalidNso());
                 out->args_address += aslr_start;
             }
 
@@ -555,7 +648,7 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size, bool prevent_code_reads) {
+        Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
             /* Map and read data from file. */
             {
                 /* Map the process memory. */
@@ -574,9 +667,9 @@ namespace ams::ldr {
                                                       (nso_header->flags & NsoHeader::Flag_CheckHashRw) != 0, map_address + nso_header->rw_dst_offset, map_address + nso_size));
 
                 /* Clear unused space to zero. */
-                const size_t text_end = nso_header->text_dst_offset + nso_header->text_size;
-                const size_t ro_end   = nso_header->ro_dst_offset   + nso_header->ro_size;
-                const size_t rw_end   = nso_header->rw_dst_offset   + nso_header->rw_size;
+                const size_t text_end = static_cast<size_t>(nso_header->text_dst_offset) + static_cast<size_t>(nso_header->text_size);
+                const size_t ro_end   = static_cast<size_t>(nso_header->ro_dst_offset)   + static_cast<size_t>(nso_header->ro_size);
+                const size_t rw_end   = static_cast<size_t>(nso_header->rw_dst_offset)   + static_cast<size_t>(nso_header->rw_size);
                 std::memset(reinterpret_cast<void *>(map_address + 0),        0, nso_header->text_dst_offset);
                 std::memset(reinterpret_cast<void *>(map_address + text_end), 0, nso_header->ro_dst_offset - text_end);
                 std::memset(reinterpret_cast<void *>(map_address + ro_end),   0, nso_header->rw_dst_offset - ro_end);
@@ -594,6 +687,7 @@ namespace ams::ldr {
             const size_t ro_size   = util::AlignUp(nso_header->ro_size, os::MemoryPageSize);
             const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
             if (text_size) {
+                const bool prevent_code_reads = (nso_header->flags & NsoHeader::Flag_PreventCodeReads);
                 R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, prevent_code_reads ? os::MemoryPermission_ExecuteOnly : os::MemoryPermission_ReadExecute));
             }
             if (ro_size) {
@@ -606,15 +700,15 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument, bool prevent_code_reads) {
+        Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const AutoLoadModuleInfo *ali, const ArgumentStore::Entry *argument) {
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
-                if (has_nso[i]) {
+                if (ali->has_nso[i]) {
                     fs::FileHandle file;
                     R_TRY(fs::OpenFile(std::addressof(file), GetNsoPath(i), fs::OpenMode_Read));
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-                    R_TRY(LoadAutoLoadModule(process_info->process_handle, file, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i], prevent_code_reads));
+                    R_TRY(LoadAutoLoadModule(process_info->process_handle, file, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
                 }
             }
 
@@ -641,13 +735,13 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result CreateProcessAndLoadAutoLoadModules(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
+        Result CreateProcessAndLoadAutoLoadModules(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const AutoLoadModuleInfo *ali, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
             /* Get CreateProcessParameter. */
             svc::CreateProcessParameter param;
             R_TRY(GetCreateProcessParameter(std::addressof(param), meta, flags, resource_limit));
 
             /* Decide on an NSO layout. */
-            R_TRY(DecideAddressSpaceLayout(out, std::addressof(param), nso_headers, has_nso, argument));
+            R_TRY(DecideAddressSpaceLayout(out, std::addressof(param), nso_headers, ali, argument));
 
             /* Actually create process. */
             svc::Handle process_handle;
@@ -658,7 +752,7 @@ namespace ams::ldr {
             ON_RESULT_FAILURE { svc::CloseHandle(process_handle); };
 
             /* Load all auto load modules. */
-            R_RETURN(LoadAutoLoadModules(out, nso_headers, has_nso, argument, (meta->npdm->flags & ldr::Npdm::MetaFlag_PreventCodeReads) != 0));
+            R_RETURN(LoadAutoLoadModules(out, nso_headers, ali, argument));
         }
 
     }
@@ -667,7 +761,7 @@ namespace ams::ldr {
     Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit, const ldr::ProgramAttributes &attrs) {
         /* Mount code. */
         AMS_UNUSED(path);
-        ScopedCodeMount mount(loc, override_status, attrs);
+        ScopedCodeMountForCode mount(loc, override_status, attrs);
         R_TRY(mount.GetResult());
 
         /* Load meta, possibly from cache. */
@@ -677,13 +771,35 @@ namespace ams::ldr {
         /* Validate meta. */
         R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
 
+        /* If we should, load/validate the browser core dll. */
+        util::optional<ScopedCodeMountForBrowserCoreDll> bdll_mount;
+        if ((meta.acid->flags & Acid::AcidFlag_LoadBrowserCoreDll)) {
+            /* NOTE: I'm unsure whether we should be getting a fresh override status (allowing for different override between main and bdll?) */
+            /* or whether we should be using the main override status. Going to go with main, for sanity's sake. */
+            /* Also noting that Nintendo always passes ProgramAttributes=0 here, but this "should" be different on Ounce? */
+            /* Kind of unclear how to handle this without knowing what exactly is being ifdef'd. */
+            const ncm::ProgramLocation bdll_loc            = ncm::ProgramLocation::Make(ncm::SystemProgramId::BrowserCoreDll, ncm::StorageId::BuiltInSystem);
+            const cfg::OverrideStatus bdll_override_status = override_status;
+            const ldr::ProgramAttributes bdll_attrs        = attrs;
+            bdll_mount.emplace(bdll_loc, bdll_override_status, bdll_attrs);
+            R_TRY(bdll_mount->GetResult());
+
+            /* Load browser dll meta, possibly from cache. */
+            Meta bdll_meta;
+            R_TRY(LoadMetaFromCacheForBrowserCoreDll(std::addressof(bdll_meta), bdll_loc, bdll_override_status, bdll_attrs.platform));
+
+            /* Validate browser dll meta. */
+            R_TRY(ValidateMeta(std::addressof(bdll_meta), loc, mount.GetCodeVerificationData()));
+        }
+
         /* Load, validate NSO headers. */
-        R_TRY(LoadAutoLoadHeaders(g_nso_headers, g_has_nso));
-        R_TRY(CheckAutoLoad(g_nso_headers, g_has_nso));
+        AutoLoadModuleInfo auto_load_info = {};
+        R_TRY(LoadAutoLoadHeaders(g_nso_headers, std::addressof(auto_load_info), meta.acid->flags));
+        R_TRY(CheckAutoLoad(g_nso_headers, std::addressof(auto_load_info), meta.acid->flags));
 
         /* Actually create the process and load NSOs into process memory. */
         ProcessInfo info;
-        R_TRY(CreateProcessAndLoadAutoLoadModules(std::addressof(info), std::addressof(meta), g_nso_headers, g_has_nso, argument, flags, resource_limit));
+        R_TRY(CreateProcessAndLoadAutoLoadModules(std::addressof(info), std::addressof(meta), g_nso_headers, std::addressof(auto_load_info), argument, flags, resource_limit));
 
         /* Register NSOs with the RoManager. */
         {
@@ -696,7 +812,7 @@ namespace ams::ldr {
 
             /* Register all NSOs. */
             for (size_t i = 0; i < Nso_Count; i++) {
-                if (g_has_nso[i]) {
+                if (auto_load_info.has_nso[i]) {
                     RoManager::GetInstance().AddNso(pin_id, g_nso_headers[i].module_id, info.nso_address[i], info.nso_size[i]);
                 }
             }
@@ -727,7 +843,7 @@ namespace ams::ldr {
         {
             AMS_UNUSED(path);
 
-            ScopedCodeMount mount(loc, attrs);
+            ScopedCodeMountForCode mount(loc, attrs);
             R_TRY(mount.GetResult());
             R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus(), attrs.platform, false));
             if (out_status != nullptr) {
