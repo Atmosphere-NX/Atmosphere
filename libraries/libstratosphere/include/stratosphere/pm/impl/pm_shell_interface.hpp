@@ -30,7 +30,8 @@
     AMS_SF_METHOD_INFO(C, H,  7,    Result, BoostSystemMemoryResourceLimit,                  (u64 boost_size),                                                                    (boost_size))                                     \
     AMS_SF_METHOD_INFO(C, H,  8,    Result, BoostApplicationThreadResourceLimit,             (),                                                                                  ())                                               \
     AMS_SF_METHOD_INFO(C, H,  9,    void,   GetBootFinishedEventHandle,                      (sf::OutCopyHandle out),                                                             (out),                        hos::Version_8_0_0) \
-    AMS_SF_METHOD_INFO(C, H, 10,    Result, BoostSystemThreadResourceLimit,                  (),                                                                                  ())
+    AMS_SF_METHOD_INFO(C, H, 10,    Result, BoostSystemThreadResourceLimit,                  (),                                                                                  ())                                               \
+    AMS_SF_METHOD_INFO(C, H, 12,    Result, GetProcessId,                                    (sf::Out<os::ProcessId> out, ncm::ProgramId program_id),                             (out, program_id))
 
 AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IShellInterface, AMS_PM_I_SHELL_INTERFACE_INTERFACE_INFO, 0x387D60C0)
 
@@ -45,6 +46,7 @@ AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IShellInterface, AMS_PM_I_SHELL_INTERFACE
     AMS_SF_METHOD_INFO(C, H, 7,     void,   NotifyBootFinished,                              (),                                                                                  ())                                               \
     AMS_SF_METHOD_INFO(C, H, 8,     Result, GetApplicationProcessIdForShell,                 (sf::Out<os::ProcessId> out),                                                        (out))                                            \
     AMS_SF_METHOD_INFO(C, H, 9,     Result, BoostSystemMemoryResourceLimit,                  (u64 boost_size),                                                                    (boost_size),                 hos::Version_4_0_0) \
-    AMS_SF_METHOD_INFO(C, H, 10,    Result, BoostSystemThreadResourceLimit,                  (),                                                                                  ())
+    AMS_SF_METHOD_INFO(C, H, 10,    Result, BoostSystemThreadResourceLimit,                  (),                                                                                  ())                                               \
+    AMS_SF_METHOD_INFO(C, H, 12,    Result, GetProcessId,                                    (sf::Out<os::ProcessId> out, ncm::ProgramId program_id),                             (out, program_id))
 
 AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDeprecatedShellInterface, AMS_PM_I_DEPRECATED_SHELL_INTERFACE_INTERFACE_INFO, 0x387D60C0)

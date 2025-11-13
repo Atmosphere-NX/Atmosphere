@@ -37,6 +37,7 @@ namespace ams::pgl::srv {
             Result EnableApplicationCrashReportImpl(bool enabled);
             Result IsApplicationCrashReportEnabledImpl(bool *out);
             Result EnableApplicationAllThreadDumpOnCrashImpl(bool enabled);
+            Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id);
             Result TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size);
     };
 
@@ -62,6 +63,7 @@ namespace ams::pgl::srv {
             Result EnableApplicationCrashReport(bool enabled);
             Result IsApplicationCrashReportEnabled(ams::sf::Out<bool> out);
             Result EnableApplicationAllThreadDumpOnCrash(bool enabled);
+            Result GetProcessId(ams::sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
             Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg);
 
             Result GetShellEventObserver(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out);
@@ -86,6 +88,7 @@ namespace ams::pgl::srv {
             Result EnableApplicationCrashReport(bool enabled);
             Result IsApplicationCrashReportEnabled(ams::tipc::Out<bool> out);
             Result EnableApplicationAllThreadDumpOnCrash(bool enabled);
+            Result GetProcessId(ams::tipc::Out<os::ProcessId> out, ncm::ProgramId program_id);
             Result GetShellEventObserver(ams::tipc::OutMoveHandle out);
     };
     static_assert(pgl::tipc::IsIShellInterface<ShellInterfaceTipc>);

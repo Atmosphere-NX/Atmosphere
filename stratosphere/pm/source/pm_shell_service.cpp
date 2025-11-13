@@ -88,4 +88,8 @@ namespace ams::pm {
         R_RETURN(impl::BoostSystemThreadResourceLimit());
     }
 
+    Result ShellService::GetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
+        R_RETURN(impl::GetProcessId(out.GetPointer(), program_id));
+    }
+
 }

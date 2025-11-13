@@ -58,6 +58,11 @@ namespace ams::pm::shell {
     Result BoostSystemThreadResourceLimit() {
         R_RETURN(::pmshellBoostSystemThreadResourceLimit());
     }
+
+    Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id) {
+        static_assert(sizeof(*out_process_id) == sizeof(u64));
+        R_RETURN(::pmshellGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id)));
+    }
     #endif
 
 }
