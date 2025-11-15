@@ -22,7 +22,7 @@ namespace ams::htcfs {
     FileServiceObject::FileServiceObject(s32 handle) : m_handle(handle) { /* ... */ }
 
     FileServiceObject::~FileServiceObject() {
-        htcfs::GetClient().CloseFile(m_handle);
+        static_cast<void>(htcfs::GetClient().CloseFile(m_handle));
     }
 
     Result FileServiceObject::ReadFile(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, ams::fs::ReadOption option) {

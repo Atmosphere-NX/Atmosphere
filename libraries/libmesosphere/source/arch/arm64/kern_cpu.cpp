@@ -215,7 +215,7 @@ namespace ams::kern::arch::arm64::cpu {
                     KThread::Register(new_thread);
 
                     /* Run the thread. */
-                    new_thread->Run();
+                    MESOSPHERE_R_ABORT_UNLESS(new_thread->Run());
                 }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
@@ -508,16 +508,16 @@ namespace ams::kern::arch::arm64::cpu {
         g_cache_operation_handler.Initialize(core_id);
 
         /* Bind all handlers to the relevant interrupts. */
-        Kernel::GetInterruptManager().BindHandler(std::addressof(g_cache_operation_handler),              KInterruptName_CacheOperation,     core_id, KInterruptController::PriorityLevel_High,      false, false);
-        Kernel::GetInterruptManager().BindHandler(std::addressof(g_thread_termination_handler),           KInterruptName_ThreadTerminate,    core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
-        Kernel::GetInterruptManager().BindHandler(std::addressof(g_core_barrier_handler),                 KInterruptName_CoreBarrier,        core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(std::addressof(g_cache_operation_handler),              KInterruptName_CacheOperation,     core_id, KInterruptController::PriorityLevel_High,      false, false));
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(std::addressof(g_thread_termination_handler),           KInterruptName_ThreadTerminate,    core_id, KInterruptController::PriorityLevel_Scheduler, false, false));
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(std::addressof(g_core_barrier_handler),                 KInterruptName_CoreBarrier,        core_id, KInterruptController::PriorityLevel_Scheduler, false, false));
 
         /* If we should, enable user access to the performance counter registers. */
         if (KTargetSystem::IsUserPmuAccessEnabled()) { SetPmUserEnrEl0(1ul); }
 
         /* If we should, enable the kernel performance counter interrupt handler. */
         #if defined(MESOSPHERE_ENABLE_PERFORMANCE_COUNTER)
-        Kernel::GetInterruptManager().BindHandler(std::addressof(g_performance_counter_handler[core_id]), KInterruptName_PerformanceCounter, core_id, KInterruptController::PriorityLevel_Timer,     false, false);
+        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetInterruptManager().BindHandler(std::addressof(g_performance_counter_handler[core_id]), KInterruptName_PerformanceCounter, core_id, KInterruptController::PriorityLevel_Timer,     false, false));
         #endif
     }
 

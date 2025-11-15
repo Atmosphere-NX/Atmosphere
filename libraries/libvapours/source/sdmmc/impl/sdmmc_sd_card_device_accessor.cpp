@@ -558,11 +558,11 @@ namespace ams::sdmmc::impl {
         /* NOTE: Nintendo accepts a failure. */
         if (R_SUCCEEDED(this->IssueCommandAppCmd(DeviceState_Tran))) {
             /* NOTE: Nintendo does not check the result of this. */
-            this->IssueCommandClearCardDetect();
+            static_cast<void>(this->IssueCommandClearCardDetect());
         }
 
         /* NOTE: Nintendo does not check the result of this. */
-        BaseDeviceAccessor::IssueCommandSendStatus();
+        static_cast<void>(BaseDeviceAccessor::IssueCommandSendStatus());
     }
 
     Result SdCardDeviceAccessor::StartupSdCardDevice(BusWidth max_bw, SpeedMode max_sm, void *wb, size_t wb_size) {

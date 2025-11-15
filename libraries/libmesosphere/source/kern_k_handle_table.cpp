@@ -17,7 +17,7 @@
 
 namespace ams::kern {
 
-    Result KHandleTable::Finalize() {
+    void KHandleTable::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
         /* Get the table and clear our record of it. */
@@ -35,8 +35,6 @@ namespace ams::kern {
                 obj->Close();
             }
         }
-
-        R_SUCCEED();
     }
 
     bool KHandleTable::Remove(ams::svc::Handle handle) {

@@ -285,23 +285,23 @@ namespace ams::util {
                 return impl::AtomicCompareExchangeStrongImpl<Order, T>(this->GetStoragePointer(), expected, desired);
             }
 
-            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                          \
-                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
-                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) {                                                                                  \
-                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
-                    volatile StorageType * const p = this->GetStoragePointer();                                                                             \
-                                                                                                                                                            \
-                    StorageType current;                                                                                                                    \
-                    do {                                                                                                                                    \
-                        current = impl::LoadAcquireExclusiveForAtomic<StorageType>(p);                                                                      \
-                    } while (AMS_UNLIKELY(!impl::StoreReleaseExclusiveForAtomic<StorageType>(p, ConvertToStorage(ConvertToType(current) _OPERATOR_ arg)))); \
-                    return ConvertToType(current);                                                                                                          \
-                }                                                                                                                                           \
-                                                                                                                                                            \
-                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
-                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) {                                                                                \
-                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
-                    return this->Fetch ## _OPERATION_(arg) _OPERATOR_ arg;                                                                                  \
+            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                                                                    \
+                template<std::memory_order Order = std::memory_order_seq_cst, bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type> \
+                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) {                                                                                                                            \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                                                                        \
+                    volatile StorageType * const p = this->GetStoragePointer();                                                                                                                       \
+                                                                                                                                                                                                      \
+                    StorageType current;                                                                                                                                                              \
+                    do {                                                                                                                                                                              \
+                        current = impl::LoadExclusiveForAtomicByMemoryOrder<Order, StorageType>(p);                                                                                                   \
+                    } while (AMS_UNLIKELY((!impl::StoreExclusiveForAtomicByMemoryOrder<Order, StorageType>(p, ConvertToStorage(ConvertToType(current) _OPERATOR_ arg)))));                            \
+                    return ConvertToType(current);                                                                                                                                                    \
+                }                                                                                                                                                                                     \
+                                                                                                                                                                                                      \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>                                                      \
+                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) {                                                                                                                          \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                                                                        \
+                    return this->Fetch ## _OPERATION_ (arg) _OPERATOR_ arg;                                                                                                                           \
                 }
 
             AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Add, +, true)
@@ -389,23 +389,23 @@ namespace ams::util {
                 return impl::AtomicCompareExchangeStrongImpl<Order, T>(this->GetStoragePointer(), expected, desired);
             }
 
-            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                          \
-                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
-                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) const {                                                                            \
-                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
-                    volatile StorageType * const p = this->GetStoragePointer();                                                                             \
-                                                                                                                                                            \
-                    StorageType current;                                                                                                                    \
-                    do {                                                                                                                                    \
-                        current = impl::LoadAcquireExclusiveForAtomic<StorageType>(p);                                                                      \
-                    } while (AMS_UNLIKELY(!impl::StoreReleaseExclusiveForAtomic<StorageType>(p, ConvertToStorage(ConvertToType(current) _OPERATOR_ arg)))); \
-                    return ConvertToType(current);                                                                                                          \
-                }                                                                                                                                           \
-                                                                                                                                                            \
-                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
-                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) const {                                                                          \
-                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
-                    return this->Fetch ## _OPERATION_(arg) _OPERATOR_ arg;                                                                                  \
+            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                                                                    \
+                template<std::memory_order Order = std::memory_order_seq_cst, bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type> \
+                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) const {                                                                                                                      \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                                                                        \
+                    volatile StorageType * const p = this->GetStoragePointer();                                                                                                                       \
+                                                                                                                                                                                                      \
+                    StorageType current;                                                                                                                                                              \
+                    do {                                                                                                                                                                              \
+                        current = impl::LoadExclusiveForAtomicByMemoryOrder<Order, StorageType>(p);                                                                                                   \
+                    } while (AMS_UNLIKELY((!impl::StoreExclusiveForAtomicByMemoryOrder<Order, StorageType>(p, ConvertToStorage(ConvertToType(current) _OPERATOR_ arg)))));                            \
+                    return ConvertToType(current);                                                                                                                                                    \
+                }                                                                                                                                                                                     \
+                                                                                                                                                                                                      \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>                                                      \
+                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) const {                                                                                                                    \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                                                                        \
+                    return this->Fetch ## _OPERATION_(arg) _OPERATOR_ arg;                                                                                                                            \
                 }
 
             AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Add, +, true)

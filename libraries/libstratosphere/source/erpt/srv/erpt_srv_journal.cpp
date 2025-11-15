@@ -42,7 +42,7 @@ namespace ams::erpt::srv {
 
         /* Close and commit the stream. */
         stream.CloseStream();
-        stream.CommitStream();
+        R_TRY(stream.CommitStream());
 
         R_SUCCEED();
     }

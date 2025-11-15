@@ -78,12 +78,12 @@ namespace ams::fs {
 
     int GetFileOpenMode(FileHandle handle) {
         const int mode = Get(handle)->GetOpenMode();
-        AMS_FS_IMPL_ACCESS_LOG(ResultSuccess(), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_OPEN_MODE, static_cast<u32>(mode));
+        static_cast<void>(AMS_FS_IMPL_ACCESS_LOG(ResultSuccess(), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_OPEN_MODE, static_cast<u32>(mode)));
         return mode;
     }
 
     void CloseFile(FileHandle handle) {
-        AMS_FS_IMPL_ACCESS_LOG((delete Get(handle), ResultSuccess()), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE);
+        static_cast<void>(AMS_FS_IMPL_ACCESS_LOG((delete Get(handle), ResultSuccess()), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE));
     }
 
     Result QueryRange(QueryRangeInfo *out, FileHandle handle, s64 offset, s64 size) {

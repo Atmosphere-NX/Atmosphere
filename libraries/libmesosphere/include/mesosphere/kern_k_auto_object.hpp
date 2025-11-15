@@ -121,14 +121,9 @@ namespace ams::kern {
         private:
             KAutoObject *m_next_closed_object;
             ReferenceCount m_ref_count;
-            #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
             ClassTokenType m_class_token;
-            #endif
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject(util::ConstantInitializeTag) : m_next_closed_object(nullptr), m_ref_count(0)
-            #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
-                , m_class_token(0)
-            #endif
+            constexpr ALWAYS_INLINE explicit KAutoObject(util::ConstantInitializeTag) : m_next_closed_object(nullptr), m_ref_count(0), m_class_token(0)
             {
                 MESOSPHERE_ASSERT_THIS();
             }
@@ -151,19 +146,11 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const TypeObj &rhs) const {
-                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
-                    return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.GetClassToken());
-                #else
-                    return this->GetTypeObj().IsDerivedFrom(rhs);
-                #endif
+                return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.GetClassToken());
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const KAutoObject &rhs) const {
-                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
-                    return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.m_class_token);
-                #else
-                    return this->IsDerivedFrom(rhs.GetTypeObj());
-                #endif
+                return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.m_class_token);
             }
 
             template<typename Derived>
@@ -218,12 +205,10 @@ namespace ams::kern {
                 KAutoObject &auto_object = *static_cast<KAutoObject *>(obj);
 
                 /* If we should, set our class token. */
-                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
                 {
                     constexpr auto Token = Derived::GetStaticTypeObj().GetClassToken();
                     auto_object.m_class_token = Token;
                 }
-                #endif
 
                 /* Initialize reference count to 1. */
                 auto_object.m_ref_count = 1;

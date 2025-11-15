@@ -140,14 +140,12 @@ namespace ams::kern {
 
                         /* Add the previously reserved pages. */
                         if (src_pool == dst_pool && binary_pages != 0) {
-                            /* NOTE: Nintendo does not check the result of this operation. */
-                            pg.AddBlock(KMemoryLayout::GetLinearPhysicalAddress(data), binary_pages);
+                            MESOSPHERE_R_ABORT_UNLESS(pg.AddBlock(KMemoryLayout::GetLinearPhysicalAddress(data), binary_pages));
                         }
 
                         /* Add the previously unreserved pages. */
                         for (const auto &block : unreserve_pg) {
-                            /* NOTE: Nintendo does not check the result of this operation. */
-                            pg.AddBlock(block.GetAddress(), block.GetNumPages());
+                            MESOSPHERE_R_ABORT_UNLESS(pg.AddBlock(block.GetAddress(), block.GetNumPages()));
                         }
                     }
                     MESOSPHERE_ABORT_UNLESS(pg.GetNumPages() == static_cast<size_t>(params.code_num_pages));

@@ -81,7 +81,7 @@ namespace ams::erpt::srv {
                     oaep.Encrypt(cipher, sizeof(cipher), s_key, sizeof(s_key), salt, sizeof(salt));
                 }
 
-                Formatter::AddField(report, FieldId_CipherKey, cipher, sizeof(cipher));
+                R_TRY(Formatter::AddField(report, FieldId_CipherKey, cipher, s_need_to_store_cipher ? sizeof(cipher) : 1));
                 std::memset(s_key, 0, sizeof(s_key));
 
                 R_RETURN(Formatter::End(report));

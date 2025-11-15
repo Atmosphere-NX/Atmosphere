@@ -34,7 +34,9 @@ namespace ams::erpt::srv {
             auto *record = std::addressof(*it);
             it = s_attachment_list.erase(s_attachment_list.iterator_to(*record));
             if (record->RemoveReference()) {
-                Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name);
+                if (R_FAILED(Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name))) {
+                    /* TODO: Log failure? */
+                }
                 delete record;
             }
         }
@@ -66,7 +68,9 @@ namespace ams::erpt::srv {
 
                 /* Delete the object, if we should. */
                 if (record->RemoveReference()) {
-                    Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name);
+                    const auto delete_res = Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name);
+                    R_ASSERT(delete_res);
+                    AMS_UNUSED(delete_res);
                     delete record;
                 }
             } else {
@@ -128,12 +132,13 @@ namespace ams::erpt::srv {
             }
 
             if (record->m_info.flags.Test<AttachmentFlag::HasOwner>() && JournalForReports::RetrieveRecord(record->m_info.owner_report_id) != nullptr) {
-                /* NOTE: Nintendo does not check the result of storing the new record... */
                 record_guard.Cancel();
-                StoreRecord(record);
+                R_TRY(StoreRecord(record));
             } else {
                 /* If the attachment has no owner (or we deleted the report), delete the file associated with it. */
-                Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name);
+                const auto delete_res = Stream::DeleteStream(Attachment::FileName(record->m_info.attachment_id).name);
+                R_ASSERT(delete_res);
+                AMS_UNUSED(delete_res);
             }
         }
 

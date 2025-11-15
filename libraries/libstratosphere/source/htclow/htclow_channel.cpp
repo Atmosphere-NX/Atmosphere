@@ -34,7 +34,7 @@ namespace ams::htclow {
     }
 
     void Channel::Close() {
-        m_manager->Close(impl::ConvertChannelType(m_channel));
+        static_cast<void>(m_manager->Close(impl::ConvertChannelType(m_channel)));
     }
 
     ChannelState Channel::GetChannelState() {
@@ -72,7 +72,7 @@ namespace ams::htclow {
     }
 
     void Channel::Shutdown() {
-        m_manager->Shutdown(impl::ConvertChannelType(m_channel));
+        static_cast<void>(m_manager->Shutdown(impl::ConvertChannelType(m_channel)));
     }
 
     Result Channel::Receive(s64 *out, void *dst, s64 size, ReceiveOption option) {
@@ -221,7 +221,7 @@ namespace ams::htclow {
         /* Perform the wait. */
         if (event != nullptr) {
             if (os::WaitAny(event, m_manager->GetTaskEvent(task_id)) == 0) {
-                m_manager->WaitReceiveEnd(task_id);
+                static_cast<void>(m_manager->WaitReceiveEnd(task_id));
                 R_THROW(htclow::ResultChannelWaitCancelled());
             }
         } else {

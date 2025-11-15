@@ -107,7 +107,7 @@ namespace ams::fs::impl {
         size_t len;
         if (R_SUCCEEDED(PathFormatter::IsNormalized(std::addressof(normalized), std::addressof(len), p, m_path_flags)) && normalized) {
             /* We can use the input buffer directly. */
-            out->SetShallowBuffer(p);
+            R_TRY(out->SetShallowBuffer(p));
         } else {
             /* Initialize with appropriate slash replacement. */
             if (m_path_flags.IsWindowsPathAllowed()) {

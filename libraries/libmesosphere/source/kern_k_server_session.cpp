@@ -476,8 +476,8 @@ namespace ams::kern {
 
                 /* Ensure that we clean up on failure. */
                 ON_RESULT_FAILURE {
-                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state);
-                    src_page_table.CleanupForIpcClient(src_address, size, dst_state);
+                    static_cast<void>(dst_page_table.CleanupForIpcServer(dst_address, size, dst_state));
+                    static_cast<void>(src_page_table.CleanupForIpcClient(src_address, size, dst_state));
                 };
 
                 /* Push the appropriate mapping. */
@@ -582,7 +582,7 @@ namespace ams::kern {
             /* Set up a guard to make sure that we end up in a clean state on error. */
             ON_RESULT_FAILURE {
                 /* Cleanup mappings. */
-                CleanupMap(request, std::addressof(dst_process), std::addressof(src_page_table));
+                static_cast<void>(CleanupMap(request, std::addressof(dst_process), std::addressof(src_page_table)));
 
                 /* Cleanup special data. */
                 if (src_header.GetHasSpecialHeader()) {
@@ -835,11 +835,11 @@ namespace ams::kern {
                             CleanupSpecialData(dst_process, dst_msg_ptr, dst_buffer_size);
                         }
                     } else {
-                        CleanupServerHandles(src_user ? src_message_buffer : 0, src_buffer_size, src_message_paddr);
+                        static_cast<void>(CleanupServerHandles(src_user ? src_message_buffer : 0, src_buffer_size, src_message_paddr));
                     }
 
                     /* Cleanup mappings. */
-                    CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table));
+                    static_cast<void>(CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table)));
                 };
 
                 /* Ensure that the headers fit. */
@@ -1052,7 +1052,7 @@ namespace ams::kern {
 
                     /* Unlock the client buffer. */
                     /* NOTE: Nintendo does not check the result of this. */
-                    client_pt.UnlockForIpcUserBuffer(client_message, client_buffer_size);
+                    static_cast<void>(client_pt.UnlockForIpcUserBuffer(client_message, client_buffer_size));
 
                     /* Signal the event. */
                     event->Signal();
@@ -1156,7 +1156,7 @@ namespace ams::kern {
 
                 /* Unlock the client buffer. */
                 /* NOTE: Nintendo does not check the result of this. */
-                client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size);
+                static_cast<void>(client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size));
 
                 /* Signal the event. */
                 event->Signal();
@@ -1284,7 +1284,7 @@ namespace ams::kern {
 
                     /* Unlock the client buffer. */
                     /* NOTE: Nintendo does not check the result of this. */
-                    client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size);
+                    static_cast<void>(client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size));
 
                     /* Signal the event. */
                     event->Signal();
@@ -1383,7 +1383,7 @@ namespace ams::kern {
 
                 /* Unlock the buffer. */
                 /* NOTE: Nintendo does not check the result of this. */
-                client_pt.UnlockForIpcUserBuffer(request->GetAddress(), request->GetSize());
+                static_cast<void>(client_pt.UnlockForIpcUserBuffer(request->GetAddress(), request->GetSize()));
 
                 /* Signal the event. */
                 event->Signal();

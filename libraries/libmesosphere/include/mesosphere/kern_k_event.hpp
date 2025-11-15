@@ -50,8 +50,8 @@ namespace ams::kern {
 
             KReadableEvent &GetReadableEvent() { return m_readable_event; }
 
-            Result Signal();
-            Result Clear();
+            void Signal();
+            void Clear();
 
             ALWAYS_INLINE void OnReadableEventDestroyed() { m_readable_event_destroyed = true; }
     };

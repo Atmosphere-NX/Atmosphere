@@ -22,7 +22,7 @@ namespace ams::htcfs {
     DirectoryServiceObject::DirectoryServiceObject(s32 handle) : m_handle(handle) { /* ... */ }
 
     DirectoryServiceObject::~DirectoryServiceObject() {
-        htcfs::GetClient().CloseDirectory(m_handle);
+        static_cast<void>(htcfs::GetClient().CloseDirectory(m_handle));
     }
 
     Result DirectoryServiceObject::GetEntryCount(ams::sf::Out<s64> out) {

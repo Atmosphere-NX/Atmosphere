@@ -69,14 +69,22 @@ namespace ams::fatal::srv {
                     R_RETURN(this->ThrowFatalWithCpuContext(result, process_id, policy, {}));
                 }
 
-                Result ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx);
+                Result ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx) {
+                    R_RETURN(this->ThrowFatalWithAllContext(result, process_id, ncm::InvalidProgramId, policy, cpu_ctx, {}));
+                }
+
+                Result ThrowFatalWithHashedTraceContext(Result result, os::ProcessId process_id, ncm::ProgramId program_id, const HashedTraceContext &htc) {
+                    R_RETURN(this->ThrowFatalWithAllContext(result, process_id, program_id, FatalPolicy_ErrorScreen, {}, htc));
+                }
+
+                Result ThrowFatalWithAllContext(Result result, os::ProcessId process_id, ncm::ProgramId program_id, FatalPolicy policy, const CpuContext &cpu_ctx, const HashedTraceContext &htc);
         };
 
         /* Context global. */
         ServiceContext g_context;
 
         /* Throw implementation. */
-        Result ServiceContext::ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx) {
+        Result ServiceContext::ThrowFatalWithAllContext(Result result, os::ProcessId process_id, ncm::ProgramId program_id, FatalPolicy policy, const CpuContext &cpu_ctx, const HashedTraceContext &htc) {
             /* We don't support Error-Report-only fatals. */
             R_SUCCEED_IF(policy == FatalPolicy_ErrorReport);
 
@@ -84,9 +92,10 @@ namespace ams::fatal::srv {
             R_TRY(this->TrySetHasThrown());
 
             /* At this point we have exclusive access to m_context. */
-            m_context.result  = result;
-            m_context.cpu_ctx = cpu_ctx;
-            m_context.policy  = policy;
+            m_context.result           = result;
+            m_context.cpu_ctx          = cpu_ctx;
+            m_context.policy           = policy;
+            m_context.hashed_trace_ctx = htc;
 
             /* Cap the stack trace to a sane limit. */
             if (cpu_ctx.architecture == CpuContext::Architecture_Aarch64) {
@@ -96,7 +105,14 @@ namespace ams::fatal::srv {
             }
 
             /* Get program id. */
-            pm::info::GetProgramId(std::addressof(m_context.throw_program_id), process_id);
+            if (program_id != ncm::InvalidProgramId) {
+                m_context.throw_program_id = program_id;
+            } else {
+                if (R_FAILED(pm::info::GetProgramId(std::addressof(m_context.throw_program_id), process_id))) {
+                    m_context.throw_program_id = ncm::InvalidProgramId;
+                }
+            }
+
             m_context.is_creport = (m_context.throw_program_id == ncm::SystemProgramId::Creport);
 
 
@@ -157,6 +173,10 @@ namespace ams::fatal::srv {
 
     Result Service::ThrowFatalWithCpuContext(Result result, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx) {
         R_RETURN(g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx));
+    }
+
+    Result Service::ThrowFatalWithHashedTraceContext(Result result, const sf::ClientProcessId &client_pid, ncm::ProgramId program_id, const HashedTraceContext &htc) {
+        R_RETURN(g_context.ThrowFatalWithHashedTraceContext(result, client_pid.GetValue(), program_id, htc));
     }
 
     Result Service::GetFatalEvent(sf::OutCopyHandle out_h) {

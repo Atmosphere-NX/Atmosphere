@@ -83,9 +83,9 @@ namespace ams::kern::arch::arm64 {
             }
 
             NOINLINE Result BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
-            NOINLINE Result UnbindHandler(s32 irq, s32 core);
+            NOINLINE void UnbindHandler(s32 irq, s32 core);
 
-            NOINLINE Result ClearInterrupt(s32 irq, s32 core_id);
+            NOINLINE void ClearInterrupt(s32 irq, s32 core_id);
 
             ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
                 m_interrupt_controller.SendInterProcessorInterrupt(irq, core_mask);
@@ -99,10 +99,10 @@ namespace ams::kern::arch::arm64 {
         private:
             Result BindGlobal(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
             Result BindLocal(KInterruptHandler *handler, s32 irq, s32 priority, bool manual_clear);
-            Result UnbindGlobal(s32 irq);
-            Result UnbindLocal(s32 irq);
-            Result ClearGlobal(s32 irq);
-            Result ClearLocal(s32 irq);
+            void UnbindGlobal(s32 irq);
+            void UnbindLocal(s32 irq);
+            void ClearGlobal(s32 irq);
+            void ClearLocal(s32 irq);
         private:
             [[nodiscard]] static ALWAYS_INLINE u32 GetInterruptsEnabledState() {
                 u64 intr_state;

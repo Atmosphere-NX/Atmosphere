@@ -37,7 +37,7 @@ namespace ams::htc::server::rpc {
             u8 m_driver_receive_buffer[4_KB];
             u8 m_driver_send_buffer[4_KB];
         private:
-            static void ReceiveThreadEntry(void *arg) { static_cast<HtcmiscRpcServer *>(arg)->ReceiveThread(); }
+            static void ReceiveThreadEntry(void *arg) { static_cast<void>(static_cast<HtcmiscRpcServer *>(arg)->ReceiveThread()); }
 
             Result ReceiveThread();
         public:

@@ -369,7 +369,7 @@ namespace ams::sdmmc::impl {
 
                 /* Otherwise, check if we've timed out. */
                 if (!timer.Update()) {
-                    this->AbortTransaction();
+                    static_cast<void>(this->AbortTransaction());
                     R_THROW(sdmmc::ResultCommandInhibitCmdSoftwareTimeout());
                 }
             }
@@ -389,7 +389,7 @@ namespace ams::sdmmc::impl {
 
                 /* Otherwise, check if we've timed out. */
                 if (!timer.Update()) {
-                    this->AbortTransaction();
+                    static_cast<void>(this->AbortTransaction());
                     R_THROW(sdmmc::ResultCommandInhibitDatSoftwareTimeout());
                 }
             }
@@ -458,7 +458,7 @@ namespace ams::sdmmc::impl {
                 this->ClearInterrupt();
 
                 if (R_FAILED(result)) {
-                    this->AbortTransaction();
+                    static_cast<void>(this->AbortTransaction());
                 }
 
                 R_RETURN(result);
@@ -467,7 +467,7 @@ namespace ams::sdmmc::impl {
                 R_RETURN(result);
             } else {
                 /* If the device wasn't removed, cancel our transaction. */
-                this->AbortTransaction();
+                static_cast<void>(this->AbortTransaction());
                 R_THROW(sdmmc::ResultCommandCompleteSoftwareTimeout());
             }
         }
@@ -489,12 +489,12 @@ namespace ams::sdmmc::impl {
                     } else if (sdmmc::ResultNoWaitedInterrupt::Includes(result)) {
                         /* Otherwise, if the wait for the interrupt isn't done, update the timer and check for timeout. */
                         if (!timer.Update()) {
-                            this->AbortTransaction();
+                            static_cast<void>(this->AbortTransaction());
                             R_THROW(sdmmc::ResultCommandCompleteSoftwareTimeout());
                         }
                     } else {
                         /* Otherwise, we have a generic failure. */
-                        this->AbortTransaction();
+                        static_cast<void>(this->AbortTransaction());
                         R_RETURN(result);
                     }
                 }
@@ -537,7 +537,7 @@ namespace ams::sdmmc::impl {
                         }
                     } else {
                         /* Abort the transaction. */
-                        this->AbortTransaction();
+                        static_cast<void>(this->AbortTransaction());
                         R_RETURN(result);
                     }
 
@@ -548,7 +548,7 @@ namespace ams::sdmmc::impl {
                 } else {
                     /* Otherwise, timeout if the transfer hasn't advanced. */
                     if (last_block_count != reg::Read(m_registers->block_count)) {
-                        this->AbortTransaction();
+                        static_cast<void>(this->AbortTransaction());
                         R_THROW(sdmmc::ResultTransferCompleteSoftwareTimeout());
                     }
                 }
@@ -589,14 +589,14 @@ namespace ams::sdmmc::impl {
                             if (!timer.Update()) {
                                 /* Only timeout if the transfer hasn't advanced. */
                                 if (last_block_count != reg::Read(m_registers->block_count)) {
-                                    this->AbortTransaction();
+                                    static_cast<void>(this->AbortTransaction());
                                     R_THROW(sdmmc::ResultTransferCompleteSoftwareTimeout());
                                 }
                                 break;
                             }
                         } else {
                             /* Otherwise, we have a generic failure. */
-                            this->AbortTransaction();
+                            static_cast<void>(this->AbortTransaction());
                             R_RETURN(result);
                         }
                     }
@@ -624,7 +624,7 @@ namespace ams::sdmmc::impl {
 
                 /* Otherwise, check if we're timed out. */
                 if (!timer.Update()) {
-                    this->AbortTransaction();
+                    static_cast<void>(this->AbortTransaction());
                     R_THROW(sdmmc::ResultBusySoftwareTimeout());
                 }
             }

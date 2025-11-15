@@ -36,7 +36,10 @@ namespace ams::erpt::srv {
 
         std::scoped_lock lk(s_fs_commit_mutex);
 
-        fs::CommitSaveData(ReportStoragePath);
+        const auto commit_res = fs::CommitSaveData(ReportStoragePath);
+        R_ASSERT(commit_res);
+        AMS_UNUSED(commit_res);
+
         R_SUCCEED();
     }
 
@@ -81,7 +84,7 @@ namespace ams::erpt::srv {
                 } R_END_TRY_CATCH;
                 break;
             }
-            fs::SetFileSize(m_file_handle, 0);
+            R_TRY(fs::SetFileSize(m_file_handle, 0));
         } else {
             R_UNLESS(mode == StreamMode_Read, erpt::ResultInvalidArgument());
 
@@ -187,8 +190,13 @@ namespace ams::erpt::srv {
         if (m_initialized) {
             if (s_can_access_fs) {
                 if (m_stream_mode == StreamMode_Write) {
-                    this->Flush();
-                    fs::FlushFile(m_file_handle);
+                    const auto self_flush_res = this->Flush();
+                    R_ASSERT(self_flush_res);
+                    AMS_UNUSED(self_flush_res);
+
+                    const auto file_flush_res = fs::FlushFile(m_file_handle);
+                    R_ASSERT(file_flush_res);
+                    AMS_UNUSED(file_flush_res);
                 }
                 fs::CloseFile(m_file_handle);
             }

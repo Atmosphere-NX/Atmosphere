@@ -23,8 +23,8 @@ namespace ams::kern {
             return UserspaceAccess::CopyMemoryFromUserSize32Bit(out, GetVoidPointer(address));
         }
 
-        ALWAYS_INLINE bool WriteToUser(KProcessAddress address, const u32 *p) {
-            return UserspaceAccess::CopyMemoryToUserSize32Bit(GetVoidPointer(address), p);
+        ALWAYS_INLINE bool WriteToUser(KProcessAddress address, u32 val) {
+            return UserspaceAccess::CopyMemoryToUserSize32Bit(GetVoidPointer(address), val);
         }
 
         ALWAYS_INLINE bool UpdateLockAtomic(u32 *out, KProcessAddress address, u32 if_zero, u32 new_orr_mask) {
@@ -94,7 +94,7 @@ namespace ams::kern {
 
             /* Write the value to userspace. */
             Result result;
-            if (AMS_LIKELY(WriteToUser(addr, std::addressof(next_value)))) {
+            if (AMS_LIKELY(WriteToUser(addr, next_value))) {
                 result = ResultSuccess();
             } else {
                 result = svc::ResultInvalidCurrentMemory();
@@ -210,8 +210,8 @@ namespace ams::kern {
 
             /* If we have no waiters, clear the has waiter flag. */
             if (it == m_tree.end() || it->GetConditionVariableKey() != cv_key) {
-                const u32 has_waiter_flag = 0;
-                WriteToUser(cv_key, std::addressof(has_waiter_flag));
+                constexpr u32 HasNoWaiterFlag = 0;
+                WriteToUser(cv_key, HasNoWaiterFlag);
             }
         }
     }
@@ -252,13 +252,13 @@ namespace ams::kern {
 
                 /* Write to the cv key. */
                 {
-                    const u32 has_waiter_flag = 1;
-                    WriteToUser(key, std::addressof(has_waiter_flag));
+                    constexpr u32 HasWaiterFlag = 1;
+                    WriteToUser(key, HasWaiterFlag);
                     cpu::DataMemoryBarrierInnerShareable();
                 }
 
                 /* Write the value to userspace. */
-                if (!WriteToUser(addr, std::addressof(next_value))) {
+                if (!WriteToUser(addr, next_value)) {
                     slp.CancelSleep();
                     R_THROW(svc::ResultInvalidCurrentMemory());
                 }

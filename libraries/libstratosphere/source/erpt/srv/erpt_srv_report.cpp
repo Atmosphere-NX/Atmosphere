@@ -42,7 +42,9 @@ namespace ams::erpt::srv {
     Report::~Report() {
         this->CloseStream();
         if (m_record->RemoveReference()) {
-            this->DeleteStream(this->FileName().name);
+            if (R_FAILED(this->DeleteStream(this->FileName().name))) {
+                /* TODO: Log failure? */
+            }
             delete m_record;
         }
     }

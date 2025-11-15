@@ -44,8 +44,10 @@ namespace ams::erpt::srv {
                 static constexpr AppletActiveTimeInfo InvalidAppletActiveTimeInfo = { ncm::InvalidProgramId, os::Tick{}, TimeSpan::FromNanoSeconds(0) };
             private:
                 std::array<AppletActiveTimeInfo, 8> m_list;
+                ncm::ApplicationId m_running_app_id;
+                ncm::ProgramId m_running_app_program_id;
             public:
-                constexpr AppletActiveTimeInfoList() : m_list{InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo} {
+                constexpr AppletActiveTimeInfoList() : m_list{InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo}, m_running_app_id{ncm::InvalidApplicationId}, m_running_app_program_id{ncm::InvalidProgramId} {
                     m_list.fill(InvalidAppletActiveTimeInfo);
                 }
             public:
@@ -65,6 +67,32 @@ namespace ams::erpt::srv {
 
                     /* Clear the entry. */
                     *entry = InvalidAppletActiveTimeInfo;
+                }
+
+                void RegisterApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id) {
+                    /* Set the running application info. */
+                    m_running_app_id         = app_id;
+                    m_running_app_program_id = program_id;
+                }
+
+                void UnregisterApplicationInfo() {
+                    m_running_app_id         = ncm::InvalidApplicationId;
+                    m_running_app_program_id = ncm::InvalidProgramId;
+                }
+
+                util::optional<os::Tick> GetApplicationStartTick() {
+                    /* If we have a running application, try to find a matching entry. */
+                    if (m_running_app_id != ncm::InvalidApplicationId) {
+                        /* NOTE: This seems to be a Nintendo bug? They are comparing the running app id to the info's program id, */
+                        /* instead of the running app program id. Granted, these should usually be the same, but I think this code */
+                        /* is literally incorrect. */
+                        const auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == m_running_app_id; });
+                        if (entry != m_list.end()) {
+                            return entry->register_tick;
+                        }
+                    }
+
+                    return util::nullopt;
                 }
 
                 void UpdateSuspendedDuration(ncm::ProgramId program_id, TimeSpan suspended_duration) {
@@ -124,29 +152,19 @@ namespace ams::erpt::srv {
             if (error_context_total_size == 0) {
                 return;
             }
-            record->Add(FieldId_ErrorContextTotalSize, error_context_total_size);
+            static_cast<void>(record->Add(FieldId_ErrorContextTotalSize, error_context_total_size));
 
             /* Set the context. */
             if (error_context_size == 0) {
                 return;
             }
-            record->Add(FieldId_ErrorContextSize, error_context_size);
-            record->Add(FieldId_ErrorContext, error_context, error_context_size);
+            static_cast<void>(record->Add(FieldId_ErrorContextSize, error_context_size));
+            static_cast<void>(record->Add(FieldId_ErrorContext, error_context, error_context_size));
         }
 
-        constinit os::SdkMutex g_limit_mutex;
-        constinit bool g_submitted_limit = false;
-
-        void SubmitResourceLimitLimitContext() {
-            std::scoped_lock lk(g_limit_mutex);
-            if (g_submitted_limit) {
-                return;
-            }
-
-            ON_SCOPE_EXIT { g_submitted_limit = true; };
-
+        void SubmitResourceLimitContexts() {
             /* Create and populate the record. */
-            auto record = std::make_unique<ContextRecord>(CategoryId_ResourceLimitLimitInfo);
+            auto record = std::make_unique<ContextRecord>(CategoryId_ResourceLimitInfo);
             if (record == nullptr) {
                 return;
             }
@@ -165,7 +183,15 @@ namespace ams::erpt::srv {
                     if (R_FAILED(svc::GetResourceLimitLimitValue(std::addressof(limit_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
-                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                             \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                                    \
+                        return;                                                                                                                       \
+                    }                                                                                                                                 \
+                                                                                                                                                      \
+                    s64 peak_value;                                                                                                                   \
+                    if (R_FAILED(svc::GetResourceLimitPeakValue(std::addressof(peak_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) {   \
+                        return;                                                                                                                       \
+                    }                                                                                                                                 \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                                      \
                         return;                                                                                                                       \
                     }                                                                                                                                 \
                 } while (0)
@@ -178,51 +204,7 @@ namespace ams::erpt::srv {
 
             #undef ADD_RESOURCE
 
-            Context::SubmitContextRecord(std::move(record));
-
-            g_submitted_limit = true;
-        }
-
-        void SubmitResourceLimitPeakContext() {
-            /* Create and populate the record. */
-            auto record = std::make_unique<ContextRecord>(CategoryId_ResourceLimitPeakInfo);
-            if (record == nullptr) {
-                return;
-            }
-
-            u64 reslimit_handle_value;
-            if (R_FAILED(svc::GetInfo(std::addressof(reslimit_handle_value), svc::InfoType_ResourceLimit, svc::InvalidHandle, 0))) {
-                return;
-            }
-
-            const auto handle = static_cast<svc::Handle>(reslimit_handle_value);
-            ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(handle)); };
-
-            #define ADD_RESOURCE(__RESOURCE__)                                                                                                      \
-                do {                                                                                                                                \
-                    s64 peak_value;                                                                                                                 \
-                    if (R_FAILED(svc::GetResourceLimitPeakValue(std::addressof(peak_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
-                        return;                                                                                                                     \
-                    }                                                                                                                               \
-                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                             \
-                        return;                                                                                                                     \
-                    }                                                                                                                               \
-                } while (0)
-
-            ADD_RESOURCE(PhysicalMemory);
-            ADD_RESOURCE(ThreadCount);
-            ADD_RESOURCE(EventCount);
-            ADD_RESOURCE(TransferMemoryCount);
-            ADD_RESOURCE(SessionCount);
-
-            #undef ADD_RESOURCE
-
-            Context::SubmitContextRecord(std::move(record));
-        }
-
-        void SubmitResourceLimitContexts() {
-            SubmitResourceLimitLimitContext();
-            SubmitResourceLimitPeakContext();
+            static_cast<void>(Context::SubmitContextRecord(std::move(record)));
         }
         #else
         void SubmitErrorContext(ContextRecord *record, Result result) {
@@ -262,11 +244,11 @@ namespace ams::erpt::srv {
             }
 
             if (!found_abort_flag) {
-                record->Add(FieldId_AbortFlag, false);
+                static_cast<void>(record->Add(FieldId_AbortFlag, false));
             }
 
             if (!found_syslog_flag) {
-                record->Add(FieldId_HasSyslogFlag, true);
+               static_cast<void>(record->Add(FieldId_HasSyslogFlag, true));
             }
 
             R_TRY(Context::SubmitContextRecord(std::move(record)));
@@ -377,7 +359,7 @@ namespace ams::erpt::srv {
 
             auto report = std::make_unique<Report>(record.get(), redirect_new_reports);
             R_UNLESS(report != nullptr, erpt::ResultOutOfMemory());
-            auto report_guard = SCOPE_GUARD { report->Delete(); };
+            auto report_guard = SCOPE_GUARD { const auto delete_res = report->Delete(); R_ASSERT(delete_res); AMS_UNUSED(delete_res); };
 
             R_TRY(Context::WriteContextsToReport(report.get()));
             R_TRY(report->GetSize(std::addressof(record->m_info.report_size)));
@@ -414,6 +396,14 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
+    void Reporter::RegisterRunningApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id) {
+        g_applet_active_time_info_list.RegisterApplicationInfo(app_id, program_id);
+    }
+
+    void Reporter::UnregisterRunningApplicationInfo() {
+        g_applet_active_time_info_list.UnregisterApplicationInfo();
+    }
+
     Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id) {
         /* Create a context record for the report. */
         auto record = std::make_unique<ContextRecord>();
@@ -429,9 +419,9 @@ namespace ams::erpt::srv {
     Result Reporter::CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, erpt::CreateReportOptionFlagSet flags, const ReportId *specified_report_id) {
         /* Clear the automatic categories, when we're done with our report. */
         ON_SCOPE_EXIT {
-            Context::ClearContext(CategoryId_ErrorInfo);
-            Context::ClearContext(CategoryId_ErrorInfoAuto);
-            Context::ClearContext(CategoryId_ErrorInfoDefaults);
+            static_cast<void>(Context::ClearContext(CategoryId_ErrorInfo));
+            static_cast<void>(Context::ClearContext(CategoryId_ErrorInfoAuto));
+            static_cast<void>(Context::ClearContext(CategoryId_ErrorInfoDefaults));
         };
 
         /* Get the context entry pointer. */
@@ -490,28 +480,32 @@ namespace ams::erpt::srv {
         R_ABORT_UNLESS(time::GetStandardSteadyClockCurrentTimePoint(std::addressof(steady_clock_current_timepoint)));
 
         /* Add automatic fields. */
-        auto_record->Add(FieldId_OsVersion,                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version)));
-        auto_record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version)));
-        auto_record->Add(FieldId_SerialNumber,                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number)));
-        auto_record->Add(FieldId_ReportIdentifier,                 identifier_str,                               util::Strnlen(identifier_str, sizeof(identifier_str)));
-        auto_record->Add(FieldId_OccurrenceTimestamp,              timestamp_user.value);
-        auto_record->Add(FieldId_OccurrenceTimestampNet,           timestamp_network.value);
-        auto_record->Add(FieldId_ReportVisibilityFlag,             type == ReportType_Visible);
-        auto_record->Add(FieldId_OccurrenceTick,                   occurrence_tick.GetInt64Value());
-        auto_record->Add(FieldId_SteadyClockInternalOffset,        steady_clock_internal_offset_seconds);
-        auto_record->Add(FieldId_SteadyClockCurrentTimePointValue, steady_clock_current_timepoint.value);
-        auto_record->Add(FieldId_ElapsedTimeSincePowerOn,          (occurrence_tick - *s_power_on_time).ToTimeSpan().GetSeconds());
-        auto_record->Add(FieldId_ElapsedTimeSinceLastAwake,        (occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds());
+        static_cast<void>(auto_record->Add(FieldId_OsVersion,                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version))));
+        static_cast<void>(auto_record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version))));
+        static_cast<void>(auto_record->Add(FieldId_SerialNumber,                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number))));
+        static_cast<void>(auto_record->Add(FieldId_ReportIdentifier,                 identifier_str,                               util::Strnlen(identifier_str, sizeof(identifier_str))));
+        static_cast<void>(auto_record->Add(FieldId_OccurrenceTimestamp,              timestamp_user.value));
+        static_cast<void>(auto_record->Add(FieldId_OccurrenceTimestampNet,           timestamp_network.value));
+        static_cast<void>(auto_record->Add(FieldId_ReportVisibilityFlag,             type == ReportType_Visible));
+        static_cast<void>(auto_record->Add(FieldId_OccurrenceTick,                   occurrence_tick.GetInt64Value()));
+        static_cast<void>(auto_record->Add(FieldId_SteadyClockInternalOffset,        steady_clock_internal_offset_seconds));
+        static_cast<void>(auto_record->Add(FieldId_SteadyClockCurrentTimePointValue, steady_clock_current_timepoint.value));
+        static_cast<void>(auto_record->Add(FieldId_ElapsedTimeSincePowerOn,          (occurrence_tick - *s_power_on_time).ToTimeSpan().GetSeconds()));
+        static_cast<void>(auto_record->Add(FieldId_ElapsedTimeSinceLastAwake,        (occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds()));
 
         if (s_initial_launch_settings_completion_time) {
             s64 elapsed_seconds;
             if (R_SUCCEEDED(time::GetElapsedSecondsBetween(std::addressof(elapsed_seconds), *s_initial_launch_settings_completion_time, steady_clock_current_timepoint))) {
-                auto_record->Add(FieldId_ElapsedTimeSinceInitialLaunch, elapsed_seconds);
+                static_cast<void>(auto_record->Add(FieldId_ElapsedTimeSinceInitialLaunch, elapsed_seconds));
             }
         }
 
-        if (s_application_launch_time) {
-            auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds());
+        if (hos::GetVersion() >= hos::Version_21_0_0) {
+            if (auto start_tick = g_applet_active_time_info_list.GetApplicationStartTick(); start_tick.has_value()) {
+                static_cast<void>(auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *start_tick).ToTimeSpan().GetSeconds()));
+            }
+        } else if (s_application_launch_time) {
+            static_cast<void>(auto_record->Add(FieldId_ApplicationAliveTime, (occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds()));
         }
 
         /* Submit applet active duration information. */
@@ -535,7 +529,7 @@ namespace ams::erpt::srv {
         #if defined(ATMOSPHERE_OS_HORIZON)
         if (hos::GetVersion() >= hos::Version_17_0_0 && flags.Test<CreateReportOptionFlag::SubmitFsInfo>()) {
             /* NOTE: Nintendo ignores the result of this call. */
-            SubmitFsInfo();
+            static_cast<void>(SubmitFsInfo());
         }
         #else
         AMS_UNUSED(flags);
