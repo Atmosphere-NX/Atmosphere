@@ -366,7 +366,7 @@ namespace ams::kern::board::nintendo::nx {
         if (kern::GetTargetFirmware() >= ams::TargetFirmware_21_0_0) {
             constexpr size_t ExtraSystemMemoryForAtmosphere_21_0_0 = 8_MB;
             return base_pool_size - ExtraSystemMemoryForAtmosphere_21_0_0 - KTraceBufferSize;
-        } else if (kern::GetTargetFirmware() >= ams::TargetFirmware_21_0_0) {
+        } else if (kern::GetTargetFirmware() >= ams::TargetFirmware_20_0_0) {
             constexpr size_t ExtraSystemMemoryForAtmosphere_20_0_0 = 14_MB;
             return base_pool_size - ExtraSystemMemoryForAtmosphere_20_0_0 - KTraceBufferSize;
         } else {
