@@ -105,7 +105,9 @@ namespace ams::fs {
                 AMS_ABORT_UNLESS(fsp_object != nullptr);
 
                 /* Set the current process. */
-                fsp_object->SetCurrentProcess({});
+                const auto scp_res = fsp_object->SetCurrentProcess({});
+                R_ASSERT(scp_res);
+                AMS_UNUSED(scp_res);
             }
             #else
             /* On non-horizon, use the system object. */

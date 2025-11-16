@@ -54,7 +54,7 @@ namespace ams::htcs {
             R_ABORT_UNLESS(g_monitor->MonitorManager(process_id));
 
             /* Allocate a tls slot for our last error. */
-            os::SdkAllocateTlsSlot(std::addressof(g_tls_slot), nullptr);
+            R_ABORT_UNLESS(os::SdkAllocateTlsSlot(std::addressof(g_tls_slot), nullptr));
 
             /* Setup the virtual socket collection. */
             AMS_ASSERT(buffer != nullptr);
@@ -185,7 +185,7 @@ namespace ams::htcs {
 
         /* Get name. */
         HtcsPeerName name;
-        g_manager->GetPeerNameAny(std::addressof(name));
+        static_cast<void>(g_manager->GetPeerNameAny(std::addressof(name)));
 
         return name;
     }
@@ -196,7 +196,7 @@ namespace ams::htcs {
 
         /* Get name. */
         HtcsPeerName name;
-        g_manager->GetDefaultHostName(std::addressof(name));
+        static_cast<void>(g_manager->GetDefaultHostName(std::addressof(name)));
 
         return name;
     }
@@ -472,7 +472,7 @@ namespace ams::htcs {
 
         s32 close(sf::SharedPointer<tma::ISocket> socket, s32 &last_error) {
             s32 res;
-            socket->Close(std::addressof(last_error), std::addressof(res));
+            static_cast<void>(socket->Close(std::addressof(last_error), std::addressof(res)));
             return res;
         }
 
@@ -484,13 +484,13 @@ namespace ams::htcs {
             util::Strlcpy(null_terminated_address.port_name.name, address->port_name.name, PortNameBufferLength);
 
             s32 res;
-            socket->Bind(std::addressof(last_error), std::addressof(res), null_terminated_address);
+            static_cast<void>(socket->Bind(std::addressof(last_error), std::addressof(res), null_terminated_address));
             return res;
         }
 
         s32 listen(sf::SharedPointer<tma::ISocket> socket, s32 backlog_count, s32 &last_error) {
             s32 res;
-            socket->Listen(std::addressof(last_error), std::addressof(res), backlog_count);
+            static_cast<void>(socket->Listen(std::addressof(last_error), std::addressof(res), backlog_count));
             return res;
         }
 
@@ -512,7 +512,7 @@ namespace ams::htcs {
                 os::WaitSystemEvent(std::addressof(event));
 
                 /* End the accept. */
-                socket->AcceptResults(std::addressof(last_error), std::addressof(res), address, task_id);
+                static_cast<void>(socket->AcceptResults(std::addressof(last_error), std::addressof(res), address, task_id));
             } else {
                 /* Set error. */
                 last_error = HTCS_EINTR;
@@ -528,13 +528,13 @@ namespace ams::htcs {
 
         s32 fcntl(sf::SharedPointer<tma::ISocket> socket, s32 command, s32 value, s32 &last_error) {
             s32 res;
-            socket->Fcntl(std::addressof(last_error), std::addressof(res), command, value);
+            static_cast<void>(socket->Fcntl(std::addressof(last_error), std::addressof(res), command, value));
             return res;
         }
 
         s32 shutdown(sf::SharedPointer<tma::ISocket> socket, s32 how, s32 &last_error) {
             s32 res;
-            socket->Shutdown(std::addressof(last_error), std::addressof(res), how);
+            static_cast<void>(socket->Shutdown(std::addressof(last_error), std::addressof(res), how));
             return res;
         }
 
@@ -546,7 +546,7 @@ namespace ams::htcs {
             util::Strlcpy(null_terminated_address.port_name.name, address->port_name.name, PortNameBufferLength);
 
             s32 res;
-            socket->Connect(std::addressof(last_error), std::addressof(res), null_terminated_address);
+            static_cast<void>(socket->Connect(std::addressof(last_error), std::addressof(res), null_terminated_address));
             return res;
         }
 
@@ -579,7 +579,7 @@ namespace ams::htcs {
                 os::WaitSystemEvent(std::addressof(event));
 
                 /* End the select. */
-                g_manager->EndSelect(std::addressof(last_error), std::addressof(res), OutArray(read, num_read), OutArray(write, num_write), OutArray(except, num_except), task_id);
+                static_cast<void>(g_manager->EndSelect(std::addressof(last_error), std::addressof(res), OutArray(read, num_read), OutArray(write, num_write), OutArray(except, num_except), task_id));
             } else {
                 /* Set error. */
                 last_error = HTCS_EINTR;
@@ -614,7 +614,7 @@ namespace ams::htcs {
                     os::WaitSystemEvent(std::addressof(event));
 
                     /* End the receive. */
-                    socket->EndRecv(std::addressof(last_error), std::addressof(res), sf::OutAutoSelectBuffer(buffer, buffer_size), task_id);
+                    static_cast<void>(socket->EndRecv(std::addressof(last_error), std::addressof(res), sf::OutAutoSelectBuffer(buffer, buffer_size), task_id));
                 } else {
                     /* Set error. */
                     last_error = HTCS_EINTR;
@@ -675,7 +675,7 @@ namespace ams::htcs {
                     }
 
                     /* End the send. */
-                    socket->EndSend(std::addressof(last_error), std::addressof(res), task_id);
+                    static_cast<void>(socket->EndSend(std::addressof(last_error), std::addressof(res), task_id));
                 } else {
                     /* Set error. */
                     last_error = HTCS_EINTR;
@@ -717,7 +717,7 @@ namespace ams::htcs {
                 os::WaitSystemEvent(std::addressof(event));
 
                 /* End the receive. */
-                socket->RecvResults(std::addressof(last_error), std::addressof(res), sf::OutAutoSelectBuffer(buffer, recv_size), task_id);
+                static_cast<void>(socket->RecvResults(std::addressof(last_error), std::addressof(res), sf::OutAutoSelectBuffer(buffer, recv_size), task_id));
             } else {
                 /* Set error. */
                 last_error = HTCS_EINTR;
@@ -750,7 +750,7 @@ namespace ams::htcs {
                 os::WaitSystemEvent(std::addressof(event));
 
                 /* End the send. */
-                socket->SendResults(std::addressof(last_error), std::addressof(res), task_id);
+                static_cast<void>(socket->SendResults(std::addressof(last_error), std::addressof(res), task_id));
             } else {
                 /* Set error. */
                 last_error = HTCS_EINTR;

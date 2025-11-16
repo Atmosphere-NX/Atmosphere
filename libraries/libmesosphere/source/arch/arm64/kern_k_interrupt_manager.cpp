@@ -126,7 +126,7 @@ namespace ams::kern::arch::arm64 {
             if (entry.handler != nullptr) {
                 /* Set manual clear needed if relevant. */
                 if (entry.manually_cleared) {
-                    m_interrupt_controller.SetPriorityLevel(irq, KInterruptController::PriorityLevel_Low);
+                    m_interrupt_controller.Disable(irq);
                     entry.needs_clear = true;
                 }
 
@@ -242,40 +242,40 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KInterruptManager::UnbindHandler(s32 irq, s32 core_id) {
+    void KInterruptManager::UnbindHandler(s32 irq, s32 core_id) {
         MESOSPHERE_UNUSED(core_id);
 
-        R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
+        MESOSPHERE_ASSERT(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq));
 
 
         if (KInterruptController::IsGlobal(irq)) {
             KScopedInterruptDisable di;
 
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
-            R_RETURN(this->UnbindGlobal(irq));
-        } else {
+            return this->UnbindGlobal(irq);
+        } else if (KInterruptController::IsLocal(irq)) {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
 
             KScopedInterruptDisable di;
-            R_RETURN(this->UnbindLocal(irq));
+            return this->UnbindLocal(irq);
         }
     }
 
-    Result KInterruptManager::ClearInterrupt(s32 irq, s32 core_id) {
+    void KInterruptManager::ClearInterrupt(s32 irq, s32 core_id) {
         MESOSPHERE_UNUSED(core_id);
 
-        R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
+        MESOSPHERE_ASSERT(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq));
 
 
         if (KInterruptController::IsGlobal(irq)) {
             KScopedInterruptDisable di;
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
-            R_RETURN(this->ClearGlobal(irq));
-        } else {
+            return this->ClearGlobal(irq);
+        } else if (KInterruptController::IsLocal(irq)) {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
 
             KScopedInterruptDisable di;
-            R_RETURN(this->ClearLocal(irq));
+            return this->ClearLocal(irq);
         }
     }
 
@@ -332,7 +332,7 @@ namespace ams::kern::arch::arm64 {
         R_SUCCEED();
     }
 
-    Result KInterruptManager::UnbindGlobal(s32 irq) {
+    void KInterruptManager::UnbindGlobal(s32 irq) {
         for (size_t core_id = 0; core_id < cpu::NumCores; core_id++) {
             m_interrupt_controller.ClearTarget(irq, static_cast<s32>(core_id));
         }
@@ -340,50 +340,35 @@ namespace ams::kern::arch::arm64 {
         m_interrupt_controller.Disable(irq);
 
         GetGlobalInterruptEntry(irq).handler = nullptr;
-
-        R_SUCCEED();
     }
 
-    Result KInterruptManager::UnbindLocal(s32 irq) {
-        auto &entry = this->GetLocalInterruptEntry(irq);
-        R_UNLESS(entry.handler != nullptr, svc::ResultInvalidState());
-
+    void KInterruptManager::UnbindLocal(s32 irq) {
         m_interrupt_controller.SetPriorityLevel(irq, KInterruptController::PriorityLevel_Low);
         m_interrupt_controller.Disable(irq);
 
-        entry.handler = nullptr;
-
-        R_SUCCEED();
+        this->GetLocalInterruptEntry(irq).handler = nullptr;
     }
 
-    Result KInterruptManager::ClearGlobal(s32 irq) {
-        /* We can't clear an entry with no handler. */
+    void KInterruptManager::ClearGlobal(s32 irq) {
+        /* Get the entry. */
         auto &entry = GetGlobalInterruptEntry(irq);
-        R_UNLESS(entry.handler != nullptr, svc::ResultInvalidState());
 
-        /* If auto-cleared, we can succeed immediately. */
-        R_SUCCEED_IF(!entry.manually_cleared);
-        R_SUCCEED_IF(!entry.needs_clear);
-
-        /* Clear and enable. */
-        entry.needs_clear = false;
-        m_interrupt_controller.Enable(irq);
-        R_SUCCEED();
+        /* If not auto-cleared, clear and enable. */
+        if (entry.manually_cleared && entry.needs_clear) {
+            entry.needs_clear = false;
+            m_interrupt_controller.Enable(irq);
+        }
     }
 
-    Result KInterruptManager::ClearLocal(s32 irq) {
-        /* We can't clear an entry with no handler. */
+    void KInterruptManager::ClearLocal(s32 irq) {
+        /* Get the entry. */
         auto &entry = this->GetLocalInterruptEntry(irq);
-        R_UNLESS(entry.handler != nullptr, svc::ResultInvalidState());
 
-        /* If auto-cleared, we can succeed immediately. */
-        R_SUCCEED_IF(!entry.manually_cleared);
-        R_SUCCEED_IF(!entry.needs_clear);
-
-        /* Clear and set priority. */
-        entry.needs_clear = false;
-        m_interrupt_controller.SetPriorityLevel(irq, entry.priority);
-        R_SUCCEED();
+        /* If not auto-cleared, clear and enable. */
+        if (entry.manually_cleared && entry.needs_clear) {
+            entry.needs_clear = false;
+            m_interrupt_controller.Enable(irq);
+        }
     }
 
 }

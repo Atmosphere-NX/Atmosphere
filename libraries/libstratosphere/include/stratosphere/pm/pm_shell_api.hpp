@@ -31,5 +31,6 @@ namespace ams::pm::shell {
     Result BoostSystemMemoryResourceLimit(u64 size);
     Result BoostApplicationThreadResourceLimit();
     Result BoostSystemThreadResourceLimit();
+    Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id);
 
 }

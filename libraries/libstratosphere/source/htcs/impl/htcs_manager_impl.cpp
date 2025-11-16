@@ -101,7 +101,7 @@ namespace ams::htcs::impl {
     Result HtcsManagerImpl::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags) {
         /* Start the send. */
         u32 task_id{};
-        os::NativeHandle handle;
+        os::NativeHandle handle = os::InvalidNativeHandle;
         R_TRY(m_service.SendSmallStart(std::addressof(task_id), std::addressof(handle), desc, size, flags));
 
         /* Continue the send. */
@@ -113,14 +113,16 @@ namespace ams::htcs::impl {
 
             R_SUCCEED();
         } else {
-            os::SystemEventType event;
-            os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
-
             s32 err;
             s64 rsize;
-            m_service.SendSmallResults(std::addressof(err), std::addressof(rsize), task_id, desc);
+            static_cast<void>(m_service.SendSmallResults(std::addressof(err), std::addressof(rsize), task_id, desc));
 
-            os::DestroySystemEvent(std::addressof(event));
+            if (handle != os::InvalidNativeHandle) {
+                os::SystemEventType event;
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
+
+                os::DestroySystemEvent(std::addressof(event));
+            }
 
             R_RETURN(result);
         }
@@ -166,7 +168,7 @@ namespace ams::htcs::impl {
         if (htcs::ResultCancelled::Includes(result)) {
             s32 err;
             bool empty;
-            m_service.SelectEnd(std::addressof(err), std::addressof(empty), Span<int>{}, Span<int>{}, Span<int>{}, task_id);
+            static_cast<void>(m_service.SelectEnd(std::addressof(err), std::addressof(empty), Span<int>{}, Span<int>{}, Span<int>{}, task_id));
 
             if (handle != os::InvalidNativeHandle) {
                 os::SystemEventType event;

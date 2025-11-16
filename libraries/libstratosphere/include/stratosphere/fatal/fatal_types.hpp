@@ -24,7 +24,7 @@ namespace ams::fatal {
     enum FatalPolicy : u32 {
         FatalPolicy_ErrorReportAndErrorScreen = 0,
         FatalPolicy_ErrorReport               = 1,
-        FatalPolicy_ErrorScreen               = 2
+        FatalPolicy_ErrorScreen               = 2,
     };
 
     #if defined(ATMOSPHERE_ARCH_ARM64)
@@ -470,6 +470,14 @@ namespace ams::fatal {
     #endif
     static_assert(util::is_pod<CpuContext>::value          && sizeof(CpuContext) == 0x250,          "CpuContext definition!");
 
+    struct HashedTraceContext {
+        u8 data[0x20];
+        u32 data_count;
+    };
+    static_assert(util::is_pod<HashedTraceContext>::value);
+    static_assert(sizeof(HashedTraceContext) == 0x24);
+    static_assert(alignof(HashedTraceContext) == 0x4);
+
     namespace srv {
 
         struct ThrowContext {
@@ -480,6 +488,7 @@ namespace ams::fatal {
             char proc_name[0xD];
             bool is_creport;
             CpuContext cpu_ctx;
+            HashedTraceContext hashed_trace_ctx;
             bool generate_error_report;
             os::Event *erpt_event;
             os::Event *battery_event;
@@ -490,7 +499,7 @@ namespace ams::fatal {
             u8 tls_dump[0x100];
 
             ThrowContext(os::Event *erpt, os::Event *bat)
-                : result(ResultSuccess()), policy(), program_id(), throw_program_id(), proc_name(), is_creport(), cpu_ctx(), generate_error_report(),
+                : result(ResultSuccess()), policy(), program_id(), throw_program_id(), proc_name(), is_creport(), cpu_ctx(), hashed_trace_ctx(), generate_error_report(),
                   erpt_event(erpt), battery_event(bat),
                   stack_dump_size(), stack_dump_base(), stack_dump(), tls_address(), tls_dump()
             {

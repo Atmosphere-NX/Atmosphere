@@ -105,7 +105,7 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE size_t GetCount() const { return m_count; }
             constexpr ALWAYS_INLINE size_t GetMaxCount() const { return m_max_count; }
 
-            MESOSPHERE_NOINLINE_IF_DEBUG Result Finalize();
+            MESOSPHERE_NOINLINE_IF_DEBUG void Finalize();
             MESOSPHERE_NOINLINE_IF_DEBUG bool Remove(ams::svc::Handle handle);
 
             template<typename T = KAutoObject>

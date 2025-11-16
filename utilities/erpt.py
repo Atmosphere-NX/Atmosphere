@@ -223,8 +223,8 @@ CATEGORIES = {
     124 : 'NvHostErrInfo',
     125 : 'RunningUlaInfo',
     126 : 'InternalPanelInfo',
-    127 : 'ResourceLimitLimitInfo',
-    128 : 'ResourceLimitPeakInfo',
+    127 : 'ResourceLimitInfo',
+    128 : 'ResourceLimitPeakInfoDeprecated',
     129 : 'TouchScreenInfo',
     130 : 'AcpUserAccountSettingsInfo',
     131 : 'AudioDeviceInfo',
@@ -246,9 +246,17 @@ CATEGORIES = {
     147 : 'WlanIoctlErrorInfo',
     148 : 'SdCardActivationInfo',
     149 : 'GameCardDetailedErrorInfo',
+    150 : 'NetworkInfo2',
+    151 : 'SystemSettingInfo',
+    152 : 'MigrationStateInfo',
+    153 : 'WinVdInfo',
+    154 : 'PscTransitionStateInfo',
+    155 : 'FsProxyErrorInfo3',
+    156 : 'BluetoothErrorInfo',
     1000 : 'TestNx',
     1001 : 'NANDTypeInfo',
     1002 : 'NANDExtendedCsd',
+    1003 : 'BluetoothAudioInfo',
 }
 
 FIELD_TYPES = {

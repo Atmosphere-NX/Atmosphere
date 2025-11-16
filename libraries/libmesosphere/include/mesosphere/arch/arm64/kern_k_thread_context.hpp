@@ -165,7 +165,7 @@ namespace ams::kern::arch::arm64 {
             constexpr explicit KThreadContext(util::ConstantInitializeTag) : m_callee_saved(), m_lr(), m_sp(), m_fpcr(), m_fpsr(), m_callee_saved_fpu(), m_locked() { /* ... */ }
             explicit KThreadContext() { /* ... */ }
 
-            Result Initialize(KVirtualAddress u_pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_user, bool is_64_bit, bool is_main);
+            void Initialize(KVirtualAddress u_pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_user, bool is_64_bit, bool is_main);
 
             void SetArguments(uintptr_t arg0, uintptr_t arg1);
 

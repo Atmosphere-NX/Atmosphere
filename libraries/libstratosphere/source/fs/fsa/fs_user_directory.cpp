@@ -38,7 +38,7 @@ namespace ams::fs {
     }
 
     void CloseDirectory(DirectoryHandle handle) {
-        AMS_FS_IMPL_ACCESS_LOG((delete Get(handle), ResultSuccess()), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE);
+        static_cast<void>(AMS_FS_IMPL_ACCESS_LOG((delete Get(handle), ResultSuccess()), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE));
     }
 
 }

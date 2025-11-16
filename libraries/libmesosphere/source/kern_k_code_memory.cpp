@@ -37,7 +37,7 @@ namespace ams::kern {
             /* Clear and store cache. */
             void * const block_address = GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress()));
             std::memset(block_address, 0xFF, block.GetSize());
-            cpu::StoreDataCache(block_address, block.GetSize());
+            MESOSPHERE_R_ABORT_UNLESS(cpu::StoreDataCache(block_address, block.GetSize()));
         }
 
         /* Set remaining tracking members. */

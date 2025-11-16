@@ -26,12 +26,14 @@ namespace ams::svc::arch::arm64 {
         volatile u16 disable_count;
         volatile u16 interrupt_flag;
         volatile u8 cache_maintenance_flag;
+        volatile s64 thread_cpu_time;
         /* TODO: How should we handle libnx vs Nintendo user thread local space? */
-        uintptr_t TODO[(0x200 - 0x108) / sizeof(uintptr_t)];
+        uintptr_t TODO[(0x200 - 0x110) / sizeof(uintptr_t)];
     };
     static_assert(__builtin_offsetof(ThreadLocalRegion, disable_count)          == 0x100);
     static_assert(__builtin_offsetof(ThreadLocalRegion, interrupt_flag)         == 0x102);
     static_assert(__builtin_offsetof(ThreadLocalRegion, cache_maintenance_flag) == 0x104);
+    static_assert(__builtin_offsetof(ThreadLocalRegion, thread_cpu_time)        == 0x108);
 
     ALWAYS_INLINE ThreadLocalRegion *GetThreadLocalRegion() {
         ThreadLocalRegion *tlr;

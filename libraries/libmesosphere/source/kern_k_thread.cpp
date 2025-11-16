@@ -392,7 +392,7 @@ namespace ams::kern {
 
         /* If the thread has a local region, delete it. */
         if (m_tls_address != Null<KProcessAddress>) {
-            MESOSPHERE_R_ABORT_UNLESS(m_parent->DeleteThreadLocalRegion(m_tls_address));
+            m_parent->DeleteThreadLocalRegion(m_tls_address);
         }
 
         /* Release any waiters. */
@@ -697,7 +697,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KThread::GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask) {
+    void KThread::GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask) {
         MESOSPHERE_ASSERT_THIS();
         {
             KScopedSchedulerLock sl;
@@ -712,8 +712,6 @@ namespace ams::kern {
                 *out_affinity_mask = m_original_physical_affinity_mask.GetAffinityMask();
             }
         }
-
-        R_SUCCEED();
     }
 
     Result KThread::SetCoreMask(int32_t core_id, u64 v_affinity_mask) {
@@ -852,7 +850,7 @@ namespace ams::kern {
         }
     }
 
-    Result KThread::SetPriorityToIdle() {
+    void KThread::SetPriorityToIdle() {
         MESOSPHERE_ASSERT_THIS();
 
         KScopedSchedulerLock sl;
@@ -862,8 +860,6 @@ namespace ams::kern {
         m_priority      = IdleThreadPriority;
         m_base_priority = IdleThreadPriority;
         KScheduler::OnThreadPriorityChanged(this, old_priority);
-
-        R_SUCCEED();
     }
 
     void KThread::RequestSuspend(SuspendType type) {
@@ -1407,7 +1403,7 @@ namespace ams::kern {
         return this->GetState();
     }
 
-    Result KThread::Sleep(s64 timeout) {
+    void KThread::Sleep(s64 timeout) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(!KScheduler::IsSchedulerLockedByCurrentThread());
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
@@ -1422,15 +1418,13 @@ namespace ams::kern {
             /* Check if the thread should terminate. */
             if (this->IsTerminationRequested()) {
                 slp.CancelSleep();
-                R_THROW(svc::ResultTerminationRequested());
+                return;
             }
 
             /* Wait for the sleep to end. */
             wait_queue.SetHardwareTimer(timer);
             this->BeginWait(std::addressof(wait_queue));
         }
-
-        R_SUCCEED();
     }
 
     void KThread::BeginWait(KThreadQueue *queue) {

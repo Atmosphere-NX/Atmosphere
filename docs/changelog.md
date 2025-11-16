@@ -1,4 +1,28 @@
 # Changelog
+## 1.10.0
++ Basic support was added for 21.0.0.
+  + The console should boot and atmosphère should be fully functional.
+  + **Please note**: All homebrew software may need to be re-compiled with the latest libnx (>= 4.10.0), or else it may crash/experience memory corruption.
+    + Nintendo broke the userland<->kernel TLS ABI in 21.0.0, by writing to previously reserved space.
+    + Homebrew used this reserved space for its TLS slots, which means any homebrew software using TLS slots will experience memory corruption when running under Atmosphere 1.10.0.
+    + This doesn't appear to impact everything, but a large portion of tested homebrew crashes (often on exit), and so will need re-compile for the new ABI.
+      + For those technically inclined, while TLS slots are rarely used by developers, they're used to implement features like e.g. C++ exceptions under the hood, and so anything using those crashes, etc.
+    + To help make this transition easier, hbmenu now shows a warning when selecting homebrew compiled with an older, incompatible ABI version.
+      + I apologize for the hassle in general.
+      + libnx has been updated so that its reserved space matches Nintendo's now -- this particular issue can never occur again, even if Nintendo touches more reserved space.
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `loader` was updated to reflect the latest official behavior.
+  + `pm` was updated to reflect the latest official behavior.
+  + `erpt` was updated to reflect the latest official behavior.
+  + `pgl` was updated to reflect the latest official behavior.
+  + `fatal` was updated to reflect the latest official behavior.
++ Support was added for launching another game-which-has-too-many-files with romfs mods.
+  + I rely on user reports for adding support/fixing these, and some of these games can be pretty obscure!
+  + If you are affected by this, you will see "Data abort (0x101)" when trying to launch the game with mods.
+  + Please reach out to `sciresm` on discord if this occurs to share your error report binary.
+    + Although some games may be impossible to fix, I believe I can get almost everything working, so please let me try to help you (and improve atmosphère's support!) if you run into this!
++ General system stability improvements to enhance the user's experience.
 ## 1.9.5
 + Basic support was added for 20.5.0.
 + General system stability improvements to enhance the user's experience.

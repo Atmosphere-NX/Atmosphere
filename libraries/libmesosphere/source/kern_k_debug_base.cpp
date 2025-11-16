@@ -416,7 +416,8 @@ namespace ams::kern {
         KProcess * const target = this->GetProcessUnsafe();
 
         /* Terminate the process. */
-        target->Terminate();
+        /* NOTE: This result is seemingly-intentionally not checked by Nintendo. */
+        static_cast<void>(target->Terminate());
 
         R_SUCCEED();
     }
@@ -1133,7 +1134,7 @@ namespace ams::kern {
         R_SUCCEED();
     }
 
-    Result KDebugBase::OnExitProcess(KProcess *process) {
+    void KDebugBase::OnExitProcess(KProcess *process) {
         MESOSPHERE_ASSERT(process != nullptr);
 
         /* Check if we're attached to a debugger. */
@@ -1148,11 +1149,9 @@ namespace ams::kern {
                 debug->NotifyAvailable();
             }
         }
-
-        R_SUCCEED();
     }
 
-    Result KDebugBase::OnTerminateProcess(KProcess *process) {
+    void KDebugBase::OnTerminateProcess(KProcess *process) {
         MESOSPHERE_ASSERT(process != nullptr);
 
         /* Check if we're attached to a debugger. */
@@ -1167,21 +1166,17 @@ namespace ams::kern {
                 debug->NotifyAvailable();
             }
         }
-
-        R_SUCCEED();
     }
 
-    Result KDebugBase::OnExitThread(KThread *thread) {
+    void KDebugBase::OnExitThread(KThread *thread) {
         MESOSPHERE_ASSERT(thread != nullptr);
 
         /* Check if we're attached to a debugger. */
         if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->IsAttachedToDebugger()) {
             /* If we are, submit the event. */
             const uintptr_t params[2] = { thread->GetId(), static_cast<uintptr_t>(thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread) };
-            R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, params, util::size(params)));
+            static_cast<void>(OnDebugEvent(ams::svc::DebugEvent_ExitThread, params, util::size(params)));
         }
-
-        R_SUCCEED();
     }
 
 }

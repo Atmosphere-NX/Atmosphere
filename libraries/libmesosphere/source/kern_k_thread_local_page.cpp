@@ -32,7 +32,7 @@ namespace ams::kern {
         R_RETURN(m_owner->GetPageTable().MapPages(std::addressof(m_virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
     }
 
-    Result KThreadLocalPage::Finalize() {
+    void KThreadLocalPage::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
         /* Get the physical address of the page. */
@@ -40,11 +40,10 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(m_owner->GetPageTable().GetPhysicalAddress(std::addressof(phys_addr), this->GetAddress()));
 
         /* Unmap the page. */
-        R_TRY(m_owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
+        MESOSPHERE_R_ABORT_UNLESS(m_owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
 
         /* Free the page. */
         KPageBuffer::FreeChecked<PageSize>(KPageBuffer::FromPhysicalAddress(phys_addr));
-        R_SUCCEED();
     }
 
     KProcessAddress KThreadLocalPage::Reserve() {

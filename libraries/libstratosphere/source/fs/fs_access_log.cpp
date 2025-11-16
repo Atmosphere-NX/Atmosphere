@@ -585,7 +585,7 @@ namespace ams::fs::impl {
                 }
 
                 /* Output. */
-                OutputAccessLogToSdCardImpl(log_buffer.get(), log_buffer_size - 1);
+                static_cast<void>(OutputAccessLogToSdCardImpl(log_buffer.get(), log_buffer_size - 1));
             }
         }
 
@@ -593,7 +593,7 @@ namespace ams::fs::impl {
             if ((g_global_access_log_mode & AccessLogMode_Log) != 0) {
                 /* TODO: Support logging. */
             } else if ((g_global_access_log_mode & AccessLogMode_SdCard) != 0) {
-                OutputAccessLogToSdCardImpl(log, size - 1);
+                static_cast<void>(OutputAccessLogToSdCardImpl(log, size - 1));
             }
         }
 

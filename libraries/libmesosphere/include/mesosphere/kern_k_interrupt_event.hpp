@@ -38,13 +38,11 @@ namespace ams::kern {
 
             Result Reset();
 
-            Result Clear() {
+            void Clear() {
                 MESOSPHERE_ASSERT_THIS();
 
-                /* Try to perform a reset, succeeding unconditionally. */
-                this->Reset();
-
-                R_SUCCEED();
+                /* Try to perform a reset, ignoring whether it succeeds. */
+                static_cast<void>(this->Reset());
             }
 
             bool IsInitialized() const { return m_is_initialized; }

@@ -71,8 +71,8 @@ namespace ams::htc::server::rpc {
             char m_receive_buffer[BufferSize];
             char m_send_buffer[BufferSize];
         private:
-            static void ReceiveThreadEntry(void *arg) { static_cast<RpcClient *>(arg)->ReceiveThread(); }
-            static void SendThreadEntry(void *arg) { static_cast<RpcClient *>(arg)->SendThread(); }
+            static void ReceiveThreadEntry(void *arg) { static_cast<void>(static_cast<RpcClient *>(arg)->ReceiveThread()); }
+            static void SendThreadEntry(void *arg) { static_cast<void>(static_cast<RpcClient *>(arg)->SendThread()); }
 
             Result ReceiveThread();
             Result SendThread();

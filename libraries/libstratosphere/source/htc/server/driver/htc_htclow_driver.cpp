@@ -89,7 +89,7 @@ namespace ams::htc::server::driver {
 
     void HtclowDriver::Shutdown(htclow::ChannelId channel) {
         /* Shut down the channel. */
-        m_manager->Shutdown(GetHtclowChannel(channel, m_module_id));
+        static_cast<void>(m_manager->Shutdown(GetHtclowChannel(channel, m_module_id)));
     }
 
     Result HtclowDriver::Send(s64 *out, const void *src, s64 src_size, htclow::ChannelId channel) {

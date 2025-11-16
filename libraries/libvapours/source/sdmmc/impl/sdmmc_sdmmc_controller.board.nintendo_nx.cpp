@@ -471,7 +471,7 @@ namespace ams::sdmmc::impl {
 
             SdHostStandardController::EnsureControl();
             WaitMicroSeconds(1);
-            SdHostStandardController::AbortTransaction();
+            static_cast<void>(SdHostStandardController::AbortTransaction());
         }
         reg::ReadWrite(m_sdmmc_registers->sd_host_standard_registers.clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, ENABLE));
 
@@ -520,7 +520,7 @@ namespace ams::sdmmc::impl {
 
                 /* Otherwise, check if we timed out. */
                 if (!timer.Update()) {
-                    SdHostStandardController::AbortTransaction();
+                    static_cast<void>(SdHostStandardController::AbortTransaction());
                     R_THROW(sdmmc::ResultIssueTuningCommandSoftwareTimeout());
                 }
             }
@@ -857,7 +857,8 @@ namespace ams::sdmmc::impl {
             R_TRY(this->CheckRemoved());
 
             /* Issue the command. */
-            this->IssueTuningCommand(command_index);
+            /* NOTE: Nintendo does not check the result of this call. */
+            static_cast<void>(this->IssueTuningCommand(command_index));
 
             /* Check if tuning is done. */
             if (i >= num_tries) {
@@ -902,7 +903,8 @@ namespace ams::sdmmc::impl {
         /* If we're at 3.3V, lower to 1.8V. */
         if (m_current_bus_power == BusPower_3_3V) {
             /* pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
-            m_power_controller->LowerBusPower();
+            /* NOTE: Nintendo does not check the result of this call. */
+            static_cast<void>(m_power_controller->LowerBusPower());
 
             /* Set our bus power. */
             m_current_bus_power = BusPower_1_8V;
@@ -913,7 +915,8 @@ namespace ams::sdmmc::impl {
 
 
         /* pcv::PowerOff(pcv::PowerControlTarget_SdCard); */
-        m_power_controller->PowerOff();
+        /* NOTE: Nintendo does not check the result of this call. */
+        static_cast<void>(m_power_controller->PowerOff());
 
         /* Set our bus power. */
         m_current_bus_power = BusPower_Off;
@@ -1276,7 +1279,8 @@ namespace ams::sdmmc::impl {
         R_UNLESS(m_current_bus_power == BusPower_1_8V, pcv::ResultIllegalRequest());
 
         /* Disable vddio, and wait 4 ms. */
-        this->ControlVddioSdmmc1(BusPower_Off);
+        /* NOTE: Nintendo does not check the result of this call. */
+        static_cast<void>(this->ControlVddioSdmmc1(BusPower_Off));
         WaitMicroSeconds(4000);
 
         /* Set the SD power GPIO to low. */

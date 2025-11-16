@@ -102,6 +102,8 @@ namespace ams::ncm {
 
         static const SystemProgramId End;
 
+        static const SystemProgramId BrowserCoreDll;
+
         static const SystemProgramId Manu;
         static const SystemProgramId Htc;
         static const SystemProgramId DmntGen2;
@@ -212,10 +214,12 @@ namespace ams::ncm {
 
     inline constexpr const SystemProgramId SystemProgramId::End   = { 0x01000000000007FFul };
 
-    inline constexpr const SystemProgramId SystemProgramId::Manu        = { 0x010000000000B14Aul };
-    inline constexpr const SystemProgramId SystemProgramId::Htc         = { 0x010000000000B240ul };
-    inline constexpr const SystemProgramId SystemProgramId::DmntGen2    = { 0x010000000000D609ul };
-    inline constexpr const SystemProgramId SystemProgramId::DevServer   = { 0x010000000000D623ul };
+    inline constexpr const SystemProgramId SystemProgramId::BrowserCoreDll = { 0x010000000000085Dul };
+
+    inline constexpr const SystemProgramId SystemProgramId::Manu           = { 0x010000000000B14Aul };
+    inline constexpr const SystemProgramId SystemProgramId::Htc            = { 0x010000000000B240ul };
+    inline constexpr const SystemProgramId SystemProgramId::DmntGen2       = { 0x010000000000D609ul };
+    inline constexpr const SystemProgramId SystemProgramId::DevServer      = { 0x010000000000D623ul };
 
     inline constexpr bool IsSystemProgramId(const ProgramId &program_id) {
         return (SystemProgramId::Start <= program_id && program_id <= SystemProgramId::End) || IsAtmosphereProgramId(program_id);

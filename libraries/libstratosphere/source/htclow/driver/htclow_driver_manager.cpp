@@ -32,15 +32,15 @@ namespace ams::htclow::driver {
                 m_open_driver = m_debug_driver;
                 break;
             case impl::DriverType::Socket:
-                m_socket_driver.Open();
+                R_TRY(m_socket_driver.Open());
                 m_open_driver = std::addressof(m_socket_driver);
                 break;
             case impl::DriverType::Usb:
-                m_usb_driver.Open();
+                R_TRY(m_usb_driver.Open());
                 m_open_driver = std::addressof(m_usb_driver);
                 break;
             case impl::DriverType::PlainChannel:
-                //m_plain_channel_driver.Open();
+                //R_TRY(m_plain_channel_driver.Open());
                 //m_open_driver = std::addressof(m_plain_channel_driver);
                 //break;
                 R_THROW(htclow::ResultUnknownDriverType());

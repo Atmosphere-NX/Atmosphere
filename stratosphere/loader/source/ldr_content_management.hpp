@@ -24,6 +24,9 @@ namespace ams::ldr {
         NON_MOVEABLE(ScopedCodeMount);
         private:
             std::scoped_lock<os::SdkMutex> m_lk;
+            const char *m_ams_path;
+            const char *m_sd_or_base_path;
+            const char *m_base_path;
             cfg::OverrideStatus m_override_status;
             fs::CodeVerificationData m_ams_code_verification_data;
             fs::CodeVerificationData m_sd_or_base_code_verification_data;
@@ -34,8 +37,8 @@ namespace ams::ldr {
             bool m_mounted_sd_or_code;
             bool m_mounted_code;
         public:
-            ScopedCodeMount(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs);
-            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs, os::SdkMutex &mutex, const char *ams, const char *sd_b, const char *b);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs, os::SdkMutex &mutex, const char *ams, const char *sd_b, const char *b);
             ~ScopedCodeMount();
 
             Result GetResult() const {
@@ -63,17 +66,64 @@ namespace ams::ldr {
             void EnsureOverrideStatus(const ncm::ProgramLocation &loc);
     };
 
-    constexpr inline const char * const AtmosphereCodeMountName   = "ams-code";
-    constexpr inline const char * const AtmosphereCompatMountName = "ams-cmpt";
-    constexpr inline const char * const SdOrCodeMountName         = "sd-code";
-    constexpr inline const char * const CodeMountName             = "code";
-    constexpr inline const char * const CompatMountName           = "cmpt";
+    constexpr inline const char * const AtmosphereCodeMountName           = "ams-code";
+    constexpr inline const char * const AtmosphereCompatMountName         = "ams-cmpt";
+    constexpr inline const char * const AtmosphereBrowserCoreDllMountName = "ams-bdll";
+    constexpr inline const char * const SdOrCodeMountName                 = "sd-code";
+    constexpr inline const char * const SdOrCompatMountName               = "sd-cmpt";
+    constexpr inline const char * const SdOrBrowserCoreDllMountName       = "sd-bdll";
+    constexpr inline const char * const CodeMountName                     = "code";
+    constexpr inline const char * const CompatMountName                   = "cmpt";
+    constexpr inline const char * const BrowserCoreDllMountName           = "bdll";
 
     #define ENCODE_ATMOSPHERE_CODE_PATH(relative) "ams-code:" relative
     #define ENCODE_ATMOSPHERE_CMPT_PATH(relative) "ams-cmpt:" relative
+    #define ENCODE_ATMOSPHERE_BDLL_PATH(relative) "ams-bdll:" relative
     #define ENCODE_SD_OR_CODE_PATH(relative) "sd-code:" relative
+    #define ENCODE_SD_OR_CMPT_PATH(relative) "sd-cmpt:" relative
+    #define ENCODE_SD_OR_BDLL_PATH(relative) "sd-bdll:" relative
     #define ENCODE_CODE_PATH(relative) "code:" relative
     #define ENCODE_CMPT_PATH(relative) "cmpt:" relative
+    #define ENCODE_BDLL_PATH(relative) "bdll:" relative
+
+    class ScopedCodeMountForCode : public ScopedCodeMount {
+        private:
+            static constinit inline os::SdkMutex s_mutex;
+        public:
+            ScopedCodeMountForCode(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, attrs, s_mutex, AtmosphereCodeMountName, SdOrCodeMountName, CodeMountName) {
+                /* ... */
+            }
+
+            ScopedCodeMountForCode(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, override_status, attrs, s_mutex, AtmosphereCodeMountName, SdOrCodeMountName, CodeMountName) {
+                /* ... */
+            }
+    };
+
+    class ScopedCodeMountForCompat : public ScopedCodeMount {
+        private:
+            static constinit inline os::SdkMutex s_mutex;
+        public:
+            ScopedCodeMountForCompat(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, attrs, s_mutex, AtmosphereCompatMountName, SdOrCompatMountName, CompatMountName) {
+                /* ... */
+            }
+
+            ScopedCodeMountForCompat(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, override_status, attrs, s_mutex, AtmosphereCompatMountName, SdOrCompatMountName, CompatMountName) {
+                /* ... */
+            }
+    };
+
+    class ScopedCodeMountForBrowserCoreDll : public ScopedCodeMount {
+        private:
+            static constinit inline os::SdkMutex s_mutex;
+        public:
+            ScopedCodeMountForBrowserCoreDll(const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, attrs, s_mutex, AtmosphereBrowserCoreDllMountName, SdOrBrowserCoreDllMountName, BrowserCoreDllMountName) {
+                /* ... */
+            }
+
+            ScopedCodeMountForBrowserCoreDll(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const ldr::ProgramAttributes &attrs) : ScopedCodeMount(loc, override_status, attrs, s_mutex, AtmosphereBrowserCoreDllMountName, SdOrBrowserCoreDllMountName, BrowserCoreDllMountName) {
+                /* ... */
+            }
+    };
 
     /* Redirection API. */
     Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc, const ldr::ProgramAttributes &attrs);

@@ -35,7 +35,9 @@ namespace ams::erpt::srv {
     Attachment::~Attachment() {
         this->CloseStream();
         if (m_record->RemoveReference()) {
-            this->DeleteStream(this->FileName().name);
+            if (R_FAILED(this->DeleteStream(this->FileName().name))) {
+                /* TODO: Log failure? */
+            }
             delete m_record;
         }
     }
