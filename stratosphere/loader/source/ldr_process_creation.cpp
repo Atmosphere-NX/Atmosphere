@@ -245,14 +245,14 @@ namespace ams::ldr {
 
             /* If we don't have an RTLD, we must only have a main. */
             const bool has_browser_dll = (acid_flags & Acid::AcidFlag_LoadBrowserCoreDll) != 0;
-            if (ali->has_rtld) {
-                /* If we have rtld, we must also have sdk. */
-                R_UNLESS(ali->has_sdk, ldr::ResultInvalidNso());
+            if (!ali->has_rtld) {
+                /* If don't have rtld, we must also not have sdk. */
+                R_UNLESS(!ali->has_sdk, ldr::ResultInvalidNso());
 
-                /* We must also only have one of [subsdk, browser dll]. */
+                /* We must also not have both subsdk and browser dll. */
                 R_UNLESS(!(ali->has_subsdk && has_browser_dll), ldr::ResultInvalidNso());
             } else {
-                /* If we don't have rtld, we are not browser, and must not have browser core dll. */
+                /* If we have rtld, we must not have browser core dll. */
                 R_UNLESS(!has_browser_dll, ldr::ResultInvalidNso());
             }
 
