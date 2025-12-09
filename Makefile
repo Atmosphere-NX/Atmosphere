@@ -156,7 +156,7 @@ oc:
 	$(MAKE) -f atmosphere.mk package3 ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-40MB" -j$(NPROCS)
 	mkdir -p $(KEF_40MB_DIR)/atmosphere/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 $(KEF_40MB_DIR)/atmosphere/package3
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(KEF_8GB_DIR)/atmosphere/package3
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(KEF_40MB_DIR)/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building 40MB!)
 	$(info ---------------------------------------------------------)
