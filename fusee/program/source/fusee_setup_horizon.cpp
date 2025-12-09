@@ -510,6 +510,9 @@ namespace ams::nxboot {
             /* Parse fields from exosphere.ini */
             {
                 IniSectionList sections;
+                /* Flag to check if we should force enable debugmode */
+                bool force_debug = false;
+
                 if (ParseIniSafe(sections, "sdmc:/exosphere.ini")) {
                     for (const auto &section : sections) {
                         /* We only care about the [exosphere] section. */
@@ -531,6 +534,8 @@ namespace ams::nxboot {
                                 } else {
                                     storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser;
                                 }
+                            } else if (std::strcmp(entry.key, "force_enable_debugmode") == 0) {
+                                force_debug = (entry.value[0] == '1');
                             } else if (std::strcmp(entry.key, "disable_user_exception_handlers") == 0) {
                                 if (entry.value[0] == '1') {
                                     storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_DisableUserModeExceptionHandlers;
@@ -579,6 +584,12 @@ namespace ams::nxboot {
                             }
                         }
                     }
+                }
+
+                /* Apply forced debug mode if requested via exosphere.ini */
+                if (force_debug) {
+                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel;
+                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser;
                 }
             }
 
