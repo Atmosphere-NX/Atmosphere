@@ -108,15 +108,6 @@ clear:
 	$(MAKE) clean -j12
 	$(MAKE) -j12
 
-hekate:
-	@echo "Building Hekate"
-	@cd ../hekate && git pull && $(MAKE) clean && $(MAKE) -j12
-	@mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/sys/
-	@find /mnt/d/git/dev/_kefir/8gb/ -type f ! -name 'run.te' -delete
-	@cp ../hekate/output/*.bso /mnt/d/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
-	@cp ../hekate/output/nyx.bin /mnt/d/git/dev/_kefir/8gb/bootloader/sys/nyx.bin || echo "Warning: nyx.bin not found or copy failed"
-	@cp ../hekate/output/payload.bin /mnt/d/git/dev/_kefir/8gb/payload.bin || echo "Warning: payload.bin not found or copy failed"
-
 8gb_DRAM:
 	$(info ---------------------------------------------------------)
 	$(info                   Built with 8GB DRAM!)
@@ -125,7 +116,6 @@ hekate:
 	git merge master --no-edit
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	# $(MAKE) hekate
 	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
 	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
@@ -145,7 +135,6 @@ hekate:
 	$(MAKE) clean -j12
 	$(MAKE) -f atmosphere.mk package3 -j12
 	$(MAKE) -C fusee -j12
-	# $(MAKE) hekate
 	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
 	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
@@ -164,6 +153,7 @@ oc:
 	git merge master --no-edit
 	$(MAKE) -C stratosphere/loader -j12
 	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
@@ -178,8 +168,49 @@ oc-clean:
 	$(MAKE) clean -j12
 	$(MAKE) -C stratosphere/loader -j12
 	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/kefir/config/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+40mb:
+	$(info ---------------------------------------------------------)
+	$(info                   Building 40MB Mesosphere!)
+	$(info ---------------------------------------------------------)
+	git checkout 40mb
+	git merge master --no-edit
+	
+	$(MAKE) -f atmosphere.mk mesosphere -j12
+	
+	$(MAKE) -f atmosphere.mk package3 -j12
+	
+	mkdir -p ~/dev/_kefir/40mb/atmosphere/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 ~/dev/_kefir/40mb/atmosphere/package3
+	
+	$(info ---------------------------------------------------------)
+	$(info             FINISH building 40MB!)
+	$(info ---------------------------------------------------------)
+	git checkout master
+
+40mb-clean:
+	$(info ---------------------------------------------------------)
+	$(info             Building 40MB Mesosphere (CLEAN)!)
+	$(info ---------------------------------------------------------)
+	git checkout 40mb
+	git merge master --no-edit
+	
+	$(MAKE) clean -j12
+	
+	$(MAKE) -f atmosphere.mk mesosphere -j12
+	
+	$(MAKE) -f atmosphere.mk package3 -j12
+	
+	mkdir -p ~/dev/_kefir/40mb/atmosphere/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 ~/dev/_kefir/40mb/atmosphere/package3
+	
+	$(info ---------------------------------------------------------)
+	$(info          FINISH building 40MB (Clean)!)
 	$(info ---------------------------------------------------------)
 	git checkout master
 
@@ -190,6 +221,7 @@ kefir:
 	$(MAKE) clean-logo 
 	$(MAKE) 8gb_DRAM-clean
 	$(MAKE) oc-clean
+	$(MAKE) 40mb-clean
 	$(MAKE) nx_release -j12
 
 kefir-fast: update
@@ -197,6 +229,7 @@ kefir-fast: update
 	# $(MAKE) clean-logo 
 	$(MAKE) 8gb_DRAM
 	$(MAKE) oc
+	$(MAKE) 40mb
 	$(MAKE) nx_release -j12
 
-.PHONY: all clean clean-all kefir-version update clean-logo clear hekate 8gb_DRAM 8gb_DRAM-clean oc oc-clean kefir kefir-fast $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
+.PHONY: all clean clean-all kefir-version update clean-logo clear hekate 8gb_DRAM 8gb_DRAM-clean oc oc-clean kefir kefir-fast 40mb 40mb-clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
