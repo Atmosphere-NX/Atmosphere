@@ -1,4 +1,15 @@
 ATMOSPHERE_BUILD_CONFIGS :=
+KEFIR_ROOT_DIR ?= /mnt/d/git/dev/_kefir
+
+ifndef KEF_VERSION
+ifneq ("$(wildcard $(KEFIR_ROOT_DIR)/version)","")
+KEF_VERSION := $(shell cat $(KEFIR_ROOT_DIR)/version)
+else
+KEF_VERSION := UNK
+endif
+endif
+
+NPROCS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
 
 all: nx_release
 
@@ -6,11 +17,11 @@ clean: clean-nx_release
 
 THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
-
-# --- Configuration for update target ---
-# Шлях до каталогу libnx відносно цього Makefile
 LIBNX_DIR := ../libnx
-# ---------------------------------------
+
+KEF_8GB_DIR := $(KEFIR_ROOT_DIR)/8gb
+KEF_OC_DIR  := $(KEFIR_ROOT_DIR)/oc
+KEF_40MB_DIR := $(KEFIR_ROOT_DIR)/40mb
 
 define ATMOSPHERE_ADD_TARGET
 
@@ -46,15 +57,13 @@ $(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm-cortex-a57,))
 
 clean-all: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
 
-# --- Custom Targets ---
-
 update:
 	@echo "---------------------------------------------------------"
 	@echo ">>> Updating devkitPro packages..."
 	@echo "---------------------------------------------------------"
 	sudo dkp-pacman -Syu
 	@echo "---------------------------------------------------------"
-	@echo ">>> Updating libnx repository in $(abspath $(LIBNX_DIR))..."
+	@echo ">>> Updating libnx repository..."
 	@echo "---------------------------------------------------------"
 	@if [ -d "$(LIBNX_DIR)" ]; then \
 		(cd $(LIBNX_DIR) && git pull) || exit 1; \
@@ -63,12 +72,12 @@ update:
 		exit 1; \
 	fi
 	@echo "---------------------------------------------------------"
-	@echo ">>> Building and installing libnx from $(abspath $(LIBNX_DIR))..."
+	@echo ">>> Building and installing libnx..."
 	@echo "---------------------------------------------------------"
 	@if [ -d "$(LIBNX_DIR)" ]; then \
-		(cd $(LIBNX_DIR) && $(MAKE) install -j12) || exit 1; \
+		(cd $(LIBNX_DIR) && $(MAKE) install -j$(NPROCS)) || exit 1; \
 	else \
-		echo "Error: libnx directory '$(abspath $(LIBNX_DIR))' not found (should not happen if previous step passed)." >&2; \
+		echo "Error: libnx directory '$(abspath $(LIBNX_DIR))' not found." >&2; \
 		exit 1; \
 	fi
 	@echo "---------------------------------------------------------"
@@ -79,10 +88,9 @@ clean-logo:
 	$(info ---------------------------------------------------------)
 	$(info  Building logo in $(CURDIR))
 	$(info ---------------------------------------------------------)
-
 	git checkout master
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
-	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j12
+	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j$(NPROCS)
 	@if ! git diff --quiet; then \
 		git add . && git commit -m "changed logo"; \
 	else \
@@ -91,66 +99,31 @@ clean-logo:
 
 	git checkout 8gb_DRAM
 	python3 $(CURDIR)/stratosphere/boot/source/bmp_to_array.py
-	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j12
+	$(MAKE) -C $(CURDIR)/stratosphere/boot clean -j$(NPROCS)
 	@if ! git diff --quiet; then \
 		git add . && git commit -m "changed logo"; \
 	else \
 		echo "Nothing to commit on 8gb_DRAM"; \
 	fi
-
 	git checkout master
 
-
 kefir-version:
-	cd libraries/libstratosphere && $(MAKE) -j12 clean && cd ../../stratosphere/ams_mitm && $(MAKE) -j12 clean && cd ../.. && $(MAKE) -j12
-
-clear:
-	$(MAKE) clean -j12
-	$(MAKE) -j12
-
-hekate:
-	@echo "Building Hekate"
-	@cd ../hekate && git pull && $(MAKE) clean && $(MAKE) -j12
-	@mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/sys/
-	@find /mnt/d/git/dev/_kefir/8gb/ -type f ! -name 'run.te' -delete
-	@cp ../hekate/output/*.bso /mnt/d/git/dev/_kefir/8gb/bootloader/sys/ || echo "Warning: No .bso files found or copy failed"
-	@cp ../hekate/output/nyx.bin /mnt/d/git/dev/_kefir/8gb/bootloader/sys/nyx.bin || echo "Warning: nyx.bin not found or copy failed"
-	@cp ../hekate/output/payload.bin /mnt/d/git/dev/_kefir/8gb/payload.bin || echo "Warning: payload.bin not found or copy failed"
+	cd libraries/libstratosphere && $(MAKE) -j$(NPROCS) clean && cd ../../stratosphere/ams_mitm && $(MAKE) -j$(NPROCS) clean && cd ../.. && $(MAKE) -j$(NPROCS)
 
 8gb_DRAM:
 	$(info ---------------------------------------------------------)
-	$(info                   Built with 8GB DRAM!)
+	$(info             Built with 8GB DRAM!)
 	$(info ---------------------------------------------------------)
 	git checkout 8gb_DRAM
 	git merge master --no-edit
-	$(MAKE) -f atmosphere.mk package3 -j12
-	$(MAKE) -C fusee -j12
-	# $(MAKE) hekate
-	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
-	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
-	$(info ---------------------------------------------------------)
-	$(info             FINISH building with 8GB DRAM!)
-	$(info ---------------------------------------------------------)
-	git checkout master
-
-8gb_DRAM-clean:
-	$(info ---------------------------------------------------------)
-	$(info                   Built with 8GB DRAM!)
-	$(info ---------------------------------------------------------)
-	git checkout 8gb_DRAM
-	git merge master --no-edit
-	$(MAKE) clean -j12
-	$(MAKE) -f atmosphere.mk package3 -j12
-	$(MAKE) -C fusee -j12
-	# $(MAKE) hekate
-	mkdir -p /mnt/d/git/dev/_kefir/8gb/atmosphere/
-	mkdir -p /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/
-	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
-	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin /mnt/d/git/dev/_kefir/8gb/bootloader/payloads/fusee.bin
-	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png /mnt/d/git/dev/_kefir/8gb/atmosphere/package3
+	$(MAKE) clean -j$(NPROCS)
+	$(MAKE) -f atmosphere.mk package3 ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-8GB" -j$(NPROCS)
+	$(MAKE) -C fusee -j$(NPROCS)
+	mkdir -p $(KEF_8GB_DIR)/atmosphere/
+	mkdir -p $(KEF_8GB_DIR)/bootloader/payloads/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 $(KEF_8GB_DIR)/atmosphere/package3
+	cp fusee/out/nintendo_nx_arm_armv4t/release/fusee.bin $(KEF_8GB_DIR)/bootloader/payloads/fusee.bin
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(KEF_8GB_DIR)/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building with 8GB DRAM!)
 	$(info ---------------------------------------------------------)
@@ -162,41 +135,39 @@ oc:
 	$(info ---------------------------------------------------------)
 	git checkout oc
 	git merge master --no-edit
-	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
+	$(MAKE) clean -j$(NPROCS)
+	$(MAKE) -C stratosphere/loader ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-OC" -j$(NPROCS)
+	mkdir -p $(KEF_OC_DIR)/atmosphere/kips/
+	mkdir -p $(KEFIR_ROOT_DIR)/kefir/config/oc/atmosphere/kips/
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip $(KEF_OC_DIR)/atmosphere/kips/kefir.kip
+	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip $(KEFIR_ROOT_DIR)/kefir/config/oc/atmosphere/kips/kefir.kip
 	$(info ---------------------------------------------------------)
 	$(info                   FINISH building OC!)
 	$(info ---------------------------------------------------------)
 	git checkout master
 
-oc-clean:
+40mb:
 	$(info ---------------------------------------------------------)
-	$(info                     Built with OC)
+	$(info                   Building 40MB Mesosphere!)
 	$(info ---------------------------------------------------------)
-	git checkout oc
+	git checkout 40mb
 	git merge master --no-edit
-	$(MAKE) clean -j12
-	$(MAKE) -C stratosphere/loader -j12
-	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip /mnt/d/git/dev/_kefir/oc/atmosphere/kips/kefir.kip
+	$(MAKE) clean -j$(NPROCS)
+	$(MAKE) -f atmosphere.mk package3 ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-40MB" -j$(NPROCS)
+	mkdir -p $(KEF_40MB_DIR)/atmosphere/
+	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 $(KEF_40MB_DIR)/atmosphere/package3
 	$(info ---------------------------------------------------------)
-	$(info                   FINISH building OC!)
+	$(info             FINISH building 40MB!)
 	$(info ---------------------------------------------------------)
 	git checkout master
 
-kefir: 
-	# update
+kefir:
 	git checkout master
-	$(MAKE) clean -j12
+	$(MAKE) clean -j$(NPROCS)
 	$(MAKE) clean-logo 
-	$(MAKE) 8gb_DRAM-clean
-	$(MAKE) oc-clean
-	$(MAKE) nx_release -j12
-
-kefir-fast: update
-	git checkout master
-	# $(MAKE) clean-logo 
 	$(MAKE) 8gb_DRAM
 	$(MAKE) oc
-	$(MAKE) nx_release -j12
+	$(MAKE) 40mb
+	$(MAKE) nx_release -j$(NPROCS)
 
-.PHONY: all clean clean-all kefir-version update clean-logo clear hekate 8gb_DRAM 8gb_DRAM-clean oc oc-clean kefir kefir-fast $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
+.PHONY: all clean clean-all kefir-version update clean-logo clear 8gb_DRAM oc kefir 40mb $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
