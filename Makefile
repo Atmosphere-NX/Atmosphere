@@ -165,9 +165,9 @@ kefir:
 	git checkout master
 	$(MAKE) clean -j$(NPROCS)
 	$(MAKE) clean-logo 
+	$(MAKE) nx_release -j$(NPROCS)
 	$(MAKE) 8gb_DRAM
 	$(MAKE) oc
 	$(MAKE) 40mb
-	$(MAKE) nx_release -j$(NPROCS)
 
 .PHONY: all clean clean-all kefir-version update clean-logo clear 8gb_DRAM oc kefir 40mb $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))
