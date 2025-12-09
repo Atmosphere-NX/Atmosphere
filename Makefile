@@ -136,7 +136,7 @@ oc:
 	git checkout oc
 	git merge master --no-edit
 	$(MAKE) clean -j$(NPROCS)
-	$(MAKE) -C stratosphere/loader ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-OC" -j$(NPROCS)
+	$(MAKE) -C stratosphere/loader -j$(NPROCS)
 	mkdir -p $(KEF_OC_DIR)/atmosphere/kips/
 	mkdir -p $(KEFIR_ROOT_DIR)/kefir/config/oc/atmosphere/kips/
 	cp stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip $(KEF_OC_DIR)/atmosphere/kips/kefir.kip
@@ -156,6 +156,7 @@ oc:
 	$(MAKE) -f atmosphere.mk package3 ATMOSPHERE_GIT_REVISION="K$(KEF_VERSION)-40MB" -j$(NPROCS)
 	mkdir -p $(KEF_40MB_DIR)/atmosphere/
 	cp fusee/out/nintendo_nx_arm_armv4t/release/package3 $(KEF_40MB_DIR)/atmosphere/package3
+	python utilities/insert_splash_screen.py ~/dev/_kefir/bootlogo/splash_logo.png $(KEF_8GB_DIR)/atmosphere/package3
 	$(info ---------------------------------------------------------)
 	$(info             FINISH building 40MB!)
 	$(info ---------------------------------------------------------)
