@@ -270,13 +270,7 @@ namespace ams::kern {
         m_current_thread = next_thread;
 
         /* Set the new Thread Local region. */
-        const auto tls_address = GetInteger(next_thread->GetThreadLocalRegionAddress());
-        cpu::SwitchThreadLocalRegion(tls_address);
-
-        /* Update the thread's cpu time differential in TLS, if relevant. */
-        if (tls_address != 0) {
-            static_cast<ams::svc::ThreadLocalRegion *>(next_thread->GetThreadLocalRegionHeapAddress())->thread_cpu_time = next_thread->GetCpuTime() - cur_tick;
-        }
+        cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
     }
 
     void KScheduler::ClearPreviousThread(KThread *thread) {
