@@ -577,9 +577,8 @@ namespace ams::nxboot {
                                     storage_ctx.log_flags |= uart::Flag_Inverted;
                                 }
                             } else if (std::strcmp(entry.key, "memory_mode") == 0) {
-                                if (entry.value[0] >= '1' && entry.value[0] <= '7') {
-                                    storage_ctx.memory_mode = entry.value[0] - '0';
-                                }
+                                storage_ctx.memory_mode = ParseHexInteger(entry.value);
+                                storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_HasMemoryMode;
                             }
                         }
                     }

@@ -31,6 +31,7 @@ namespace ams::secmon {
         SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary        = (1u << 5),
         SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc  = (1u << 6),
         SecureMonitorConfigurationFlag_ForceEnableUsb30                       = (1u << 7),
+        SecureMonitorConfigurationFlag_HasMemoryMode                          = (1u << 8),
 
         SecureMonitorConfigurationFlag_Default = SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel,
     };
@@ -99,27 +100,8 @@ namespace ams::secmon {
 
         constexpr bool IsProduction() const { return this->GetHardwareState() != fuse::HardwareState_Development; }
 
-        constexpr bool HasMemoryMode() const { return (this->memory_mode) != 0; }
-        constexpr pkg1::MemoryMode GetMemoryMode() const {
-            switch(this->memory_mode) {
-                case 1:
-                    return pkg1::MemoryMode_Auto; 
-                case 2:
-                    return pkg1::MemoryMode_4GB;
-                case 3:
-                    return pkg1::MemoryMode_4GBAppletDev;
-                case 4:
-                    return pkg1::MemoryMode_4GBSystemDev;
-                case 5:
-                    return pkg1::MemoryMode_6GB;
-                case 6:
-                    return pkg1::MemoryMode_6GBAppletDev;
-                case 7:
-                    return pkg1::MemoryMode_8GB;
-                default:
-                    AMS_ABORT();
-            }
-        }
+        constexpr bool HasMemoryMode() const { return (this->flags[0] & SecureMonitorConfigurationFlag_HasMemoryMode) != 0; }
+        constexpr pkg1::MemoryMode GetMemoryMode() const { return static_cast<pkg1::MemoryMode>(this->memory_mode); }
 
         constexpr bool IsDevelopmentFunctionEnabledForKernel()  const { return (this->flags[0] & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel)  != 0; }
         constexpr bool IsDevelopmentFunctionEnabledForUser()    const { return (this->flags[0] & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser)    != 0; }
