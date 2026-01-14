@@ -233,7 +233,18 @@ endif
 #---------------------------------------------------------------------------------
 export ATMOSPHERE_GIT_BRANCH   := $(shell git symbolic-ref --short HEAD)
 
-export ATMOSPHERE_GIT_REVISION ?= $(shell git rev-parse --short HEAD)
+ifndef ATMOSPHERE_GIT_REVISION
+    ifdef KEF_VERSION
+        export ATMOSPHERE_GIT_REVISION := KEF-$(KEF_VERSION)
+    else
+        KEFIR_ROOT_DIR ?= /mnt/d/git/dev/_kefir
+        ifneq ("$(wildcard $(KEFIR_ROOT_DIR)/version)","")
+            export ATMOSPHERE_GIT_REVISION := KEF-$(shell cat $(KEFIR_ROOT_DIR)/version)
+        else
+            export ATMOSPHERE_GIT_REVISION := KEF-UNK
+        endif
+    endif
+endif
 
 export ATMOSPHERE_GIT_HASH := $(shell git rev-parse --short=16 HEAD)
 

@@ -9,6 +9,8 @@ KEF_VERSION := UNK
 endif
 endif
 
+export KEF_VERSION
+
 NPROCS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
 
 all: nx_release
