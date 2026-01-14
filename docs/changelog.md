@@ -1,4 +1,11 @@
 # Changelog
+## 1.10.2
++ Basic support was added for 21.2.0.
++ General system stability improvements to enhance the user's experience.
+## 1.10.1
++ Basic support was added for 21.1.0.
++ A bug was fixed that caused some games (e.g. Tomb Raider definitive edition) to fail to launch.
++ General system stability improvements to enhance the user's experience.
 ## 1.10.0
 + Basic support was added for 21.0.0.
   + The console should boot and atmosphère should be fully functional.
