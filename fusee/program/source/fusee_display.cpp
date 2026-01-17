@@ -602,7 +602,7 @@ namespace ams::nxboot {
             Print("\n");
 
             if (R_SUCCEEDED(save_result)) {
-                Print("Report saved to /atmosphere/fatal_errors/report_%016" PRIx64 ".bin", f_ctx->report_identifier);
+                Print("Report saved to /atmosphere/fatal_errors/report_%016" PRIx64 ".bin\n", f_ctx->report_identifier);
             } else {
                 Print("Failed to save report to the SD card! (%08" PRIx32 ")\n", save_result.GetValue());
             }
