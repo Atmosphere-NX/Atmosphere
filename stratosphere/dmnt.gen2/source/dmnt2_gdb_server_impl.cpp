@@ -1232,6 +1232,7 @@ namespace ams::dmnt {
             }
 
             if (reply_cur != send_buffer) {
+                AMS_DMNT2_GDB_LOG_DEBUG("ProcessDebugEvents: %s\n", send_buffer);
                 bool do_break;
                 this->SendPacket(std::addressof(do_break), send_buffer);
                 if (do_break) {
@@ -1322,6 +1323,8 @@ namespace ams::dmnt {
         /* Clear our reply packet. */
         reply[0] = 0;
 
+        bool should_log_result = true;
+
         /* Handle the received packet. */
         switch (m_receive_packet[0]) {
             case 'D':
@@ -1358,9 +1361,11 @@ namespace ams::dmnt {
                 if (!this->g()) {
                     m_killed = true;
                 }
+                should_log_result = false;
                 break;
             case 'm':
                 this->m();
+                should_log_result = false;
                 break;
             case 'p':
                 this->p();
@@ -1381,9 +1386,10 @@ namespace ams::dmnt {
                 this->QuestionMark();
                 break;
             default:
-                AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented: %s\n", m_receive_packet);
+                AMS_DMNT2_GDB_LOG_ERROR("Not Implemented: %s\n", m_receive_packet);
                 break;
         }
+        AMS_DMNT2_GDB_LOG_DEBUG("Reply: %s\n", should_log_result ? reply : "[...]");
     }
 
     void GdbServerImpl::D() {
@@ -1401,6 +1407,7 @@ namespace ams::dmnt {
         /* Get thread context. */
         svc::ThreadContext ctx;
         if (R_FAILED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_All))) {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to get thread context\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1412,6 +1419,7 @@ namespace ams::dmnt {
         if (R_SUCCEEDED(m_debug_process.SetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_All))) {
             AppendReplyOk(m_reply_cur, m_reply_end);
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to set thread context\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1421,9 +1429,11 @@ namespace ams::dmnt {
             if (ParsePrefix(m_receive_packet, "Hg") || ParsePrefix(m_receive_packet, "HG")) {
                 this->Hg();
             } else {
+                AMS_DMNT2_GDB_LOG_ERROR("'H'-command not implemented: %s\n", m_receive_packet);
                 AppendReplyError(m_reply_cur, m_reply_end, "E01");
             }
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Cannot use 'H'-command without DebugProcess\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1458,6 +1468,7 @@ namespace ams::dmnt {
         if (success) {
             AppendReplyOk(m_reply_cur, m_reply_end);
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("'Hg'-command failed\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1468,6 +1479,7 @@ namespace ams::dmnt {
         /* Validate format. */
         char *comma = std::strchr(m_receive_packet, ',');
         if (comma == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'M' command formatted incorrectly (no ','): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1475,6 +1487,7 @@ namespace ams::dmnt {
 
         char *colon = std::strchr(comma + 1, ':');
         if (colon == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'M' command formatted incorrectly (no ':'): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1484,6 +1497,7 @@ namespace ams::dmnt {
         const u64 address = DecodeHex(m_receive_packet);
         const u64 length  = DecodeHex(comma + 1);
         if (length >= sizeof(m_buffer)) {
+            AMS_DMNT2_GDB_LOG_ERROR("Length exceeded buffer size: %ld >= %ld\n", length, sizeof(m_buffer));
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1495,6 +1509,7 @@ namespace ams::dmnt {
         if (R_SUCCEEDED(m_debug_process.WriteMemory(m_buffer, address, length))) {
             AppendReplyOk(m_reply_cur, m_reply_end);
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to write memory\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1505,6 +1520,7 @@ namespace ams::dmnt {
         /* Validate format. */
         char *equal = std::strchr(m_receive_packet, '=');
         if (equal == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'P' command formatted incorrectly (no '='): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1530,9 +1546,11 @@ namespace ams::dmnt {
             if (R_SUCCEEDED(m_debug_process.SetThreadContext(std::addressof(ctx), thread_id, flags))) {
                 AppendReplyOk(m_reply_cur, m_reply_end);
             } else {
+                AMS_DMNT2_GDB_LOG_ERROR("Failed to set thread context");
                 AppendReplyError(m_reply_cur, m_reply_end, "E01");
             }
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to get thread context");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1541,7 +1559,7 @@ namespace ams::dmnt {
         if (ParsePrefix(m_receive_packet, "QStartNoAckMode")) {
             this->QStartNoAckMode();
         } else {
-            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented Q: %s\n", m_receive_packet);
+            AMS_DMNT2_GDB_LOG_ERROR("Not Implemented Q: %s\n", m_receive_packet);
         }
     }
 
@@ -1558,9 +1576,11 @@ namespace ams::dmnt {
             if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
                 AppendReplyOk(m_reply_cur, m_reply_end);
             } else {
-                AppendReplyFormat(m_reply_cur, m_reply_end, "E01");
+                AMS_DMNT2_GDB_LOG_ERROR("Failed to get thread context");
+                AppendReplyError(m_reply_cur, m_reply_end, "E01");
             }
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("'T' command formatted incorrectly (no '.'): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1571,6 +1591,7 @@ namespace ams::dmnt {
 
         /* Decode the type. */
         if (!('0' <= m_receive_packet[0] && m_receive_packet[0] <= '4') || m_receive_packet[1] != ',') {
+            AMS_DMNT2_GDB_LOG_ERROR("'Z' command formatted incorrectly (not starting with pattern '[0-4],'): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1581,6 +1602,7 @@ namespace ams::dmnt {
         /* Decode the address/length. */
         const char *comma = std::strchr(m_receive_packet, ',');
         if (comma == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'Z' command formatted incorrectly (no ','): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1596,6 +1618,7 @@ namespace ams::dmnt {
                         if (R_SUCCEEDED(m_debug_process.SetBreakPoint(address, length, false))) {
                             AppendReplyOk(m_reply_cur, m_reply_end);
                         } else {
+                            AMS_DMNT2_GDB_LOG_ERROR("Failed to set software breakpoint\n");
                             AppendReplyError(m_reply_cur, m_reply_end, "E01");
                         }
                     }
@@ -1607,6 +1630,7 @@ namespace ams::dmnt {
                         if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(address, length, false))) {
                             AppendReplyOk(m_reply_cur, m_reply_end);
                         } else {
+                            AMS_DMNT2_GDB_LOG_ERROR("Failed to set hardware breakpoint\n");
                             AppendReplyError(m_reply_cur, m_reply_end, "E01");
                         }
                     }
@@ -1618,6 +1642,7 @@ namespace ams::dmnt {
                         if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, false, true))) {
                             AppendReplyOk(m_reply_cur, m_reply_end);
                         } else {
+                            AMS_DMNT2_GDB_LOG_ERROR("Failed to set watchpoint-W\n");
                             AppendReplyError(m_reply_cur, m_reply_end, "E01");
                         }
                     }
@@ -1629,6 +1654,7 @@ namespace ams::dmnt {
                         if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, true, false))) {
                             AppendReplyOk(m_reply_cur, m_reply_end);
                         } else {
+                            AMS_DMNT2_GDB_LOG_ERROR("Failed to set watchpoint-R\n");
                             AppendReplyError(m_reply_cur, m_reply_end, "E01");
                         }
                     }
@@ -1640,6 +1666,7 @@ namespace ams::dmnt {
                         if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, true, true))) {
                             AppendReplyOk(m_reply_cur, m_reply_end);
                         } else {
+                            AMS_DMNT2_GDB_LOG_ERROR("Failed to set watchpoint-A\n");
                             AppendReplyError(m_reply_cur, m_reply_end, "E01");
                         }
                     }
@@ -1668,6 +1695,7 @@ namespace ams::dmnt {
         if (R_SUCCEEDED(result)) {
             AppendReplyOk(m_reply_cur, m_reply_end);
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to continue thread\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1697,6 +1725,7 @@ namespace ams::dmnt {
         /* Validate format. */
         const char *comma = std::strchr(m_receive_packet, ',');
         if (comma == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'m' command formatted incorrectly (no ','): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1705,6 +1734,7 @@ namespace ams::dmnt {
         const u64 address = DecodeHex(m_receive_packet);
         const u64 length  = DecodeHex(comma + 1);
         if (length >= sizeof(m_buffer)) {
+            AMS_DMNT2_GDB_LOG_ERROR("Length exceeded buffer size: %ld >= %ld\n", length, sizeof(m_buffer));
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1712,6 +1742,7 @@ namespace ams::dmnt {
         /* Read the memory. */
         /* TODO: Detect partial readability? */
         if (R_FAILED(m_debug_process.ReadMemory(m_buffer, address, length))) {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to read memory\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -1745,6 +1776,7 @@ namespace ams::dmnt {
         if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, flags))) {
             SetGdbRegisterPacket(m_reply_cur, m_reply_end, ctx, reg_num, m_debug_process.Is64Bit());
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Failed to get thread context");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1755,7 +1787,7 @@ namespace ams::dmnt {
         } else if (ParsePrefix(m_receive_packet, "vCont")) {
             this->vCont();
         } else {
-            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented v: %s\n", m_receive_packet);
+            AMS_DMNT2_GDB_LOG_ERROR("Not Implemented v: %s\n", m_receive_packet);
         }
     }
 
@@ -1780,12 +1812,15 @@ namespace ams::dmnt {
                     /* Set the stop reply packet. */
                     this->AppendStopReplyPacket(m_debug_process.GetLastSignal());
                 } else {
+                    AMS_DMNT2_GDB_LOG_ERROR("Failed to attach to process\n");
                     AppendReplyError(m_reply_cur, m_reply_end, "E01");
                 }
             } else {
+                AMS_DMNT2_GDB_LOG_ERROR("Invalid process id: %s\n", m_receive_packet);
                 AppendReplyError(m_reply_cur, m_reply_end, "E01");
             }
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Cannot attach to process while already attached\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1937,7 +1972,7 @@ namespace ams::dmnt {
         } else if (ParsePrefix(m_receive_packet, "qXfer:")) {
             this->qXfer();
         } else {
-            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented q: %s\n", m_receive_packet);
+            AMS_DMNT2_GDB_LOG_ERROR("Not Implemented q: %s\n", m_receive_packet);
         }
     }
 
@@ -1945,6 +1980,7 @@ namespace ams::dmnt {
         if (this->HasDebugProcess()) {
             AppendReplyFormat(m_reply_cur, m_reply_end, "1");
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Not attached\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -1954,6 +1990,7 @@ namespace ams::dmnt {
             /* Send the thread id. */
             AppendReplyFormat(m_reply_cur, m_reply_end, "QCp%lx.%lx", m_process_id.value, m_debug_process.GetLastThreadId());
         } else {
+            AMS_DMNT2_GDB_LOG_ERROR("Not attached\n");
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -2161,6 +2198,7 @@ namespace ams::dmnt {
         } else {
             /* All other qXfer require debug process. */
             if (!this->HasDebugProcess()) {
+                AMS_DMNT2_GDB_LOG_ERROR("Not attached\n");
                 AppendReplyError(m_reply_cur, m_reply_end, "E01");
                 return;
             }
@@ -2171,6 +2209,7 @@ namespace ams::dmnt {
             } else if (ParsePrefix(m_receive_packet, "threads:read::")) {
                 if (!this->qXferThreadsRead()) {
                     m_killed = true;
+                    AMS_DMNT2_GDB_LOG_ERROR("Failed to read threads\n");
                     AppendReplyError(m_reply_cur, m_reply_end, "E01");
                 }
             } else if (ParsePrefix(m_receive_packet, "libraries:read::")) {
@@ -2178,7 +2217,7 @@ namespace ams::dmnt {
             } else if (ParsePrefix(m_receive_packet, "exec-file:read:")) {
                 AppendReplyFormat(m_reply_cur, m_reply_end, "l%s", m_debug_process.GetProcessName());
             } else {
-                AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer: %s\n", m_receive_packet);
+                AMS_DMNT2_GDB_LOG_ERROR("Not Implemented qxfer: %s\n", m_receive_packet);
                 AppendReplyError(m_reply_cur, m_reply_end, "E01");
             }
         }
@@ -2229,7 +2268,7 @@ namespace ams::dmnt {
             m_reply_cur[length] = 0;
             m_reply_cur += std::strlen(m_reply_cur);
         } else {
-            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer:features:read: %s\n", m_receive_packet);
+            AMS_DMNT2_GDB_LOG_ERROR("Not Implemented qXfer:features:read: %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -2330,7 +2369,7 @@ namespace ams::dmnt {
             /* Copy out the process list. */
             GetAnnexBufferContents(m_reply_cur, offset, length);
         } else {
-            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer:osdata:read: %s\n", m_receive_packet);
+            AMS_DMNT2_GDB_LOG_ERROR("Not Implemented qXfer:osdata:read: %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
         }
     }
@@ -2426,6 +2465,7 @@ namespace ams::dmnt {
 
         /* Decode the type. */
         if (!('0' <= m_receive_packet[0] && m_receive_packet[0] <= '4') || m_receive_packet[1] != ',') {
+            AMS_DMNT2_GDB_LOG_ERROR("'Z' command formatted incorrectly (not starting with pattern '[0-4],'): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -2436,6 +2476,7 @@ namespace ams::dmnt {
         /* Decode the address/length. */
         const char *comma = std::strchr(m_receive_packet, ',');
         if (comma == nullptr) {
+            AMS_DMNT2_GDB_LOG_ERROR("'Z' command formatted incorrectly (no ','): %s\n", m_receive_packet);
             AppendReplyError(m_reply_cur, m_reply_end, "E01");
             return;
         }
@@ -2450,6 +2491,7 @@ namespace ams::dmnt {
                     if (R_SUCCEEDED(m_debug_process.ClearBreakPoint(address, length))) {
                         AppendReplyOk(m_reply_cur, m_reply_end);
                     } else {
+                        AMS_DMNT2_GDB_LOG_ERROR("Failed to clear software breakpoint\n");
                         AppendReplyError(m_reply_cur, m_reply_end, "E01");
                     }
                 }
@@ -2459,6 +2501,7 @@ namespace ams::dmnt {
                     if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(address, length))) {
                         AppendReplyOk(m_reply_cur, m_reply_end);
                     } else {
+                        AMS_DMNT2_GDB_LOG_ERROR("Failed to clear hardware breakpoint\n");
                         AppendReplyError(m_reply_cur, m_reply_end, "E01");
                     }
                 }
@@ -2470,6 +2513,7 @@ namespace ams::dmnt {
                     if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, length))) {
                         AppendReplyOk(m_reply_cur, m_reply_end);
                     } else {
+                        AMS_DMNT2_GDB_LOG_ERROR("Failed to clear watchpoint\n");
                         AppendReplyError(m_reply_cur, m_reply_end, "E01");
                     }
                 }
