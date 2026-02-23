@@ -452,6 +452,9 @@ namespace ams::result::impl {
         }                                                                     \
     }
 
+/// Explicitly discards the result returned by an expression.
+#define R_DISCARD(res_expr) (static_cast<void>(res_expr))
+
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX) && defined(ATMOSPHERE_IS_STRATOSPHERE) && !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
     #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
     #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
