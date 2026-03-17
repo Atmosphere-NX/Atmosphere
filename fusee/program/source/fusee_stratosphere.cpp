@@ -192,6 +192,9 @@ namespace ams::nxboot {
             FsVersion_21_2_0,
             FsVersion_21_2_0_Exfat,
 
+            FsVersion_22_0_0,
+            FsVersion_22_0_0_Exfat,
+
             FsVersion_Count,
         };
 
@@ -296,6 +299,9 @@ namespace ams::nxboot {
 
             { 0xAF, 0x1D, 0xBD, 0xC7, 0x82, 0x98, 0x3C, 0xBD }, /* FsVersion_21_2_0 */
             { 0x56, 0x25, 0x17, 0xA1, 0x92, 0xC3, 0xC8, 0xF0 }, /* FsVersion_21_2_0_Exfat */
+
+            { 0xB7, 0xA2, 0x97, 0x39, 0xB7, 0xED, 0xDE, 0xFC }, /* FsVersion_22_0_0 */
+            { 0xFB, 0x0B, 0x68, 0xDB, 0x24, 0x03, 0xD1, 0x19 }, /* FsVersion_22_0_0_Exfat */
         };
 
         const InitialProcessBinaryHeader *FindInitialProcessBinary(const pkg2::Package2Header *header, const u8 *data, ams::TargetFirmware target_firmware) {
@@ -700,7 +706,7 @@ namespace ams::nxboot {
                 case FsVersion_21_0_0:
                 case FsVersion_21_2_0:
                     AddPatch(fs_meta, 0x1AC9ED, NogcPatch0, sizeof(NogcPatch0));
-                    AddPatch(fs_meta, 0x1ACA05 , NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1ACA05, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x17FBE0, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 case FsVersion_21_0_0_Exfat:
@@ -708,6 +714,16 @@ namespace ams::nxboot {
                     AddPatch(fs_meta, 0x1B7B4D, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x1B7B65, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x18AD40, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_22_0_0:
+                    AddPatch(fs_meta, 0x1B023D, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1B0255, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x183060, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_22_0_0_Exfat:
+                    AddPatch(fs_meta, 0x1BB42D, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1BB445, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x18E250, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 default:
                     break;
