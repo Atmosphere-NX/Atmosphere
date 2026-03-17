@@ -200,6 +200,7 @@ namespace ams::kern {
             bool m_is_kernel;
             bool m_enable_aslr;
             bool m_enable_device_address_space_merge;
+            bool m_allowed_exec_device_mapping;
             KMemoryBlockSlabManager *m_memory_block_slab_manager;
             KBlockInfoManager *m_block_info_manager;
             KResourceLimit *m_resource_limit;
@@ -217,7 +218,7 @@ namespace ams::kern {
                   m_alias_code_region_end(Null<KProcessAddress>), m_code_region_start(Null<KProcessAddress>), m_code_region_end(Null<KProcessAddress>),
                   m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), m_mapped_ipc_server_memory(), m_alias_region_extra_size(),
                   m_general_lock(), m_map_physical_memory_lock(), m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
-                  m_allocate_option(), m_address_space_width(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(),
+                  m_allocate_option(), m_address_space_width(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(), m_allowed_exec_device_mapping(),
                   m_memory_block_slab_manager(), m_block_info_manager(), m_resource_limit(), m_cached_physical_linear_region(), m_cached_physical_heap_region(),
                   m_heap_fill_value(), m_ipc_fill_value(), m_stack_fill_value()
             {
@@ -520,6 +521,8 @@ namespace ams::kern {
             size_t GetAliasCodeDataSize() const;
 
             u32 GetAllocateOption() const { return m_allocate_option; }
+
+            void AllowDeviceMappingOfExecPages() { m_allowed_exec_device_mapping = true; }
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearMappedVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);
