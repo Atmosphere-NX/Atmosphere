@@ -53,7 +53,9 @@ namespace ams::erpt::srv {
         }
 
         Result MountSystemSaveData() {
-            fs::DisableAutoSaveDataCreation();
+            if (hos::GetVersion() < hos::Version_22_0_0) {
+                fs::DisableAutoSaveDataCreation();
+            }
 
             /* Extend the system save data. */
             /* NOTE: Nintendo used to not check the result of this; they do now, but . */
