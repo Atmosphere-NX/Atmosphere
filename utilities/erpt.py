@@ -344,7 +344,7 @@ def get_full(nxo):
             full = put_qword(full, offset, addend + LOAD_BASE)
         else:
             print('TODO r_type %d' % (r_type,))
-    with open('E:\\full.bin', 'wb') as f:
+    with open('full.bin', 'wb') as f:
         f.write(full)
     return full
 
@@ -415,10 +415,14 @@ def find_types(full, num_fields):
     KNOWN     = range(10) + [4, 4, 2, 4]
     KNOWN_OLD = range(10) + [4, 4, 0, 4]
     try:
-        ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+        ind = full.index(''.join(pk('<B', i) for i in KNOWN))
+        return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
     except ValueError:
-        ind = full.index(''.join(pk('<I', i) for i in KNOWN_OLD))
-    return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
+        try:
+            ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+        except ValueError:
+            ind = full.index(''.join(pk('<I', i) for i in KNOWN_OLD))
+        return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
 def find_flags(full, num_fields, magic_idx):
     KNOWN = '\x00' + ('\x01'*6) + '\x00\x01\x01\x00'
