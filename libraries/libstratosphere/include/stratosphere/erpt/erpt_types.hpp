@@ -23,7 +23,7 @@ namespace ams::erpt {
 
     #define GENERATE_ENUM(NAME, ID, ...) NAME = ID,
 
-    enum FieldType {
+    enum FieldType: u8 {
         AMS_ERPT_FOREACH_FIELD_TYPE(GENERATE_ENUM)
         FieldType_Count,
     };
