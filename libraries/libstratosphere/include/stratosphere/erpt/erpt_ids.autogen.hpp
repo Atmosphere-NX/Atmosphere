@@ -974,6 +974,11 @@
     HANDLER(RomFsRecoveredAesFailedCount,                             772,  FsProxyErrorInfo3,                   FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(DriverRecoveredAesFailedCount,                            773,  FsProxyErrorInfo3,                   FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(BluetoothIsHalted,                                        774,  BluetoothErrorInfo,                  FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(BluetoothHaltedHciCommandOpcode,                          775,  ErrorInfo,                           FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(AcpSupportedLanguageFlagForNxAddon,                       776,  AcpGeneralSettingsInfo,              FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(FsSaveDataFileSystemPeakMountCount,                       777,  FsProxyErrorInfo3,                   FieldType_NumericI32, FieldFlag_None   ) \
+    HANDLER(TestBool,                                                 778,  Test,                                FieldType_Bool,       FieldFlag_None   ) \
+    HANDLER(TestI8Array,                                              779,  Test,                                FieldType_I8Array,    FieldFlag_None   ) \
     HANDLER(TestStringNx,                                             1000, TestNx,                              FieldType_String,     FieldFlag_None   ) \
     HANDLER(BoostModeCurrentLimit,                                    1001, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ChargeConfiguration,                                      1002, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
@@ -1008,5 +1013,5 @@
     HANDLER(LastDvfsThresholdTripped,                                 1031, ThermalInfo,                         FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ModuleClockEnableFlags,                                   1032, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModulePowerEnableFlags,                                   1033, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   )
-
+    HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(ControllerStyleList,                                      1035, ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
