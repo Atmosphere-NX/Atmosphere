@@ -23,8 +23,6 @@ namespace ams::erpt::srv {
         private:
             static bool s_redirect_new_reports;
             static char s_serial_number[24];
-            static char s_os_version[24];
-            static char s_private_os_version[96];
             static util::optional<os::Tick> s_application_launch_time;
             static util::optional<os::Tick> s_awake_time;
             static util::optional<os::Tick> s_power_on_time;
@@ -39,14 +37,11 @@ namespace ams::erpt::srv {
             static void UpdateAwakeTime() { s_awake_time = os::GetSystemTick(); }
             static void UpdatePowerOnTime() { s_power_on_time = os::GetSystemTick(); }
 
-            static Result SetSerialNumberAndOsVersion(const char *sn, u32 sn_len, const char *os, u32 os_len, const char *os_priv, u32 os_priv_len) {
-                R_UNLESS(sn_len <= sizeof(s_serial_number),           erpt::ResultInvalidArgument());
-                R_UNLESS(os_len <= sizeof(s_os_version),              erpt::ResultInvalidArgument());
-                R_UNLESS(os_priv_len <= sizeof(s_private_os_version), erpt::ResultInvalidArgument());
+            static void SetThrottleTimeSpan(TimeSpan time_span);
 
+            static Result SetSerialNumber(const char *sn, u32 sn_len) {
+                R_UNLESS(sn_len <= sizeof(s_serial_number), erpt::ResultInvalidArgument());
                 std::memcpy(s_serial_number, sn, sn_len);
-                std::memcpy(s_os_version, os, os_len);
-                std::memcpy(s_private_os_version, os_priv, os_priv_len);
                 R_SUCCEED();
             }
 

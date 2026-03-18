@@ -25,6 +25,7 @@
     AMS_SF_METHOD_INFO(C, H,  4, Result, GetStorageUsageStatistics,   (ams::sf::Out<erpt::StorageUsageStatistics> out),                                                  (out),                           hos::Version_5_0_0)                       \
     AMS_SF_METHOD_INFO(C, H,  5, Result, GetAttachmentListDeprecated, (const ams::sf::OutBuffer &out_buf, const erpt::ReportId &report_id),                              (out_buf, report_id),            hos::Version_8_0_0,  hos::Version_19_0_1) \
     AMS_SF_METHOD_INFO(C, H,  6, Result, GetAttachmentList,           (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buf, const erpt::ReportId &report_id), (out_count, out_buf, report_id), hos::Version_20_0_0)                      \
+    AMS_SF_METHOD_INFO(C, H,  7, Result, GetRecentReportSummary,      (ams::sf::Out<erpt::RecentReportSummary> out),                                                     (out),                           hos::Version_22_0_0) \
     AMS_SF_METHOD_INFO(C, H, 10, Result, GetReportSizeMax,            (ams::sf::Out<u32> out),                                                                           (out),                           hos::Version_20_0_0)
 
 

@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "erpt_srv_manager_impl.hpp"
 #include "erpt_srv_journal.hpp"
+#include "erpt_srv_recent_report.hpp"
 
 namespace ams::erpt::srv {
 
@@ -59,6 +60,7 @@ namespace ams::erpt::srv {
     Result ManagerImpl::CleanupReports() {
         Journal::CleanupReports();
         Journal::CleanupAttachments();
+        RecentReport::Clear();
         R_RETURN(Journal::Commit());
     }
 
@@ -99,9 +101,15 @@ namespace ams::erpt::srv {
 
     Result ManagerImpl::GetReportSizeMax(ams::sf::Out<u32> out) {
         /* TODO: Where is this size defined? */
-        constexpr size_t ReportSizeMax = 0x3FF4F;
+        constexpr size_t ReportSizeMax = 0x35D3D;
         *out = ReportSizeMax;
         R_SUCCEED();
     }
+
+    Result ManagerImpl::GetRecentReportSummary(ams::sf::Out<RecentReportSummary> out) {
+        RecentReport::GetSummary(out.GetPointer());
+        R_SUCCEED();
+    }
+
 
 }

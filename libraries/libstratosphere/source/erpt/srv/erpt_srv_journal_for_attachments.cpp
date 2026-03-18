@@ -84,7 +84,7 @@ namespace ams::erpt::srv {
     Result JournalForAttachments::GetAttachmentList(u32 *out_count, AttachmentInfo *out_infos, size_t max_out_infos, ReportId report_id) {
         if (hos::GetVersion() >= hos::Version_20_0_0) {
             /* TODO: What define gives a minimum of 10? */
-            R_UNLESS(max_out_infos >= 10, erpt::ResultInvalidArgument());
+            R_UNLESS(max_out_infos >= 10, erpt::ResultTooManyOutAttachments());
         }
 
         u32 count = 0;

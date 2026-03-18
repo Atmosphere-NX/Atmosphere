@@ -40,5 +40,6 @@ namespace ams::erpt {
     R_DEFINE_ERROR_RESULT(InvalidPowerState,        17);
     R_DEFINE_ERROR_RESULT(ArrayFieldTooLarge,       18);
     R_DEFINE_ERROR_RESULT(AlreadyOwned,             19);
+    R_DEFINE_ERROR_RESULT(TooManyOutAttachments,    51);
 
 }

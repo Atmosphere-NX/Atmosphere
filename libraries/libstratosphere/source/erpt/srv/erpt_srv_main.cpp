@@ -21,6 +21,7 @@
 #include "erpt_srv_journal.hpp"
 #include "erpt_srv_service.hpp"
 #include "erpt_srv_forced_shutdown.hpp"
+#include "erpt_srv_recent_report.hpp"
 
 namespace ams::erpt::srv {
 
@@ -33,6 +34,7 @@ namespace ams::erpt::srv {
         constexpr                  u32 SystemSaveDataFlags       = fs::SaveDataFlags_KeepAfterResettingSystemSaveDataWithoutUserSaveData;
         constexpr                  s64 SystemSaveDataSize        = 11_MB;
         constexpr                  s64 SystemSaveDataJournalSize = 2720_KB;
+        constexpr                  u32 DefaultThrottleTimeWindowSeconds = 3;
 
         constinit bool g_automatic_report_cleanup_enabled = true;
 
@@ -53,7 +55,7 @@ namespace ams::erpt::srv {
         }
 
         Result MountSystemSaveData() {
-            if (hos::GetVersion() < hos::Version_22_0_0) {
+            if (hos::GetVersion() < hos::Version_21_0_0) {
                 fs::DisableAutoSaveDataCreation();
             }
 
@@ -71,6 +73,72 @@ namespace ams::erpt::srv {
             R_SUCCEED();
         }
 
+    }
+
+    namespace {
+
+        int MakeProductModelString(char *dst, size_t dst_size, settings::system::ProductModel model) {
+            switch (model) {
+                case settings::system::ProductModel_Invalid: return util::Strlcpy(dst, "Invalid", static_cast<int>(dst_size));
+                case settings::system::ProductModel_Nx:      return util::Strlcpy(dst, "NX", static_cast<int>(dst_size));
+                default:                                     return util::SNPrintf(dst, dst_size, "%d", static_cast<int>(model));
+            }
+        }
+
+        const char *GetRegionString(settings::system::RegionCode code) {
+            switch (code) {
+                case settings::system::RegionCode_Japan:               return "Japan";
+                case settings::system::RegionCode_Usa:                 return "Usa";
+                case settings::system::RegionCode_Europe:              return "Europe";
+                case settings::system::RegionCode_Australia:           return "Australia";
+                case settings::system::RegionCode_HongKongTaiwanKorea: return "HongKongTaiwanKorea";
+                case settings::system::RegionCode_China:               return "China";
+                default:                                               return "RegionUnknown";
+            }
+        }
+
+    }
+
+    const erpt::SystemInfo &GetSystemInfo() {
+        static const erpt::SystemInfo s_info = [] {
+            erpt::SystemInfo info = {};
+
+            settings::system::FirmwareVersion firmware_version = {};
+            settings::system::GetFirmwareVersion(std::addressof(firmware_version));
+
+            util::Strlcpy(info.os_version, firmware_version.display_version, sizeof(info.os_version));
+
+            const auto os_priv_len = util::SNPrintf(info.private_os_version, sizeof(info.private_os_version), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
+            AMS_ASSERT(static_cast<size_t>(os_priv_len) < sizeof(info.private_os_version));
+            AMS_UNUSED(os_priv_len);
+
+            const auto pm_len = MakeProductModelString(info.product_model, sizeof(info.product_model), settings::system::GetProductModel());
+            AMS_ASSERT(static_cast<size_t>(pm_len) < sizeof(info.product_model));
+            AMS_UNUSED(pm_len);
+
+            settings::system::RegionCode region_code;
+            settings::system::GetRegionCode(std::addressof(region_code));
+            info.region = GetRegionString(region_code);
+
+            return info;
+        }();
+        return s_info;
+    }
+
+    u32 GetThrottleTimeWindowSecondsImpl() {
+        u32 seconds = DefaultThrottleTimeWindowSeconds;    
+        if (settings::fwdbg::GetSettingsItemValue(std::addressof(seconds), sizeof(seconds), "erpt", "throttle_time_window_seconds") != sizeof(seconds)) {
+            return DefaultThrottleTimeWindowSeconds;
+        }
+        return seconds;
+    }
+
+    void SetReportThrottleTimeSpan() {
+        u32 seconds = GetThrottleTimeWindowSecondsImpl();
+        
+        const TimeSpan time_span = TimeSpan::FromSeconds(static_cast<s64>(seconds));
+
+        Reporter::SetThrottleTimeSpan(time_span);
     }
 
     Result Initialize(u8 *mem, size_t mem_size) {
@@ -103,6 +171,10 @@ namespace ams::erpt::srv {
             }
         }
 
+        if (hos::GetVersion() >= hos::Version_22_0_0) {
+            SetReportThrottleTimeSpan();
+        }
+
         R_ABORT_UNLESS(MountSystemSaveData());
 
         g_sf_allocator.Attach(g_heap_handle);
@@ -112,8 +184,18 @@ namespace ams::erpt::srv {
             AMS_ABORT_UNLESS(ctx != nullptr);
         }
 
-        if (R_FAILED(Journal::Restore())) {
-            /* TODO: Nintendo deletes system savedata when this fails. Should we?. */
+        if (hos::GetVersion() >= hos::Version_21_0_0) {
+            /* >= 21.0.0, Nintendo checks the result of restore and deletes the save data if it fails. */
+            if (R_FAILED(Journal::Restore())) {
+                /* Delete and recreate the system save data. */
+                fs::Unmount(ReportStoragePath);
+                R_ABORT_UNLESS(fs::DeleteSystemSaveData(fs::SaveDataSpaceId::System, SystemSaveDataId, fs::InvalidUserId));
+    
+                R_ABORT_UNLESS(MountSystemSaveData());
+            }
+        } else{
+            /* Pre 21.0.0, Nintendo just calls restore and ignores the result. */
+            Journal::Restore();
         }
 
         Reporter::UpdatePowerOnTime();
@@ -130,8 +212,8 @@ namespace ams::erpt::srv {
         R_RETURN(InitializeService());
     }
 
-    Result SetSerialNumberAndOsVersion(const char *sn, u32 sn_len, const char *os, u32 os_len, const char *os_priv, u32 os_priv_len) {
-        R_RETURN(Reporter::SetSerialNumberAndOsVersion(sn, sn_len, os, os_len, os_priv, os_priv_len));
+    Result SetSerialNumber(const char *sn, u32 sn_len) {
+        R_RETURN(Reporter::SetSerialNumber(sn, sn_len));
     }
 
     Result SetProductModel(const char *model, u32 model_len) {

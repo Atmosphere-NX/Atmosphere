@@ -20,13 +20,12 @@
 #include "erpt_srv_context_record.hpp"
 #include "erpt_srv_context.hpp"
 #include "erpt_srv_fs_info.hpp"
+#include "erpt_srv_recent_report.hpp"
 
 namespace ams::erpt::srv {
 
     constinit bool Reporter::s_redirect_new_reports    = true;
     constinit char Reporter::s_serial_number[24]       = "Unknown";
-    constinit char Reporter::s_os_version[24]          = "Unknown";
-    constinit char Reporter::s_private_os_version[96]  = "Unknown";
     constinit util::optional<os::Tick> Reporter::s_application_launch_time;
     constinit util::optional<os::Tick> Reporter::s_awake_time;
     constinit util::optional<os::Tick> Reporter::s_power_on_time;
@@ -212,18 +211,83 @@ namespace ams::erpt::srv {
         }
         #endif
 
-        Result ValidateCreateReportContext(const ContextEntry *ctx) {
+        Result ValidateAndGetErrorCode(const ContextEntry *ctx, char *out_error_code) {
             R_UNLESS(ctx->category == CategoryId_ErrorInfo, erpt::ResultRequiredContextMissing());
             R_UNLESS(ctx->field_count <= FieldsPerContext,  erpt::ResultInvalidArgument());
 
-            const bool found_error_code = util::range::any_of(MakeSpan(ctx->fields, ctx->field_count), [] (const FieldEntry &entry) {
-                return entry.id == FieldId_ErrorCode;
-            });
-            R_UNLESS(found_error_code, erpt::ResultRequiredFieldMissing());
+            const auto fields_span = MakeSpan(ctx->fields, ctx->field_count);
+            const u8 *array_data = static_cast<const u8 *>(ctx->array_buffer);
+
+            const FieldEntry *error_code_field = nullptr;
+
+            for (const auto &field : fields_span) {
+                if (field.id != FieldId_ErrorCode){
+                    continue;
+                }
+                error_code_field = &field;
+                break;
+            }
+
+            R_UNLESS(error_code_field != nullptr, erpt::ResultRequiredFieldMissing());
+            R_UNLESS(error_code_field->type == FieldType_String, erpt::ResultFieldTypeMismatch());
+            R_UNLESS(error_code_field->value_array.size <= ErrorCodeSizeMax, erpt::ResultArrayFieldTooLarge());
+            
+            const char *error_code = reinterpret_cast<const char *>(array_data + error_code_field->value_array.start_idx);
+            util::Strlcpy(out_error_code, error_code, ErrorCodeSizeMax);
 
             R_SUCCEED();
         }
 
+        namespace {
+            struct ThrottleState {
+                TimeSpan throttle_time_span;
+                char last_error_code[ErrorCodeSizeMax];
+                u32 consecutive_count;
+                os::Tick last_tick;
+            };
+            constinit ThrottleState g_throttle_state = {
+                .throttle_time_span = TimeSpan{},
+                .last_error_code = {},
+                .consecutive_count = 0,
+                .last_tick = os::Tick{},
+            };
+        };
+        bool IsThrottledReport(const ContextEntry *ctx, ReportType type, const char *error_code) {
+            if (hos::GetVersion() < hos::Version_22_0_0) {
+                return false;
+            }
+
+            const auto fields_span = MakeSpan(ctx->fields, ctx->field_count);
+            bool is_crash_report = false;
+
+            for (const auto &field : fields_span) {
+                if (field.id != FieldId_CrashReportFlag){
+                    continue;
+                }
+                is_crash_report = field.value_bool;
+                break;
+            }
+
+            if(type == ReportType_Visible || is_crash_report){
+                return false;
+            }
+
+            const auto now = os::GetSystemTick();
+            const TimeSpan elapsed = (now - g_throttle_state.last_tick).ToTimeSpan();
+
+            if (std::strcmp(g_throttle_state.last_error_code, error_code) == 0 && elapsed < g_throttle_state.throttle_time_span) {
+                if (g_throttle_state.consecutive_count >= 5) {
+                    return true;
+                }
+                g_throttle_state.consecutive_count++;
+            } else {
+                util::Strlcpy(g_throttle_state.last_error_code, error_code, sizeof(g_throttle_state.last_error_code));
+                g_throttle_state.last_tick = now;
+                g_throttle_state.consecutive_count = 1;
+            }
+
+            return false;
+        }
         Result SubmitReportDefaults(const ContextEntry *ctx) {
             AMS_ASSERT(ctx->category == CategoryId_ErrorInfo);
 
@@ -381,6 +445,9 @@ namespace ams::erpt::srv {
 
     }
 
+    void Reporter::SetThrottleTimeSpan(TimeSpan time_span) {
+        g_throttle_state.throttle_time_span = time_span;
+    }
     Result Reporter::RegisterRunningApplet(ncm::ProgramId program_id) {
         g_applet_active_time_info_list.Register(program_id);
         R_SUCCEED();
@@ -427,11 +494,50 @@ namespace ams::erpt::srv {
         /* Get the context entry pointer. */
         const ContextEntry *ctx = record->GetContextEntryPtr();
 
-        /* Validate the context. */
-        R_TRY(ValidateCreateReportContext(ctx));
+        /* Validate the context and retrieve the error code. */
+        char error_code[ErrorCodeSizeMax];
+        R_TRY(ValidateAndGetErrorCode(ctx, error_code));
+
+        if (hos::GetVersion() >= hos::Version_22_0_0) {
+            /* Check if we should throttle the report. */
+            if (IsThrottledReport(ctx, type, error_code)) {
+                R_SUCCEED();
+            }
+        }
 
         /* Submit report defaults. */
         R_TRY(SubmitReportDefaults(ctx));
+
+        /* Push to recent reports. */
+        if (hos::GetVersion() >= hos::Version_22_0_0) {
+            const auto fields_span = MakeSpan(ctx->fields, ctx->field_count);
+            const u8 *array_data = static_cast<const u8 *>(ctx->array_buffer);
+
+            char program_id[ProgramIdSizeMax] = {};
+            bool is_system_abort = false;
+            bool is_application_abort = false;
+
+            for (const auto &field : fields_span) {
+                switch (field.id) {
+                    case FieldId_ProgramId:
+                        if(field.type != FieldType_String){
+                            break;
+                        }
+                        util::Strlcpy(program_id, reinterpret_cast<const char *>(array_data + field.value_array.start_idx), sizeof(program_id));
+                        break;
+                    case FieldId_SystemAbortFlag:
+                        is_system_abort = field.value_bool;
+                        break;
+                    case FieldId_ApplicationAbortFlag:
+                        is_application_abort = field.value_bool;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            RecentReport::PushEntry(error_code, program_id, type, is_system_abort, is_application_abort);
+        }
 
         /* Generate report id. */
         const ReportId report_id = specified_report_id ? *specified_report_id : ReportId{ .uuid = util::GenerateUuid() };
@@ -480,8 +586,9 @@ namespace ams::erpt::srv {
         R_ABORT_UNLESS(time::GetStandardSteadyClockCurrentTimePoint(std::addressof(steady_clock_current_timepoint)));
 
         /* Add automatic fields. */
-        static_cast<void>(auto_record->Add(FieldId_OsVersion,                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version))));
-        static_cast<void>(auto_record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version))));
+        const auto &sys_info = srv::GetSystemInfo();
+        static_cast<void>(auto_record->Add(FieldId_OsVersion,                        sys_info.os_version,                          util::Strnlen(sys_info.os_version, sizeof(sys_info.os_version))));
+        static_cast<void>(auto_record->Add(FieldId_PrivateOsVersion,                 sys_info.private_os_version,                  util::Strnlen(sys_info.private_os_version, sizeof(sys_info.private_os_version))));
         static_cast<void>(auto_record->Add(FieldId_SerialNumber,                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number))));
         static_cast<void>(auto_record->Add(FieldId_ReportIdentifier,                 identifier_str,                               util::Strnlen(identifier_str, sizeof(identifier_str))));
         static_cast<void>(auto_record->Add(FieldId_OccurrenceTimestamp,              timestamp_user.value));
