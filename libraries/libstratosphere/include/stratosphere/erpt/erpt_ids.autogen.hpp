@@ -1014,4 +1014,4 @@
     HANDLER(ModuleClockEnableFlags,                                   1032, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModulePowerEnableFlags,                                   1033, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(ControllerStyleList,                                      1035, ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(ControllerStyleList,                                      1035, ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   )
