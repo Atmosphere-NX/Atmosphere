@@ -200,14 +200,16 @@ namespace ams::mitm::fs {
         const bool is_game_or_hbl = m_client_info.override_status.IsHbl() || ncm::IsApplicationId(m_client_info.program_id);
         R_UNLESS(is_game_or_hbl, sm::mitm::ResultShouldForwardToSession());
 
-        /* Only redirect if the appropriate system setting is set. */
-        R_UNLESS(GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd"), sm::mitm::ResultShouldForwardToSession());
-
-        /* Only redirect if the specific title being accessed has a redirect save flag. */
-        R_UNLESS(cfg::HasContentSpecificFlag(m_client_info.program_id, "redirect_save"), sm::mitm::ResultShouldForwardToSession());
-
-        /* Only redirect account savedata. */
-        R_UNLESS(attribute.type == fs::SaveDataType::Account, sm::mitm::ResultShouldForwardToSession());
+        /* Determine whether we should redirect based on save type. */
+        bool should_redirect = false;
+        if (attribute.type == fs::SaveDataType::Account) {
+            should_redirect = GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd")
+                           && cfg::HasContentSpecificFlag(m_client_info.program_id, "redirect_save");
+        } else if (attribute.type == fs::SaveDataType::Cache) {
+            should_redirect = GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_cache_to_sd")
+                           && cfg::HasContentSpecificFlag(m_client_info.program_id, "redirect_cache");
+        }
+        R_UNLESS(should_redirect, sm::mitm::ResultShouldForwardToSession());
 
         /* Get enum type for space id. */
         auto space_id = static_cast<FsSaveDataSpaceId>(_space_id);

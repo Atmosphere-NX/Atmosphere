@@ -123,3 +123,4 @@ Atmosphère supports customizing CFW behavior based on the presence of `flags` o
 The following flags are supported on a per-program basis, by placing `<flag_name>.flag` inside `/atmosphere/contents/<program_id>/flags/`:
 + `boot2`, which indicates that the program should be launched during the `boot2` process.
 + `redirect_save`, which indicates that the program wants its savedata to be redirected to the SD card.
++ `redirect_cache`, which indicates that the program wants its cache storage to be redirected to the SD card.

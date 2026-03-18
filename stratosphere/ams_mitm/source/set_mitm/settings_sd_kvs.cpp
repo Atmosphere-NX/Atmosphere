@@ -359,6 +359,13 @@ namespace ams::settings::fwdbg {
             /* If you do not know what you are doing, do not touch this yet. */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_saves_to_sd", "u8!0x0"));
 
+            /* Controls whether fs.mitm should redirect cache save files */
+            /* to directories on the sd card. */
+            /* 0 = Do not redirect, 1 = Redirect. */
+            /* NOTE: EXPERIMENTAL */
+            /* If you do not know what you are doing, do not touch this yet. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_cache_to_sd", "u8!0x0"));
+
             /* Controls whether am sees system settings "DebugModeFlag" as */
             /* enabled or disabled. */
             /* 0 = Disabled (not debug mode), 1 = Enabled (debug mode) */
