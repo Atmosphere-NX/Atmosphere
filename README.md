@@ -32,7 +32,7 @@ Exemptions:
 Credits
 =====
 
-Atmosphère is currently being developed and maintained by __SciresM__, __TuxSH__, __hexkyz__, and __fincs__.<br>
+Atmosphère is currently being developed and maintained by __TuxSH__, __hexkyz__, and __fincs__.<br>
 In no particular order, we credit the following for their invaluable contributions:
 
 * __switchbrew__ for the [libnx](https://github.com/switchbrew/libnx) project and the extensive [documentation, research and tool development](http://switchbrew.org) pertaining to the Nintendo Switch.
@@ -47,5 +47,6 @@ In no particular order, we credit the following for their invaluable contributio
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
 * __jaames__ for designing and providing Atmosphère's graphical resources.
+* __SciresM__ for pioneering and maintaining this wonderful project for so long.
 * Everyone who submitted entries for Atmosphère's [splash design contest](https://github.com/Atmosphere-NX/Atmosphere-splashes).
 * _All those who actively contribute to the Atmosphère repository._
