@@ -169,6 +169,27 @@ namespace ams::secmon::smc {
             return value.value;
         }
 
+        fuse::DramId GetDramIdAdjusted() {
+            const auto dram_id = fuse::GetDramId();
+            AMS_ABORT_UNLESS(dram_id < fuse::DramId_Count);
+
+            const auto fuse_mem_size = DramIdToMemorySize[dram_id];
+            const auto phys_mem_size = GetPhysicalMemorySize();
+
+            AMS_ABORT_UNLESS(fuse_mem_size <= phys_mem_size);
+
+            if (fuse_mem_size == phys_mem_size) {
+                return dram_id;
+            }
+
+            /* Adjust Dram ID to match density/ranks. */
+            if (GetSocType() == fuse::SocType_Erista) {
+                return fuse::DramId_IcosaSamsung6GB;
+            } else { /* fuse::SocType_Mariko */
+                return fuse::DramId_IowaSamsung1y8GBX;
+            }
+        }
+
         constinit u64 g_payload_address = 0;
         constinit bool g_set_true_target_firmware = false;
 
@@ -178,7 +199,7 @@ namespace ams::secmon::smc {
                     args.r[1] = GetBootConfig().signed_data.IsProgramVerificationDisabled();
                     break;
                 case ConfigItem::DramId:
-                    args.r[1] = fuse::GetDramId();
+                    args.r[1] = GetDramIdAdjusted(); /* Nintendo: fuse::GetDramId() */
                     break;
                 case ConfigItem::SecurityEngineInterruptNumber:
                     args.r[1] = SecurityEngineUserInterruptId;
@@ -471,9 +492,18 @@ namespace ams::secmon::smc {
 
     /* For exosphere's usage. */
     pkg1::MemorySize GetPhysicalMemorySize() {
-        const auto dram_id = fuse::GetDramId();
-        AMS_ABORT_UNLESS(dram_id < fuse::DramId_Count);
-        return DramIdToMemorySize[dram_id];
+        const uintptr_t MC = secmon::MemoryRegionVirtualDeviceMemoryController.GetAddress();
+        const u32 mem_size = reg::Read(MC + MC_EMEM_CFG) & 0x3FFF;
+
+        switch (mem_size >> 10) {
+            case 4:
+            default:
+                return pkg1::MemorySize_4GB;
+            case 6:
+                return pkg1::MemorySize_6GB;
+            case 8:
+                return pkg1::MemorySize_8GB;
+        }
     }
 
 }
