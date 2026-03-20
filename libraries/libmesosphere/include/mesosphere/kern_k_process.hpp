@@ -102,8 +102,8 @@ namespace ams::kern {
             IoRegionList                m_io_region_list;
             bool                        m_is_suspended;
             bool                        m_is_immortal;
-            bool                        m_is_jit_debug;
             bool                        m_is_handle_table_initialized;
+            bool                        m_is_jit_debug;
             ams::svc::DebugEvent        m_jit_debug_event_type;
             ams::svc::DebugException    m_jit_debug_exception_type;
             uintptr_t                   m_jit_debug_params[4];

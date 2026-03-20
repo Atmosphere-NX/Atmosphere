@@ -661,7 +661,7 @@
     HANDLER(UsbControllerCount,                                       457,  ConnectedControllerInfo,             FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ControllerTypeList,                                       458,  ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ControllerInterfaceList,                                  459,  ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(ControllerStyleList,                                      460,  ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
+    HANDLER(ControllerStyleListDeprecated,                            460,  ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(FsPooledBufferPeakFreeSize,                               461,  FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(FsPooledBufferRetriedCount,                               462,  FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(FsPooledBufferReduceAllocationCount,                      463,  FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
@@ -1014,4 +1014,4 @@
     HANDLER(ModuleClockEnableFlags,                                   1032, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ModulePowerEnableFlags,                                   1033, PowerClockInfo,                      FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(BluetoothAudioConnectionCount,                            1034, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(ControllerStyleList,                                      1035, ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   )
+    HANDLER(ControllerStyleList,                                      1035, ConnectedControllerInfo,             FieldType_U8Array,    FieldFlag_None   ) 

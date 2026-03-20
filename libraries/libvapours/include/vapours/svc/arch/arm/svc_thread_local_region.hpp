@@ -27,8 +27,9 @@ namespace ams::svc::arch::arm {
         volatile u16 interrupt_flag;
         volatile u8 cache_maintenance_flag;
         volatile s64 thread_cpu_time;
+        volatile ams::svc::Handle thread_handle;
         /* TODO: Should we bother adding the Nintendo aarch32 thread local context here? */
-        uintptr_t TODO[(0x200 - 0x110) / sizeof(uintptr_t)];
+        uintptr_t TODO[(0x200 - 0x114) / sizeof(uintptr_t)];
     };
 
     ALWAYS_INLINE ThreadLocalRegion *GetThreadLocalRegion() {

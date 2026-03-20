@@ -17,6 +17,7 @@
 #include "pinmux_pad_index.hpp"
 #include "pinmux_board_driver_api.hpp"
 #include "pinmux_platform_pads.hpp"
+#include "pinmux_build_config.hpp"
 
 namespace ams::pinmux::driver::board::nintendo::nx {
 
@@ -99,6 +100,31 @@ namespace ams::pinmux::driver::board::nintendo::nx {
             UpdateSinglePinmuxPad({ PinmuxPadIndex_Sdmmc2Dat6, 0x2000, 0x2000 });
             UpdateSinglePinmuxPad({ PinmuxPadIndex_Sdmmc2Dat7, 0x2000, 0x2000 });
         }
+
+        #if defined(AMS_PINMUX_CONFIG_RIGHT_RAIL_AS_UART)
+        UpdateSinglePinmuxPad({ 
+            .index       = PinmuxPadIndex_Uart2Tx,
+            .option      = 0,               /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output */
+            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+        });
+        UpdateSinglePinmuxPad({ 
+            .index       = PinmuxPadIndex_Uart2Cts,
+            .option      = 0x20,            /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input */
+            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+        });
+        #endif
+        #if defined(AMS_PINMUX_CONFIG_LEFT_RAIL_AS_UART)
+        UpdateSinglePinmuxPad({ 
+            .index       = PinmuxPadIndex_Uart3Tx,
+            .option      = 0,               /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output */
+            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+        });
+        UpdateSinglePinmuxPad({ 
+            .index       = PinmuxPadIndex_Uart3Cts,
+            .option      = 0x20,            /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input */
+            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+        });
+        #endif
     }
 
     void SetInitialDrivePadConfig() {

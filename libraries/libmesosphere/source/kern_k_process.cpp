@@ -185,6 +185,11 @@ namespace ams::kern {
         /* Validate that the intended kernel version isn't too high for us to support. */
         R_UNLESS(m_capabilities.GetIntendedKernelVersion() <= ams::svc::SupportedKernelVersion, svc::ResultInvalidCombination());
 
+        /* Enable mapping device pages as executable on legacy processes. */
+        if (m_capabilities.GetIntendedKernelMajorVersion() < 26) {
+            m_page_table.GetBasePageTable().AllowDeviceMappingOfExecPages();
+        }
+
         /* Create and clear the process local region. */
         R_TRY(this->CreateThreadLocalRegion(std::addressof(m_plr_address)));
         m_plr_heap_address = this->GetThreadLocalRegionPointer(m_plr_address);
@@ -975,6 +980,9 @@ namespace ams::kern {
 
         /* Set the thread arguments. */
         main_thread->GetContext().SetArguments(0, thread_handle);
+
+        /* Pass the thread handle to the thread local region. */
+        static_cast<ams::svc::ThreadLocalRegion *>(main_thread->GetThreadLocalRegionHeapAddress())->thread_handle = thread_handle;
 
         /* Update our state. */
         this->ChangeState((state == State_Created) ? State_Running : State_RunningAttached);

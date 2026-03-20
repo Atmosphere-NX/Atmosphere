@@ -42,6 +42,10 @@ namespace ams::fs {
     }
 
     void DisableAutoSaveDataCreation() {
+        if (hos::GetVersion() >= hos::Version_22_0_0) {
+            return;
+        }
+
         auto fsp = impl::GetFileSystemProxyServiceObject();
         AMS_FS_R_ABORT_UNLESS(fsp->DisableAutoSaveDataCreation());
     }

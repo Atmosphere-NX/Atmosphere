@@ -211,6 +211,7 @@ namespace ams::kern {
         /* Set other basic fields. */
         m_enable_aslr                       = (flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
         m_enable_device_address_space_merge = (flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+        m_allowed_exec_device_mapping       = false;
         m_address_space_start               = start;
         m_address_space_end                 = end;
         m_is_kernel                         = false;
@@ -3077,7 +3078,9 @@ namespace ams::kern {
         const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap) | (check_heap ? KMemoryState_FlagReferenceCounted : KMemoryState_None);
         size_t num_allocator_blocks;
         KMemoryState old_state;
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), nullptr, nullptr, std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
+        const KMemoryPermission perm_mask = static_cast<KMemoryPermission>(perm | (m_allowed_exec_device_mapping ? KMemoryPermission_None : KMemoryPermission_UserExecute));
+        
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), nullptr, nullptr, std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm_mask, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
 
         /* Create an update allocator. */
         Result allocator_result;

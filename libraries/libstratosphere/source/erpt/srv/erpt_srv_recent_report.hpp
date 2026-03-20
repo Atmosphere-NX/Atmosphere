@@ -14,23 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::erpt::srv {
 
-    Result Initialize(u8 *mem, size_t mem_size);
-    Result InitializeAndStartService();
-
-    const SystemInfo &GetSystemInfo();
-
-    Result SetSerialNumber(const char *sn, u32 sn_len);
-    Result SetProductModel(const char *model, u32 model_len);
-    Result SetRegionSetting(const char *region, u32 region_len);
-
-    /* Atmosphere extension. */
-    Result SetRedirectNewReportsToSdCard(bool redirect);
-    Result SetEnabledAutomaticReportCleanup(bool redirect);
-
-    void Wait();
+    class RecentReport {
+        public:
+            static void PushEntry(const char *error_code, const char *program_id, ReportType type, bool is_system_abort, bool is_application_abort);
+            static void GetSummary(RecentReportSummary *out);
+            static void Clear();
+    };
 
 }
