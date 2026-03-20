@@ -87,6 +87,7 @@ namespace ams::hos {
         Version_18_1_0  = ::ams::TargetFirmware_18_1_0,
         Version_19_0_0  = ::ams::TargetFirmware_19_0_0,
         Version_19_0_1  = ::ams::TargetFirmware_19_0_1,
+        Version_19_0_2  = ::ams::TargetFirmware_19_0_2,
         Version_20_0_0  = ::ams::TargetFirmware_20_0_0,
         Version_20_0_1  = ::ams::TargetFirmware_20_0_1,
         Version_20_1_0  = ::ams::TargetFirmware_20_1_0,
