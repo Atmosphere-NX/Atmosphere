@@ -42,7 +42,7 @@ namespace ams::fs::impl {
             case KeyGeneration_16_0_0: return "16.0.0-16.0.3";
             case KeyGeneration_17_0_0: return "17.0.0-17.0.1";
             case KeyGeneration_18_0_0: return "18.0.0-18.1.0";
-            case KeyGeneration_19_0_0: return "19.0.0-19.0.1";
+            case KeyGeneration_19_0_0: return "19.0.0-19.0.2";
             case KeyGeneration_20_0_0: return "20.0.0-20.5.0";
             case KeyGeneration_21_0_0: return "21.0.0-21.2.0";
             case KeyGeneration_22_0_0: return "22.0.0";
