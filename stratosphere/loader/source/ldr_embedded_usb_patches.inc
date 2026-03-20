@@ -74,14 +74,14 @@ constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_20_0_0[] = {
     { 0x7090, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
 };
 
-constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_20_1_0[] = {
-    { 0x7010, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
-    { 0x7090, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
-};
-
 constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_21_0_0[] = {
     { 0x6D60, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
     { 0x6DE0, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+};
+
+constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_22_0_0[] = {
+    { 0x6C90, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { 0x6D10, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
 };
 
 constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
@@ -98,6 +98,7 @@ constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("4F21AE15E814FA46515C0401BB23D4F7ADCBF3F4"), util::size(Usb30ForceEnablePatches_18_0_0), Usb30ForceEnablePatches_18_0_0 }, /* 18.0.0 */
     { ParseModuleId("54BB9BB32C958E02752DC5E4AE8D016BFE1F5418"), util::size(Usb30ForceEnablePatches_19_0_0), Usb30ForceEnablePatches_19_0_0 }, /* 19.0.0 */
     { ParseModuleId("40E80E7442C0DFC985315E6F9E8C77229818AC0F"), util::size(Usb30ForceEnablePatches_20_0_0), Usb30ForceEnablePatches_20_0_0 }, /* 20.0.0 */
-    { ParseModuleId("A5EF8D22EDF8A384E4135270ED596C1D2D524159"), util::size(Usb30ForceEnablePatches_20_1_0), Usb30ForceEnablePatches_20_1_0 }, /* 20.1.0 - 20.5.0 */
+    { ParseModuleId("A5EF8D22EDF8A384E4135270ED596C1D2D524159"), util::size(Usb30ForceEnablePatches_20_0_0), Usb30ForceEnablePatches_20_0_0 }, /* 20.1.0 - 20.5.0 */
     { ParseModuleId("766D0C2277207B40AD9B8DE309396D50CCE94885"), util::size(Usb30ForceEnablePatches_21_0_0), Usb30ForceEnablePatches_21_0_0 }, /* 21.0.0 */
+    { ParseModuleId("B734339F2280170AF0200573F9B943242CEF8C15"), util::size(Usb30ForceEnablePatches_22_0_0), Usb30ForceEnablePatches_22_0_0 }, /* 22.0.0 */
 };
