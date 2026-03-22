@@ -611,6 +611,7 @@ namespace ams::ldr {
 
             out_param->code_address   = aslr_start;
             out_param->code_num_pages = total_size >> 12;
+            out->total_size = total_size;
 
             R_SUCCEED();
         }
