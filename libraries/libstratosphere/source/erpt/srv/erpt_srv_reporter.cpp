@@ -20,7 +20,7 @@
 #include "erpt_srv_context_record.hpp"
 #include "erpt_srv_context.hpp"
 #include "erpt_srv_fs_info.hpp"
-#include "erpt_srv_recent_report.hpp"
+#include "erpt_srv_notifiable_errors.hpp"
 
 namespace ams::erpt::srv {
 
@@ -536,7 +536,7 @@ namespace ams::erpt::srv {
                 }
             }
 
-            RecentReport::PushEntry(error_code, program_id, type, is_system_abort, is_application_abort);
+            NotifiableErrorCodeReport::PushEntry(error_code, program_id, type, is_system_abort, is_application_abort);
         }
 
         /* Generate report id. */

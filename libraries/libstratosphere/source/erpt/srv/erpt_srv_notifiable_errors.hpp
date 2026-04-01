@@ -18,10 +18,10 @@
 
 namespace ams::erpt::srv {
 
-    class RecentReport {
+    class NotifiableErrorCodeReport {
         public:
             static void PushEntry(const char *error_code, const char *program_id, ReportType type, bool is_system_abort, bool is_application_abort);
-            static void GetSummary(RecentReportSummary *out);
+            static void PopNotifiableErrorCodes(NotifiableErrorCodesData *out);
             static void Clear();
     };
 

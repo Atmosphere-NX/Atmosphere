@@ -36,7 +36,7 @@ namespace ams::erpt::srv {
             Result GetStorageUsageStatistics(ams::sf::Out<StorageUsageStatistics> out);
             Result GetAttachmentListDeprecated(const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
             Result GetAttachmentList(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
-            Result GetRecentReportSummary(ams::sf::Out<RecentReportSummary> out);
+            Result PopNotifiableErrorCodes(ams::sf::Out<NotifiableErrorCodesData> out);
             Result GetReportSizeMax(ams::sf::Out<u32> out);
     };
     static_assert(erpt::sf::IsIManager<ManagerImpl>);

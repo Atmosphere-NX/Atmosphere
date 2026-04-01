@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "erpt_srv_manager_impl.hpp"
 #include "erpt_srv_journal.hpp"
-#include "erpt_srv_recent_report.hpp"
+#include "erpt_srv_notifiable_errors.hpp"
 
 namespace ams::erpt::srv {
 
@@ -60,7 +60,7 @@ namespace ams::erpt::srv {
     Result ManagerImpl::CleanupReports() {
         Journal::CleanupReports();
         Journal::CleanupAttachments();
-        RecentReport::Clear();
+        NotifiableErrorCodeReport::Clear();
         R_RETURN(Journal::Commit());
     }
 
@@ -106,8 +106,8 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result ManagerImpl::GetRecentReportSummary(ams::sf::Out<RecentReportSummary> out) {
-        RecentReport::GetSummary(out.GetPointer());
+    Result ManagerImpl::PopNotifiableErrorCodes(ams::sf::Out<NotifiableErrorCodesData> out) {
+        NotifiableErrorCodeReport::PopNotifiableErrorCodes(out.GetPointer());
         R_SUCCEED();
     }
 

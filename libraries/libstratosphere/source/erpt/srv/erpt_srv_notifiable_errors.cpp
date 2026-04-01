@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "erpt_srv_recent_report.hpp"
+#include "erpt_srv_notifiable_errors.hpp"
 
 namespace ams::erpt::srv {
 
@@ -22,14 +22,14 @@ namespace ams::erpt::srv {
 
         constexpr size_t MaxEntriesPerType = 25;
 
-        struct RecentReportState {
+        struct NotifiableErrorCodeReportState {
             u32 report_counts[ReportType_Count];
-            RecentReportEntry report_entries[ReportType_Count][MaxEntriesPerType];
+            NotifiableErrorCodeReportEntry report_entries[ReportType_Count][MaxEntriesPerType];
             os::Tick last_tick;
             u32 consecutive_count;
         };
 
-        constinit RecentReportState g_state = {
+        constinit NotifiableErrorCodeReportState g_state = {
             .report_counts     = {},
             .report_entries    = {},
             .last_tick         = os::Tick{},
@@ -38,18 +38,18 @@ namespace ams::erpt::srv {
 
     }
 
-    void RecentReport::PushEntry(const char *error_code, const char *program_id, ReportType type, bool is_system_abort, bool is_application_abort) {
+    void NotifiableErrorCodeReport::PushEntry(const char *error_code, const char *program_id, ReportType type, bool is_system_abort, bool is_application_abort) {
         u32 &count = g_state.report_counts[type];
-        RecentReportEntry *entries = g_state.report_entries[type];
+        NotifiableErrorCodeReportEntry *entries = g_state.report_entries[type];
 
         /* If we're full, shift the oldest entry out. */
         if (count >= MaxEntriesPerType) {
-            std::memmove(entries, entries + 1, sizeof(RecentReportEntry) * (MaxEntriesPerType - 1));
+            std::memmove(entries, entries + 1, sizeof(NotifiableErrorCodeReportEntry) * (MaxEntriesPerType - 1));
             count = MaxEntriesPerType - 1;
         }
 
         /* Fill the new entry. */
-        RecentReportEntry &entry = entries[count];
+        NotifiableErrorCodeReportEntry &entry = entries[count];
         util::Strlcpy(entry.error_code, error_code, sizeof(entry.error_code));
         util::Strlcpy(entry.program_id, program_id, sizeof(entry.program_id));
         entry.is_visible = (type == ReportType_Visible);
@@ -59,7 +59,7 @@ namespace ams::erpt::srv {
         count++;
     }
 
-    void RecentReport::GetSummary(RecentReportSummary *out) {
+    void NotifiableErrorCodeReport::PopNotifiableErrorCodes(NotifiableErrorCodesData *out) {
         /* Fill basic info from lazily-initialized system info. */
         const auto &sys_info = srv::GetSystemInfo();
         util::Strlcpy(out->firmware_display_version, sys_info.os_version, sizeof(out->firmware_display_version));
@@ -74,7 +74,7 @@ namespace ams::erpt::srv {
             if (g_state.report_counts[i] == 0) {
                 continue;
             }
-            std::memcpy(out->entries + total_count, g_state.report_entries[i], sizeof(RecentReportEntry) * g_state.report_counts[i]);
+            std::memcpy(out->entries + total_count, g_state.report_entries[i], sizeof(NotifiableErrorCodeReportEntry) * g_state.report_counts[i]);
             total_count += g_state.report_counts[i];
 
             /* Reset count (destructive read). */
@@ -84,7 +84,7 @@ namespace ams::erpt::srv {
         out->entry_count = total_count;
     }
 
-    void RecentReport::Clear() {
+    void NotifiableErrorCodeReport::Clear() {
         for (u32 i = 0; i < ReportType_Count; i++) {
             g_state.report_counts[i] = 0;
         }
