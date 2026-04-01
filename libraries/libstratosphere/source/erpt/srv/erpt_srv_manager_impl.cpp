@@ -101,7 +101,7 @@ namespace ams::erpt::srv {
 
     Result ManagerImpl::GetReportSizeMax(ams::sf::Out<u32> out) {
         /* TODO: Where is this size defined? */
-        constexpr size_t ReportSizeMax = 0x35D3D;
+        constexpr size_t ReportSizeMax = 0x3FF4F;
         *out = ReportSizeMax;
         R_SUCCEED();
     }
