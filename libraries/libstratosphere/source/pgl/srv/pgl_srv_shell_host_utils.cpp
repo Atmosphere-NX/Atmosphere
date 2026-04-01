@@ -77,7 +77,7 @@ namespace ams::pgl::srv {
             private:
                 char m_content_path[fs::EntryNameLengthMax] = {};
                 ExtensionType m_extension_type              = ExtensionType::None;
-                char m_mount_name[fs::MountNameLengthMax+1]   = {};
+                char m_mount_name[fs::MountNameLengthMax+1] = {};
                 bool m_is_mounted                           = false;
                 ncm::AutoBuffer m_content_meta_buffer;
                 ncm::ProgramId m_program_id                 = ncm::InvalidProgramId;
