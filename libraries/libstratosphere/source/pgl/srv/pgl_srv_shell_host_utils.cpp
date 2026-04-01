@@ -101,7 +101,7 @@ namespace ams::pgl::srv {
                     R_TRY(this->SetExtensionType());
 
                     /* Copy in mount name. */
-                    R_UNLESS(strlen(mount) <= sizeof(m_mount_name) - 1, pgl::ResultBufferNotEnough());
+                    R_UNLESS(strlen(mount) <= sizeof(m_mount_name), pgl::ResultBufferNotEnough());
                     std::strcpy(m_mount_name, mount);
 
                     /* Mount the package. */
