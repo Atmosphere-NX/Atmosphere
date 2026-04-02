@@ -134,8 +134,11 @@ ZSTDLIB_API const char* ZSTD_versionString(void);
 #  define ZSTD_CLEVEL_DEFAULT 3
 #endif
 
-#ifndef ZSTD_ZBIC
-#  define ZSTD_ZBIC 0
+/* *************************************
+ *  ZBIC support
+ ***************************************/
+#ifndef ZSTD_ZBIC_SUPPORT
+#  define ZSTD_ZBIC_SUPPORT 0
 #endif
 
 /* *************************************
@@ -143,8 +146,8 @@ ZSTDLIB_API const char* ZSTD_versionString(void);
  ***************************************/
 
 /* All magic numbers are supposed read/written to/from files/memory using little-endian convention */
-#if ZSTD_ZBIC
-#define ZSTD_MAGICNUMBER            0x4349425A    /* 0x4349425A for ZBIC, 0xFD2FB528 for zstd (valid since v0.8.0) */
+#if ZSTD_ZBIC_SUPPORT
+#define ZSTD_MAGICNUMBER            0x4349425A    /* ZBIC magicnumber */
 #else
 #define ZSTD_MAGICNUMBER            0xFD2FB528    /* valid since v0.8.0 */
 #endif

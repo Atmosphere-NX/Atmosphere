@@ -21,8 +21,11 @@ namespace ams::util {
 
     /* Compression utilities. */
     int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
+    size_t CompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size);
 
     /* Decompression utilities. */
     int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
+    size_t DecompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size);
+    bool DecompressZstdForLoader(void* workspace, size_t workspace_size, void *dst, size_t dst_size, size_t expected_dec_size, const void *src, size_t src_size);
 
 }

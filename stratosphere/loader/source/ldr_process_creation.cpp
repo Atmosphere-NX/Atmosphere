@@ -22,7 +22,6 @@
 #include "ldr_patcher.hpp"
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
-#include <stratosphere/util/util_zbic_for_loader.hpp>
 
 namespace ams::ldr {
 
@@ -121,8 +120,9 @@ namespace ams::ldr {
         /* Global NSO header cache. */
         NsoHeader g_nso_headers[Nso_Count];
 
-        /* Global zstd decompression context */
-        alignas(8) u8 g_zstd_dctx_workspace[0x176E8];
+        /* Global Zstd decompression context. */
+        constexpr size_t ZstdDctxWorkspaceSize = 0x176E8;
+        alignas(8) u8 g_zstd_dctx_workspace[ZstdDctxWorkspaceSize];
 
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             /* No version verification is done before 8.1.0. */
@@ -656,9 +656,7 @@ namespace ams::ldr {
             auto compressed_data_buf = reinterpret_cast<const void *>(load_address);
 
             if (is_zstd) {
-                const size_t map_size = static_cast<size_t>(map_end - map_base);
-
-                bool decompressed = util::DecompressZbicForLoader(g_zstd_dctx_workspace, reinterpret_cast<void *>(map_base), map_size, segment_size, file_size, compressed_data_buf);
+                bool decompressed = util::DecompressZstdForLoader(reinterpret_cast<void *>(g_zstd_dctx_workspace), ZstdDctxWorkspaceSize, reinterpret_cast<void *>(map_base), static_cast<size_t>(map_end - map_base), segment_size, compressed_data_buf, file_size);
                 R_UNLESS(decompressed, ldr::ResultInvalidNso());
             } else {
                 bool decompressed = (util::DecompressLZ4(reinterpret_cast<void *>(map_base), segment_size, compressed_data_buf, file_size) == static_cast<int>(segment_size));
