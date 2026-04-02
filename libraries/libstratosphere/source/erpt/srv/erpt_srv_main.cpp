@@ -21,7 +21,7 @@
 #include "erpt_srv_journal.hpp"
 #include "erpt_srv_service.hpp"
 #include "erpt_srv_forced_shutdown.hpp"
-#include "erpt_srv_recent_report.hpp"
+#include "erpt_srv_notifiable_errors.hpp"
 
 namespace ams::erpt::srv {
 
