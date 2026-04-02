@@ -37,6 +37,7 @@ namespace ams {
             R_ABORT_UNLESS(pmshellInitialize());
             R_ABORT_UNLESS(ldrShellInitialize());
             R_ABORT_UNLESS(lrInitialize());
+            lr::Initialize();
 
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
