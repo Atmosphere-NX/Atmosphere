@@ -58,3 +58,36 @@ namespace ams {
     }
 
 }
+
+/* Override operator new. */
+void *operator new(size_t size) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void *operator new(size_t size, const std::nothrow_t &) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void operator delete(void *p) {
+    return ams::pgl::srv::Deallocate(p, 0);
+}
+
+void operator delete(void *p, size_t size) {
+    return ams::pgl::srv::Deallocate(p, size);
+}
+
+void *operator new[](size_t size) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void *operator new[](size_t size, const std::nothrow_t &) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void operator delete[](void *p) {
+    return ams::pgl::srv::Deallocate(p, 0);
+}
+
+void operator delete[](void *p, size_t size) {
+    return ams::pgl::srv::Deallocate(p, size);
+}
