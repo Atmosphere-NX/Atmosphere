@@ -545,6 +545,12 @@ namespace ams::nxboot {
                                 } else {
                                     storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess;
                                 }
+                            } else if (std::strcmp(entry.key, "enable_mem_mode") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_BootConfigMemoryModeEnabled;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_BootConfigMemoryModeEnabled;
+                                }
                             } else if (std::strcmp(entry.key, "blank_prodinfo_sysmmc") == 0) {
                                 if (!emummc_enabled) {
                                     if (entry.value[0] == '1') {
