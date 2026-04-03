@@ -32,7 +32,6 @@ namespace ams {
             fs::SetEnabledAutoAbort(false);
 
             /* Initialize other services we need. */
-            R_ABORT_UNLESS(setInitialize());
             R_ABORT_UNLESS(setsysInitialize());
             R_ABORT_UNLESS(pmshellInitialize());
             R_ABORT_UNLESS(ldrShellInitialize());

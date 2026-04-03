@@ -15,7 +15,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["erpt:c", "fatal:u", "fsp-srv", "ldr:shel", "lm", "lr", "pm:shell", "set", "set:sys"],
+	"service_access":	["fatal:u", "fsp-srv", "ldr:shel", "lr", "pm:shell", "set:sys"],
 	"service_host":	["pgl"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
