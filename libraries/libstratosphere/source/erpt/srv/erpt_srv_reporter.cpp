@@ -423,7 +423,17 @@ namespace ams::erpt::srv {
 
             auto report = std::make_unique<Report>(record.get(), redirect_new_reports);
             R_UNLESS(report != nullptr, erpt::ResultOutOfMemory());
-            auto report_guard = SCOPE_GUARD { const auto delete_res = report->Delete(); R_ASSERT(delete_res); AMS_UNUSED(delete_res); };
+            auto report_guard = SCOPE_GUARD { 
+                const auto delete_res = report->Delete(); 
+                R_ASSERT(delete_res); 
+                AMS_UNUSED(delete_res); 
+                /* if (erpt::ResultInvalidPowerState::Includes(result)) {
+                 *     Nintendo ignores this and sends "power_state_violation" play report if this error happens.
+                 * } else {
+                 *     Nintendo sends "write_failure" play report if any other error happens.
+                 * }
+                 */
+            };
 
             R_TRY(Context::WriteContextsToReport(report.get()));
             R_TRY(report->GetSize(std::addressof(record->m_info.report_size)));
@@ -434,7 +444,7 @@ namespace ams::erpt::srv {
             } else {
                 /* If we are redirecting new reports, we don't want to store the report in the journal. */
                 /* We should take this opportunity to delete any attachments associated with the report. */
-                R_ABORT_UNLESS(JournalForAttachments::DeleteAttachments(report_id));
+                R_TRY(JournalForAttachments::DeleteAttachments(report_id));
             }
 
             R_TRY(Journal::Commit());
