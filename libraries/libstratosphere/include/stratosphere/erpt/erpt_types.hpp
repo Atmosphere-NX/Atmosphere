@@ -111,6 +111,7 @@ namespace ams::erpt {
 
     struct CreateReportOptionFlag {
         using SubmitFsInfo = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>::Flag<0>;
+        using Unknown0x20000 = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>::Flag<17>; /* TODO: What is this, it's checked in Reporter::CreateReport or below */
     };
 
     using CreateReportOptionFlagSet = util::BitFlagSet<BITSIZEOF(u32), CreateReportOptionFlag>;

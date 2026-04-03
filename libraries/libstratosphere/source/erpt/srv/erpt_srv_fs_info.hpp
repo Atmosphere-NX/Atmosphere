@@ -19,5 +19,6 @@
 namespace ams::erpt::srv {
 
     Result SubmitFsInfo();
+    void ClearFsInfo();
 
 }

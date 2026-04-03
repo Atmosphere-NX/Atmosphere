@@ -423,7 +423,11 @@ namespace ams::erpt::srv {
 
             auto report = std::make_unique<Report>(record.get(), redirect_new_reports);
             R_UNLESS(report != nullptr, erpt::ResultOutOfMemory());
-            auto report_guard = SCOPE_GUARD { const auto delete_res = report->Delete(); R_ASSERT(delete_res); AMS_UNUSED(delete_res); };
+            auto report_guard = SCOPE_GUARD { 
+                const auto delete_res = report->Delete(); 
+                R_ASSERT(delete_res); 
+                AMS_UNUSED(delete_res);
+            };
 
             R_TRY(Context::WriteContextsToReport(report.get()));
             R_TRY(report->GetSize(std::addressof(record->m_info.report_size)));
@@ -434,7 +438,7 @@ namespace ams::erpt::srv {
             } else {
                 /* If we are redirecting new reports, we don't want to store the report in the journal. */
                 /* We should take this opportunity to delete any attachments associated with the report. */
-                R_ABORT_UNLESS(JournalForAttachments::DeleteAttachments(report_id));
+                R_TRY(JournalForAttachments::DeleteAttachments(report_id));
             }
 
             R_TRY(Journal::Commit());
@@ -489,6 +493,20 @@ namespace ams::erpt::srv {
             static_cast<void>(Context::ClearContext(CategoryId_ErrorInfo));
             static_cast<void>(Context::ClearContext(CategoryId_ErrorInfoAuto));
             static_cast<void>(Context::ClearContext(CategoryId_ErrorInfoDefaults));
+
+            #if defined(ATMOSPHERE_OS_HORIZON)
+            /* TODO: What else is missing? */
+            if (hos::GetVersion() >= hos::Version_17_0_0 && flags.Test<CreateReportOptionFlag::SubmitFsInfo>()) {
+                ClearFsInfo();
+            }
+
+            /* if (erpt::ResultInvalidPowerState::Includes(...)) {
+             *     Nintendo ignores this and sends "power_state_violation" play report if this error happens.
+             * } else {
+             *     Nintendo sends "write_failure" play report if any other error happens.
+             * }
+             */
+            #endif
         };
 
         /* Get the context entry pointer. */
