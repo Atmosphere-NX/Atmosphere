@@ -30,13 +30,14 @@ namespace ams {
             fs::InitializeForSystem();
             fs::SetAllocator(pgl::srv::Allocate, pgl::srv::Deallocate);
             fs::SetEnabledAutoAbort(false);
+            
+            /* Initialize lr. */
+            lr::Initialize();
 
             /* Initialize other services we need. */
             R_ABORT_UNLESS(setsysInitialize());
             R_ABORT_UNLESS(pmshellInitialize());
             R_ABORT_UNLESS(ldrShellInitialize());
-            R_ABORT_UNLESS(lrInitialize());
-            lr::Initialize();
 
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
