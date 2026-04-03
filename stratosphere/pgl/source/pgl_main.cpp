@@ -37,6 +37,7 @@ namespace ams {
             R_ABORT_UNLESS(pmshellInitialize());
             R_ABORT_UNLESS(ldrShellInitialize());
             R_ABORT_UNLESS(lrInitialize());
+            lr::Initialize();
 
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
@@ -57,4 +58,37 @@ namespace ams {
         pgl::srv::StartServer();
     }
 
+}
+
+/* Override operator new. */
+void *operator new(size_t size) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void *operator new(size_t size, const std::nothrow_t &) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void operator delete(void *p) {
+    return ams::pgl::srv::Deallocate(p, 0);
+}
+
+void operator delete(void *p, size_t size) {
+    return ams::pgl::srv::Deallocate(p, size);
+}
+
+void *operator new[](size_t size) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void *operator new[](size_t size, const std::nothrow_t &) {
+    return ams::pgl::srv::Allocate(size);
+}
+
+void operator delete[](void *p) {
+    return ams::pgl::srv::Deallocate(p, 0);
+}
+
+void operator delete[](void *p, size_t size) {
+    return ams::pgl::srv::Deallocate(p, size);
 }
