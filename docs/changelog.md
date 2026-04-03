@@ -1,4 +1,22 @@
 # Changelog
+## 1.11.0
++ Support was added for 22.0.0.
++ Special thanks to @alula for handling a large chunk of the necessary kernel, loader and erpt changes.
+  + The console should boot and atmosphère should be fully functional.
+  + **Please note**: A change in how applications/applets' lifespan is managed broke the homebrew ecosystem.
+    + All applications and applets are expected to perform a clean exit by calling the relevant IPC commands.
+    + Homebrew compiled with libnx and hbmenu itself explicitly avoid exiting so it can keep using the same process.
+      + Properly fixing this would require a re-design of how homebrew is launched and terminated.
+    + As a temporary solution, patches to the `am` sysmodule are now included which allow restoring the previous behavior and regain homebrew compatibility without any further changes.
+    + Nonetheless, please report any issues you may face when testing homebrew to ensure no edge cases have been missed.    
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `loader` was updated to reflect the latest official behavior.
+  + `erpt` was updated to reflect the latest official behavior.
+  + `pgl` was updated to fix a few issues.
++ Support was added for memory modes above 4GB (thanks @CTCaer).
++ A build time option to configure Joy-Con rails as UART for debugging was added (thanks @alula).
++ General system stability improvements to enhance the user's experience.
 ## 1.10.2
 + Basic support was added for 21.2.0.
 + General system stability improvements to enhance the user's experience.
