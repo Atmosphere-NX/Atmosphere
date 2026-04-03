@@ -363,6 +363,8 @@ namespace ams::erpt::srv {
                 R_ABORT_UNLESS(record->Add(FieldId_GameCardReadCountFromAwaken,           ei.read_count_from_awaken));
                 R_ABORT_UNLESS(record->Add(FieldId_GameCardLastReadErrorPageAddress,      ei.last_read_error_page_address));
                 R_ABORT_UNLESS(record->Add(FieldId_GameCardLastReadErrorPageCount,        ei.last_read_error_page_count));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardLastDeactivateReasonResult,    ei.last_deactivate_reason_result));
+                R_ABORT_UNLESS(record->Add(FieldId_GameCardLastDeactivateReason,          ei.last_deactivate_reason));
 
                 /* Submit the record. */
                 R_ABORT_UNLESS(Context::SubmitContextRecord(std::move(record)));
@@ -494,6 +496,29 @@ namespace ams::erpt::srv {
         R_TRY(SubmitMemoryReportInfo());
 
         R_SUCCEED();
+    }
+
+    void ClearFsInfo() {
+        Context::ClearContext(CategoryId_NANDTypeInfo);
+        Context::ClearContext(CategoryId_NANDSpeedModeInfo);
+        Context::ClearContext(CategoryId_NANDExtendedCsd);
+        Context::ClearContext(CategoryId_NANDPatrolInfo);
+        Context::ClearContext(CategoryId_NANDErrorInfo);
+        Context::ClearContext(CategoryId_NANDDriverLog);
+        Context::ClearContext(CategoryId_MicroSDTypeInfo);
+        Context::ClearContext(CategoryId_MicroSDSpeedModeInfo);
+        Context::ClearContext(CategoryId_SdCardSizeSpec);
+        Context::ClearContext(CategoryId_SdCardActivationInfo);
+        Context::ClearContext(CategoryId_SdCardErrorInfo);
+        Context::ClearContext(CategoryId_SdCardDriverLog);
+        Context::ClearContext(CategoryId_GameCardCIDInfo);
+        Context::ClearContext(CategoryId_GameCardErrorInfo);
+        Context::ClearContext(CategoryId_GameCardDetailedErrorInfo);
+        Context::ClearContext(CategoryId_GameCardLogInfo);
+        Context::ClearContext(CategoryId_FsProxyErrorInfo);
+        Context::ClearContext(CategoryId_FsProxyErrorInfo2);
+        Context::ClearContext(CategoryId_FsProxyErrorInfo3);
+        Context::ClearContext(CategoryId_FsMemoryInfo);
     }
 
 }

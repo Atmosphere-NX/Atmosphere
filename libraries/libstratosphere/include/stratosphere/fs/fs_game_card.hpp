@@ -52,7 +52,8 @@ namespace ams::fs {
 
     struct GameCardErrorReportInfo {
         u16 game_card_crc_error_num;
-        u16 reserved1;
+        u8  last_deactivate_reason;
+        u8  reserved1;
         u16 asic_crc_error_num;
         u16 reserved2;
         u16 refresh_num;
@@ -73,7 +74,8 @@ namespace ams::fs {
         u32 awaken_count;
         u32 read_count_from_insert;
         u32 read_count_from_awaken;
-        u8  reserved5[8];
+        u32 last_deactivate_reason_result;
+        u32 reserved5;
     };
     static_assert(util::is_pod<GameCardErrorReportInfo>::value);
     static_assert(sizeof(GameCardErrorReportInfo) == 0x40);
