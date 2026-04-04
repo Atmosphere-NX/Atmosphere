@@ -1167,7 +1167,7 @@ namespace ams::settings::impl {
             map_value.current_value_size = prev_value_size;
             map_value.current_value      = prev_value;
 
-            SaveKeyValueStoreMap(*map);
+            R_DISCARD(SaveKeyValueStoreMap(*map));
         };
 
         /* Attempt to save the key value store map. */
@@ -1239,7 +1239,7 @@ namespace ams::settings::impl {
             std::swap(map_value.current_value_size, value_size);
             std::swap(map_value.current_value, value_buffer);
 
-            SaveKeyValueStoreMap(*map);
+            R_DISCARD(SaveKeyValueStoreMap(*map));
         };
 
         /* Attempt to save the key value store map. */
