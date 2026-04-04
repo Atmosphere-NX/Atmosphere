@@ -61,7 +61,7 @@ namespace ams::sdmmc::impl {
         gpio::Initialize();
 
         /* Open and configure the pad session. */
-        gpio::OpenSession(std::addressof(m_gpio_pad_session), m_gpio_device_code);
+        R_DISCARD(gpio::OpenSession(std::addressof(m_gpio_pad_session), m_gpio_device_code));
         gpio::SetDirection(std::addressof(m_gpio_pad_session), gpio::Direction_Input);
         gpio::SetDebounceTime(std::addressof(m_gpio_pad_session), m_gpio_debounce_ms);
         gpio::SetDebounceEnabled(std::addressof(m_gpio_pad_session), true);
@@ -200,7 +200,7 @@ namespace ams::sdmmc::impl {
         os::InitializeEvent(std::addressof(m_detector_thread_end_event), false, os::EventClearMode_ManualClear);
 
         /* Create and start the detector thread. */
-        os::CreateThread(std::addressof(m_detector_thread), DetectorThreadEntry, this, m_detector_thread_stack, sizeof(m_detector_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(sdmmc, DeviceDetector));
+        R_DISCARD(os::CreateThread(std::addressof(m_detector_thread), DetectorThreadEntry, this, m_detector_thread_stack, sizeof(m_detector_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(sdmmc, DeviceDetector)));
         os::SetThreadNamePointer(std::addressof(m_detector_thread), AMS_GET_SYSTEM_THREAD_NAME(sdmmc, DeviceDetector));
         os::StartThread(std::addressof(m_detector_thread));
     }
