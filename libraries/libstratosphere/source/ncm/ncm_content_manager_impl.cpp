@@ -274,7 +274,7 @@ namespace ams::ncm {
 
             if (root.content_storage != nullptr) {
                 /* N doesn't bother checking the result of this. */
-                root.content_storage->DisableForcibly();
+                R_DISCARD(root.content_storage->DisableForcibly());
                 root.content_storage = nullptr;
 
                 if (root.storage_id == StorageId::Host) {
@@ -514,7 +514,7 @@ namespace ams::ncm {
 
             if (root.content_meta_database != nullptr) {
                 /* N doesn't bother checking the result of this. */
-                root.content_meta_database->DisableForcibly();
+                R_DISCARD(root.content_meta_database->DisableForcibly());
                 root.content_meta_database = nullptr;
                 root.kvs = util::nullopt;
 
@@ -618,12 +618,12 @@ namespace ams::ncm {
 
         /* Disable and unmount all content storage roots. */
         for (size_t i = 0; i < m_num_integrated_content_storage_entries; ++i) {
-            this->InactivateContentStorage(m_integrated_content_storage_roots[i].m_config->storage_id);
+            R_DISCARD(this->InactivateContentStorage(m_integrated_content_storage_roots[i].m_config->storage_id));
         }
 
         /* Disable and unmount all content meta database roots. */
         for (size_t i = 0; i < m_num_integrated_content_meta_entries; ++i) {
-            this->InactivateContentMetaDatabase(m_integrated_content_meta_database_roots[i].m_config->storage_id);
+            R_DISCARD(this->InactivateContentMetaDatabase(m_integrated_content_meta_database_roots[i].m_config->storage_id));
         }
     }
 
@@ -796,7 +796,7 @@ namespace ams::ncm {
     Result ContentManagerImpl::BuildContentMetaDatabaseImpl(StorageId storage_id) {
         /* Temporarily activate the database. */
         R_TRY(this->ActivateContentMetaDatabase(storage_id));
-        ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
+        ON_SCOPE_EXIT { R_DISCARD(this->InactivateContentMetaDatabase(storage_id)); };
 
         /* Open the content meta database and storage. */
         ContentMetaDatabase meta_db;
@@ -848,7 +848,7 @@ namespace ams::ncm {
         if (R_FAILED(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem))) {
             return true;
         }
-        ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(StorageId::BuiltInSystem); };
+        ON_SCOPE_EXIT { R_DISCARD(this->InactivateContentMetaDatabase(StorageId::BuiltInSystem)); };
 
         /* Open the content meta db. */
         ContentMetaDatabase meta_db;
@@ -976,7 +976,7 @@ namespace ams::ncm {
         /* or an empty kvs, both of which we can fix by performing a rebuild. */
         if (this->IsNeedRebuildSystemContentMetaDatabase()) {
             /* Clean up the system content meta database, to ensure creation can succeed. */
-            this->CleanupContentMetaDatabase(StorageId::BuiltInSystem);
+            R_DISCARD(this->CleanupContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* Create the content meta database. */
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
@@ -1005,7 +1005,7 @@ namespace ams::ncm {
         /* NOTE: Nintendo does not check this succeeds, and it does on older system versions. */
         /* We will not check the error, either, even though this kind of defeats the call's purpose. */
         if (hos::GetVersion() >= hos::Version_2_0_0) {
-            EnsureBuiltInSystemSaveDataFlags();
+            R_DISCARD(EnsureBuiltInSystemSaveDataFlags());
         }
 
         /* Activate the content meta database. */
