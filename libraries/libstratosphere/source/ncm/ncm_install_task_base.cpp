@@ -189,7 +189,7 @@ namespace ams::ncm {
 
             /* Cleanup the content meta. */
             /* N doesn't check the result of this. */
-            this->CleanupOne(content_meta);
+            R_DISCARD(this->CleanupOne(content_meta));
         }
 
         /* Cleanup the data and progress. */
@@ -344,7 +344,7 @@ namespace ams::ncm {
             /* Write all prepared content infos. */
             {
                 /* If we fail while writing, update (but don't check the result). */
-                ON_RESULT_FAILURE { m_data->Update(content_meta, i); };
+                ON_RESULT_FAILURE { R_DISCARD(m_data->Update(content_meta, i)); };
 
                 /* Create a writer. */
                 const auto writer = content_meta.GetWriter();
