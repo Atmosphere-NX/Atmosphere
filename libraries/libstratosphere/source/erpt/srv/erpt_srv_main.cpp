@@ -195,7 +195,7 @@ namespace ams::erpt::srv {
             }
         } else{
             /* Pre 21.0.0, Nintendo just calls restore and ignores the result. */
-            Journal::Restore();
+            R_DISCARD(Journal::Restore());
         }
 
         Reporter::UpdatePowerOnTime();
