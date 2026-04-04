@@ -344,7 +344,7 @@ namespace ams::scs {
 
         void FlushProgramArgument(ncm::ProgramId program_id) {
             /* Ensure there are no arguments for the program. */
-            ldr::SetProgramArgument(program_id, "", 1);
+            R_DISCARD(ldr::SetProgramArgument(program_id, "", 1));
         }
 
     }
@@ -382,7 +382,7 @@ namespace ams::scs {
 
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, const void *args, size_t args_size, u32 process_flags) {
         /* Set up the arguments. */
-        PrepareToLaunchProgram(loc.program_id, args, args_size);
+        R_DISCARD(PrepareToLaunchProgram(loc.program_id, args, args_size));
 
         /* Ensure arguments are managed correctly. */
         ON_SCOPE_EXIT { FlushProgramArgument(loc.program_id); };
