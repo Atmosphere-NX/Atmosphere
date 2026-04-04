@@ -807,7 +807,7 @@ namespace ams::ncm {
 
     Result InstallTaskBase::PrepareSystemUpdateDependency() {
         /* Cleanup on failure. */
-        ON_RESULT_FAILURE { this->Cleanup(); };
+        ON_RESULT_FAILURE { R_DISCARD(this->Cleanup()); };
 
         /* Count the number of content meta entries. */
         s32 count;
