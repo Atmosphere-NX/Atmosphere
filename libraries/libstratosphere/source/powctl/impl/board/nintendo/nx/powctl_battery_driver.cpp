@@ -38,7 +38,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
     BatteryDevice::BatteryDevice(bool ev) : m_use_event_handler(ev), m_event_handler() {
         if (m_use_event_handler) {
             /* Create the system event. */
-            os::CreateSystemEvent(std::addressof(m_system_event), os::EventClearMode_ManualClear, true);
+            R_DISCARD(os::CreateSystemEvent(std::addressof(m_system_event), os::EventClearMode_ManualClear, true));
 
             /* Create the handler. */
             m_event_handler.emplace(this);
