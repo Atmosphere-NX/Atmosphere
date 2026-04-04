@@ -115,7 +115,7 @@ namespace ams::lm {
     }
 
     void SetDestination(u32 destination) {
-        g_logger->SetDestination(destination);
+        R_DISCARD(g_logger->SetDestination(destination));
     }
 
 }
