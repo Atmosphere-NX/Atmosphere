@@ -51,8 +51,8 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
     void PwmDriverImpl::PowerOff() {
         /* Disable clock and hold pwm in reset. */
         /* NOTE: Nintendo does not check this succeeds. */
-        pcv::SetClockEnabled(pcv::Module_Pwm, false);
-        pcv::SetReset(pcv::Module_Pwm, true);
+        R_DISCARD(pcv::SetClockEnabled(pcv::Module_Pwm, false));
+        R_DISCARD(pcv::SetReset(pcv::Module_Pwm, true));
 
         /* Finalize pcv driver. */
         pcv::Finalize();
@@ -78,9 +78,9 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
         /* Configure initial settings. */
         /* NOTE: None of these results are checked. */
-        this->SetEnabled(device, false);
-        this->SetScale(device, 0.0);
-        this->SetPeriod(device, DefaultChannelPeriod);
+        R_DISCARD(this->SetEnabled(device, false));
+        R_DISCARD(this->SetScale(device, 0.0));
+        R_DISCARD(this->SetPeriod(device, DefaultChannelPeriod));
         R_SUCCEED();
     }
 
