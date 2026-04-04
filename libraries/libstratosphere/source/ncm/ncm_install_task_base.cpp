@@ -189,7 +189,7 @@ namespace ams::ncm {
 
             /* Cleanup the content meta. */
             /* N doesn't check the result of this. */
-            this->CleanupOne(content_meta);
+            R_DISCARD(this->CleanupOne(content_meta));
         }
 
         /* Cleanup the data and progress. */
@@ -215,7 +215,7 @@ namespace ams::ncm {
 
             /* Delete placeholders for Prepared or Installed content infos. */
             if (content_info->install_state == InstallState::Prepared || content_info->install_state == InstallState::Installed) {
-                content_storage.DeletePlaceHolder(content_info->placeholder_id);
+                R_DISCARD(content_storage.DeletePlaceHolder(content_info->placeholder_id));
             }
         }
 
@@ -344,7 +344,7 @@ namespace ams::ncm {
             /* Write all prepared content infos. */
             {
                 /* If we fail while writing, update (but don't check the result). */
-                ON_RESULT_FAILURE { m_data->Update(content_meta, i); };
+                ON_RESULT_FAILURE { R_DISCARD(m_data->Update(content_meta, i)); };
 
                 /* Create a writer. */
                 const auto writer = content_meta.GetWriter();
@@ -449,7 +449,7 @@ namespace ams::ncm {
             /* Commit the current meta. */
             {
                 /* Ensure that if something goes wrong during commit, we still try to update. */
-                ON_RESULT_FAILURE { m_data->Update(content_meta, i); };
+                ON_RESULT_FAILURE { R_DISCARD(m_data->Update(content_meta, i)); };
 
                 /* Open a writer. */
                 const auto writer = content_meta.GetWriter();
@@ -636,7 +636,7 @@ namespace ams::ncm {
 
             /* Update the data (and check result) when we are done. */
             {
-                ON_RESULT_FAILURE { m_data->Update(content_meta, i); };
+                ON_RESULT_FAILURE { R_DISCARD(m_data->Update(content_meta, i)); };
 
                 /* Automatically choose a suitable storage id. */
                 auto reader = content_meta.GetReader();
@@ -713,7 +713,7 @@ namespace ams::ncm {
 
         /* Create the placeholder. */
         R_TRY(storage->CreatePlaceHolder(placeholder_id, meta_info.content_id, meta_info.content_size));
-        ON_RESULT_FAILURE { storage->DeletePlaceHolder(placeholder_id); };
+        ON_RESULT_FAILURE { R_DISCARD(storage->DeletePlaceHolder(placeholder_id)); };
 
         /* Output install content info. */
         *out_install_content_info = this->MakeInstallContentInfoFrom(meta_info, placeholder_id, is_temporary);
@@ -740,7 +740,7 @@ namespace ams::ncm {
         content_storage.GetPlaceHolderPath(std::addressof(path), content_info.GetPlaceHolderId());
 
         /* If we fail, delete the placeholder. */
-        ON_RESULT_FAILURE { content_storage.DeletePlaceHolder(content_info.GetPlaceHolderId()); };
+        ON_RESULT_FAILURE { R_DISCARD(content_storage.DeletePlaceHolder(content_info.GetPlaceHolderId())); };
 
         /* Create a new temporary InstallContentInfo if relevant. */
         const bool is_temporary = content_info.is_temporary;
@@ -775,7 +775,7 @@ namespace ams::ncm {
 
         /* If the placeholder is temporary, delete it. */
         if (is_temporary) {
-            content_storage.DeletePlaceHolder(content_info.GetPlaceHolderId());
+            R_DISCARD(content_storage.DeletePlaceHolder(content_info.GetPlaceHolderId()));
         }
 
         R_SUCCEED();
@@ -793,7 +793,7 @@ namespace ams::ncm {
         reader.ConvertToInstallContentMeta(tmp_buffer.Get(), tmp_buffer.GetSize(), InstallContentInfo::Make(ContentInfo::Make(content_id, size, ContentInfo::DefaultContentAttributes, ContentType::Meta), meta_type));
 
         /* Push the content meta. */
-        m_data->Push(tmp_buffer.Get(), tmp_buffer.GetSize());
+        R_DISCARD(m_data->Push(tmp_buffer.Get(), tmp_buffer.GetSize()));
         R_SUCCEED();
     }
 
@@ -1066,7 +1066,7 @@ namespace ams::ncm {
 
     void InstallTaskBase::SetLastResult(Result last_result) {
         std::scoped_lock lk(m_progress_mutex);
-        m_data->SetLastResult(last_result);
+        R_DISCARD(m_data->SetLastResult(last_result));
         m_progress.SetLastResult(last_result);
     }
 
@@ -1183,7 +1183,7 @@ namespace ams::ncm {
         R_TRY(ReadVariationContentMetaInfoList(out_count, out_meta_infos, path, attr, m_firmware_variation_id));
 
         /* Delete the placeholder. */
-        content_storage.DeletePlaceHolder(placeholder_id);
+        R_DISCARD(content_storage.DeletePlaceHolder(placeholder_id));
         R_SUCCEED();
     }
 
@@ -1275,7 +1275,7 @@ namespace ams::ncm {
 
     void InstallTaskBase::SetProgressState(InstallProgressState state) {
         std::scoped_lock lk(m_progress_mutex);
-        m_data->SetState(state);
+        R_DISCARD(m_data->SetState(state));
         m_progress.state = state;
     }
 
