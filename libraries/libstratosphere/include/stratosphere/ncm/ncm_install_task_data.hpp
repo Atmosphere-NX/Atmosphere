@@ -66,7 +66,7 @@ namespace ams::ncm {
         public:
             MemoryInstallTaskData() : m_data_list(), m_state(InstallProgressState::NotPrepared), m_last_result(ResultSuccess()), m_system_update_task_apply_info() { /* ... */ };
             ~MemoryInstallTaskData() {
-                this->Cleanup();
+                R_DISCARD(this->Cleanup());
             }
         public:
             virtual Result GetProgress(InstallProgress *out_progress) override;
