@@ -19,14 +19,14 @@ namespace ams::ncm {
 
     PackageSystemUpdateTask::~PackageSystemUpdateTask() {
         if (m_context_path.GetLength() > 0) {
-            fs::DeleteFile(m_context_path);
+            R_DISCARD(fs::DeleteFile(m_context_path));
         }
         this->Inactivate();
     }
 
     void PackageSystemUpdateTask::Inactivate() {
         if (m_gamecard_content_meta_database_active) {
-            InactivateContentMetaDatabase(StorageId::GameCard);
+            R_DISCARD(InactivateContentMetaDatabase(StorageId::GameCard));
             m_gamecard_content_meta_database_active = false;
         }
     }
@@ -41,7 +41,7 @@ namespace ams::ncm {
         auto meta_db_guard = SCOPE_GUARD { this->Inactivate(); };
 
         /* Open the game card content meta database. */
-        OpenContentMetaDatabase(std::addressof(m_package_db), StorageId::GameCard);
+        R_DISCARD(OpenContentMetaDatabase(std::addressof(m_package_db), StorageId::GameCard));
 
         ContentMetaDatabaseBuilder builder(std::addressof(m_package_db));
 
@@ -50,9 +50,9 @@ namespace ams::ncm {
         R_TRY(builder.BuildFromPackage(package_root));
 
         /* Create a new context file. */
-        fs::DeleteFile(context_path);
+        R_DISCARD(fs::DeleteFile(context_path));
         R_TRY(FileInstallTaskData::Create(context_path, GameCardMaxContentMetaCount));
-        auto context_guard = SCOPE_GUARD { fs::DeleteFile(context_path); };
+        auto context_guard = SCOPE_GUARD { R_DISCARD(fs::DeleteFile(context_path)); };
 
         /* Initialize data. */
         R_TRY(m_data.Initialize(context_path));
