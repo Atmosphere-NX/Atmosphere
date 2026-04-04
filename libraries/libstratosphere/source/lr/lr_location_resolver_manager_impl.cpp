@@ -88,7 +88,7 @@ namespace ams::lr {
 
         /* Refresh the resolver. */
         if (storage_id != ncm::StorageId::Host) {
-            (*resolver)->Refresh();
+            R_DISCARD((*resolver)->Refresh());
         }
 
         R_SUCCEED();
