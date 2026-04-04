@@ -115,7 +115,7 @@ namespace ams::ncm {
     void PlaceHolderAccessor::Invalidate(CacheEntry *entry) {
         /* Flush and close the cached entry's file. */
         if (entry != nullptr) {
-            fs::FlushFile(entry->handle);
+            R_DISCARD(fs::FlushFile(entry->handle));
             fs::CloseFile(entry->handle);
             entry->id = InvalidPlaceHolderId;
         }
