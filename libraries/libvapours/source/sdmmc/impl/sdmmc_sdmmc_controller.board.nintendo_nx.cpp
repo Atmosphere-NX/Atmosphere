@@ -500,7 +500,7 @@ namespace ams::sdmmc::impl {
                 this->ClearInterrupt();
                 R_SUCCEED();
             } else if (sdmmc::ResultWaitInterruptSoftwareTimeout::Includes(result)) {
-                SdHostStandardController::AbortTransaction();
+                R_DISCARD(SdHostStandardController::AbortTransaction());
                 R_THROW(sdmmc::ResultIssueTuningCommandSoftwareTimeout());
             } else {
                 R_RETURN(result);
