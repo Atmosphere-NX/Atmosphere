@@ -178,7 +178,7 @@ namespace ams::spl::impl {
                 }
                 ~ScopedAesKeySlot() {
                     if (m_allocated) {
-                        DeallocateAesKeySlot(m_slot_index);
+                        R_DISCARD(DeallocateAesKeySlot(m_slot_index));
                     }
                 }
 
@@ -226,7 +226,7 @@ namespace ams::spl::impl {
         void InitializeAsyncOperation() {
             #if defined(ATMOSPHERE_OS_HORIZON)
             u64 interrupt_number;
-            impl::GetConfig(std::addressof(interrupt_number), ConfigItem::SecurityEngineInterruptNumber);
+            R_DISCARD(impl::GetConfig(std::addressof(interrupt_number), ConfigItem::SecurityEngineInterruptNumber));
             g_interrupt_name = static_cast<os::InterruptName>(interrupt_number);
 
             os::InitializeInterruptEvent(std::addressof(g_interrupt), g_interrupt_name, os::EventClearMode_AutoClear);
