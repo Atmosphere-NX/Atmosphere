@@ -69,7 +69,7 @@ namespace ams::ncm {
         R_TRY(m_impl->Initialize());
 
         /* Initialize parent. N doesn't check the result. */
-        PackageInstallTask::Initialize(impl::GetRootDirectoryPath(m_impl->GetMountName()).str, storage_id, buffer, buffer_size, ignore_ticket);
+        R_DISCARD(PackageInstallTask::Initialize(impl::GetRootDirectoryPath(m_impl->GetMountName()).str, storage_id, buffer, buffer_size, ignore_ticket));
         R_SUCCEED();
     }
 
