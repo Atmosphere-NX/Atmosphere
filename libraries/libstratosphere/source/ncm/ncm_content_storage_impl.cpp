@@ -510,7 +510,7 @@ namespace ams::ncm {
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(placeholder_dir), m_root_path);
 
         /* Cleanup the placeholder base directory. */
-        CleanDirectoryRecursively(placeholder_dir);
+        R_DISCARD(CleanDirectoryRecursively(placeholder_dir));
         R_SUCCEED();
     }
 
