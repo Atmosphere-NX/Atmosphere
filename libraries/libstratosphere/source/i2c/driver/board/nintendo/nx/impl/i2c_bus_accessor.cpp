@@ -114,7 +114,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             /* If we have a regulator session, set voltage to 2.9V. */
             if (m_has_regulator_session) {
                 /* NOTE: Nintendo does not check the result, here. */
-                regulator::SetVoltageValue(std::addressof(m_regulator_session), 2'900'000u);
+                R_DISCARD(regulator::SetVoltageValue(std::addressof(m_regulator_session), 2'900'000u));
             }
 
             /* Initialize clock/reset library. */
@@ -130,7 +130,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             const bool was_enabled = regulator::GetVoltageEnabled(std::addressof(m_regulator_session));
 
             /* NOTE: Nintendo does not check the result of this call. */
-            regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true);
+            R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true));
 
             /* If we enabled voltage, delay to give our enable time to take. */
             if (!was_enabled) {
@@ -163,7 +163,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         /* If we have a regulator session, disable voltage. */
         if (m_has_regulator_session) {
             /* NOTE: Nintendo does not check the result of this call. */
-            regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false);
+            R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false));
         }
 
         /* Finalize the clock/reset library. */
@@ -233,7 +233,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
             /* Disable voltage. */
             if (m_has_regulator_session) {
-                regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false);
+                R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false));
             }
         }
 
@@ -272,7 +272,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 const bool was_enabled = regulator::GetVoltageEnabled(std::addressof(m_regulator_session));
 
                 /* NOTE: Nintendo does not check the result of this call. */
-                regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true);
+                R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true));
 
                 /* If we enabled voltage, delay to give our enable time to take. */
                 if (!was_enabled) {
@@ -337,7 +337,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         this->SetPacketModeRegisters();
 
         /* Flush fifos. */
-        this->FlushFifos();
+        R_DISCARD(this->FlushFifos());
     }
 
     Result I2cBusAccessor::Send(const u8 *src, size_t src_size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
@@ -516,7 +516,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         const u32 slave_addr = ((static_cast<u32>(slave_address) & 0x7F) << 1) | (is_read ? 1 : 0);
 
         /* Flush fifos. */
-        this->FlushFifos();
+        R_DISCARD(this->FlushFifos());
 
         /* Enqueue the first header word. */
         reg::Write(m_registers->tx_packet_fifo, IO_PACKET_BITS_ENUM (HEADER_WORD0_PROT_HDR_SZ,    1_WORD),
@@ -765,7 +765,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 this->SetPacketModeRegisters();
 
                 /* Flush fifos. */
-                this->FlushFifos();
+                R_DISCARD(this->FlushFifos());
             }
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
     }
