@@ -148,7 +148,7 @@ namespace ams::sprofile::srv {
         R_UNLESS(!m_profile_importer.has_value(), sprofile::ResultInvalidState());
 
         /* Try to load profile metadata. NOTE: result is not checked, it is okay if this fails. */
-        this->LoadPrimaryMetadataImpl();
+        R_DISCARD(this->LoadPrimaryMetadataImpl());
 
         /* Create importer. */
         m_profile_importer.emplace(m_profile_metadata);
