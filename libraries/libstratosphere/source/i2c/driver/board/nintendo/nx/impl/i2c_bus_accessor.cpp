@@ -114,7 +114,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             /* If we have a regulator session, set voltage to 2.9V. */
             if (m_has_regulator_session) {
                 /* NOTE: Nintendo does not check the result, here. */
-                regulator::SetVoltageValue(std::addressof(m_regulator_session), 2'900'000u);
+                R_DISCARD(regulator::SetVoltageValue(std::addressof(m_regulator_session), 2'900'000u));
             }
 
             /* Initialize clock/reset library. */
@@ -130,7 +130,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             const bool was_enabled = regulator::GetVoltageEnabled(std::addressof(m_regulator_session));
 
             /* NOTE: Nintendo does not check the result of this call. */
-            regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true);
+            R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true));
 
             /* If we enabled voltage, delay to give our enable time to take. */
             if (!was_enabled) {
@@ -163,7 +163,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         /* If we have a regulator session, disable voltage. */
         if (m_has_regulator_session) {
             /* NOTE: Nintendo does not check the result of this call. */
-            regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false);
+            R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), false));
         }
 
         /* Finalize the clock/reset library. */
@@ -272,7 +272,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 const bool was_enabled = regulator::GetVoltageEnabled(std::addressof(m_regulator_session));
 
                 /* NOTE: Nintendo does not check the result of this call. */
-                regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true);
+                R_DISCARD(regulator::SetVoltageEnabled(std::addressof(m_regulator_session), true));
 
                 /* If we enabled voltage, delay to give our enable time to take. */
                 if (!was_enabled) {
