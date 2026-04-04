@@ -254,7 +254,7 @@ namespace ams::usb {
         R_TRY(m_client->AddInterface(this, std::addressof(m_interface), m_interface_num));
 
         /* Ensure we cleanup if we fail after this. */
-        auto intf_guard = SCOPE_GUARD { m_client->DeleteInterface(m_interface_num); m_interface = nullptr; };
+        auto intf_guard = SCOPE_GUARD { R_DISCARD(m_client->DeleteInterface(m_interface_num)); m_interface = nullptr; };
 
         /* Get events. */
         sf::NativeHandle setup_event_handle;
@@ -313,7 +313,7 @@ namespace ams::usb {
         os::DestroySystemEvent(std::addressof(m_ctrl_out_completion_event));
 
         /* Delete ourselves from our cleint. */
-        m_client->DeleteInterface(m_interface_num);
+        R_DISCARD(m_client->DeleteInterface(m_interface_num));
 
         /* Destroy our service. */
         m_interface = nullptr;
@@ -643,7 +643,7 @@ namespace ams::usb {
         m_address = bEndpointAddress;
 
         /* Ensure we clean up if we fail after this. */
-        auto ep_guard = SCOPE_GUARD { m_interface->DeleteEndpoint(m_address); m_endpoint = nullptr; };
+        auto ep_guard = SCOPE_GUARD { R_DISCARD(m_interface->DeleteEndpoint(m_address)); m_endpoint = nullptr; };
 
         /* Get completion event. */
         sf::NativeHandle event_handle;
@@ -672,7 +672,7 @@ namespace ams::usb {
         R_UNLESS(m_is_initialized, usb::ResultNotInitialized());
 
         /* Cancel any pending transactions. */
-        m_endpoint->Cancel();
+        R_DISCARD(m_endpoint->Cancel());
 
         /* Wait for us to be at one reference count. */
         while (m_reference_count > 1) {
