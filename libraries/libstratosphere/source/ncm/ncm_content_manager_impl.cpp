@@ -274,7 +274,7 @@ namespace ams::ncm {
 
             if (root.content_storage != nullptr) {
                 /* N doesn't bother checking the result of this. */
-                root.content_storage->DisableForcibly();
+                R_DISCARD(root.content_storage->DisableForcibly());
                 root.content_storage = nullptr;
 
                 if (root.storage_id == StorageId::Host) {
@@ -514,7 +514,7 @@ namespace ams::ncm {
 
             if (root.content_meta_database != nullptr) {
                 /* N doesn't bother checking the result of this. */
-                root.content_meta_database->DisableForcibly();
+                R_DISCARD(root.content_meta_database->DisableForcibly());
                 root.content_meta_database = nullptr;
                 root.kvs = util::nullopt;
 
@@ -1005,7 +1005,7 @@ namespace ams::ncm {
         /* NOTE: Nintendo does not check this succeeds, and it does on older system versions. */
         /* We will not check the error, either, even though this kind of defeats the call's purpose. */
         if (hos::GetVersion() >= hos::Version_2_0_0) {
-            EnsureBuiltInSystemSaveDataFlags();
+            R_DISCARD(EnsureBuiltInSystemSaveDataFlags());
         }
 
         /* Activate the content meta database. */
