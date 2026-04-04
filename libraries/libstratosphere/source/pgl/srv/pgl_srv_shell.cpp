@@ -173,7 +173,7 @@ namespace ams::pgl::srv {
         }
 
         void TriggerSnapShotDumper(os::ProcessId process_id) {
-            TriggerSnapShotDumper(process_id, GetSnapShotDumpType(), nullptr);
+            R_DISCARD(TriggerSnapShotDumper(process_id, GetSnapShotDumpType(), nullptr));
         }
 
         s32 GetCrashReportDetailedArgument(u32 data_flags) {
@@ -195,8 +195,8 @@ namespace ams::pgl::srv {
         void TriggerCrashReport(os::ProcessId process_id) {
             /* If the program that crashed is creport, we should just terminate both processes and return. */
             if (process_id == g_creport_process_id) {
-                TerminateProcess(g_crashed_process_id);
-                TerminateProcess(g_creport_process_id);
+                R_DISCARD(TerminateProcess(g_crashed_process_id));
+                R_DISCARD(TerminateProcess(g_creport_process_id));
                 g_crashed_process_id = os::InvalidProcessId;
                 g_creport_process_id = os::InvalidProcessId;
                 return;
@@ -244,7 +244,7 @@ namespace ams::pgl::srv {
                 if (data != nullptr) {
                     TriggerSnapShotDumper(process_id);
                 } else {
-                    TerminateProcess(process_id);
+                    R_DISCARD(TerminateProcess(process_id));
                 }
             } else {
                 /* Otherwise, we want to launch creport. */
