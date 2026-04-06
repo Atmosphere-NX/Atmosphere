@@ -26,8 +26,8 @@ namespace ams::ro::impl {
 
         /* Convenience definitions. */
         constexpr size_t MaxSessions = 0x3;  /* 2 official sessions (applet + application, 1 homebrew session). */
-        constexpr size_t MaxNrrInfos = 0x40;
-        constexpr size_t MaxNroInfos = 0x40;
+        constexpr size_t MaxNrrInfos = 0x80;
+        constexpr size_t MaxNroInfos = 0x80;
 
         /* Types. */
         struct Sha256Hash {
