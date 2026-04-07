@@ -1,4 +1,7 @@
 # Changelog
+## 1.11.1
++ Basic support was added for 22.1.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.11.0
 + Support was added for 22.0.0.
 + Special thanks to @alula for handling a large chunk of the necessary kernel, loader and erpt changes.
