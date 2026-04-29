@@ -17,6 +17,8 @@
 #include <stratosphere.hpp>
 #include <stratosphere/fssrv/fssrv_interface_adapters.hpp>
 
+#include "fs_ido_mitm_service.hpp"
+
 #define AMS_FS_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                               \
     AMS_SF_METHOD_INFO(C, H,   7, Result, OpenFileSystemWithPatch,         (sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type),                              (out, program_id, _filesystem_type),       hos::Version_2_0_0) \
     AMS_SF_METHOD_INFO(C, H,   8, Result, OpenFileSystemWithId,            (sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type), (out, path, program_id, _filesystem_type), hos::Version_2_0_0) \
@@ -26,6 +28,7 @@
     AMS_SF_METHOD_INFO(C, H, 200, Result, OpenDataStorageByCurrentProcess, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out),                                                                                  (out))                                                         \
     AMS_SF_METHOD_INFO(C, H, 202, Result, OpenDataStorageByDataId,         (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id),                                              (out, data_id, storage_id))                                    \
     AMS_SF_METHOD_INFO(C, H, 205, Result, OpenDataStorageWithProgramIndex, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index),                                                                (out, program_index),                      hos::Version_7_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 400, Result, OpenDeviceOperator,              (sf::Out<sf::SharedPointer<ams::mitm::fs::IDoFsMitmInterface>> out),                                                                              (out))                                                         \
     AMS_SF_METHOD_INFO(C, H, 810, Result, RegisterProgramIndexMapInfo,     (const sf::InBuffer &info_buffer, s32 info_count),                                                                                           (info_buffer, info_count),                 hos::Version_7_0_0)
 
 
@@ -85,6 +88,7 @@ namespace ams::mitm::fs {
             Result OpenDataStorageByCurrentProcess(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out);
             Result OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id);
             Result OpenDataStorageWithProgramIndex(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index);
+            Result OpenDeviceOperator(sf::Out<sf::SharedPointer<ams::mitm::fs::IDoFsMitmInterface>> out);
             Result RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count);
     };
     static_assert(IsIFsMitmInterface<FsMitmService>);

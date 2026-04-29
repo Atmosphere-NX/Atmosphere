@@ -25,6 +25,7 @@ Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpac
 Result fsOpenFileSystemWithPatchFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType);
 Result fsOpenFileSystemWithIdFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType, const char* contentPath);
 
+Result fsOpenDeviceOperatorFwd(Service *s, FsDeviceOperator* out);
 
 #ifdef __cplusplus
 }

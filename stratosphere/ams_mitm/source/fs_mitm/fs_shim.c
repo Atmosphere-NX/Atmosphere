@@ -103,3 +103,7 @@ Result fsOpenFileSystemWithIdFwd(Service* s, FsFileSystem* out, u64 id, FsFileSy
         .out_objects = &out->s
     );
 }
+
+Result fsOpenDeviceOperatorFwd(Service *s, FsDeviceOperator* out) {
+    return _fsOpenSession(s, &out->s, 400);
+}

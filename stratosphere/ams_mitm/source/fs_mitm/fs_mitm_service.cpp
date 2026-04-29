@@ -370,6 +370,16 @@ namespace ams::mitm::fs {
         R_SUCCEED();
     }
 
+    Result FsMitmService::OpenDeviceOperator(sf::Out<sf::SharedPointer<ams::mitm::fs::IDoFsMitmInterface>> out)
+    {
+        FsDeviceOperator fsIdo;
+        R_TRY(fsOpenDeviceOperatorFwd(m_forward_service.get(), std::addressof(fsIdo)));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(fsIdo.s))};
+
+        out.SetValue(sf::CreateSharedObjectEmplaced<ams::mitm::fs::IDoFsMitmInterface, FsDoMitmService>(std::make_shared<::Service>(fsIdo.s), m_client_info), target_object_id);
+        R_SUCCEED();
+    }
+
     Result FsMitmService::RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count) {
         /* Try to register with FS. */
         R_TRY(fsRegisterProgramIndexMapInfoFwd(m_forward_service.get(), info_buffer.GetPointer(), info_buffer.GetSize(), info_count));
