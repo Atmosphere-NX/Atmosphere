@@ -46,6 +46,11 @@ namespace ams::mitm::fs {
                     return true;
                 }
 
+                /* We want to mitm loader, to support bypass region lock of terra cards */
+                if (program_id == ncm::SystemProgramId::Loader) {
+                    return true;
+                }
+
                 /* We want to mitm ns, to intercept SD card requests and program index map info registration. */
                 if (program_id == ncm::SystemProgramId::Ns) {
                     return true;

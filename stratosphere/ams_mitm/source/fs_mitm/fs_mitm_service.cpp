@@ -370,8 +370,7 @@ namespace ams::mitm::fs {
         R_SUCCEED();
     }
 
-    Result FsMitmService::OpenDeviceOperator(sf::Out<sf::SharedPointer<ams::mitm::fs::IDoFsMitmInterface>> out)
-    {
+    Result FsMitmService::OpenDeviceOperator(sf::Out<sf::SharedPointer<ams::mitm::fs::IDoFsMitmInterface>> out) {
         FsDeviceOperator fsIdo;
         R_TRY(fsOpenDeviceOperatorFwd(m_forward_service.get(), std::addressof(fsIdo)));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(fsIdo.s))};
