@@ -28,6 +28,10 @@ namespace ams::mitm::fs {
     class FsDoMitmService  : public sf::MitmServiceImplBase {
         public:
             using MitmServiceImplBase::MitmServiceImplBase;
+            virtual ~FsDoMitmService() {
+                serviceClose(m_forward_service.get());
+            }
+        public:
             /* Overridden commands. */
             Result GetGameCardCompatibilityType(sf::Out<u8> out, u32 card_handle);
     };
