@@ -21,6 +21,32 @@
 
 namespace ams::pgl::srv {
 
+    namespace {
+
+        Result CopyStringFromBuffer(char *dst, size_t dst_size, const void *src, size_t src_size) {
+            R_UNLESS(dst_size > 0, pgl::ResultBufferNotEnough());
+            R_UNLESS(src != nullptr || src_size == 0, pgl::ResultBufferNotEnough());
+
+            const char * const src_str = static_cast<const char *>(src);
+            size_t copy_size = src_size;
+            if (src_size > 0) {
+                if (const void * const nul = std::memchr(src_str, '\0', src_size); nul != nullptr) {
+                    copy_size = static_cast<const char *>(nul) - src_str;
+                }
+            }
+
+            R_UNLESS(copy_size < dst_size, pgl::ResultBufferNotEnough());
+
+            if (copy_size > 0) {
+                std::memcpy(dst, src_str, copy_size);
+            }
+            dst[copy_size] = '\0';
+
+            R_SUCCEED();
+        }
+
+    }
+
     Result ShellInterfaceCommon::LaunchProgramImpl(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
         R_RETURN(pgl::srv::LaunchProgram(out, loc, pm_flags, pgl_flags));
     }
@@ -30,13 +56,17 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceCommon::LaunchProgramFromHostImpl(os::ProcessId *out, const void *content_path, size_t content_path_size, u32 pm_flags) {
-        AMS_UNUSED(content_path_size);
-        R_RETURN(pgl::srv::LaunchProgramFromHost(out, static_cast<const char *>(content_path), pm_flags));
+        char content_path_string[fs::EntryNameLengthMax];
+        R_TRY(CopyStringFromBuffer(content_path_string, sizeof(content_path_string), content_path, content_path_size));
+
+        R_RETURN(pgl::srv::LaunchProgramFromHost(out, content_path_string, pm_flags));
     }
 
     Result ShellInterfaceCommon::GetHostContentMetaInfoImpl(pgl::ContentMetaInfo *out, const void *content_path, size_t content_path_size) {
-        AMS_UNUSED(content_path_size);
-        R_RETURN(pgl::srv::GetHostContentMetaInfo(out, static_cast<const char *>(content_path)));
+        char content_path_string[fs::EntryNameLengthMax];
+        R_TRY(CopyStringFromBuffer(content_path_string, sizeof(content_path_string), content_path, content_path_size));
+
+        R_RETURN(pgl::srv::GetHostContentMetaInfo(out, content_path_string));
     }
 
     Result ShellInterfaceCommon::GetApplicationProcessIdImpl(os::ProcessId *out) {
@@ -72,8 +102,14 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceCommon::TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
-        AMS_UNUSED(arg_size);
-        R_RETURN(pgl::srv::TriggerApplicationSnapShotDumper(dump_type, static_cast<const char *>(arg)));
+        if (arg_size == 0) {
+            R_RETURN(pgl::srv::TriggerApplicationSnapShotDumper(dump_type, nullptr));
+        }
+
+        char arg_string[800];
+        R_TRY(CopyStringFromBuffer(arg_string, sizeof(arg_string), arg, arg_size));
+
+        R_RETURN(pgl::srv::TriggerApplicationSnapShotDumper(dump_type, arg_string));
     }
 
     Result ShellInterfaceCmif::LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {

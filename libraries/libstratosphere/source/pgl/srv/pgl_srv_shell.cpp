@@ -134,6 +134,7 @@ namespace ams::pgl::srv {
             /* Create the arguments. */
             char process_arguments[800];
             const size_t arg_len = CreateSnapShotDumpArguments(process_arguments, sizeof(process_arguments), process_id, dump_type, arg);
+            R_UNLESS(arg_len < sizeof(process_arguments), pgl::ResultBufferNotEnough());
 
             /* Set the arguments. */
             R_TRY(ldr::SetProgramArgument(ncm::SystemDebugAppletId::SnapShotDumper, process_arguments, arg_len + 1));
