@@ -41,7 +41,8 @@ namespace ams::pgl {
         u32 version;
         ncm::ContentType content_type;
         u8 id_offset;
-        u8 reserved_0E[2];
+        ncm::ContentMetaType content_meta_type;
+        u8 reserved_0F;
 
         static constexpr ContentMetaInfo Make(u64 id, u32 version, ncm::ContentType content_type, u8 id_offset) {
             return {
