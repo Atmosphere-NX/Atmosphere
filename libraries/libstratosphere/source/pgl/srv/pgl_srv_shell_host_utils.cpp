@@ -345,10 +345,11 @@ namespace ams::pgl::srv {
 
         /* Get the content meta info. */
         *out = {
-            .id           = reader.GetProgramId().value,
-            .version      = reader.GetProgramVersion(),
-            .content_type = ncm::ContentType::Program,
-            .id_offset    = reader.GetProgramIndex(),
+            .id                = reader.GetProgramId().value,
+            .version           = reader.GetProgramVersion(),
+            .content_type      = ncm::ContentType::Program,
+            .id_offset         = reader.GetProgramIndex(),
+            .content_meta_type = reader.GetContentMetaType(),
         };
 
         R_SUCCEED();
