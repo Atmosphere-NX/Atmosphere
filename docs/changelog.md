@@ -1,4 +1,7 @@
 # Changelog
+## 1.11.2
++ Basic support was added for 22.5.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.11.1
 + Basic support was added for 22.1.0.
 + General system stability improvements to enhance the user's experience.
