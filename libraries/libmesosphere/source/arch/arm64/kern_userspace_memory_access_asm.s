@@ -682,7 +682,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory32BitEPvPKvm:
     mov     x30, x10
 
     /* Write the word to io. */
-    sttr    w9, [x5]
+    sttr    w9, [x4]
     dsb     sy
 
 2:  /* Continue. */
@@ -727,7 +727,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl18WriteIoMemory16BitEPvPKvm:
     mov     x30, x10
 
     /* Write the word to io. */
-    sttrh   w9, [x5]
+    sttrh   w9, [x4]
     dsb     sy
 
 2:  /* Continue. */
@@ -772,7 +772,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess4Impl17WriteIoMemory8BitEPvPKvm:
     mov     x30, x10
 
     /* Write the word to io. */
-    sttrb   w9, [x5]
+    sttrb   w9, [x4]
     dsb     sy
 
 2:  /* Continue. */
