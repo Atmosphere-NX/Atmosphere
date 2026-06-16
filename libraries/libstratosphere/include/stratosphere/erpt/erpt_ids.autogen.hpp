@@ -979,6 +979,7 @@
     HANDLER(FsSaveDataFileSystemPeakMountCount,                       777,  FsProxyErrorInfo3,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(TestBool,                                                 778,  Test,                                FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(TestI8Array,                                              779,  Test,                                FieldType_I8Array,    FieldFlag_None   ) \
+    HANDLER(SslProcessHeapAllocatable,                                781,  NetworkSecurityCertificateInfo,      FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(TestStringNx,                                             1000, TestNx,                              FieldType_String,     FieldFlag_None   ) \
     HANDLER(BoostModeCurrentLimit,                                    1001, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
     HANDLER(ChargeConfiguration,                                      1002, BatteryChargeInfo,                   FieldType_NumericI32, FieldFlag_None   ) \
