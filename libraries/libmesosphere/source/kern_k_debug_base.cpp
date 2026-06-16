@@ -756,11 +756,13 @@ namespace ams::kern {
                             case ams::svc::DebugException_UndefinedSystemCall:
                                 {
                                     MESOSPHERE_ASSERT(num_params >= 3);
-
-                                    info->info.exception.exception_address    = params[1];
-
-                                    info->info.exception.exception_data_count = 1;
-                                    info->info.exception.exception_data[0]    = params[2];
+                                    
+                                    /* Keep the compiler happy, even though the assert has us covered. */
+                                    if (num_params >= 3) {
+                                        info->info.exception.exception_address    = params[1];
+                                        info->info.exception.exception_data_count = 1;
+                                        info->info.exception.exception_data[0]    = params[2];
+                                    }
                                 }
                                 break;
                             case ams::svc::DebugException_DebuggerAttached:
@@ -773,9 +775,12 @@ namespace ams::kern {
                             case ams::svc::DebugException_UserBreak:
                                 {
                                     MESOSPHERE_ASSERT(num_params >= 2);
-
-                                    info->info.exception.exception_address    = params[1];
-
+                                    
+                                    /* Keep the compiler happy, even though the assert has us covered. */
+                                    if (num_params >= 2) {
+                                        info->info.exception.exception_address = params[1];
+                                    }
+                                    
                                     info->info.exception.exception_data_count = 0;
                                     for (size_t i = 2; i < num_params; ++i) {
                                         info->info.exception.exception_data[info->info.exception.exception_data_count++] = params[i];
@@ -805,8 +810,11 @@ namespace ams::kern {
                             default:
                                 {
                                     MESOSPHERE_ASSERT(num_params >= 2);
-
-                                    info->info.exception.exception_address = params[1];
+                                    
+                                    /* Keep the compiler happy, even though the assert has us covered. */
+                                    if (num_params >= 2) {
+                                        info->info.exception.exception_address = params[1];
+                                    }
                                 }
                                 break;
                         }

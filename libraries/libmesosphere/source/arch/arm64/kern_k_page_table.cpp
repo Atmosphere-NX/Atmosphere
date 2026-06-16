@@ -729,6 +729,9 @@ namespace ams::kern::arch::arm64 {
             }
         }
         MESOSPHERE_ASSERT(mapped_pages == num_pages);
+        
+        /* TODO: Unused variable. */
+        AMS_UNUSED(mapped_pages);
 
         /* Perform what coalescing we can. */
         this->MergePages(orig_virt_addr, num_pages, page_list);

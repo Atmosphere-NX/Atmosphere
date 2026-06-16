@@ -220,6 +220,9 @@ namespace ams::ncm {
 
         /* Assert that we copied the right number of infos. */
         AMS_ASSERT(count == fragment_count);
+        
+        /* TODO: Unused variable. */
+        AMS_UNUSED(count);
 
         R_SUCCEED();
     }
@@ -432,6 +435,9 @@ namespace ams::ncm {
 
         /* Assert that we copied the right number of infos. */
         AMS_ASSERT(count == fragment_count);
+        
+        /* TODO: Unused variable. */
+        AMS_UNUSED(count);
 
         R_SUCCEED();
     }

@@ -47,7 +47,7 @@ namespace ams::hos {
         #endif
 
         exosphere::ApiInfo GetExosphereApiInfo(bool allow_approximate) {
-            exosphere::ApiInfo info;
+            exosphere::ApiInfo info = exosphere::ApiInfo{ util::BitPack64{0} };
             #if defined(ATMOSPHERE_OS_HORIZON)
             while (true) {
                 if (R_SUCCEEDED(GetExosphereApiInfo(std::addressof(info)))) {

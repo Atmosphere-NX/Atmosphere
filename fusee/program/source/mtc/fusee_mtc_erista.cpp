@@ -1355,6 +1355,9 @@ namespace ams::nxboot {
             uint32_t emc_zcal_wait_cnt_new = dst_timing->burst_regs.emc_zcal_wait_cnt;
             emc_zcal_wait_cnt_old &= ~0x7ff;
             emc_zcal_wait_cnt_new &= ~0x7ff;
+            
+            /* TODO: Unused variable. */
+            AMS_UNUSED(emc_zcal_wait_cnt_old);
 
             if (dram_type == DRAM_TYPE_LPDDR4) {
                 zq_wait_long = std::max<u32>(1, util::DivideUp(1000000, destination_clock_period));
