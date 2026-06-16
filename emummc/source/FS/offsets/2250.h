@@ -56,4 +56,8 @@
     {.opcode_reg = 0, .adrp_offset = 0, .add_rel_offset = 0}, \
 }
 
+<<<<<<< HEAD
 #endif // __FS_2250_H__
+=======
+#endif // __FS_2250_H__
+>>>>>>> d3851288b (emummc, nogc, am-patch, usb-patch for 22.5.0)

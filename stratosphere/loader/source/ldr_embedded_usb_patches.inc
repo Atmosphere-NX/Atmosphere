@@ -84,6 +84,11 @@ constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_22_0_0[] = {
     { 0x6D10, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
 };
 
+constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_22_5_0[] = {
+    { 0x6C90, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { 0x6D10, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+};
+
 constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("C0D3F4E87E8B0FE9BBE9F1968A20767F3DC08E03"), util::size(Usb30ForceEnablePatches_9_0_0),  Usb30ForceEnablePatches_9_0_0 },
     { ParseModuleId("B9C700CA8335F8BAA0D2041D8D09F772890BA988"), util::size(Usb30ForceEnablePatches_10_0_0), Usb30ForceEnablePatches_10_0_0 },

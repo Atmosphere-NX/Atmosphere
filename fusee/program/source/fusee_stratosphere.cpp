@@ -198,6 +198,9 @@ namespace ams::nxboot {
             FsVersion_22_5_0,
             FsVersion_22_5_0_Exfat,
 
+            FsVersion_22_5_0,
+            FsVersion_22_5_0_Exfat,
+
             FsVersion_Count,
         };
 
@@ -728,6 +731,16 @@ namespace ams::nxboot {
                     AddPatch(fs_meta, 0x183060, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 case FsVersion_22_0_0_Exfat:
+                case FsVersion_22_5_0_Exfat:
+                    AddPatch(fs_meta, 0x1BB42D, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1BB445, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x18E250, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_22_5_0:
+                    AddPatch(fs_meta, 0x1B023D, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1B0255, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x183060, NogcPatch1, sizeof(NogcPatch1));
+                    break;
                 case FsVersion_22_5_0_Exfat:
                     AddPatch(fs_meta, 0x1BB42D, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x1BB445, NogcPatch0, sizeof(NogcPatch0));

@@ -19,6 +19,12 @@ constexpr inline const EmbeddedPatchEntry AmDisableTeardownPatches_22_0_0[] = {
     { 0x5CC4C, "\x1F\x20\x03\xD5", 4 },
 };
 
+/* Patch teardown function call to NOP. */
+constexpr inline const EmbeddedPatchEntry AmDisableTeardownPatches_22_5_0[] = {
+    { 0x5CC4C, "\x1F\x20\x03\xD5", 4 },
+};
+
 constexpr inline const EmbeddedPatch AmDisableTeardownPatches[] = {
-    { ParseModuleId("B337F7C5AD53E55F3D920FCD394B4DE7C3B7D606"), util::size(AmDisableTeardownPatches_22_0_0), AmDisableTeardownPatches_22_0_0 }, /* 22.0.0 */
+    { ParseModuleId("B337F7C5AD53E55F3D920FCD394B4DE7C3B7D606"), util::size(AmDisableTeardownPatches_22_0_0), AmDisableTeardownPatches_22_0_0 }, /* 22.0.0, 22.1.0 */
+    { ParseModuleId("93C0B7CC723C922159DD6E1FF4BD2C7C1E08E736"), util::size(AmDisableTeardownPatches_22_5_0), AmDisableTeardownPatches_22_5_0 }, /* 22.5.0 */
 };
