@@ -102,6 +102,7 @@ namespace ams::hos {
         Version_21_2_0  = ::ams::TargetFirmware_21_2_0,
         Version_22_0_0  = ::ams::TargetFirmware_22_0_0,
         Version_22_1_0  = ::ams::TargetFirmware_22_1_0,
+        Version_22_5_0  = ::ams::TargetFirmware_22_5_0,
 
         Version_Current = ::ams::TargetFirmware_Current,
 
