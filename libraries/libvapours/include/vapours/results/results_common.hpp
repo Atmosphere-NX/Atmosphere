@@ -494,6 +494,14 @@ namespace ams::result::impl {
         }                   \
     }
 
+#define R_UNLESS_LOG(expr, res, ...) \
+    {                             \
+        if (!(expr)) {            \
+            AMS_LOG(__VA_ARGS__); \
+            R_THROW(res);         \
+        }                         \
+    }
+
 /// Evaluates a boolean expression, and succeeds if that expression is true.
 #define R_SUCCEED_IF(expr) R_UNLESS(!(expr), ResultSuccess())
 
