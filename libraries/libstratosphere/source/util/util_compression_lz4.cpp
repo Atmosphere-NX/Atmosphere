@@ -18,7 +18,6 @@
 
 namespace ams::util {
 
-    /* Compression utilities. */
     int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
@@ -28,7 +27,6 @@ namespace ams::util {
         return LZ4_compress_default(reinterpret_cast<const char *>(src), reinterpret_cast<char *>(dst), static_cast<int>(src_size), static_cast<int>(dst_size));
     }
 
-    /* Decompression utilities. */
     int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());

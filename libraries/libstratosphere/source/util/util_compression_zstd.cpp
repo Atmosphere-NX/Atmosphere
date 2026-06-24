@@ -14,9 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "lz4.h"
 #define ZSTD_STATIC_LINKING_ONLY
-#define ZSTD_ZBIC_SUPPORT 1
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -27,9 +25,8 @@
 #pragma GCC diagnostic pop
 
 namespace ams::util {
-    static_assert(sizeof(ZSTD_DCtx) <= ZstdDctxWorkspaceSize);
 
-    size_t CompressZbic(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    size_t CompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Basic size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
         AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
@@ -46,7 +43,7 @@ namespace ams::util {
         return ZSTD_compress(dst, dst_size, src, src_size, compressionLevel);
     }
     
-    size_t DecompressZbic(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    size_t DecompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Basic size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
         AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
@@ -58,46 +55,6 @@ namespace ams::util {
         
         /* This is just a wrapper around Zstd. */
         return ZSTD_decompress(dst, dst_size, src, src_size);
-    }
-    
-    bool DecompressZbicForLoader(void* workspace, size_t workspace_size, void *dst, size_t dst_size, size_t expected_dec_size, const void *src, size_t src_size) {
-        /* Check decompression margin. */
-        auto margin = ZSTD_decompressionMargin(src, src_size);
-        if (ZSTD_isError(margin)) {
-            auto ec = ZSTD_getErrorCode(margin);
-            AMS_LOG("[ldr] can't determine decompression margin: %u (%s)\n", ec, ZSTD_getErrorString(ec));
-            return false;
-        }
-        
-        /* Don't overflow from margin. */
-        if (!util::CanAddWithoutOverflow(margin, expected_dec_size)) {
-            return false;
-        }
-        
-        /* Make sure we fit in the destination buffer. */
-        if (margin + expected_dec_size > dst_size) {
-            AMS_LOG("[ldr] not enough space for decompression %lu + %lu > %lu\n", margin, expected_dec_size, dst_size);
-            return false;
-        }
-        
-        /* This is a runtime assert in Loader code. Note that Nintendo does == comparison here. */
-        AMS_ABORT_UNLESS(ZSTD_estimateDCtxSize() <= workspace_size);
-        
-        /* Decompress using a static decompression context. */
-        auto dctx = ZSTD_initStaticDCtx(workspace, workspace_size);
-        size_t dec_size = ZSTD_decompressDCtx(dctx, dst, dst_size, src, src_size);
-
-        if (ZSTD_isError(dec_size)) {
-            auto ec = ZSTD_getErrorCode(dec_size);
-            AMS_LOG("[ldr] decompression failed: %u (%s)\n", ec, ZSTD_getErrorString(ec));
-            return false;
-        }
-        
-        if (dec_size != expected_dec_size) {
-            return false;
-        }
-        
-        return true;
     }
 
 }

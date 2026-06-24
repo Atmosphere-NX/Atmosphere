@@ -121,7 +121,7 @@ namespace ams::ldr {
         NsoHeader g_nso_headers[Nso_Count];
 
         /* Global Zstd decompression context. */
-        alignas(8) u8 g_zstd_dctx_workspace[util::ZstdDctxWorkspaceSize];
+        alignas(8) u8 g_zstd_dctx_workspace[util::DecompressZstdWithBicWorkBufferSizeDefault];
 
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             /* No version verification is done before 8.1.0. */
@@ -660,7 +660,7 @@ namespace ams::ldr {
             auto compressed_data_buf = reinterpret_cast<const void *>(load_address);
 
             if (is_zbic) {
-                bool decompressed = util::DecompressZbicForLoader(reinterpret_cast<void *>(g_zstd_dctx_workspace), sizeof(g_zstd_dctx_workspace), reinterpret_cast<void *>(map_base), static_cast<size_t>(map_end - map_base), segment_size, compressed_data_buf, file_size);
+                bool decompressed = util::DecompressZstdWithBic(reinterpret_cast<void *>(g_zstd_dctx_workspace), sizeof(g_zstd_dctx_workspace), reinterpret_cast<void *>(map_base), static_cast<size_t>(map_end - map_base), segment_size, compressed_data_buf, file_size);
                 R_UNLESS_LOG(decompressed, ldr::ResultInvalidNso(), "[ldr] Failed to decompress segment with zbic!\n");
             } else {
                 bool decompressed = (util::DecompressLZ4(reinterpret_cast<void *>(map_base), segment_size, compressed_data_buf, file_size) == static_cast<int>(segment_size));
