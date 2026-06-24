@@ -17,21 +17,19 @@
 #include "lz4.h"
 #define ZSTD_STATIC_LINKING_ONLY
 #define ZSTD_ZBIC_SUPPORT 1
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#define ZSTDLIB_VISIBLE   static
+#define ZSTDLIB_HIDDEN    static
 #include "zstd.h"
+#include "zstd.inc"
+#pragma GCC diagnostic pop
 
 namespace ams::util {
+    static_assert(sizeof(ZSTD_DCtx) <= ZstdDctxWorkspaceSize);
 
-    /* Compression utilities. */
-    int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
-        /* Size checks. */
-        AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
-        AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
-
-        /* This is just a thin wrapper around LZ4. */
-        return LZ4_compress_default(reinterpret_cast<const char *>(src), reinterpret_cast<char *>(dst), static_cast<int>(src_size), static_cast<int>(dst_size));
-    }
-    
-    size_t CompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    size_t CompressZbic(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Basic size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
         AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
@@ -47,18 +45,8 @@ namespace ams::util {
         /* This is just a wrapper around Zstd. */
         return ZSTD_compress(dst, dst_size, src, src_size, compressionLevel);
     }
-
-    /* Decompression utilities. */
-    int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
-        /* Size checks. */
-        AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
-        AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
-
-        /* This is just a thin wrapper around LZ4. */
-        return LZ4_decompress_safe(reinterpret_cast<const char *>(src), reinterpret_cast<char *>(dst), static_cast<int>(src_size), static_cast<int>(dst_size));
-    }
     
-    size_t DecompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    size_t DecompressZbic(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Basic size checks. */
         AMS_ABORT_UNLESS(dst_size <= std::numeric_limits<int>::max());
         AMS_ABORT_UNLESS(src_size <= std::numeric_limits<int>::max());
@@ -72,10 +60,12 @@ namespace ams::util {
         return ZSTD_decompress(dst, dst_size, src, src_size);
     }
     
-    bool DecompressZstdForLoader(void* workspace, size_t workspace_size, void *dst, size_t dst_size, size_t expected_dec_size, const void *src, size_t src_size) {
+    bool DecompressZbicForLoader(void* workspace, size_t workspace_size, void *dst, size_t dst_size, size_t expected_dec_size, const void *src, size_t src_size) {
         /* Check decompression margin. */
         auto margin = ZSTD_decompressionMargin(src, src_size);
         if (ZSTD_isError(margin)) {
+            auto ec = ZSTD_getErrorCode(margin);
+            AMS_LOG("[ldr] can't determine decompression margin: %u (%s)\n", ec, ZSTD_getErrorString(ec));
             return false;
         }
         
@@ -86,17 +76,20 @@ namespace ams::util {
         
         /* Make sure we fit in the destination buffer. */
         if (margin + expected_dec_size > dst_size) {
+            AMS_LOG("[ldr] not enough space for decompression %lu + %lu > %lu\n", margin, expected_dec_size, dst_size);
             return false;
         }
         
-        /* This is a runtime assert in Loader code. We replicate it here. */
-        AMS_ABORT_UNLESS(ZSTD_estimateDCtxSize() == workspace_size);
+        /* This is a runtime assert in Loader code. Note that Nintendo does == comparison here. */
+        AMS_ABORT_UNLESS(ZSTD_estimateDCtxSize() <= workspace_size);
         
         /* Decompress using a static decompression context. */
         auto dctx = ZSTD_initStaticDCtx(workspace, workspace_size);
         size_t dec_size = ZSTD_decompressDCtx(dctx, dst, dst_size, src, src_size);
 
         if (ZSTD_isError(dec_size)) {
+            auto ec = ZSTD_getErrorCode(dec_size);
+            AMS_LOG("[ldr] decompression failed: %u (%s)\n", ec, ZSTD_getErrorString(ec));
             return false;
         }
         
