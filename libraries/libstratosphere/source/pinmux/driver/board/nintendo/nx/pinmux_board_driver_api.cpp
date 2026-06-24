@@ -104,25 +104,25 @@ namespace ams::pinmux::driver::board::nintendo::nx {
         #if defined(AMS_PINMUX_CONFIG_RIGHT_RAIL_AS_UART)
         UpdateSinglePinmuxPad({ 
             .index       = PinmuxPadIndex_Uart2Tx,
-            .option      = 0,               /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output */
-            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
+            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
         });
         UpdateSinglePinmuxPad({ 
             .index       = PinmuxPadIndex_Uart2Cts,
-            .option      = 0x20,            /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input */
-            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
+            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
         });
         #endif
         #if defined(AMS_PINMUX_CONFIG_LEFT_RAIL_AS_UART)
         UpdateSinglePinmuxPad({ 
             .index       = PinmuxPadIndex_Uart3Tx,
-            .option      = 0,               /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output */
-            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
+            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
         });
         UpdateSinglePinmuxPad({ 
             .index       = PinmuxPadIndex_Uart3Cts,
-            .option      = 0x20,            /* PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input */
-            .option_mask = (0x7|0x18|0x60), /* PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir */
+            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
+            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
         });
         #endif
     }
