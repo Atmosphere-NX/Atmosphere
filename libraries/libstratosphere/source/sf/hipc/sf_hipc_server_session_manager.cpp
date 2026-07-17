@@ -60,7 +60,16 @@ namespace ams::sf::hipc {
         PreProcessCommandBufferForMitm(ctx, m_pointer_buffer, reinterpret_cast<uintptr_t>(message_buffer));
 
         /* Dispatch forwards. */
-        R_TRY(svc::SendSyncRequest(util::GetReference(m_forward_service)->session));
+        {
+            ON_SCOPE_EXIT {
+                const auto saved_request = hipcParseRequest(const_cast<void *>(m_saved_message.GetPointer()));
+                for (u32 i = 0; i < saved_request.meta.num_copy_handles; i++) {
+                    os::CloseNativeHandle(saved_request.data.copy_handles[i]);
+                }
+            };
+
+            R_TRY(svc::SendSyncRequest(util::GetReference(m_forward_service)->session));
+        }
 
         /* Parse, to ensure we catch any copy handles and close them. */
         {
