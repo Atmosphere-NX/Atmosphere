@@ -43,10 +43,10 @@ def main(argc, argv):
             assert board.startswith('T210Sdev')
             soc = 'erista'
             count = 10
-        assert os.listdir('mtc_tables/bin/%s' % board) == ['%d.bin' % i for i in xrange(count)]
+        assert os.listdir('mtc_tables/bin/%s' % board) == ['%d.bin' % i for i in range(count)]
         params[soc][board] = []
         compressed_params[soc][board] = []
-        for i in xrange(count):
+        for i in range(count):
             uncompressed = read_file(os.path.join('mtc_tables/bin/%s' % board, '%d.bin' % i))
             assert len(uncompressed) == get_param_size(soc)
             compressed = lz4_compress(uncompressed)

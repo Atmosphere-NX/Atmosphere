@@ -45,7 +45,7 @@ def main(argc, argv):
         params[soc][param_id] = uncompressed
     for soc in ('erista', 'mariko'):
         empty_params = '\x00' * get_param_size(soc)
-        for param_id in xrange(0, max(params[soc].keys()) + 4, 2):
+        for param_id in range(0, max(params[soc].keys()) + 4, 2):
             param_id_l = param_id
             param_id_h = param_id + 1
             if param_id_l in params[soc] or param_id_h in params[soc]:

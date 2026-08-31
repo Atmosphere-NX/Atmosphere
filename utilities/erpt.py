@@ -51,7 +51,7 @@ if sys.version_info[0] == 3:
     bytes_to_list = lambda b: list(b)
     list_to_bytes = lambda l: bytes(l)
 else:
-    iter_range = xrange
+    iter_range = range
     int_types = (int, long)
     ascii_string = lambda b: str(b)
     bytes_to_list = lambda b: map(ord, b)
@@ -471,7 +471,7 @@ def main(argc, argv):
     if argc == 3:
         mf, mc, mt, ml = (64, 48, 32, 32)
     format_string = '- %%-%ds %%-%ds %%-%ds %%-%ds' % (mf+1, mc+1, mt+1, ml)
-    for i in xrange(NUM_FIELDS):
+    for i in range(NUM_FIELDS):
         f, c, t, l = fields[i], cat_to_string(cats[i]), typ_to_string(types[i]), flg_to_string(flags[i])
         print format_string % (f+',', c+',', t+',', l)
     with open(argv[-1]+'.hpp', 'w') as out:
@@ -485,7 +485,7 @@ def main(argc, argv):
             out.write(('    HANDLER(%%-%ds %%-3d) \\\n' % (mc+1)) % (cat_to_string(ct)+',', ct))
         out.write('\n')
         out.write('#define AMS_ERPT_FOREACH_FIELD(HANDLER) \\\n')
-        for i in xrange(NUM_FIELDS):
+        for i in range(NUM_FIELDS):
             f, c, t, l, d = fields[i], cats[i], types[i], flags[i], ids[i]
             out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt+1, ml)) % (f+',', '%d,'%d, cat_to_string(c)+',', typ_to_string(t)+',', flg_to_string(l)))
         out.write('\n')

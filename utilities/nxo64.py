@@ -86,7 +86,7 @@ class BinFile(object):
 (DT_NULL, DT_NEEDED, DT_PLTRELSZ, DT_PLTGOT, DT_HASH, DT_STRTAB, DT_SYMTAB, DT_RELA, DT_RELASZ,
  DT_RELAENT, DT_STRSZ, DT_SYMENT, DT_INIT, DT_FINI, DT_SONAME, DT_RPATH, DT_SYMBOLIC, DT_REL,
  DT_RELSZ, DT_RELENT, DT_PLTREL, DT_DEBUG, DT_TEXTREL, DT_JMPREL, DT_BIND_NOW, DT_INIT_ARRAY,
- DT_FINI_ARRAY, DT_INIT_ARRAYSZ, DT_FINI_ARRAYSZ, DT_RUNPATH, DT_FLAGS) = xrange(31)
+ DT_FINI_ARRAY, DT_INIT_ARRAYSZ, DT_FINI_ARRAYSZ, DT_RUNPATH, DT_FLAGS) = range(31)
 
 DT_RELRSZ, DT_RELR, DT_RELRENT = 0x23, 0x24, 0x25
 
@@ -265,7 +265,7 @@ class NxoFileBase(object):
         self.dynamic = dynamic = {}
         for i in MULTIPLE_DTS:
             dynamic[i] = []
-        for i in xrange((f.size() - self.dynamicoff) / 0x10):
+        for i in range((f.size() - self.dynamicoff) / 0x10):
             tag, val = f.read('II' if self.armv7 else 'QQ')
             if tag == DT_NULL:
                 break
@@ -517,7 +517,7 @@ class NxoFileBase(object):
         locations = set()
         f.seek(offset)
         relocsize = 8 if self.armv7 else 0x18
-        for i in xrange(size / relocsize):
+        for i in range(size / relocsize):
             # NOTE: currently assumes all armv7 relocs have no addends,
             # and all 64-bit ones do.
             if self.armv7:
@@ -541,7 +541,7 @@ class NxoFileBase(object):
         locations = set()
         f.seek(offset)
         relocsize = 8
-        for i in xrange(size / relocsize):
+        for i in range(size / relocsize):
             entry = f.read('Q')
             if entry & 1:
                 entry >>= 1
@@ -661,7 +661,7 @@ def kip1_blz_decompress(compressed):
     while out_ofs > 0:
         cmp_ofs -= 1
         control = decompressed[cmp_start + cmp_ofs]
-        for i in xrange(8):
+        for i in range(8):
             if control & 0x80:
                 if cmp_ofs < 2 - cmp_start:
                     raise ValueError('Compression out of bounds!')
@@ -672,7 +672,7 @@ def kip1_blz_decompress(compressed):
                 segmentoffset += 2
                 if out_ofs < segmentsize - cmp_start:
                     raise ValueError('Compression out of bounds!')
-                for j in xrange(segmentsize):
+                for j in range(segmentsize):
                     if out_ofs + segmentoffset >= decompressed_size:
                         raise ValueError('Compression out of bounds!')
                     data = decompressed[cmp_start + out_ofs + segmentoffset]
@@ -878,7 +878,7 @@ else:
 
     def find_bl_targets(text_start, text_end):
         targets = set()
-        for pco in xrange(0, text_end - text_start, 4):
+        for pco in range(0, text_end - text_start, 4):
             pc = text_start + pco
             d = Dword(pc)
             if (d & 0xfc000000) == 0x94000000:
@@ -1052,7 +1052,7 @@ else:
 
             if bypass_plt:
                 plt_lookup = f.plt_lookup
-                for pco in xrange(0, f.textsize, 4):
+                for pco in range(0, f.textsize, 4):
                     pc = loadbase + pco
                     d = Dword(pc)
                     if (d & 0x7c000000) == (0x94000000 & 0x7c000000):
@@ -1067,7 +1067,7 @@ else:
                             new_instr = (d & ~0x3ffffff) | (((new_target - pc) / 4) & 0x3ffffff)
                             idaapi.put_long(pc, new_instr)
 
-            for pco in xrange(0, f.textsize, 4):
+            for pco in range(0, f.textsize, 4):
                 pc = loadbase + pco
                 d = Dword(pc)
                 if d == 0x14000001:
