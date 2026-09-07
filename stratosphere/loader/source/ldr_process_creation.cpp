@@ -312,6 +312,7 @@ namespace ams::ldr {
             { 0x0100187003A36000 }, /* Pokemon: Let's Go, Eevee! */
             { 0x01002E5008C56000 }, /* Pokemon Sword [Live Tournament] */
             { 0x01002FF008C24000 }, /* Ring Fit Adventure */
+            { 0x010034B029D48000 }, /* Isle of Reveries */
             { 0x010049900F546001 }, /* Super Mario 3D All-Stars: Super Mario 64 */
             { 0x010057D00ECE4000 }, /* Nintendo Switch Online (Nintendo 64) [for Japan] */
             { 0x01006F8002326000 }, /* Animal Crossing: New Horizons */
