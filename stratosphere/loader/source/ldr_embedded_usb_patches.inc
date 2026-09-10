@@ -102,4 +102,5 @@ constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("766D0C2277207B40AD9B8DE309396D50CCE94885"), util::size(Usb30ForceEnablePatches_21_0_0), Usb30ForceEnablePatches_21_0_0 }, /* 21.0.0 */
     { ParseModuleId("B734339F2280170AF0200573F9B943242CEF8C15"), util::size(Usb30ForceEnablePatches_22_0_0), Usb30ForceEnablePatches_22_0_0 }, /* 22.0.0 - 22.1.0 */
     { ParseModuleId("AD8D36F2029822A4C498F055ADBDAA789EB913C6"), util::size(Usb30ForceEnablePatches_22_0_0), Usb30ForceEnablePatches_22_0_0 }, /* 22.5.0 */
+    { ParseModuleId("760E48C572F8192C9BC6DC8FEB3D6213F0551505"), util::size(Usb30ForceEnablePatches_22_0_0), Usb30ForceEnablePatches_22_0_0 }, /* 23.0.0 */
 };
