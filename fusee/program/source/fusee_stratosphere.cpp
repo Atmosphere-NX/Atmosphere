@@ -198,6 +198,9 @@ namespace ams::nxboot {
             FsVersion_22_5_0,
             FsVersion_22_5_0_Exfat,
 
+            FsVersion_23_0_0,
+            FsVersion_23_0_0_Exfat,
+
             FsVersion_Count,
         };
 
