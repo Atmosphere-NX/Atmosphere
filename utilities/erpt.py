@@ -253,6 +253,8 @@ CATEGORIES = {
     154 : 'PscTransitionStateInfo',
     155 : 'FsProxyErrorInfo3',
     156 : 'BluetoothErrorInfo',
+    157 : 'SystemConfigInfo',
+    158 : 'ClockContextInfo',
     1000 : 'TestNx',
     1001 : 'NANDTypeInfo',
     1002 : 'NANDExtendedCsd',
