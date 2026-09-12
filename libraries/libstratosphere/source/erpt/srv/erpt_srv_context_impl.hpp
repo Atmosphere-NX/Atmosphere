@@ -33,7 +33,7 @@ namespace ams::erpt::srv {
             Result RegisterRunningApplicationInfo(ncm::ApplicationId app_id, ncm::ProgramId program_id);
             Result ClearApplicationLaunchTime();
             Result UnregisterRunningApplicationInfo();
-            Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
+            Result SubmitAttachmentDeprecated(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
             Result CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
             Result CreateReportWithAttachmentsDeprecated2(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result);
             Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result, erpt::CreateReportOptionFlagSet flags);
@@ -41,6 +41,7 @@ namespace ams::erpt::srv {
             Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result, erpt::CreateReportOptionFlagSet flags);
             Result SubmitAttachmentWithLz4Compression(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
             Result CreateReportWithSpecifiedReprotId(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, const ams::sf::InBuffer &attachment_data, Result result, erpt::CreateReportOptionFlagSet flags, const ReportId &report_id);
+            Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data, erpt::SubmitAttachmentOptionFlagSet flags);
             Result RegisterRunningApplet(ncm::ProgramId program_id);
             Result UnregisterRunningApplet(ncm::ProgramId program_id);
             Result UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration);

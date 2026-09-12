@@ -90,7 +90,7 @@ namespace ams::erpt::srv {
             static Result SetOwner(AttachmentId attachment_id, ReportId report_id);
             static Result StoreRecord(JournalRecord<AttachmentInfo> *record);
 
-            static Result SubmitAttachment(AttachmentId *out, char *name, const u8 *data, u32 data_size);
+            static Result SubmitAttachment(AttachmentId *out, char *name, const u8 *data, u32 data_size, bool lz4_compression);
     };
 
     class Journal {

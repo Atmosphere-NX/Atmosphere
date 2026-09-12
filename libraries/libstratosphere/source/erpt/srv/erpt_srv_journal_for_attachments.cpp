@@ -185,8 +185,11 @@ namespace ams::erpt::srv {
 
         R_SUCCEED();
     }
-
-    Result JournalForAttachments::SubmitAttachment(AttachmentId *out, char *name, const u8 *data, u32 data_size) {
+        
+    Result JournalForAttachments::SubmitAttachment(AttachmentId *out, char *name, const u8 *data, u32 data_size, bool lz4_compression) {
+        /* TODO: Implement LZ4 compression on attachments. */
+        (void)lz4_compression;
+        
         R_UNLESS(data_size > 0,                 erpt::ResultInvalidArgument());
         R_UNLESS(data_size < AttachmentSizeMax, erpt::ResultInvalidArgument());
 
@@ -229,5 +232,5 @@ namespace ams::erpt::srv {
 
         R_SUCCEED();
     }
-
+    
 }

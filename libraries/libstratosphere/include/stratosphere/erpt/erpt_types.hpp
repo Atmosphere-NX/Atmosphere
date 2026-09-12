@@ -272,5 +272,14 @@ namespace ams::erpt {
         char product_model[16];
         const char *region;
     };
+    
+    struct SubmitAttachmentOptionFlag {
+        using Lz4Compression = util::BitFlagSet<BITSIZEOF(u32), SubmitAttachmentOptionFlag>::Flag<0>;
+        using Unknown0x10000 = util::BitFlagSet<BITSIZEOF(u32), SubmitAttachmentOptionFlag>::Flag<16>; /* TODO: Figure out what this is. Always forced to 1. */
+    };
+
+    using SubmitAttachmentOptionFlagSet = util::BitFlagSet<BITSIZEOF(u32), SubmitAttachmentOptionFlag>;
+    static_assert(util::is_pod<SubmitAttachmentOptionFlagSet>::value);
+    static_assert(sizeof(SubmitAttachmentOptionFlagSet) == sizeof(u32));
 
 }

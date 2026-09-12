@@ -73,9 +73,30 @@ namespace ams::erpt::srv {
             /* We succeeded. */
             R_SUCCEED();
         }
+        
+        Result SubmitAttachmentImpl(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data, bool lz4_compression, bool unk) {
+            const char *name = reinterpret_cast<const char *>(attachment_name.GetPointer());
+            const   u8 *data = reinterpret_cast<const   u8 *>(attachment_data.GetPointer());
 
+            const u32 name_size = static_cast<u32>(attachment_name.GetSize());
+            const u32 data_size = static_cast<u32>(attachment_data.GetSize());
+
+            R_UNLESS(data != nullptr,                    erpt::ResultInvalidArgument());
+            R_UNLESS(data_size <= AttachmentSizeMax,     erpt::ResultInvalidArgument());
+            R_UNLESS(name != nullptr,                    erpt::ResultInvalidArgument());
+            R_UNLESS(name_size <= AttachmentNameSizeMax, erpt::ResultInvalidArgument());
+
+            char name_safe[AttachmentNameSizeMax];
+            util::Strlcpy(name_safe, name, sizeof(name_safe));
+            
+            /* NOTE: This is tested, but goes unused and is never passed to JournalForAttachments. */
+            (void)unk;
+            
+            R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size, lz4_compression));
+        }
+        
     }
-
+    
     Result ContextImpl::SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
@@ -213,27 +234,14 @@ namespace ams::erpt::srv {
         R_SUCCEED();
     }
 
-    Result ContextImpl::SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) {
-        const char *name = reinterpret_cast<const char *>(attachment_name.GetPointer());
-        const   u8 *data = reinterpret_cast<const   u8 *>(attachment_data.GetPointer());
-
-        const u32 name_size = static_cast<u32>(attachment_name.GetSize());
-        const u32 data_size = static_cast<u32>(attachment_data.GetSize());
-
-        R_UNLESS(data != nullptr,                    erpt::ResultInvalidArgument());
-        R_UNLESS(data_size <= AttachmentSizeMax,     erpt::ResultInvalidArgument());
-        R_UNLESS(name != nullptr,                    erpt::ResultInvalidArgument());
-        R_UNLESS(name_size <= AttachmentNameSizeMax, erpt::ResultInvalidArgument());
-
-        char name_safe[AttachmentNameSizeMax];
-        util::Strlcpy(name_safe, name, sizeof(name_safe));
-
-        R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size));
+    Result ContextImpl::SubmitAttachmentDeprecated(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) {
+        R_RETURN(SubmitAttachmentImpl(out, attachment_name, attachment_data, false, false));
     }
 
     Result ContextImpl::SubmitAttachmentWithLz4Compression(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) {
-        /* TODO: Implement LZ4 compression on attachments. */
-        R_RETURN(this->SubmitAttachment(out, attachment_name, attachment_data));
+        /* NOTE: This should actually call JournalForAttachments::SubmitAttachmentWithLz4Compression. */
+        /* We consolidate the logic in the new SubmitAttachmentImpl for simplicity (that's what ends up happening in JournalForAttachments anyway). */
+        R_RETURN(SubmitAttachmentImpl(out, attachment_name, attachment_data, true, false));
     }
 
     Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result, erpt::CreateReportOptionFlagSet flags) {
@@ -284,6 +292,10 @@ namespace ams::erpt::srv {
         ManagerImpl::NotifyAll();
 
         R_SUCCEED();
+    }
+    
+    Result ContextImpl::SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data, erpt::SubmitAttachmentOptionFlagSet flags) {
+        R_RETURN(SubmitAttachmentImpl(out, attachment_name, attachment_data, flags.Test<SubmitAttachmentOptionFlag::Lz4Compression>(), flags.Test<SubmitAttachmentOptionFlag::Unknown0x10000>()));
     }
 
     Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
