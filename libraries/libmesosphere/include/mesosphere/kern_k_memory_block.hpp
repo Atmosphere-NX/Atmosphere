@@ -211,15 +211,15 @@ namespace ams::kern {
         uintptr_t m_address;
         size_t m_size;
         KMemoryState m_state;
-        u16 m_device_disable_merge_left_count;
-        u16 m_device_disable_merge_right_count;
-        u16 m_ipc_lock_count;
-        u16 m_device_use_count;
-        u16 m_ipc_disable_merge_count;
         KMemoryPermission m_permission;
         KMemoryAttribute  m_attribute;
         KMemoryPermission m_original_permission;
+        u16 m_ipc_lock_count;
+        u16 m_device_use_count;
         KMemoryBlockDisableMergeAttribute m_disable_merge_attribute;
+        u16 m_ipc_disable_merge_count;
+        u16 m_device_disable_merge_left_count;
+        u16 m_device_disable_merge_right_count;
 
         constexpr ams::svc::MemoryInfo GetSvcMemoryInfo() const {
             return {
@@ -365,15 +365,15 @@ namespace ams::kern {
                     .m_address                          = GetInteger(this->GetAddress()),
                     .m_size                             = this->GetSize(),
                     .m_state                            = m_memory_state,
-                    .m_device_disable_merge_left_count  = m_device_disable_merge_left_count,
-                    .m_device_disable_merge_right_count = m_device_disable_merge_right_count,
-                    .m_ipc_lock_count                   = m_ipc_lock_count,
-                    .m_device_use_count                 = m_device_use_count,
-                    .m_ipc_disable_merge_count          = m_ipc_disable_merge_count,
                     .m_permission                       = m_permission,
                     .m_attribute                        = m_attribute,
                     .m_original_permission              = m_original_permission,
+                    .m_ipc_lock_count                   = m_ipc_lock_count,
+                    .m_device_use_count                 = m_device_use_count,
                     .m_disable_merge_attribute          = m_disable_merge_attribute,
+                    .m_ipc_disable_merge_count          = m_ipc_disable_merge_count,
+                    .m_device_disable_merge_left_count  = m_device_disable_merge_left_count,
+                    .m_device_disable_merge_right_count = m_device_disable_merge_right_count,
                 };
             }
         public:

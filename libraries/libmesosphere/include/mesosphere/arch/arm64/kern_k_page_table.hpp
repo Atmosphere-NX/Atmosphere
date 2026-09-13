@@ -94,10 +94,10 @@ namespace ams::kern::arch::arm64 {
                 return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
         public:
-            /* TODO: How should this size be determined. Does the KProcess slab count need to go in a header as a define? */
-            static constexpr size_t NumTtbr0Entries = 81;
+            static constexpr size_t NumPTEntries = ::ams::kern::init::SlabCountKProcess + 1; /* +1 for kernel. */
         private:
-            static constinit inline const volatile u64 s_ttbr0_entries[NumTtbr0Entries] = {};
+            static constinit inline const volatile u64 s_ttbr0_entries[NumPTEntries] = {};
+            static constinit inline const volatile u64 s_tcr_el1_entries[NumPTEntries] = {};
         private:
             KPageTableManager *m_manager;
             u8 m_asid;
@@ -186,6 +186,12 @@ namespace ams::kern::arch::arm64 {
 
             static ALWAYS_INLINE u64 GetKernelTtbr0() {
                 return s_ttbr0_entries[0];
+            }
+
+            static const volatile u64 &GetTcrEL1Entry(size_t index) { return s_tcr_el1_entries[index]; }
+
+            static ALWAYS_INLINE u64 GetKernelTcrEL1() {
+                return s_tcr_el1_entries[0];
             }
 
             static ALWAYS_INLINE void ActivateKernel() {

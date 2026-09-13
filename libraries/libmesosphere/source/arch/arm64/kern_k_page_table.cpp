@@ -125,7 +125,7 @@ namespace ams::kern::arch::arm64 {
         m_manager = Kernel::GetSystemSystemResource().GetPageTableManagerPointer();
 
         /* Initialize the base page table. */
-        KPageTableBase::InitializeForKernel(true, table, start, end);
+        KPageTableBase::InitializeForKernel(table, start, end);
     }
 
     Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index) {
@@ -144,7 +144,7 @@ namespace ams::kern::arch::arm64 {
         const size_t as_width = GetAddressSpaceWidth(flags);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(flags, from_back, pool, GetVoidPointer(ttbr0_virt), as_start, as_end, code_address, code_size, system_resource, resource_limit));
+        R_TRY(KPageTableBase::InitializeForProcess(flags, from_back, GetVoidPointer(ttbr0_virt), as_start, as_end, pool, code_address, code_size, system_resource, resource_limit));
 
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();

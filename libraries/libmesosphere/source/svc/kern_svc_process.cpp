@@ -100,6 +100,9 @@ namespace ams::kern::svc {
             /* Validate that the parameter flags are valid. */
             R_UNLESS((params.flags & ~ams::svc::CreateProcessFlag_All) == 0, svc::ResultInvalidEnumValue());
 
+            /* The 64KB page size is not yet allowed. */
+            R_UNLESS((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) != ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage, svc::ResultInvalidCombination());
+
             /* Validate that 64-bit process is okay. */
             const bool is_64_bit = (params.flags & ams::svc::CreateProcessFlag_Is64Bit) != 0;
             if constexpr (sizeof(void *) < sizeof(u64)) {
@@ -130,12 +133,13 @@ namespace ams::kern::svc {
                     }
                     break;
                 case ams::svc::CreateProcessFlag_AddressSpace64Bit:
+                case ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage:
                     {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit, code_size);
-                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge, code_size);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge);
 
                         map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
                     }

@@ -90,10 +90,11 @@ namespace ams::kern {
             };
 
             enum RegionType {
-                RegionType_KernelMap = 0,
-                RegionType_Stack     = 1,
-                RegionType_Alias     = 2,
-                RegionType_Heap      = 3,
+                RegionType_KernelMap   = 0,
+                RegionType_Stack       = 1,
+                RegionType_Alias       = 2,
+                RegionType_Heap        = 3,
+                RegionType_ShadowStack = 4,
 
                 RegionType_Count,
             };
@@ -196,7 +197,6 @@ namespace ams::kern {
             KPageTableImpl m_impl;
             KMemoryBlockManager m_memory_block_manager;
             u32 m_allocate_option;
-            u32 m_address_space_width;
             bool m_is_kernel;
             bool m_enable_aslr;
             bool m_enable_device_address_space_merge;
@@ -212,23 +212,24 @@ namespace ams::kern {
         public:
             constexpr explicit KPageTableBase(util::ConstantInitializeTag)
                 : m_address_space_start(Null<KProcessAddress>), m_address_space_end(Null<KProcessAddress>),
-                  m_region_starts{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
-                  m_region_ends{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
+                  m_region_starts{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
+                  m_region_ends{Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>, Null<KProcessAddress>},
                   m_current_heap_end(Null<KProcessAddress>), m_alias_code_region_start(Null<KProcessAddress>),
                   m_alias_code_region_end(Null<KProcessAddress>), m_code_region_start(Null<KProcessAddress>), m_code_region_end(Null<KProcessAddress>),
-                  m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), m_mapped_ipc_server_memory(), m_alias_region_extra_size(),
-                  m_general_lock(), m_map_physical_memory_lock(), m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
-                  m_allocate_option(), m_address_space_width(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(), m_allowed_exec_device_mapping(),
-                  m_memory_block_slab_manager(), m_block_info_manager(), m_resource_limit(), m_cached_physical_linear_region(), m_cached_physical_heap_region(),
-                  m_heap_fill_value(), m_ipc_fill_value(), m_stack_fill_value()
+                  m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_insecure_memory(), 
+                  m_mapped_ipc_server_memory(), m_alias_region_extra_size(), m_general_lock(), m_map_physical_memory_lock(), 
+                  m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
+                  m_allocate_option(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(), m_allowed_exec_device_mapping(),
+                  m_memory_block_slab_manager(), m_block_info_manager(), m_resource_limit(), m_cached_physical_linear_region(), 
+                  m_cached_physical_heap_region(), m_heap_fill_value(), m_ipc_fill_value(), m_stack_fill_value()
             {
                 /* ... */
             }
 
             explicit KPageTableBase() { /* ... */ }
 
-            NOINLINE void InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
+            NOINLINE void InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, void *table, KProcessAddress start, KProcessAddress end, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
 
             void Finalize();
 
@@ -245,6 +246,14 @@ namespace ams::kern {
 
             constexpr bool IsInAliasRegion(KProcessAddress addr, size_t size) const {
                 return this->Contains(addr, size) && m_region_starts[RegionType_Alias] <= addr && addr + size - 1 <= m_region_ends[RegionType_Alias] - 1;
+            }
+
+            constexpr bool IsInShadowStackRegion(KProcessAddress addr, size_t size) const {
+                return this->Contains(addr, size) && m_region_starts[RegionType_ShadowStack] <= addr && addr + size - 1 <= m_region_ends[RegionType_ShadowStack] - 1;
+            }
+
+            constexpr bool IsSafeUserPointer(KProcessAddress addr, size_t size) const {
+                return this->Contains(addr, size) && !this->IsInShadowStackRegion(addr, size);
             }
 
             bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const {
@@ -490,19 +499,21 @@ namespace ams::kern {
         public:
             KProcessAddress GetAddressSpaceStart()    const { return m_address_space_start; }
 
-            KProcessAddress GetHeapRegionStart()      const { return m_region_starts[RegionType_Heap]; }
-            KProcessAddress GetAliasRegionStart()     const { return m_region_starts[RegionType_Alias]; }
-            KProcessAddress GetStackRegionStart()     const { return m_region_starts[RegionType_Stack]; }
-            KProcessAddress GetKernelMapRegionStart() const { return m_region_starts[RegionType_KernelMap]; }
+            KProcessAddress GetShadowStackRegionStart() const { return m_region_starts[RegionType_ShadowStack]; }
+            KProcessAddress GetHeapRegionStart()        const { return m_region_starts[RegionType_Heap]; }
+            KProcessAddress GetAliasRegionStart()       const { return m_region_starts[RegionType_Alias]; }
+            KProcessAddress GetStackRegionStart()       const { return m_region_starts[RegionType_Stack]; }
+            KProcessAddress GetKernelMapRegionStart()   const { return m_region_starts[RegionType_KernelMap]; }
 
             KProcessAddress GetAliasCodeRegionStart() const { return m_alias_code_region_start; }
 
             size_t GetAddressSpaceSize()    const { return m_address_space_end - m_address_space_start; }
 
-            size_t GetHeapRegionSize()      const { return m_region_ends[RegionType_Heap]      - m_region_starts[RegionType_Heap]; }
-            size_t GetAliasRegionSize()     const { return m_region_ends[RegionType_Alias]     - m_region_starts[RegionType_Alias]; }
-            size_t GetStackRegionSize()     const { return m_region_ends[RegionType_Stack]     - m_region_starts[RegionType_Stack]; }
-            size_t GetKernelMapRegionSize() const { return m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap]; }
+            size_t GetShadowStackRegionSize() const { return m_region_ends[RegionType_ShadowStack] - m_region_starts[RegionType_ShadowStack]; }
+            size_t GetHeapRegionSize()        const { return m_region_ends[RegionType_Heap]        - m_region_starts[RegionType_Heap]; }
+            size_t GetAliasRegionSize()       const { return m_region_ends[RegionType_Alias]       - m_region_starts[RegionType_Alias]; }
+            size_t GetStackRegionSize()       const { return m_region_ends[RegionType_Stack]       - m_region_starts[RegionType_Stack]; }
+            size_t GetKernelMapRegionSize()   const { return m_region_ends[RegionType_KernelMap]   - m_region_starts[RegionType_KernelMap]; }
 
             size_t GetAliasCodeRegionSize() const { return m_alias_code_region_end - m_alias_code_region_start; }
 

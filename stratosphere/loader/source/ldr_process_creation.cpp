@@ -423,6 +423,9 @@ namespace ams::ldr {
                 case Npdm::AddressSpaceType_64Bit:
                     flags |= svc::CreateProcessFlag_AddressSpace64Bit;
                     break;
+                case Npdm::AddressSpaceType_64Bit64KPage:
+                    flags |= svc::CreateProcessFlag_AddressSpace64Bit64KPage;
+                    break;
                 default:
                     R_THROW(ldr::ResultInvalidMeta());
             }
@@ -596,6 +599,10 @@ namespace ams::ldr {
                     case svc::CreateProcessFlag_AddressSpace64Bit:
                         aslr_start = svc::AddressMap39Start;
                         aslr_size  = svc::AddressMap39Size;
+                        break;
+                    case svc::CreateProcessFlag_AddressSpace64Bit64KPage:
+                        aslr_start = svc::AddressMap42Start;
+                        aslr_size  = svc::AddressMap42Size;
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }

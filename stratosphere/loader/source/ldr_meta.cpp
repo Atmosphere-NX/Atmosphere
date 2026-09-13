@@ -270,6 +270,7 @@ namespace ams::ldr {
                         case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
                         case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
                         case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                        case cfg::impl::OverrideStatusFlag_AddressSpace64Bit64KPage:      meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit64KPage)      << Npdm::MetaFlag_AddressSpaceTypeShift; break;
                         AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }

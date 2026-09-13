@@ -302,19 +302,21 @@ namespace ams::kern::arch::arm64 {
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return m_page_table.CanContain(addr, size, state); }
             bool CanContain(KProcessAddress addr, size_t size, ams::svc::MemoryState state) const { return m_page_table.CanContain(addr, size, state); }
 
-            KProcessAddress GetAddressSpaceStart()    const { return m_page_table.GetAddressSpaceStart(); }
-            KProcessAddress GetHeapRegionStart()      const { return m_page_table.GetHeapRegionStart(); }
-            KProcessAddress GetAliasRegionStart()     const { return m_page_table.GetAliasRegionStart(); }
-            KProcessAddress GetStackRegionStart()     const { return m_page_table.GetStackRegionStart(); }
-            KProcessAddress GetKernelMapRegionStart() const { return m_page_table.GetKernelMapRegionStart(); }
-            KProcessAddress GetAliasCodeRegionStart() const { return m_page_table.GetAliasCodeRegionStart(); }
+            KProcessAddress GetAddressSpaceStart()      const { return m_page_table.GetAddressSpaceStart(); }
+            KProcessAddress GetShadowStackRegionStart() const { return m_page_table.GetShadowStackRegionStart(); }
+            KProcessAddress GetHeapRegionStart()        const { return m_page_table.GetHeapRegionStart(); }
+            KProcessAddress GetAliasRegionStart()       const { return m_page_table.GetAliasRegionStart(); }
+            KProcessAddress GetStackRegionStart()       const { return m_page_table.GetStackRegionStart(); }
+            KProcessAddress GetKernelMapRegionStart()   const { return m_page_table.GetKernelMapRegionStart(); }
+            KProcessAddress GetAliasCodeRegionStart()   const { return m_page_table.GetAliasCodeRegionStart(); }
 
-            size_t GetAddressSpaceSize()    const { return m_page_table.GetAddressSpaceSize(); }
-            size_t GetHeapRegionSize()      const { return m_page_table.GetHeapRegionSize(); }
-            size_t GetAliasRegionSize()     const { return m_page_table.GetAliasRegionSize(); }
-            size_t GetStackRegionSize()     const { return m_page_table.GetStackRegionSize(); }
-            size_t GetKernelMapRegionSize() const { return m_page_table.GetKernelMapRegionSize(); }
-            size_t GetAliasCodeRegionSize() const { return m_page_table.GetAliasCodeRegionSize(); }
+            size_t GetAddressSpaceSize()      const { return m_page_table.GetAddressSpaceSize(); }
+            size_t GetShadowStackRegionSize() const { return m_page_table.GetShadowStackRegionSize(); }
+            size_t GetHeapRegionSize()        const { return m_page_table.GetHeapRegionSize(); }
+            size_t GetAliasRegionSize()       const { return m_page_table.GetAliasRegionSize(); }
+            size_t GetStackRegionSize()       const { return m_page_table.GetStackRegionSize(); }
+            size_t GetKernelMapRegionSize()   const { return m_page_table.GetKernelMapRegionSize(); }
+            size_t GetAliasCodeRegionSize()   const { return m_page_table.GetAliasCodeRegionSize(); }
 
             size_t GetAliasRegionExtraSize() const { return m_page_table.GetAliasRegionExtraSize(); }
 
