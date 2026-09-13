@@ -193,6 +193,9 @@ namespace ams::svc {
         InfoType_AliasRegionExtraSize           = 28,
         /* ... */
         InfoType_TransferMemoryHint             = 34,
+        /* ... */
+        InfoType_UnknownRegionAddress           = 37,
+        InfoType_UnknownRegionSize              = 38,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,

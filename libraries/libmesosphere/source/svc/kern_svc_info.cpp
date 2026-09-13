@@ -109,6 +109,11 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_AliasRegionExtraSize:
                     *out = process->GetPageTable().GetAliasRegionExtraSize();
                     break;
+                case ams::svc::InfoType_UnknownRegionAddress:
+                case ams::svc::InfoType_UnknownRegionSize:
+                    /* TODO: 23.0.0 added a new process memory region; report it as empty until its semantics are known. */
+                    *out = 0;
+                    break;
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
 
@@ -138,6 +143,8 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_IsApplication:
                 case ams::svc::InfoType_FreeThreadCount:
                 case ams::svc::InfoType_AliasRegionExtraSize:
+                case ams::svc::InfoType_UnknownRegionAddress:
+                case ams::svc::InfoType_UnknownRegionSize:
                     {
                         /* These info types don't support non-zero subtypes. */
                         R_UNLESS(info_subtype == 0,  svc::ResultInvalidCombination());
