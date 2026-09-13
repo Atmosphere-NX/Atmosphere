@@ -19,6 +19,13 @@ Atmosphère consists of multiple components, each of which replaces/modifies a d
 * Stratosphère: Custom Sysmodule(s), both Rosalina style to extend the kernel/provide new features, and of the loader reimplementation style to hook important system actions
 * Troposphère: Application-level Horizon OS patches, used to implement desirable CFW features
 
+AI-Generated Code Policy
+=====
+
+**AI-generated code is strictly prohibited in this repository.**
+
+This includes code produced by LLMs (ChatGPT, Claude, Gemini, Copilot, etc.), AI code completion tools, or any code significantly modified from AI output. All submissions containing AI-generated code will be rejected. See [AGENTS.md](AGENTS.md) for full details.
+
 Licensing
 =====
 
