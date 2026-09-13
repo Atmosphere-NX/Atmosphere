@@ -139,6 +139,9 @@ namespace ams::boot2 {
             if (loc.program_id == ncm::SystemProgramId::Pgl) {
                 return hos::GetVersion() >= hos::Version_10_0_0;
             }
+            if (loc.program_id == ncm::SystemProgramId::Lbl || loc.program_id == ncm::SystemProgramId::Ngct) {
+                return hos::GetVersion() < hos::Version_23_0_0;
+            }
             return true;
         }
 
