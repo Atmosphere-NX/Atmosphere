@@ -271,6 +271,9 @@ namespace ams::secmon::smc {
                         std::memcpy(std::addressof(args.r[1]), std::addressof(tmp_hash), sizeof(tmp_hash));
                     }
                     break;
+                case ConfigItem::Unknown18:
+                    args.r[1] = GetBootConfig().data.GetUnknown70();
+                    break;
                 case ConfigItem::ExosphereApiVersion:
                     /* Get information about the current exosphere version. */
                     if (kern || g_set_true_target_firmware) {

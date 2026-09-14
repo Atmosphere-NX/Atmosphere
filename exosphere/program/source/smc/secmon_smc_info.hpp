@@ -38,6 +38,7 @@ namespace ams::secmon::smc {
         RegulatorType                 = 15,
         DeviceUniqueKeyGeneration     = 16,
         Package2Hash                  = 17,
+        Unknown18                     = 18,
 
         /* Extension config items for exosphere. */
         ExosphereApiVersion            = 65000,

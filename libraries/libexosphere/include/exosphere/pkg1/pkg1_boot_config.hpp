@@ -61,14 +61,15 @@ namespace ams::pkg1 {
     }
 
     struct BootConfigData {
-        u32 version;
-        u32 reserved_04;
+        u64 version;
         u32 reserved_08;
         u32 reserved_0C;
         u8 flags1[0x10];
         u8 flags0[0x10];
         u64 initial_tsc_value;
-        u8 padding_38[0x200 - 0x38];
+        u8 padding_38[0x38];
+        u64 unknown_70;
+        u8 padding_78[0x200 - 0x78];
 
         constexpr bool IsDevelopmentFunctionEnabled() const {
             return (this->flags1[0] & (1 << 1)) != 0;
@@ -97,13 +98,16 @@ namespace ams::pkg1 {
         constexpr u64 GetInitialTscValue() const {
             return this->IsInitialTscValueValid() ? this->initial_tsc_value : 0;
         }
+        
+        constexpr u64 GetUnknown70() const {
+            return this->unknown_70;
+        }
     };
     static_assert(util::is_pod<BootConfigData>::value);
     static_assert(sizeof(BootConfigData) == 0x200);
 
     struct BootConfigSignedData {
-        u32 version;
-        u32 reserved_04;
+        u64 version;
         u8  flags;
         u8  reserved_09[0x10 - 9];
         u8  ecid[0x10];
