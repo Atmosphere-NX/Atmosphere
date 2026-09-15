@@ -22,17 +22,19 @@
 #include <stratosphere/pgl/pgl_types.hpp>
 #include <stratosphere/pgl/tipc/pgl_tipc_i_event_observer.hpp>
 
-#define AMS_PGL_TIPC_I_SHELL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                         \
-    AMS_TIPC_METHOD_INFO(C, H,  0, Result, LaunchProgram,                         (ams::tipc::Out<os::ProcessId> out, const ncm::ProgramLocation loc, u32 pm_flags, u8 pgl_flags), (out, loc, pm_flags, pgl_flags)) \
-    AMS_TIPC_METHOD_INFO(C, H,  1, Result, TerminateProcess,                      (os::ProcessId process_id),                                                                      (process_id))                    \
-    AMS_TIPC_METHOD_INFO(C, H,  2, Result, LaunchProgramFromHost,                 (ams::tipc::Out<os::ProcessId> out, const ams::tipc::InBuffer content_path, u32 pm_flags),       (out, content_path, pm_flags))   \
-    AMS_TIPC_METHOD_INFO(C, H,  4, Result, GetHostContentMetaInfo,                (ams::tipc::Out<pgl::ContentMetaInfo> out, const ams::tipc::InBuffer content_path),              (out, content_path))             \
-    AMS_TIPC_METHOD_INFO(C, H,  5, Result, GetApplicationProcessId,               (ams::tipc::Out<os::ProcessId> out),                                                             (out))                           \
-    AMS_TIPC_METHOD_INFO(C, H,  6, Result, BoostSystemMemoryResourceLimit,        (u64 size),                                                                                      (size))                          \
-    AMS_TIPC_METHOD_INFO(C, H,  7, Result, IsProcessTracked,                      (ams::tipc::Out<bool> out, os::ProcessId process_id),                                            (out, process_id))               \
-    AMS_TIPC_METHOD_INFO(C, H,  8, Result, EnableApplicationCrashReport,          (bool enabled),                                                                                  (enabled))                       \
-    AMS_TIPC_METHOD_INFO(C, H,  9, Result, IsApplicationCrashReportEnabled,       (ams::tipc::Out<bool> out),                                                                      (out))                           \
-    AMS_TIPC_METHOD_INFO(C, H, 10, Result, EnableApplicationAllThreadDumpOnCrash, (bool enabled),                                                                                  (enabled))                       \
-    AMS_TIPC_METHOD_INFO(C, H, 20, Result, GetShellEventObserver,                 (ams::tipc::OutMoveHandle out),                                                                  (out))
+#define AMS_PGL_TIPC_I_SHELL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                              \
+    AMS_TIPC_METHOD_INFO(C, H,  0, Result, LaunchProgram,                         (ams::tipc::Out<os::ProcessId> out, const ncm::ProgramLocation loc, u32 pm_flags, u8 pgl_flags), (out, loc, pm_flags, pgl_flags))                      \
+    AMS_TIPC_METHOD_INFO(C, H,  1, Result, TerminateProcess,                      (os::ProcessId process_id),                                                                      (process_id))                                         \
+    AMS_TIPC_METHOD_INFO(C, H,  2, Result, LaunchProgramFromHost,                 (ams::tipc::Out<os::ProcessId> out, const ams::tipc::InBuffer content_path, u32 pm_flags),       (out, content_path, pm_flags))                        \
+    AMS_TIPC_METHOD_INFO(C, H,  4, Result, GetProgramLaunchPropertyFromHost,      (ams::tipc::Out<pgl::ProgramLaunchProperty> out, const ams::tipc::InBuffer content_path),        (out, content_path))                                  \
+    AMS_TIPC_METHOD_INFO(C, H,  5, Result, GetRunningApplicationProcessId,        (ams::tipc::Out<os::ProcessId> out),                                                             (out))                                                \
+    AMS_TIPC_METHOD_INFO(C, H,  6, Result, BoostSystemMemoryResourceLimit,        (u64 size),                                                                                      (size))                                               \
+    AMS_TIPC_METHOD_INFO(C, H,  7, Result, IsRunningProcess,                      (ams::tipc::Out<bool> out, os::ProcessId process_id),                                            (out, process_id))                                    \
+    AMS_TIPC_METHOD_INFO(C, H,  8, Result, EnableApplicationCrashReport,          (bool enabled),                                                                                  (enabled))                                            \
+    AMS_TIPC_METHOD_INFO(C, H,  9, Result, IsApplicationCrashReportEnabled,       (ams::tipc::Out<bool> out),                                                                      (out))                                                \
+    AMS_TIPC_METHOD_INFO(C, H, 10, Result, EnableApplicationAllThreadDumpOnCrash, (bool enabled),                                                                                  (enabled))                                            \
+    AMS_TIPC_METHOD_INFO(C, H, 11, Result, GetProcessId,                          (ams::sf::Out<os::ProcessId> out, ncm::ProgramId program_id),                                    (out, program_id),               hos::Version_19_0_0) \
+    AMS_TIPC_METHOD_INFO(C, H, 20, Result, CreateShellEvent,                      (ams::tipc::OutMoveHandle out),                                                                  (out))                                                \
+    AMS_TIPC_METHOD_INFO(C, H, 31, Result, EnableApplicationCrashReport2,         (os::ProcessId process_id, bool enabled),                                                        (process_id, enabled),           hos::Version_23_0_0)
 
 AMS_TIPC_DEFINE_INTERFACE(ams::pgl::tipc, IShellInterface, AMS_PGL_TIPC_I_SHELL_INTERFACE_INTERFACE_INFO);

@@ -27,12 +27,13 @@ namespace ams::pgl::srv {
 
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags);
     Result TerminateProcess(os::ProcessId process_id);
-    Result GetApplicationProcessId(os::ProcessId *out);
+    Result GetRunningApplicationProcessId(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
-    bool IsProcessTracked(os::ProcessId process_id);
+    bool IsRunningProcess(os::ProcessId process_id);
     void EnableApplicationCrashReport(bool enabled);
     bool IsApplicationCrashReportEnabled();
     void EnableApplicationAllThreadDumpOnCrash(bool enabled);
-    Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const char *arg);
+    Result TriggerSnapShotDumper(SnapShotDumpType dump_type, const char *arg);
+    void EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled);
 
 }

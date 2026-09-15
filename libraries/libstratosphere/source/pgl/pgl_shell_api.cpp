@@ -80,22 +80,22 @@ namespace ams::pgl {
         R_RETURN(::pglLaunchProgramFromHost(reinterpret_cast<u64 *>(out), content_path, process_flags));
     }
 
-    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path) {
-        static_assert(sizeof(*out) == sizeof(::PglContentMetaInfo));
-        R_RETURN(::pglGetHostContentMetaInfo(reinterpret_cast<::PglContentMetaInfo *>(out), content_path));
+    Result GetHostProgramLaunchProperty(pgl::ProgramLaunchProperty *out, const char *content_path) {
+        static_assert(sizeof(*out) == sizeof(::PglProgramLaunchProperty));
+        R_RETURN(::pglGetHostProgramLaunchProperty(reinterpret_cast<::PglProgramLaunchProperty *>(out), content_path));
     }
 
-    Result GetApplicationProcessId(os::ProcessId *out) {
+    Result GetRunningApplicationProcessId(os::ProcessId *out) {
         static_assert(sizeof(*out) == sizeof(u64));
-        R_RETURN(::pglGetApplicationProcessId(reinterpret_cast<u64 *>(out)));
+        R_RETURN(::pglGetRunningApplicationProcessId(reinterpret_cast<u64 *>(out)));
     }
 
     Result BoostSystemMemoryResourceLimit(u64 size) {
         R_RETURN(::pglBoostSystemMemoryResourceLimit(size));
     }
 
-    Result IsProcessTracked(bool *out, os::ProcessId process_id) {
-        R_RETURN(::pglIsProcessTracked(out, static_cast<u64>(process_id)));
+    Result IsRunningProcess(bool *out, os::ProcessId process_id) {
+        R_RETURN(::pglIsRunningProcess(out, static_cast<u64>(process_id)));
     }
 
     Result EnableApplicationCrashReport(bool enabled) {
@@ -110,13 +110,13 @@ namespace ams::pgl {
         R_RETURN(::pglEnableApplicationAllThreadDumpOnCrash(enabled));
     }
 
-    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
-        R_RETURN(::pglTriggerApplicationSnapShotDumper(static_cast<::PglSnapShotDumpType>(dump_type), arg));
+    Result TriggerSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
+        R_RETURN(::pglTriggerSnapShotDumper(static_cast<::PglSnapShotDumpType>(dump_type), arg));
     }
 
-    Result GetEventObserver(pgl::EventObserver *out) {
+    Result CreateShellEvent(pgl::EventObserver *out) {
         ::PglEventObserver obs;
-        R_TRY(::pglGetEventObserver(std::addressof(obs)));
+        R_TRY(::pglCreateShellEvent(std::addressof(obs)));
 
         if (hos::GetVersion() >= hos::Version_12_0_0) {
             auto observer_holder = MakeUniqueFromStaticExpHeap<impl::EventObserverByTipc<RemoteEventObserver>>(obs);
@@ -134,6 +134,10 @@ namespace ams::pgl {
         }
 
         R_SUCCEED();
+    }
+    
+    Result EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled) {
+        R_RETURN(::pglEnableApplicationCrashReport2(process_id, enabled));
     }
     #else
     Result Initialize() {
@@ -159,12 +163,12 @@ namespace ams::pgl {
         AMS_ABORT("TODO");
     }
 
-    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path) {
+    Result GetHostProgramLaunchProperty(pgl::ProgramLaunchProperty *out, const char *content_path) {
         AMS_UNUSED(out, content_path);
         AMS_ABORT("TODO");
     }
 
-    Result GetApplicationProcessId(os::ProcessId *out) {
+    Result GetRunningApplicationProcessId(os::ProcessId *out) {
         AMS_UNUSED(out);
         AMS_ABORT("TODO");
     }
@@ -174,7 +178,7 @@ namespace ams::pgl {
         AMS_ABORT("TODO");
     }
 
-    Result IsProcessTracked(bool *out, os::ProcessId process_id) {
+    Result IsRunningProcess(bool *out, os::ProcessId process_id) {
         AMS_UNUSED(out, process_id);
         AMS_ABORT("TODO");
     }
@@ -194,13 +198,18 @@ namespace ams::pgl {
         AMS_ABORT("TODO");
     }
 
-    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
+    Result TriggerSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
         AMS_UNUSED(arg, dump_type);
         AMS_ABORT("TODO");
     }
 
-    Result GetEventObserver(pgl::EventObserver *out) {
+    Result CreateShellEvent(pgl::EventObserver *out) {
         AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+    }
+    
+    Result EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled) {
+        AMS_UNUSED(process_id, enabled);
         AMS_ABORT("TODO");
     }
     #endif

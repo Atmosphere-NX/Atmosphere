@@ -335,7 +335,7 @@ namespace ams::pgl::srv {
         R_RETURN(pgl::srv::LaunchProgram(out, ncm::ProgramLocation::Make(reader.GetProgramId(), ncm::StorageId::Host), pm_flags, pgl::LaunchFlags_None));
     }
 
-    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *package_path) {
+    Result GetProgramLaunchPropertyFromHost(pgl::ProgramLaunchProperty *out, const char *package_path) {
         /* Read the package. */
         HostPackageReader reader;
         R_TRY(reader.Initialize(package_path, HostPackageMountName));
@@ -343,7 +343,7 @@ namespace ams::pgl::srv {
         /* Read the program info. */
         R_TRY(reader.ReadProgramInfo());
 
-        /* Get the content meta info. */
+        /* Get the program launch property. */
         *out = {
             .id                = reader.GetProgramId().value,
             .version           = reader.GetProgramVersion(),

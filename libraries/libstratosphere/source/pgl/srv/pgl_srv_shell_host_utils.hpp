@@ -19,6 +19,6 @@
 namespace ams::pgl::srv {
 
     Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 pm_flags);
-    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path);
+    Result GetProgramLaunchPropertyFromHost(pgl::ProgramLaunchProperty *out, const char *content_path);
 
 }

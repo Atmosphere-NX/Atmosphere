@@ -34,21 +34,21 @@ namespace ams::pgl::srv {
         R_RETURN(pgl::srv::LaunchProgramFromHost(out, static_cast<const char *>(content_path), pm_flags));
     }
 
-    Result ShellInterfaceCommon::GetHostContentMetaInfoImpl(pgl::ContentMetaInfo *out, const void *content_path, size_t content_path_size) {
+    Result ShellInterfaceCommon::GetProgramLaunchPropertyFromHostImpl(pgl::ProgramLaunchProperty *out, const void *content_path, size_t content_path_size) {
         AMS_UNUSED(content_path_size);
-        R_RETURN(pgl::srv::GetHostContentMetaInfo(out, static_cast<const char *>(content_path)));
+        R_RETURN(pgl::srv::GetProgramLaunchPropertyFromHost(out, static_cast<const char *>(content_path)));
     }
 
-    Result ShellInterfaceCommon::GetApplicationProcessIdImpl(os::ProcessId *out) {
-        R_RETURN(pgl::srv::GetApplicationProcessId(out));
+    Result ShellInterfaceCommon::GetRunningApplicationProcessIdImpl(os::ProcessId *out) {
+        R_RETURN(pgl::srv::GetRunningApplicationProcessId(out));
     }
 
     Result ShellInterfaceCommon::BoostSystemMemoryResourceLimitImpl(u64 size) {
         R_RETURN(pgl::srv::BoostSystemMemoryResourceLimit(size));
     }
 
-    Result ShellInterfaceCommon::IsProcessTrackedImpl(bool *out, os::ProcessId process_id) {
-        *out = pgl::srv::IsProcessTracked(process_id);
+    Result ShellInterfaceCommon::IsRunningProcessImpl(bool *out, os::ProcessId process_id) {
+        *out = pgl::srv::IsRunningProcess(process_id);
         R_SUCCEED();
     }
 
@@ -67,13 +67,18 @@ namespace ams::pgl::srv {
         R_SUCCEED();
     }
 
-    Result ShellInterfaceCommon::GetProcessId(os::ProcessId *out, ncm::ProgramId program_id) {
+    Result ShellInterfaceCommon::GetProcessIdImpl(os::ProcessId *out, ncm::ProgramId program_id) {
         R_RETURN(pm::shell::GetProcessId(out, program_id));
     }
 
-    Result ShellInterfaceCommon::TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
+    Result ShellInterfaceCommon::TriggerSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
         AMS_UNUSED(arg_size);
-        R_RETURN(pgl::srv::TriggerApplicationSnapShotDumper(dump_type, static_cast<const char *>(arg)));
+        R_RETURN(pgl::srv::TriggerSnapShotDumper(dump_type, static_cast<const char *>(arg)));
+    }
+    
+    Result ShellInterfaceCommon::EnableApplicationCrashReport2Impl(os::ProcessId process_id, bool enabled) {
+        pgl::srv::EnableApplicationCrashReport2(process_id, enabled);
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCmif::LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
@@ -88,20 +93,20 @@ namespace ams::pgl::srv {
         R_RETURN(this->LaunchProgramFromHostImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize(), pm_flags));
     }
 
-    Result ShellInterfaceCmif::GetHostContentMetaInfo(ams::sf::Out<pgl::ContentMetaInfo> out, const ams::sf::InBuffer &content_path) {
-        R_RETURN(this->GetHostContentMetaInfoImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize()));
+    Result ShellInterfaceCmif::GetProgramLaunchPropertyFromHost(ams::sf::Out<pgl::ProgramLaunchProperty> out, const ams::sf::InBuffer &content_path) {
+        R_RETURN(this->GetProgramLaunchPropertyFromHostImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize()));
     }
 
-    Result ShellInterfaceCmif::GetApplicationProcessId(ams::sf::Out<os::ProcessId> out) {
-        R_RETURN(this->GetApplicationProcessIdImpl(out.GetPointer()));
+    Result ShellInterfaceCmif::GetRunningApplicationProcessId(ams::sf::Out<os::ProcessId> out) {
+        R_RETURN(this->GetRunningApplicationProcessIdImpl(out.GetPointer()));
     }
 
     Result ShellInterfaceCmif::BoostSystemMemoryResourceLimit(u64 size) {
         R_RETURN(this->BoostSystemMemoryResourceLimitImpl(size));
     }
 
-    Result ShellInterfaceCmif::IsProcessTracked(ams::sf::Out<bool> out, os::ProcessId process_id) {
-        R_RETURN(this->IsProcessTrackedImpl(out.GetPointer(), process_id));
+    Result ShellInterfaceCmif::IsRunningProcess(ams::sf::Out<bool> out, os::ProcessId process_id) {
+        R_RETURN(this->IsRunningProcessImpl(out.GetPointer(), process_id));
     }
 
     Result ShellInterfaceCmif::EnableApplicationCrashReport(bool enabled) {
@@ -116,15 +121,11 @@ namespace ams::pgl::srv {
         R_RETURN(this->EnableApplicationAllThreadDumpOnCrashImpl(enabled));
     }
 
-    Result ShellInterfaceCmif::TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) {
-        R_RETURN(this->TriggerApplicationSnapShotDumperImpl(dump_type, arg.GetPointer(), arg.GetSize()));
+    Result ShellInterfaceCmif::TriggerSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) {
+        R_RETURN(this->TriggerSnapShotDumperImpl(dump_type, arg.GetPointer(), arg.GetSize()));
     }
 
-    Result ShellInterfaceCmif::GetProcessId(ams::sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
-        R_RETURN(ShellInterfaceCommon::GetProcessId(out.GetPointer(), program_id));
-    }
-
-    Result ShellInterfaceCmif::GetShellEventObserver(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out) {
+    Result ShellInterfaceCmif::CreateShellEvent(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out) {
         /* Allocate a new interface. */
         auto session = ObjectFactory::CreateSharedEmplaced<pgl::sf::IEventObserver, ShellEventObserverCmif>(m_allocator);
         R_UNLESS(session != nullptr, pgl::ResultOutOfMemory());
@@ -150,20 +151,20 @@ namespace ams::pgl::srv {
         R_RETURN(this->LaunchProgramFromHostImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize(), pm_flags));
     }
 
-    Result ShellInterfaceTipc::GetHostContentMetaInfo(ams::tipc::Out<pgl::ContentMetaInfo> out, const ams::tipc::InBuffer content_path) {
-        R_RETURN(this->GetHostContentMetaInfoImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize()));
+    Result ShellInterfaceTipc::GetProgramLaunchPropertyFromHost(ams::tipc::Out<pgl::ProgramLaunchProperty> out, const ams::tipc::InBuffer content_path) {
+        R_RETURN(this->GetProgramLaunchPropertyFromHostImpl(out.GetPointer(), content_path.GetPointer(), content_path.GetSize()));
     }
 
-    Result ShellInterfaceTipc::GetApplicationProcessId(ams::tipc::Out<os::ProcessId> out) {
-        R_RETURN(this->GetApplicationProcessIdImpl(out.GetPointer()));
+    Result ShellInterfaceTipc::GetRunningApplicationProcessId(ams::tipc::Out<os::ProcessId> out) {
+        R_RETURN(this->GetRunningApplicationProcessIdImpl(out.GetPointer()));
     }
 
     Result ShellInterfaceTipc::BoostSystemMemoryResourceLimit(u64 size) {
         R_RETURN(this->BoostSystemMemoryResourceLimitImpl(size));
     }
 
-    Result ShellInterfaceTipc::IsProcessTracked(ams::tipc::Out<bool> out, os::ProcessId process_id) {
-        R_RETURN(this->IsProcessTrackedImpl(out.GetPointer(), process_id));
+    Result ShellInterfaceTipc::IsRunningProcess(ams::tipc::Out<bool> out, os::ProcessId process_id) {
+        R_RETURN(this->IsRunningProcessImpl(out.GetPointer(), process_id));
     }
 
     Result ShellInterfaceTipc::EnableApplicationCrashReport(bool enabled) {
@@ -179,11 +180,14 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceTipc::GetProcessId(ams::tipc::Out<os::ProcessId> out, ncm::ProgramId program_id) {
-        R_RETURN(ShellInterfaceCommon::GetProcessId(out.GetPointer(), program_id));
+        R_RETURN(this->GetProcessIdImpl(out.GetPointer(), program_id));
     }
 
-    Result ShellInterfaceTipc::GetShellEventObserver(ams::tipc::OutMoveHandle out) {
+    Result ShellInterfaceTipc::CreateShellEvent(ams::tipc::OutMoveHandle out) {
         R_RETURN(pgl::srv::AllocateShellEventObserverForTipc(out.GetPointer()));
     }
-
+    
+    Result ShellInterfaceTipc::EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled) {
+        R_RETURN(this->EnableApplicationCrashReport2Impl(process_id, enabled));
+    }
 }

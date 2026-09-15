@@ -60,15 +60,15 @@ namespace ams::pgl::srv {
 
     class ShellEventObserverCmif : public ShellEventObserverImpl {
         public:
-            Result GetProcessEventHandle(ams::sf::OutCopyHandle out);
-            Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out);
+            Result GetShellEvent(ams::sf::OutCopyHandle out);
+            Result GetShellEventInfo(ams::sf::Out<pm::ProcessEventInfo> out);
     };
     static_assert(pgl::sf::IsIEventObserver<ShellEventObserverCmif>);
 
     class ShellEventObserverTipc : public ShellEventObserverImpl {
         public:
-            Result GetProcessEventHandle(ams::tipc::OutCopyHandle out);
-            Result GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out);
+            Result GetShellEvent(ams::tipc::OutCopyHandle out);
+            Result GetShellEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out);
     };
     static_assert(pgl::tipc::IsIEventObserver<ShellEventObserverTipc>);
 

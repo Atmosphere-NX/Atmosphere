@@ -22,8 +22,8 @@
 #include <stratosphere/pgl/pgl_types.hpp>
 
 #define AMS_PGL_TIPC_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                          \
-    AMS_TIPC_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::tipc::OutCopyHandle out),             (out)) \
-    AMS_TIPC_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::tipc::Out<pm::ProcessEventInfo> out), (out))
+    AMS_TIPC_METHOD_INFO(C, H, 0, Result, GetShellEvent,         (ams::tipc::OutCopyHandle out),             (out)) \
+    AMS_TIPC_METHOD_INFO(C, H, 1, Result, GetShellEventInfo,     (ams::tipc::Out<pm::ProcessEventInfo> out), (out))
 
 AMS_TIPC_DEFINE_INTERFACE(ams::pgl::tipc, IEventObserver, AMS_PGL_TIPC_I_EVENT_OBSERVER_INTERFACE_INFO);
 

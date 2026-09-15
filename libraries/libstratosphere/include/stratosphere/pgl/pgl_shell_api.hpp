@@ -27,15 +27,15 @@ namespace ams::pgl {
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 process_flags, u8 pgl_flags);
     Result TerminateProcess(os::ProcessId process_id);
     Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 process_flags);
-    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path);
-    Result GetApplicationProcessId(os::ProcessId *out);
+    Result GetProgramLaunchPropertyFromHost(pgl::ProgramLaunchProperty *out, const char *content_path);
+    Result GetRunningApplicationProcessId(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
-    Result IsProcessTracked(bool *out, os::ProcessId process_id);
+    Result IsRunningProcess(bool *out, os::ProcessId process_id);
     Result EnableApplicationCrashReport(bool enabled);
     Result IsApplicationCrashReportEnabled(bool *out);
     Result EnableApplicationAllThreadDumpOnCrash(bool enabled);
-    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type);
-
-    Result GetEventObserver(pgl::EventObserver *out);
+    Result TriggerSnapShotDumper(const char *arg, SnapShotDumpType dump_type);
+    Result CreateShellEvent(pgl::EventObserver *out);
+    Result EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled);
 
 }

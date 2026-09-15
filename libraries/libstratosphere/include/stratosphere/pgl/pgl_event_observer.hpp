@@ -33,8 +33,8 @@ namespace ams::pgl {
 
                 virtual ~EventObserverInterface() { /* ... */ }
 
-                virtual Result GetSystemEvent(os::SystemEventType *out)       = 0;
-                virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) = 0;
+                virtual Result GetShellEvent(os::SystemEventType *out)      = 0;
+                virtual Result GetShellEventInfo(pm::ProcessEventInfo *out) = 0;
         };
 
         class EventObserverByCmif final : public EventObserverInterface {
@@ -45,9 +45,9 @@ namespace ams::pgl {
             public:
                 explicit EventObserverByCmif(ams::sf::SharedPointer<pgl::sf::IEventObserver> intf) : m_cmif_interface(intf) { /* ... */ }
             public:
-                virtual Result GetSystemEvent(os::SystemEventType *out) override {
+                virtual Result GetShellEvent(os::SystemEventType *out) override {
                     ams::sf::NativeHandle handle;
-                    R_TRY(m_cmif_interface->GetProcessEventHandle(std::addressof(handle)));
+                    R_TRY(m_cmif_interface->GetShellEvent(std::addressof(handle)));
 
                     os::AttachReadableHandleToSystemEvent(out, handle.GetOsHandle(), handle.IsManaged(), os::EventClearMode_AutoClear);
                     handle.Detach();
@@ -55,8 +55,8 @@ namespace ams::pgl {
                     R_SUCCEED();
                 }
 
-                virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {
-                    R_RETURN(m_cmif_interface->GetProcessEventInfo(out));
+                virtual Result GetShellEventInfo(pm::ProcessEventInfo *out) override {
+                    R_RETURN(m_cmif_interface->GetShellEventInfo(out));
                 }
         };
 
@@ -70,15 +70,15 @@ namespace ams::pgl {
                 template<typename... Args>
                 explicit EventObserverByTipc(Args &&... args) : m_tipc_interface(std::forward<Args>(args)...) { /* ... */ }
             public:
-                virtual Result GetSystemEvent(os::SystemEventType *out) override {
+                virtual Result GetShellEvent(os::SystemEventType *out) override {
                     os::NativeHandle handle;
-                    R_TRY(m_tipc_interface.GetProcessEventHandle(std::addressof(handle)));
+                    R_TRY(m_tipc_interface.GetShellEvent(std::addressof(handle)));
                     os::AttachReadableHandleToSystemEvent(out, handle, true, os::EventClearMode_AutoClear);
                     R_SUCCEED();
                 }
 
-                virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {
-                    R_RETURN(m_tipc_interface.GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo>(out)));
+                virtual Result GetShellEventInfo(pm::ProcessEventInfo *out) override {
+                    R_RETURN(m_tipc_interface.GetShellEventInfo(ams::tipc::Out<pm::ProcessEventInfo>(out)));
                 }
         };
 
@@ -112,12 +112,12 @@ namespace ams::pgl {
                 std::swap(m_impl, rhs.m_impl);
             }
         public:
-            Result GetSystemEvent(os::SystemEventType *out) {
-                R_RETURN(m_impl->GetSystemEvent(out));
+            Result GetShellEvent(os::SystemEventType *out) {
+                R_RETURN(m_impl->GetShellEvent(out));
             }
 
-            Result GetProcessEventInfo(pm::ProcessEventInfo *out) {
-                R_RETURN(m_impl->GetProcessEventInfo(out));
+            Result GetShellEventInfo(pm::ProcessEventInfo *out) {
+                R_RETURN(m_impl->GetShellEventInfo(out));
             }
     };
 

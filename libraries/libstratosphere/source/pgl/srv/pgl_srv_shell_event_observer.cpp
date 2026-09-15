@@ -65,21 +65,21 @@ namespace ams::pgl::srv {
         m_event.Signal();
     }
 
-    Result ShellEventObserverCmif::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
+    Result ShellEventObserverCmif::GetShellEvent(ams::sf::OutCopyHandle out) {
         out.SetValue(this->GetEvent().GetReadableHandle(), false);
         R_SUCCEED();
     }
 
-    Result ShellEventObserverCmif::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
+    Result ShellEventObserverCmif::GetShellEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
         R_RETURN(this->PopEventInfo(out.GetPointer()));
     }
 
-    Result ShellEventObserverTipc::GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
+    Result ShellEventObserverTipc::GetShellEvent(ams::tipc::OutCopyHandle out) {
         out.SetValue(this->GetEvent().GetReadableHandle());
         R_SUCCEED();
     }
 
-    Result ShellEventObserverTipc::GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
+    Result ShellEventObserverTipc::GetShellEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
         R_RETURN(this->PopEventInfo(out.GetPointer()));
     }
 

@@ -35,8 +35,7 @@ namespace ams::pgl {
         Full = 2,
     };
 
-    /* TODO: Is this really nn::ncm::Content<Something>Info? */
-    struct ContentMetaInfo {
+    struct ProgramLaunchProperty {
         u64 id;
         u32 version;
         ncm::ContentType content_type;
@@ -44,7 +43,7 @@ namespace ams::pgl {
         ncm::ContentMetaType content_meta_type;
         u8 reserved_0F;
 
-        static constexpr ContentMetaInfo Make(u64 id, u32 version, ncm::ContentType content_type, u8 id_offset) {
+        static constexpr ProgramLaunchProperty Make(u64 id, u32 version, ncm::ContentType content_type, u8 id_offset) {
             return {
                 .id           = id,
                 .version      = version,
@@ -53,6 +52,6 @@ namespace ams::pgl {
             };
         }
     };
-    static_assert(sizeof(ContentMetaInfo) == 0x10 && util::is_pod<ContentMetaInfo>::value);
+    static_assert(sizeof(ProgramLaunchProperty) == 0x10 && util::is_pod<ProgramLaunchProperty>::value);
 
 }
