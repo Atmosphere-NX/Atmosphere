@@ -3205,7 +3205,7 @@ namespace ams::kern {
 
     Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
         /* Lightly validate the range before doing anything else. */
-        R_UNLESS(this->Contains(src_addr, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(this->IsSafeUserPointer(src_addr, size), svc::ResultInvalidCurrentMemory());
 
         /* Copy the memory. */
         {
@@ -3354,7 +3354,7 @@ namespace ams::kern {
 
     Result KPageTableBase::CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
         /* Lightly validate the range before doing anything else. */
-        R_UNLESS(this->Contains(dst_addr, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(this->IsSafeUserPointer(dst_addr, size), svc::ResultInvalidCurrentMemory());
 
         /* Copy the memory. */
         {

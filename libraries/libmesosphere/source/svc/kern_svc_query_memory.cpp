@@ -37,6 +37,8 @@ namespace ams::kern::svc {
 
         template<typename T>
         Result QueryProcessMemory(KUserPointer<T *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_memory_info.GetUnsafePointer()), sizeof(T)), svc::ResultInvalidPointer());
+
             /* Get an ams::svc::MemoryInfo for the region. */
             ams::svc::MemoryInfo info = {};
             R_TRY(QueryProcessMemory(std::addressof(info), out_page_info, process_handle, address));

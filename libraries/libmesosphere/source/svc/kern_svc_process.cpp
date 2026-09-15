@@ -79,7 +79,7 @@ namespace ams::kern::svc {
 
             /* Validate that the pointer is in range. */
             if (max_out_count > 0) {
-                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(out_process_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidCurrentMemory());
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_process_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidPointer());
             }
 
             /* Get the process list. */
@@ -128,7 +128,7 @@ namespace ams::kern::svc {
                 R_UNLESS(((num_caps * sizeof(u32)) / sizeof(u32)) == static_cast<size_t>(num_caps), svc::ResultInvalidPointer());
 
                 /* Validate that the pointer is in range. */
-                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(user_caps.GetUnsafePointer()), num_caps * sizeof(u32)), svc::ResultInvalidPointer());
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_caps.GetUnsafePointer()), num_caps * sizeof(u32)), svc::ResultInvalidPointer());
             }
 
             /* Validate that the parameter flags are valid. */

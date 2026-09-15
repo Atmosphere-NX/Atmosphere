@@ -97,6 +97,8 @@ namespace ams::kern::svc {
             /* Only allow invoking the svc on development hardware or if force debug prod. */
             R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
 
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_info.GetUnsafePointer()), sizeof(EventInfoType)), svc::ResultInvalidPointer());
+
             /* Get the debug object. */
             KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
             R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
@@ -139,6 +141,8 @@ namespace ams::kern::svc {
             /* Verify that the number of thread ids is valid. */
             R_UNLESS((0 <= num_thread_ids && num_thread_ids <= MaximumDebuggableThreadCount), svc::ResultOutOfRange());
 
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_thread_ids.GetUnsafePointer()), num_thread_ids * sizeof(uint64_t)), svc::ResultInvalidPointer());
+
             /* Copy the threads from userspace. */
             uint64_t thread_ids[MaximumDebuggableThreadCount];
             if (num_thread_ids > 0) {
@@ -172,6 +176,8 @@ namespace ams::kern::svc {
             /* Only allow invoking the svc on development hardware or if force debug prod. */
             R_UNLESS(KTargetSystem::IsDebugMode() || GetCurrentProcess().CanForceDebugProd(), svc::ResultNotImplemented());
 
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_context.GetUnsafePointer()), sizeof(ams::svc::ThreadContext)), svc::ResultInvalidPointer());
+
             /* Validate the context flags. */
             R_UNLESS((context_flags | ams::svc::ThreadContextFlag_All) == ams::svc::ThreadContextFlag_All, svc::ResultInvalidEnumValue());
 
@@ -192,6 +198,8 @@ namespace ams::kern::svc {
         Result SetDebugThreadContext(ams::svc::Handle debug_handle, uint64_t thread_id, KUserPointer<const ams::svc::ThreadContext *> user_context, uint32_t context_flags) {
             /* Only allow invoking the svc on development hardware. */
             R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_context.GetUnsafePointer()), sizeof(ams::svc::ThreadContext)), svc::ResultInvalidPointer());
 
             /* Validate the context flags. */
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
@@ -243,6 +251,8 @@ namespace ams::kern::svc {
 
         template<typename T>
         Result QueryDebugProcessMemory(KUserPointer<T *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, uint64_t address) {
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_memory_info.GetUnsafePointer()), sizeof(T)), svc::ResultInvalidPointer());
+
             /* Get an ams::svc::MemoryInfo for the region. */
             ams::svc::MemoryInfo info = {};
             R_TRY(QueryDebugProcessMemory(std::addressof(info), out_page_info, debug_handle, address));
