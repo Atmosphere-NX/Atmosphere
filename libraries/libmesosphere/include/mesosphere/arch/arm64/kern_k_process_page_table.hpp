@@ -32,6 +32,11 @@ namespace ams::kern::arch::arm64 {
                 R_RETURN(m_page_table.InitializeForProcess(flags, from_back, pool, code_address, code_size, system_resource, resource_limit, process_index));
             }
 
+            static ALWAYS_INLINE u64 GetProcessTcrEl1(size_t process_index) {
+                /* The kernel's root table is entry zero; processes are indexed from one. */
+                return KPageTable::GetTcrEL1Entry(process_index + 1);
+            }
+
             void Finalize() { m_page_table.Finalize(); }
 
             ALWAYS_INLINE KScopedLightLock AcquireDeviceMapLock() {
@@ -301,6 +306,10 @@ namespace ams::kern::arch::arm64 {
 
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return m_page_table.CanContain(addr, size, state); }
             bool CanContain(KProcessAddress addr, size_t size, ams::svc::MemoryState state) const { return m_page_table.CanContain(addr, size, state); }
+
+            bool IsInShadowStackRegion(KProcessAddress addr, size_t size) const { return m_page_table.IsInShadowStackRegion(addr, size); }
+            bool IsInShadowStackRegion(KProcessAddress addr) const { return m_page_table.IsInShadowStackRegion(addr); }
+            bool IsSafeUserPointer(KProcessAddress addr, size_t size) const { return m_page_table.IsSafeUserPointer(addr, size); }
 
             KProcessAddress GetAddressSpaceStart()      const { return m_page_table.GetAddressSpaceStart(); }
             KProcessAddress GetShadowStackRegionStart() const { return m_page_table.GetShadowStackRegionStart(); }

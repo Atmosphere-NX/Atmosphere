@@ -249,7 +249,15 @@ namespace ams::kern {
             }
 
             constexpr bool IsInShadowStackRegion(KProcessAddress addr, size_t size) const {
-                return this->Contains(addr, size) && m_region_starts[RegionType_ShadowStack] <= addr && addr + size - 1 <= m_region_ends[RegionType_ShadowStack] - 1;
+                const auto start = m_region_starts[RegionType_ShadowStack];
+                const auto end   = m_region_ends[RegionType_ShadowStack];
+                return start != end && addr < end && start < addr + size;
+            }
+
+            constexpr bool IsInShadowStackRegion(KProcessAddress addr) const {
+                const auto start = m_region_starts[RegionType_ShadowStack];
+                const auto end   = m_region_ends[RegionType_ShadowStack];
+                return start <= addr && addr < end;
             }
 
             constexpr bool IsSafeUserPointer(KProcessAddress addr, size_t size) const {

@@ -96,6 +96,9 @@ namespace ams::svc {
         MemoryState_CodeOut          = 0x15,
         MemoryState_Coverage         = 0x16,
         MemoryState_Insecure         = 0x17,
+        MemoryState_Remote           = 0x18,
+        MemoryState_Protected        = 0x19,
+        MemoryState_ShadowStack      = 0x1A,
     };
 
     enum MemoryPermission : u32 {
@@ -483,6 +486,7 @@ namespace ams::svc {
         DebugThreadParam_IdealCore    = 2,
         DebugThreadParam_CurrentCore  = 3,
         DebugThreadParam_AffinityMask = 4,
+        DebugThreadParam_Unknown5     = 5,
     };
 
     enum DebugException : u32 {

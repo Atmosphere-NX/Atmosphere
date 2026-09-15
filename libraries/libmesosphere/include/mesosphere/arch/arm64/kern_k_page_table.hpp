@@ -19,6 +19,7 @@
 #include <mesosphere/kern_k_page_table_base.hpp>
 #include <mesosphere/kern_k_page_group.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
+#include <mesosphere/init/kern_init_slab_setup.hpp>
 
 namespace ams::kern::arch::arm64 {
 

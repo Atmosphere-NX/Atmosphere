@@ -234,7 +234,7 @@ namespace ams::kern::init {
             MESOSPHERE_INIT_ABORT_UNLESS(reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTcrEL1Entry(KPageTable::NumPTEntries))) < rodata_end);
 
             /* Get the default tcr_el1 value, with T0SZ set for a 39-bit address space. */
-            const u64 tcr_el1 = (cpu::GetTcrEl1() & ~UINT64_C(0x3F)) | UINT64_C(64 - 39);
+            const u64 tcr_el1 = (cpu::GetTcrEl1() & ~UINT64_C(0x3F)) | (64 - 39);
 
             /* Allocate pages for all ttbr0 entries. */
             for (size_t i = 0; i < KPageTable::NumPTEntries; ++i) {

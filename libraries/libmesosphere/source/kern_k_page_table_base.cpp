@@ -353,182 +353,36 @@ namespace ams::kern {
             const KProcessAddress process_code_last = process_code_end - 1;
             auto IsInAddressSpace = [&](KProcessAddress addr) ALWAYS_INLINE_LAMBDA { return m_address_space_start <= addr && addr <= m_address_space_end; };
 
-            /* Ensure that the KernelMap region is valid. */
-            for (size_t k = 0; k < num_regions; ++k) {
-                if (const auto &kmap_region = region_layouts[k]; kmap_region.type == RegionType_KernelMap) {
-                    /* If there's no kmap region, we have nothing to check. */
-                    if (kmap_region.size == 0) {
-                        break;
-                    }
-
-                    /* Check that the kmap region is within our address space. */
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_KernelMap]));
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_KernelMap]));
-
-                    /* Check for overlap with process code. */
-                    const KProcessAddress kmap_start  = m_region_starts[RegionType_KernelMap];
-                    const KProcessAddress kmap_last   = m_region_ends[RegionType_KernelMap] - 1;
-                    MESOSPHERE_ABORT_UNLESS(kernel_map_region_size == 0 || kmap_last < process_code_start || process_code_last < kmap_start);
-
-                    /* Check for overlap with stack. */
-                    for (size_t s = 0; s < num_regions; ++s) {
-                        if (const auto &stack_region = region_layouts[s]; stack_region.type == RegionType_Stack) {
-                            if (stack_region.size != 0) {
-                                const KProcessAddress stack_start = m_region_starts[RegionType_Stack];
-                                const KProcessAddress stack_last  = m_region_ends[RegionType_Stack] - 1;
-                                MESOSPHERE_ABORT_UNLESS((kernel_map_region_size == 0 && stack_region_size == 0) || kmap_last < stack_start || stack_last < kmap_start);
-                            }
-                            break;
-                        }
-                    }
-
-                    /* Check for overlap with alias. */
-                    for (size_t a = 0; a < num_regions; ++a) {
-                        if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
-                            if (alias_region.size != 0) {
-                                const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
-                                const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
-                                MESOSPHERE_ABORT_UNLESS(kmap_last < alias_start || alias_last < kmap_start);
-                            }
-                            break;
-                        }
-                    }
-
-                    /* Check for overlap with heap. */
-                    for (size_t h = 0; h < num_regions; ++h) {
-                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
-                            if (heap_region.size != 0) {
-                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
-                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
-                                MESOSPHERE_ABORT_UNLESS(kmap_last < heap_start || heap_last < kmap_start);
-                            }
-                            break;
-                        }
-                    }
-
-                    /* Check for overlap with shadow stack. */
-                    for (size_t ss = 0; ss < num_regions; ++ss) {
-                        if (const auto &shadow_stack_region = region_layouts[ss]; shadow_stack_region.type == RegionType_ShadowStack) {
-                            if (shadow_stack_region.size != 0) {
-                                const KProcessAddress shadow_stack_start = m_region_starts[RegionType_ShadowStack];
-                                const KProcessAddress shadow_stack_last  = m_region_ends[RegionType_ShadowStack] - 1;
-                                MESOSPHERE_ABORT_UNLESS(kmap_last < shadow_stack_start || shadow_stack_last < kmap_start);
-                            }
-                            break;
-                        }
-                    }
-                }
+            /* Map each region type to its layout entry. */
+            const RegionLayoutInfo *region_layouts_by_type[RegionType_Count] = {};
+            for (size_t i = 0; i < num_regions; ++i) {
+                region_layouts_by_type[region_layouts[i].type] = std::addressof(region_layouts[i]);
             }
 
-            /* Check that the Stack region is valid. */
-            for (size_t s = 0; s < num_regions; ++s) {
-                if (const auto &stack_region = region_layouts[s]; stack_region.type == RegionType_Stack) {
-                    /* If there's no stack region, we have nothing to check. */
-                    if (stack_region.size == 0) {
-                        break;
-                    }
-
-                    /* Check that the stack region is within our address space. */
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Stack]));
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Stack]));
-
-                    /* Check for overlap with process code. */
-                    const KProcessAddress stack_start = m_region_starts[RegionType_Stack];
-                    const KProcessAddress stack_last  = m_region_ends[RegionType_Stack] - 1;
-                    MESOSPHERE_ABORT_UNLESS(stack_region_size == 0 || stack_last < process_code_start || process_code_last < stack_start);
-
-                    /* Check for overlap with alias. */
-                    for (size_t a = 0; a < num_regions; ++a) {
-                        if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
-                            if (alias_region.size != 0) {
-                                const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
-                                const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
-                                MESOSPHERE_ABORT_UNLESS(stack_last < alias_start || alias_last < stack_start);
-                            }
-                            break;
-                        }
-                    }
-
-                    /* Check for overlap with heap. */
-                    for (size_t h = 0; h < num_regions; ++h) {
-                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
-                            if (heap_region.size != 0) {
-                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
-                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
-                                MESOSPHERE_ABORT_UNLESS(stack_last < heap_start || heap_last < stack_start);
-                            }
-                            break;
-                        }
-                    }
+            /* Validate each region. */
+            for (size_t i = 0; i < RegionType_Count; ++i) {
+                /* If the region isn't present, there's nothing to check. */
+                const RegionLayoutInfo * const region = region_layouts_by_type[i];
+                if (region == nullptr || region->size == 0) {
+                    continue;
                 }
-            }
 
-            /* Check that the Alias region is valid. */
-            for (size_t a = 0; a < num_regions; ++a) {
-                if (const auto &alias_region = region_layouts[a]; alias_region.type == RegionType_Alias) {
-                    /* If there's no alias region, we have nothing to check. */
-                    if (alias_region.size == 0) {
-                        break;
+                /* Check that the region is within our address space. */
+                MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[i]));
+                MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[i]));
+
+                /* Check for overlap with process code. */
+                MESOSPHERE_ABORT_UNLESS(m_region_ends[i] - 1 < process_code_start || process_code_last < m_region_starts[i]);
+
+                /* Check for overlap with every later region. */
+                for (size_t j = i; j < RegionType_ShadowStack; ++j) {
+                    /* If the other region isn't present, there's nothing to check. */
+                    const RegionLayoutInfo * const other = region_layouts_by_type[j + 1];
+                    if (other == nullptr || other->size == 0) {
+                        continue;
                     }
 
-                    /* Check that the alias region is within our address space. */
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Alias]));
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Alias]));
-
-                    /* Check for overlap with process code. */
-                    const KProcessAddress alias_start = m_region_starts[RegionType_Alias];
-                    const KProcessAddress alias_last  = m_region_ends[RegionType_Alias] - 1;
-                    MESOSPHERE_ABORT_UNLESS(alias_last < process_code_start || process_code_last < alias_start);
-
-                    /* Check for overlap with heap. */
-                    for (size_t h = 0; h < num_regions; ++h) {
-                        if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
-                            if (heap_region.size != 0) {
-                                const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
-                                const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
-                                MESOSPHERE_ABORT_UNLESS(alias_last < heap_start || heap_last < alias_start);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            /* Check that the Heap region is valid. */
-            for (size_t h = 0; h < num_regions; ++h) {
-                if (const auto &heap_region = region_layouts[h]; heap_region.type == RegionType_Heap) {
-                    /* If there's no heap region, we have nothing to check. */
-                    if (heap_region.size == 0) {
-                        break;
-                    }
-
-                    /* Check that the heap region is within our address space. */
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_Heap]));
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_Heap]));
-
-                    /* Check for overlap with process code. */
-                    const KProcessAddress heap_start = m_region_starts[RegionType_Heap];
-                    const KProcessAddress heap_last  = m_region_ends[RegionType_Heap] - 1;
-                    MESOSPHERE_ABORT_UNLESS(heap_last < process_code_start || process_code_last < heap_start);
-                }
-            }
-
-            /* Check that the ShadowStack region is valid. */
-            for (size_t ss = 0; ss < num_regions; ++ss) {
-                if (const auto &shadow_stack_region = region_layouts[ss]; shadow_stack_region.type == RegionType_ShadowStack) {
-                    /* If there's no shadow stack region, we have nothing to check. */
-                    if (shadow_stack_region.size == 0) {
-                        break;
-                    }
-
-                    /* Check that the shadow stack region is within our address space. */
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_starts[RegionType_ShadowStack]));
-                    MESOSPHERE_ABORT_UNLESS(IsInAddressSpace(m_region_ends[RegionType_ShadowStack]));
-
-                    /* Check for overlap with process code. */
-                    const KProcessAddress shadow_stack_start = m_region_starts[RegionType_ShadowStack];
-                    const KProcessAddress shadow_stack_last  = m_region_ends[RegionType_ShadowStack] - 1;
-                    MESOSPHERE_ABORT_UNLESS(shadow_stack_last < process_code_start || process_code_last < shadow_stack_start);
+                    MESOSPHERE_ABORT_UNLESS(m_region_ends[i] - 1 < m_region_starts[j + 1] || m_region_ends[j + 1] - 1 < m_region_starts[i]);
                 }
             }
         }
@@ -598,6 +452,8 @@ namespace ams::kern {
             case ams::svc::MemoryState_Static:
             case ams::svc::MemoryState_ThreadLocal:
                 return m_region_starts[RegionType_KernelMap];
+            case ams::svc::MemoryState_ShadowStack:
+                return m_region_starts[RegionType_ShadowStack];
             case ams::svc::MemoryState_Io:
             case ams::svc::MemoryState_Shared:
             case ams::svc::MemoryState_AliasCode:
@@ -633,6 +489,8 @@ namespace ams::kern {
             case ams::svc::MemoryState_Static:
             case ams::svc::MemoryState_ThreadLocal:
                 return m_region_ends[RegionType_KernelMap] - m_region_starts[RegionType_KernelMap];
+            case ams::svc::MemoryState_ShadowStack:
+                return m_region_ends[RegionType_ShadowStack] - m_region_starts[RegionType_ShadowStack];
             case ams::svc::MemoryState_Io:
             case ams::svc::MemoryState_Shared:
             case ams::svc::MemoryState_AliasCode:
@@ -659,12 +517,20 @@ namespace ams::kern {
         const KProcessAddress region_start = this->GetRegionAddress(state);
         const size_t region_size           = this->GetRegionSize(state);
 
+        if (region_size == 0) {
+            return false;
+        }
+
         const bool is_in_region = region_start <= addr && addr < end && last <= region_start + region_size - 1;
-        const bool is_in_heap   = !(end <= m_region_starts[RegionType_Heap] || m_region_ends[RegionType_Heap] <= addr || m_region_starts[RegionType_Heap] == m_region_ends[RegionType_Heap]);
-        const bool is_in_alias  = !(end <= m_region_starts[RegionType_Alias] || m_region_ends[RegionType_Alias] <= addr || m_region_starts[RegionType_Alias] == m_region_ends[RegionType_Alias]);
+
         switch (state) {
             case ams::svc::MemoryState_Free:
+            case ams::svc::MemoryState_Normal:
+            case ams::svc::MemoryState_Ipc:
+            case ams::svc::MemoryState_NonSecureIpc:
+            case ams::svc::MemoryState_NonDeviceIpc:
             case ams::svc::MemoryState_Kernel:
+            case ams::svc::MemoryState_ShadowStack:
                 return is_in_region;
             case ams::svc::MemoryState_Io:
             case ams::svc::MemoryState_Static:
@@ -682,17 +548,32 @@ namespace ams::kern {
             case ams::svc::MemoryState_CodeOut:
             case ams::svc::MemoryState_Coverage:
             case ams::svc::MemoryState_Insecure:
-                return is_in_region && !is_in_heap && !is_in_alias;
-            case ams::svc::MemoryState_Normal:
-                MESOSPHERE_ASSERT(is_in_heap);
-                return is_in_region && !is_in_alias;
-            case ams::svc::MemoryState_Ipc:
-            case ams::svc::MemoryState_NonSecureIpc:
-            case ams::svc::MemoryState_NonDeviceIpc:
-                MESOSPHERE_ASSERT(is_in_alias);
-                return is_in_region && !is_in_heap;
-            default:
-                return false;
+                {
+                    if (!is_in_region) {
+                        return false;
+                    }
+
+                    const auto heap_start = m_region_starts[RegionType_Heap];
+                    const auto heap_end   = m_region_ends[RegionType_Heap];
+                    if (heap_start != heap_end && addr < heap_end && heap_start < end) {
+                        return false;
+                    }
+
+                    const auto alias_start = m_region_starts[RegionType_Alias];
+                    const auto alias_end   = m_region_ends[RegionType_Alias];
+                    if (alias_start != alias_end && addr < alias_end && alias_start < end) {
+                        return false;
+                    }
+
+                    const auto shadow_start = m_region_starts[RegionType_ShadowStack];
+                    const auto shadow_end   = m_region_ends[RegionType_ShadowStack];
+                    if (shadow_start != shadow_end && addr < shadow_end && shadow_start < end) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

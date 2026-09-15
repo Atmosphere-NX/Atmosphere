@@ -86,6 +86,40 @@ namespace ams::kern::svc {
             R_RETURN(KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count));
         }
 
+        constexpr size_t GetProcessSlotT0Sz(ams::svc::CreateProcessFlag flags) {
+            if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage) {
+                return (64 - 42);
+            } else {
+                return (64 - 39);
+            }
+        }
+
+        KProcess *CreateProcessForAddressSpace(ams::svc::CreateProcessFlag flags) {
+            /* Find a process slab slot whose root page table is meant for the requested address space. */
+            const size_t desired_t0sz = GetProcessSlotT0Sz(flags);
+
+            KProcess *process = nullptr;
+            KProcess *rejected[init::SlabCountKProcess];
+            size_t num_rejected = 0;
+            while ((process = KProcess::Create()) != nullptr) {
+                /* Stop once we find a slot whose T0SZ matches. */
+                if ((KProcessPageTable::GetProcessTcrEl1(process->GetSlabIndex()) & 0x3F) == desired_t0sz) {
+                    break;
+                }
+
+                /* Otherwise, park the process and try the next slot. */
+                rejected[num_rejected++] = process;
+                process = nullptr;
+            }
+
+            /* Release every process we parked while searching. */
+            for (size_t i = 0; i < num_rejected; ++i) {
+                rejected[i]->Close();
+            }
+
+            return process;
+        }
+
         Result CreateProcess(ams::svc::Handle *out, const ams::svc::CreateProcessParameter &params, KUserPointer<const uint32_t *> user_caps, int32_t num_caps) {
             /* Validate the capabilities pointer. */
             R_UNLESS(num_caps >= 0, svc::ResultInvalidPointer());
@@ -219,8 +253,8 @@ namespace ams::kern::svc {
             /* Get the current handle table. */
             auto &handle_table = GetCurrentProcess().GetHandleTable();
 
-            /* Create the new process. */
-            KProcess *process = KProcess::Create();
+            /* Create the new process, ensuring its page table slot matches the requested address space. */
+            KProcess *process = CreateProcessForAddressSpace(static_cast<ams::svc::CreateProcessFlag>(params.flags));
             R_UNLESS(process != nullptr, svc::ResultOutOfResource());
 
             /* Ensure that the only reference to the process is in the handle table when we're done. */
