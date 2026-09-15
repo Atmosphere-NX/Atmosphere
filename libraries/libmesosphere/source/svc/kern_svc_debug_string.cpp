@@ -26,7 +26,7 @@ namespace ams::kern::svc {
             R_SUCCEED_IF(len == 0);
 
             /* Ensure that the data being output is in range. */
-            R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(debug_str.GetUnsafePointer()), len), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(debug_str.GetUnsafePointer()), len), svc::ResultInvalidPointer());
 
             /* Output the string. */
             R_RETURN(KDebugLog::PrintUserString(debug_str, len));

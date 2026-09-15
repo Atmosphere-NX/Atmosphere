@@ -79,11 +79,45 @@ namespace ams::kern::svc {
 
             /* Validate that the pointer is in range. */
             if (max_out_count > 0) {
-                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(out_process_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidCurrentMemory());
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(out_process_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidPointer());
             }
 
             /* Get the process list. */
             R_RETURN(KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count));
+        }
+
+        constexpr size_t GetProcessSlotT0Sz(ams::svc::CreateProcessFlag flags) {
+            if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage) {
+                return (64 - 42);
+            } else {
+                return (64 - 39);
+            }
+        }
+
+        KProcess *CreateProcessForAddressSpace(ams::svc::CreateProcessFlag flags) {
+            /* Find a process slab slot whose root page table is meant for the requested address space. */
+            const size_t desired_t0sz = GetProcessSlotT0Sz(flags);
+
+            KProcess *process = nullptr;
+            KProcess *rejected[init::SlabCountKProcess];
+            size_t num_rejected = 0;
+            while ((process = KProcess::Create()) != nullptr) {
+                /* Stop once we find a slot whose T0SZ matches. */
+                if ((KProcessPageTable::GetProcessTcrEl1(process->GetSlabIndex()) & 0x3F) == desired_t0sz) {
+                    break;
+                }
+
+                /* Otherwise, park the process and try the next slot. */
+                rejected[num_rejected++] = process;
+                process = nullptr;
+            }
+
+            /* Release every process we parked while searching. */
+            for (size_t i = 0; i < num_rejected; ++i) {
+                rejected[i]->Close();
+            }
+
+            return process;
         }
 
         Result CreateProcess(ams::svc::Handle *out, const ams::svc::CreateProcessParameter &params, KUserPointer<const uint32_t *> user_caps, int32_t num_caps) {
@@ -94,11 +128,14 @@ namespace ams::kern::svc {
                 R_UNLESS(((num_caps * sizeof(u32)) / sizeof(u32)) == static_cast<size_t>(num_caps), svc::ResultInvalidPointer());
 
                 /* Validate that the pointer is in range. */
-                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(user_caps.GetUnsafePointer()), num_caps * sizeof(u32)), svc::ResultInvalidPointer());
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_caps.GetUnsafePointer()), num_caps * sizeof(u32)), svc::ResultInvalidPointer());
             }
 
             /* Validate that the parameter flags are valid. */
             R_UNLESS((params.flags & ~ams::svc::CreateProcessFlag_All) == 0, svc::ResultInvalidEnumValue());
+
+            /* The 64KB page size is not yet allowed. */
+            R_UNLESS((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) != ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage, svc::ResultInvalidCombination());
 
             /* Validate that 64-bit process is okay. */
             const bool is_64_bit = (params.flags & ams::svc::CreateProcessFlag_Is64Bit) != 0;
@@ -130,12 +167,13 @@ namespace ams::kern::svc {
                     }
                     break;
                 case ams::svc::CreateProcessFlag_AddressSpace64Bit:
+                case ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage:
                     {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit, code_size);
-                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Map39Bit);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge, code_size);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge);
 
                         map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
                     }
@@ -215,8 +253,8 @@ namespace ams::kern::svc {
             /* Get the current handle table. */
             auto &handle_table = GetCurrentProcess().GetHandleTable();
 
-            /* Create the new process. */
-            KProcess *process = KProcess::Create();
+            /* Create the new process, ensuring its page table slot matches the requested address space. */
+            KProcess *process = CreateProcessForAddressSpace(static_cast<ams::svc::CreateProcessFlag>(params.flags));
             R_UNLESS(process != nullptr, svc::ResultOutOfResource());
 
             /* Ensure that the only reference to the process is in the handle table when we're done. */

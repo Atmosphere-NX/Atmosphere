@@ -110,7 +110,7 @@ namespace ams::kern::svc {
             /* Copy user handles. */
             if (num_handles > 0) {
                 /* Ensure that we can try to get the handles. */
-                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(user_handles.GetUnsafePointer()), num_handles * sizeof(ams::svc::Handle)), svc::ResultInvalidPointer());
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_handles.GetUnsafePointer()), num_handles * sizeof(ams::svc::Handle)), svc::ResultInvalidPointer());
 
                 /* Get the handles. */
                 R_TRY(user_handles.CopyArrayTo(handles, num_handles));

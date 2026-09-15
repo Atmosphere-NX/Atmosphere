@@ -341,6 +341,7 @@ namespace ams::kern {
             bool                                                m_debug_attached;
             s8                                                  m_priority_inheritance_count;
             bool                                                m_resource_limit_release_hint;
+            bool                                                m_debug_unknown5;
         public:
             constexpr explicit KThread(util::ConstantInitializeTag)
                 : KAutoObjectWithSlabHeapAndContainer<KThread, KWorkerTask>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
@@ -682,6 +683,9 @@ namespace ams::kern {
 
             constexpr void SetDebugAttached() { m_debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
+
+            constexpr void SetDebugUnknown5(bool value) { m_debug_unknown5 = value; }
+            constexpr bool IsDebugUnknown5() const { return m_debug_unknown5; }
 
             void AddCpuTime(s32 core_id, s64 amount) {
                 m_cpu_time += amount;

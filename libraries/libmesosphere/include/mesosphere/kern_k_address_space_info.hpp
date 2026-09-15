@@ -24,7 +24,7 @@ namespace ams::kern {
             enum Type {
                 Type_MapSmall   = 0,
                 Type_MapLarge   = 1,
-                Type_Map39Bit   = 2,
+                Type_MapHuge    = 2,
                 Type_Heap       = 3,
                 Type_Stack      = 4,
                 Type_Alias      = 5,

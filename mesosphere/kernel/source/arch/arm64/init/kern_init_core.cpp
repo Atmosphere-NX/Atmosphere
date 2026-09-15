@@ -224,15 +224,20 @@ namespace ams::kern::init {
         static_assert(kern::arch::arm64::init::IsInitialPageAllocator<KInitialPageAllocatorForFinalizeIdentityMapping>);
 
         void SetupAllTtbr0Entries(KInitialPageTable &init_pt, KInitialPageAllocator &allocator) {
-            /* Validate that the ttbr0 array is in rodata. */
+            /* Validate that the ttbr0/tcr_el1 arrays are in rodata. */
             const uintptr_t rodata_start = reinterpret_cast<uintptr_t>(__rodata_start);
             const uintptr_t rodata_end = reinterpret_cast<uintptr_t>(__rodata_end);
             MESOSPHERE_INIT_ABORT_UNLESS(rodata_start < rodata_end);
             MESOSPHERE_INIT_ABORT_UNLESS(rodata_start <= reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTtbr0Entry(0))));
-            MESOSPHERE_INIT_ABORT_UNLESS(reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTtbr0Entry(KPageTable::NumTtbr0Entries))) < rodata_end);
+            MESOSPHERE_INIT_ABORT_UNLESS(reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTtbr0Entry(KPageTable::NumPTEntries))) < rodata_end);
+            MESOSPHERE_INIT_ABORT_UNLESS(rodata_start <= reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTcrEL1Entry(0))));
+            MESOSPHERE_INIT_ABORT_UNLESS(reinterpret_cast<uintptr_t>(std::addressof(KPageTable::GetTcrEL1Entry(KPageTable::NumPTEntries))) < rodata_end);
+
+            /* Get the default tcr_el1 value, with T0SZ set for a 39-bit address space. */
+            const u64 tcr_el1 = (cpu::GetTcrEl1() & ~UINT64_C(0x3F)) | (64 - 39);
 
             /* Allocate pages for all ttbr0 entries. */
-            for (size_t i = 0; i < KPageTable::NumTtbr0Entries; ++i) {
+            for (size_t i = 0; i < KPageTable::NumPTEntries; ++i) {
                 /* Allocate a page. */
                 KPhysicalAddress page = allocator.Allocate(PageSize);
                 MESOSPHERE_INIT_ABORT_UNLESS(page != Null<KPhysicalAddress>);
@@ -245,6 +250,12 @@ namespace ams::kern::init {
 
                 /* Set the entry to the newly allocated page. */
                 *reinterpret_cast<volatile u64 *>(GetInteger(ttbr0_phys_ptr)) = (static_cast<u64>(i) << 48) | GetInteger(page);
+
+                /* Get the physical address of the tcr_el1 entry. */
+                const auto tcr_el1_phys_ptr = init_pt.GetPhysicalAddress(KVirtualAddress(std::addressof(KPageTable::GetTcrEL1Entry(i))));
+
+                /* Set the entry to the default tcr_el1 value. */
+                *reinterpret_cast<volatile u64 *>(GetInteger(tcr_el1_phys_ptr)) = tcr_el1;
             }
         }
 

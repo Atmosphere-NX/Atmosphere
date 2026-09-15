@@ -37,6 +37,13 @@ namespace ams::svc {
 
         constexpr inline size_t AddressMemoryRegion39Size = 512_GB;
 
+        constexpr inline size_t AddressMemoryRegionSmall42Size = 64_GB;
+        constexpr inline size_t AddressMemoryRegionAlias42Size = 512_GB;
+        constexpr inline size_t AddressMemoryRegionStack42Size = 2_GB;
+
+        constexpr inline size_t AddressMemoryRegion42Size = 4096_GB;
+
+        constexpr inline size_t AddressShadowStackRegionSize = 4_GB;
     #elif defined(ATMOSPHERE_ARCH_ARM)
 
         constexpr inline size_t AddressMemoryRegionSmall32Size = 512_MB;
@@ -55,6 +62,12 @@ namespace ams::svc {
         constexpr inline size_t AddressMemoryRegionStack39Size = 0;
 
         constexpr inline size_t AddressMemoryRegion39Size = 0;
+
+        constexpr inline size_t AddressMemoryRegionSmall42Size = 0;
+        constexpr inline size_t AddressMemoryRegionAlias42Size = 0;
+        constexpr inline size_t AddressMemoryRegionStack42Size = 0;
+
+        constexpr inline size_t AddressMemoryRegion42Size = 0;
 
     #else
 
@@ -97,4 +110,7 @@ namespace ams::svc {
     constexpr inline uintptr_t AddressMap39End   = AddressMemoryRegion39Size;
     constexpr inline size_t    AddressMap39Size  = AddressMap39End - AddressMap39Start;
 
+    constexpr inline uintptr_t AddressMap42Start = 0 + AddressNullGuard64Size;
+    constexpr inline uintptr_t AddressMap42End   = AddressMemoryRegion42Size;
+    constexpr inline size_t    AddressMap42Size  = AddressMap42End - AddressMap42Start;
 }
