@@ -33,7 +33,7 @@
     AMS_TIPC_METHOD_INFO(C, H,  8, Result, EnableApplicationCrashReport,          (bool enabled),                                                                                  (enabled))                                            \
     AMS_TIPC_METHOD_INFO(C, H,  9, Result, IsApplicationCrashReportEnabled,       (ams::tipc::Out<bool> out),                                                                      (out))                                                \
     AMS_TIPC_METHOD_INFO(C, H, 10, Result, EnableApplicationAllThreadDumpOnCrash, (bool enabled),                                                                                  (enabled))                                            \
-    AMS_TIPC_METHOD_INFO(C, H, 11, Result, GetProcessId,                          (ams::sf::Out<os::ProcessId> out, ncm::ProgramId program_id),                                    (out, program_id),               hos::Version_19_0_0) \
+    AMS_TIPC_METHOD_INFO(C, H, 11, Result, GetProcessId,                          (ams::tipc::Out<os::ProcessId> out, ncm::ProgramId program_id),                                  (out, program_id),               hos::Version_19_0_0) \
     AMS_TIPC_METHOD_INFO(C, H, 20, Result, CreateShellEvent,                      (ams::tipc::OutMoveHandle out),                                                                  (out))                                                \
     AMS_TIPC_METHOD_INFO(C, H, 31, Result, EnableApplicationCrashReport2,         (os::ProcessId process_id, bool enabled),                                                        (process_id, enabled),           hos::Version_23_0_0)
 
