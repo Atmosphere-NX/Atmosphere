@@ -429,6 +429,11 @@ namespace ams::kern::svc {
                         *out_32 = affinity_mask;
                     }
                     break;
+                case ams::svc::DebugThreadParam_Unknown5:
+                    {
+                        *out_32 = thread->IsDebugUnknown5();
+                    }
+                    break;
                 default:
                     R_THROW(ams::svc::ResultInvalidEnumValue());
             }
