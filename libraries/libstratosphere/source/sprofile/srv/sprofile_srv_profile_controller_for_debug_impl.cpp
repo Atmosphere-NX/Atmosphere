@@ -19,12 +19,18 @@
 
 namespace ams::sprofile::srv {
 
-    Result ProfileControllerForDebugImpl::Reset() {
+    Result ProfileControllerForDebugImpl::ClearSaveData() {
         R_RETURN(m_manager->ResetSaveData());
     }
 
-    Result ProfileControllerForDebugImpl::GetRaw(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetRaw(out_type.GetPointer(), out_value.GetPointer(), profile, key));
+    Result ProfileControllerForDebugImpl::QueryValue(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->QueryValue(out_type.GetPointer(), out_value.GetPointer(), profile, key));
+    }
+    
+    Result ProfileControllerForDebugImpl::QueryValueArray(sf::Out<u8> out_type, sf::Out<u32> out_count, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out_type, out_count, out_buffer, profile, key);
+        R_SUCCEED();
     }
 
 }

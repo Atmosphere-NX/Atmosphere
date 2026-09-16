@@ -54,15 +54,15 @@ namespace ams::sprofile::srv {
             CreateMetadataPathImpl(dst, dst_size, mount, TemporaryDirectoryName);
         }
 
-        void CreateProfilePathImpl(char *dst, size_t dst_size, const char *mount, const char *dir, const Identifier &id) {
+        void CreateProfilePathImpl(char *dst, size_t dst_size, const char *mount, const char *dir, const HashKey &id) {
             SafePrint(dst, dst_size, "%s:/%s/profiles/%02x%02x%02x%02x%02x%02x%02x", mount, dir, id.data[0], id.data[1], id.data[2], id.data[3], id.data[4], id.data[5], id.data[6]);
         }
 
-        void CreatePrimaryProfilePath(char *dst, size_t dst_size, const char *mount, const Identifier &id) {
+        void CreatePrimaryProfilePath(char *dst, size_t dst_size, const char *mount, const HashKey &id) {
             CreateProfilePathImpl(dst, dst_size, mount, PrimaryDirectoryName, id);
         }
 
-        void CreateTemporaryProfilePath(char *dst, size_t dst_size, const char *mount, const Identifier &id) {
+        void CreateTemporaryProfilePath(char *dst, size_t dst_size, const char *mount, const HashKey &id) {
             CreateProfilePathImpl(dst, dst_size, mount, TemporaryDirectoryName, id);
         }
 
@@ -185,7 +185,12 @@ namespace ams::sprofile::srv {
         this->CloseProfileImporterImpl();
     }
 
-    Result ProfileManager::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
+    Result ProfileManager::ImportProfile(const sprofile::srv::ProfilePayload &import) {
+        /* On 23.0.0+ profile importing is no longer supported. */
+        if (hos::GetVersion() >= hos::Version_23_0_0) {
+            R_THROW(sprofile::ResultNotImplemented());
+        }
+        
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_importer_mutex);
         std::scoped_lock lk2(m_fs_mutex);
@@ -211,21 +216,21 @@ namespace ams::sprofile::srv {
         }
 
         /* Succeed if we already have the profile. */
-        R_SUCCEED_IF(m_profile_importer->HasProfile(import.header.identifier_0, import.header.identifier_1));
+        R_SUCCEED_IF(m_profile_importer->HasProfile(import.header.hash_key_0, import.header.hash_key_1));
 
         /* Check that we're importing the profile. */
-        R_UNLESS(m_profile_importer->CanImportProfile(import.header.identifier_0), sprofile::ResultInvalidState());
+        R_UNLESS(m_profile_importer->CanImportProfile(import.header.hash_key_0), sprofile::ResultInvalidState());
 
         /* Create temporary directories. */
         R_TRY(this->EnsureTemporaryDirectories());
 
         /* Create profile. */
         char path[0x30];
-        CreateTemporaryProfilePath(path, sizeof(path), m_save_data_info.mount_name, import.header.identifier_0);
+        CreateTemporaryProfilePath(path, sizeof(path), m_save_data_info.mount_name, import.header.hash_key_0);
         R_TRY(WriteFile(path, std::addressof(import.data), sizeof(import.data)));
 
         /* Set profile imported. */
-        m_profile_importer->OnImportProfile(import.header.identifier_0);
+        m_profile_importer->OnImportProfile(import.header.hash_key_0);
         R_SUCCEED();
     }
 
@@ -266,7 +271,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
+    Result ProfileManager::ImportMetadata(const sprofile::srv::MetadataPayload &import) {
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_importer_mutex);
         std::scoped_lock lk2(m_fs_mutex);
@@ -340,7 +345,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::LoadProfile(Identifier profile) {
+    Result ProfileManager::LoadProfile(HashKey profile) {
         /* Check if we already have the profile. */
         if (m_service_profile.has_value()) {
             R_SUCCEED_IF(m_service_profile->name == profile);
@@ -362,7 +367,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetDataEntry(ProfileDataEntry *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetDataEntry(ProfileDataEntry *out, HashKey profile, HashKey key) {
         /* Acquire locks. */
         std::scoped_lock lk1(m_service_profile_mutex);
         std::scoped_lock lk2(m_general_mutex);
@@ -381,7 +386,7 @@ namespace ams::sprofile::srv {
         R_THROW(sprofile::ResultKeyNotFound());
     }
 
-    Result ProfileManager::GetSigned64(s64 *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetInt64Value(s64 *out, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -394,7 +399,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetUnsigned64(u64 *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetUInt64Value(u64 *out, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -407,7 +412,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetSigned32(s32 *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetInt32Value(s32 *out, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -420,7 +425,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetUnsigned32(u32 *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetUInt32Value(u32 *out, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -433,7 +438,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetByte(u8 *out, Identifier profile, Identifier key) {
+    Result ProfileManager::GetBooleanValue(u8 *out, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -446,7 +451,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ProfileManager::GetRaw(u8 *out_type, u64 *out_value, Identifier profile, Identifier key) {
+    Result ProfileManager::QueryValue(u8 *out_type, u64 *out_value, HashKey profile, HashKey key) {
         /* Get the data entry. */
         ProfileDataEntry entry;
         R_TRY(this->GetDataEntry(std::addressof(entry), profile, key));
@@ -477,8 +482,8 @@ namespace ams::sprofile::srv {
             const auto &profile = m_profile_importer->GetImportingProfile(i);
 
             if (profile.is_new_import) {
-                CreateTemporaryProfilePath(tmp_path, sizeof(tmp_path), m_save_data_info.mount_name, profile.identifier_0);
-                CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, profile.identifier_0);
+                CreateTemporaryProfilePath(tmp_path, sizeof(tmp_path), m_save_data_info.mount_name, profile.hash_key_0);
+                CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, profile.hash_key_0);
                 R_TRY(MoveFile(tmp_path, pri_path));
             }
         }
@@ -494,7 +499,7 @@ namespace ams::sprofile::srv {
         char pri_path[0x30];
 
         /* Cleanup the profiles. */
-        R_RETURN(m_profile_importer->CleanupOrphanedProfiles([&](Identifier profile) ALWAYS_INLINE_LAMBDA -> Result {
+        R_RETURN(m_profile_importer->CleanupOrphanedProfiles([&](HashKey profile) ALWAYS_INLINE_LAMBDA -> Result {
             CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, profile);
             R_RETURN(DeleteFile(pri_path));
         }));
@@ -506,7 +511,7 @@ namespace ams::sprofile::srv {
         /* If we need to, invalidate the loaded service profile. */
         if (m_service_profile.has_value()) {
             for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
-                if (m_service_profile->name == m_profile_importer->GetImportingProfile(i).identifier_0) {
+                if (m_service_profile->name == m_profile_importer->GetImportingProfile(i).hash_key_0) {
                     m_service_profile = util::nullopt;
                     break;
                 }
@@ -521,7 +526,7 @@ namespace ams::sprofile::srv {
             const auto &profile = m_profile_importer->GetImportingProfile(i);
 
             if (profile.is_new_import) {
-                m_update_observer_manager.OnUpdate(profile.identifier_0);
+                m_update_observer_manager.OnUpdate(profile.hash_key_0);
             }
         }
 

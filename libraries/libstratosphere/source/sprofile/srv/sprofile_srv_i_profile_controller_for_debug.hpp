@@ -17,8 +17,8 @@
 #include <stratosphere.hpp>
 
 #define AMS_SPROFILE_I_PROFILE_CONTROLLER_FOR_DEBUG_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 2000, Result, Reset,  (),                                                                                                     ())                                 \
-    AMS_SF_METHOD_INFO(C, H, 2001, Result, GetRaw, (sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key), (out_type, out_value, profile, key))
-
+    AMS_SF_METHOD_INFO(C, H, 2000, Result, ClearSaveData,   (),                                                                                                                                ())                                                                   \
+    AMS_SF_METHOD_INFO(C, H, 2001, Result, QueryValue,      (sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::HashKey profile, sprofile::HashKey key),                                  (out_type, out_value, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 2002, Result, QueryValueArray, (sf::Out<u8> out_type, sf::Out<u32> out_count, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out_type, out_count, out_buffer, profile, key), hos::Version_23_0_0)
 
 AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileControllerForDebug, AMS_SPROFILE_I_PROFILE_CONTROLLER_FOR_DEBUG_INTERFACE_INFO, 0xA8C14F64)

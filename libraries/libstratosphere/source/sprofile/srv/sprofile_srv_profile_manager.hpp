@@ -52,19 +52,19 @@ namespace ams::sprofile::srv {
             Result OpenProfileImporter();
             void CloseProfileImporter();
 
-            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &data);
+            Result ImportProfile(const sprofile::srv::ProfilePayload &data);
             Result Commit();
-            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data);
+            Result ImportMetadata(const sprofile::srv::MetadataPayload &data);
 
             Result LoadPrimaryMetadata(ProfileMetadata *out);
 
-            Result GetSigned64(s64 *out, Identifier profile, Identifier key);
-            Result GetUnsigned64(u64 *out, Identifier profile, Identifier key);
-            Result GetSigned32(s32 *out, Identifier profile, Identifier key);
-            Result GetUnsigned32(u32 *out, Identifier profile, Identifier key);
-            Result GetByte(u8 *out, Identifier profile, Identifier key);
+            Result GetInt64Value(s64 *out, HashKey profile, HashKey key);
+            Result GetUInt64Value(u64 *out, HashKey profile, HashKey key);
+            Result GetInt32Value(s32 *out, HashKey profile, HashKey key);
+            Result GetUInt32Value(u32 *out, HashKey profile, HashKey key);
+            Result GetBooleanValue(u8 *out, HashKey profile, HashKey key);
 
-            Result GetRaw(u8 *out_type, u64 *out_value, Identifier profile, Identifier key);
+            Result QueryValue(u8 *out_type, u64 *out_value, HashKey profile, HashKey key);
 
             ProfileUpdateObserverManager &GetUpdateObserverManager() { return m_update_observer_manager; }
         private:
@@ -76,9 +76,9 @@ namespace ams::sprofile::srv {
 
             void OnCommitted();
 
-            Result GetDataEntry(ProfileDataEntry *out, Identifier profile, Identifier key);
+            Result GetDataEntry(ProfileDataEntry *out, HashKey profile, HashKey key);
 
-            Result LoadProfile(Identifier profile);
+            Result LoadProfile(HashKey profile);
 
             Result EnsurePrimaryDirectories();
             Result EnsureTemporaryDirectories();

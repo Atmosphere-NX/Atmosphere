@@ -27,8 +27,9 @@ namespace ams::sprofile::srv {
         public:
             ProfileControllerForDebugImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
         public:
-            Result Reset();
-            Result GetRaw(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key);
+            Result ClearSaveData();
+            Result QueryValue(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::HashKey profile, sprofile::HashKey key);
+            Result QueryValueArray(sf::Out<u8> out_type, sf::Out<u32> out_count, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
     };
     static_assert(IsIProfileControllerForDebug<ProfileControllerForDebugImpl>);
 

@@ -22,8 +22,8 @@ namespace ams::sprofile::srv {
     class ProfileImporter {
         private:
             struct ImportingProfile {
-                Identifier identifier_0;
-                Identifier identifier_1;
+                HashKey hash_key_0;
+                HashKey hash_key_1;
                 bool is_new_import;
             };
         private:
@@ -33,7 +33,7 @@ namespace ams::sprofile::srv {
             util::optional<ProfileMetadata> m_metadata;
             ImportingProfile m_importing_profiles[50];
             util::BitFlagSet<50> m_is_profile_importable;
-            Identifier m_revision_key;
+            HashKey m_revision_key;
         public:
             ProfileImporter(const util::optional<ProfileMetadata> &meta) : m_committed(false), m_imported_metadata(false), m_importing_count(0), m_metadata(util::nullopt), m_is_profile_importable(), m_revision_key() {
                 if (meta.has_value()) {
@@ -41,12 +41,12 @@ namespace ams::sprofile::srv {
                 }
             }
         public:
-            bool HasProfile(Identifier id0, Identifier id1) {
+            bool HasProfile(HashKey id0, HashKey id1) {
                 /* Require that we have metadata. */
                 if (m_metadata.has_value()) {
                     for (auto i = 0u; i < std::min<size_t>(m_metadata->num_entries, util::size(m_metadata->entries)); ++i) {
                         const auto &entry = m_metadata->entries[i];
-                        if (entry.identifier_0 == id0 && entry.identifier_1 == id1) {
+                        if (entry.hash_key_0 == id0 && entry.hash_key_1 == id1) {
                             return true;
                         }
                     }
@@ -80,23 +80,23 @@ namespace ams::sprofile::srv {
                 for (auto i = 0; i < m_importing_count; ++i) {
                     const auto &import_entry = meta.entries[i];
 
-                    const bool is_new_import = !this->HasProfile(import_entry.identifier_0, import_entry.identifier_1);
+                    const bool is_new_import = !this->HasProfile(import_entry.hash_key_0, import_entry.hash_key_1);
 
                     m_importing_profiles[i] = {
-                        .identifier_0  = import_entry.identifier_0,
-                        .identifier_1  = import_entry.identifier_1,
+                        .hash_key_0  = import_entry.hash_key_0,
+                        .hash_key_1  = import_entry.hash_key_1,
                         .is_new_import = is_new_import,
                     };
                     m_is_profile_importable[i] = is_new_import;
                 }
             }
 
-            bool CanImportProfile(Identifier profile) {
+            bool CanImportProfile(HashKey profile) {
                 /* Require that we imported metadata. */
                 if (m_imported_metadata) {
                     /* Find the specified profile. */
                     for (auto i = 0; i < m_importing_count; ++i) {
-                        if (m_importing_profiles[i].identifier_0 == profile) {
+                        if (m_importing_profiles[i].hash_key_0 == profile) {
                             /* Require the profile be importable. */
                             return m_is_profile_importable[i];
                         }
@@ -107,10 +107,10 @@ namespace ams::sprofile::srv {
                 return false;
             }
 
-            void OnImportProfile(Identifier profile) {
+            void OnImportProfile(HashKey profile) {
                 /* Set the profile as not importable (as it's imported). */
                 for (auto i = 0; i < m_importing_count; ++i) {
-                    if (m_importing_profiles[i].identifier_0 == profile) {
+                    if (m_importing_profiles[i].hash_key_0 == profile) {
                         m_is_profile_importable[i] = false;
                         break;
                     }
@@ -135,15 +135,15 @@ namespace ams::sprofile::srv {
             int GetImportingCount() const { return m_importing_count; }
             const ImportingProfile &GetImportingProfile(int i) const { return m_importing_profiles[i]; }
 
-            Identifier GetRevisionKey() const { return m_revision_key; }
+            HashKey GetRevisionKey() const { return m_revision_key; }
 
             Result CleanupOrphanedProfiles(auto cleanup_impl) const {
                 /* Cleanup any orphaned profiles in our metadata. */
                 if (m_metadata.has_value()) {
                     for (auto i = 0u; i < std::min<size_t>(m_metadata->num_entries, util::size(m_metadata->entries)); ++i) {
                         const auto &entry = m_metadata->entries[i];
-                        if (!this->IsImportingProfile(entry.identifier_0)) {
-                            R_TRY(cleanup_impl(entry.identifier_0));
+                        if (!this->IsImportingProfile(entry.hash_key_0)) {
+                            R_TRY(cleanup_impl(entry.hash_key_0));
                         }
                     }
                 }
@@ -151,10 +151,10 @@ namespace ams::sprofile::srv {
                 R_SUCCEED();
             }
         private:
-            bool IsImportingProfile(Identifier profile) const {
+            bool IsImportingProfile(HashKey profile) const {
                 /* Check if we're importing the desired profile. */
                 for (auto i = 0; i < m_importing_count; ++i) {
-                    if (m_importing_profiles[i].identifier_0 == profile) {
+                    if (m_importing_profiles[i].hash_key_0 == profile) {
                         return true;
                     }
                 }

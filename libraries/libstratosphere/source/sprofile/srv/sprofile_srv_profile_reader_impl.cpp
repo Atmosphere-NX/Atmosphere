@@ -19,24 +19,72 @@
 
 namespace ams::sprofile::srv {
 
-    Result ProfileReaderImpl::GetSigned64(sf::Out<s64> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetSigned64(out.GetPointer(), profile, key));
+    Result ProfileReaderImpl::GetInt64Value(sf::Out<s64> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->GetInt64Value(out.GetPointer(), profile, key));
     }
 
-    Result ProfileReaderImpl::GetUnsigned64(sf::Out<u64> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetUnsigned64(out.GetPointer(), profile, key));
+    Result ProfileReaderImpl::GetUInt64Value(sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->GetUInt64Value(out.GetPointer(), profile, key));
     }
 
-    Result ProfileReaderImpl::GetSigned32(sf::Out<s32> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetSigned32(out.GetPointer(), profile, key));
+    Result ProfileReaderImpl::GetInt32Value(sf::Out<s32> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->GetInt32Value(out.GetPointer(), profile, key));
     }
 
-    Result ProfileReaderImpl::GetUnsigned32(sf::Out<u32> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetUnsigned32(out.GetPointer(), profile, key));
+    Result ProfileReaderImpl::GetUInt32Value(sf::Out<u32> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->GetUInt32Value(out.GetPointer(), profile, key));
     }
 
-    Result ProfileReaderImpl::GetByte(sf::Out<u8> out, sprofile::Identifier profile, sprofile::Identifier key) {
-        R_RETURN(m_manager->GetByte(out.GetPointer(), profile, key));
+    Result ProfileReaderImpl::GetBooleanValue(sf::Out<u8> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        R_RETURN(m_manager->GetBooleanValue(out.GetPointer(), profile, key));
+    }
+    
+    Result ProfileReaderImpl::GetAnyValue(sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetInt8ValueArray(sf::Out<u32> out, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetInt64ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetUInt64ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetInt32ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetUInt32ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetUInt8ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
+    }
+    
+    Result ProfileReaderImpl::GetAnyValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key) {
+        /* On 23.0.0+ this isn't reachable from HIPC. */
+        AMS_UNUSED(out, out_buffer, profile, key);
+        R_SUCCEED();
     }
 
 }

@@ -31,9 +31,9 @@ namespace ams::sprofile::srv {
                 m_manager->CloseProfileImporter();
             }
         public:
-            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &import);
+            Result ImportProfile(const sprofile::srv::ProfilePayload &import);
             Result Commit();
-            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import);
+            Result ImportMetadata(const sprofile::srv::MetadataPayload &import);
     };
     static_assert(IsIProfileImporter<ProfileImporterImpl>);
 

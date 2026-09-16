@@ -24,7 +24,7 @@ namespace ams::sprofile::srv {
             static constexpr auto MaxProfiles = 4;
         private:
             os::SystemEvent m_event;
-            Identifier m_profiles[MaxProfiles];
+            HashKey m_profiles[MaxProfiles];
             int m_profile_count;
             os::SdkMutex m_mutex;
         public:
@@ -34,7 +34,7 @@ namespace ams::sprofile::srv {
             os::SystemEvent &GetEvent() { return m_event; }
             const os::SystemEvent &GetEvent() const { return m_event; }
         public:
-            Result Listen(Identifier profile) {
+            Result Subscribe(HashKey profile) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -51,7 +51,7 @@ namespace ams::sprofile::srv {
                 R_SUCCEED();
             }
 
-            Result Unlisten(Identifier profile) {
+            Result Unsubscribe(HashKey profile) {
                 /* Check that we're listening. */
                 for (auto i = 0; i < m_profile_count; ++i) {
                     if (m_profiles[i] == profile) {
@@ -64,12 +64,12 @@ namespace ams::sprofile::srv {
                 R_THROW(sprofile::ResultNotListening());
             }
 
-            Result GetEventHandle(sf::OutCopyHandle out) {
+            Result GetUpdateEventNativeHandle(sf::OutCopyHandle out) {
                 out.SetValue(m_event.GetReadableHandle(), false);
                 R_SUCCEED();
             }
         public:
-            void OnUpdate(Identifier profile) {
+            void OnUpdate(HashKey profile) {
                 for (auto i = 0; i < m_profile_count; ++i) {
                     if (m_profiles[i] == profile) {
                         m_event.Signal();
@@ -93,7 +93,7 @@ namespace ams::sprofile::srv {
             Result OpenObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> &out, MemoryResource *memory_resource);
             void CloseObserver(ProfileUpdateObserverImpl *observer);
 
-            void OnUpdate(Identifier profile) {
+            void OnUpdate(HashKey profile) {
                 std::scoped_lock lk(m_mutex);
 
                 for (auto i = 0; i < m_observer_count; ++i) {

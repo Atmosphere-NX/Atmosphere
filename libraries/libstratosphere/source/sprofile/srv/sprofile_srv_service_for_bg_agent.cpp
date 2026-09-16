@@ -34,7 +34,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ServiceForBgAgent::GetImportableProfileUrls(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg) {
+    Result ServiceForBgAgent::GetProfileDownloadUrlList(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::MetadataPayload &arg) {
         /* Check size. */
         R_UNLESS(out.GetSize() >= arg.metadata.num_entries, sprofile::ResultInvalidArgument());
 
@@ -57,7 +57,7 @@ namespace ams::sprofile::srv {
             for (u32 j = 0; j < primary_metadata.num_entries; ++j) {
                 const auto &pri_entry = primary_metadata.entries[j];
 
-                if (pri_entry.identifier_0 == arg_entry.identifier_0 && pri_entry.identifier_1 == arg_entry.identifier_1) {
+                if (pri_entry.hash_key_0 == arg_entry.hash_key_0 && pri_entry.hash_key_1 == arg_entry.hash_key_1) {
                     have_entry = true;
                     break;
                 }
@@ -75,7 +75,7 @@ namespace ams::sprofile::srv {
 
     }
 
-    Result ServiceForBgAgent::IsUpdateNeeded(sf::Out<bool> out, Identifier revision_key) {
+    Result ServiceForBgAgent::GetMetadataNewness(sf::Out<bool> out, HashKey revision_key) {
         /* Load primary metadata. */
         bool loaded_metadata = true;
         sprofile::srv::ProfileMetadata primary_metadata;
@@ -91,7 +91,7 @@ namespace ams::sprofile::srv {
         R_SUCCEED();
     }
 
-    Result ServiceForBgAgent::Reset() {
+    Result ServiceForBgAgent::ClearSaveDataForTest() {
         R_RETURN(m_profile_manager->ResetSaveData());
     }
 

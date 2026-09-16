@@ -27,11 +27,19 @@ namespace ams::sprofile::srv {
         public:
             ProfileReaderImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
         public:
-            Result GetSigned64(sf::Out<s64> out, sprofile::Identifier profile, sprofile::Identifier key);
-            Result GetUnsigned64(sf::Out<u64> out, sprofile::Identifier profile, sprofile::Identifier key);
-            Result GetSigned32(sf::Out<s32> out, sprofile::Identifier profile, sprofile::Identifier key);
-            Result GetUnsigned32(sf::Out<u32> out, sprofile::Identifier profile, sprofile::Identifier key);
-            Result GetByte(sf::Out<u8> out, sprofile::Identifier profile, sprofile::Identifier key);
+            Result GetInt64Value(sf::Out<s64> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetUInt64Value(sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetInt32Value(sf::Out<s32> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetUInt32Value(sf::Out<u32> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetBooleanValue(sf::Out<u8> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetAnyValue(sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetInt8ValueArray(sf::Out<u32> out, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetInt64ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetUInt64ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetInt32ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetUInt32ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetUInt8ValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
+            Result GetAnyValueArray(sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key);
     };
     static_assert(IsIProfileReader<ProfileReaderImpl>);
 

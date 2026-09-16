@@ -18,18 +18,18 @@
 
 namespace ams::sprofile {
 
-    struct Identifier {
+    struct HashKey {
         u8 data[7];
 
-        friend bool operator==(const Identifier &lhs, const Identifier &rhs) {
+        friend bool operator==(const HashKey &lhs, const HashKey &rhs) {
             return std::memcmp(lhs.data, rhs.data, sizeof(lhs.data)) == 0;
         }
 
-        friend bool operator!=(const Identifier &lhs, const Identifier &rhs) {
+        friend bool operator!=(const HashKey &lhs, const HashKey &rhs) {
             return !(lhs == rhs);
         }
     };
-    static_assert(sizeof(Identifier) == 7);
-    static_assert(util::is_pod<Identifier>::value);
+    static_assert(sizeof(HashKey) == 7);
+    static_assert(util::is_pod<HashKey>::value);
 
 }

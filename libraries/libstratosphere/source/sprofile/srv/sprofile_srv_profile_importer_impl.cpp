@@ -19,7 +19,7 @@
 
 namespace ams::sprofile::srv {
 
-    Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
+    Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfilePayload &import) {
         R_RETURN(m_manager->ImportProfile(import));
     }
 
@@ -27,7 +27,7 @@ namespace ams::sprofile::srv {
         R_RETURN(m_manager->Commit());
     }
 
-    Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
+    Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::MetadataPayload &import) {
         R_RETURN(m_manager->ImportMetadata(import));
     }
 

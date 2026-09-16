@@ -17,10 +17,18 @@
 #include <stratosphere.hpp>
 
 #define AMS_SPROFILE_I_PROFILE_READER_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, GetSigned64,   (sf::Out<s64> out, sprofile::Identifier profile, sprofile::Identifier key), (out, profile, key)) \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, GetUnsigned64, (sf::Out<u64> out, sprofile::Identifier profile, sprofile::Identifier key), (out, profile, key)) \
-    AMS_SF_METHOD_INFO(C, H, 2, Result, GetSigned32,   (sf::Out<s32> out, sprofile::Identifier profile, sprofile::Identifier key), (out, profile, key)) \
-    AMS_SF_METHOD_INFO(C, H, 3, Result, GetUnsigned32, (sf::Out<u32> out, sprofile::Identifier profile, sprofile::Identifier key), (out, profile, key)) \
-    AMS_SF_METHOD_INFO(C, H, 4, Result, GetByte,       (sf::Out<u8> out, sprofile::Identifier profile, sprofile::Identifier key),  (out, profile, key))
+    AMS_SF_METHOD_INFO(C, H, 0,  Result, GetInt64Value,       (sf::Out<s64> out, sprofile::HashKey profile, sprofile::HashKey key),                                         (out, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 1,  Result, GetUInt64Value,      (sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key),                                         (out, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 2,  Result, GetInt32Value,       (sf::Out<s32> out, sprofile::HashKey profile, sprofile::HashKey key),                                         (out, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 3,  Result, GetUInt32Value,      (sf::Out<u32> out, sprofile::HashKey profile, sprofile::HashKey key),                                         (out, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 4,  Result, GetBooleanValue,     (sf::Out<u8> out, sprofile::HashKey profile, sprofile::HashKey key),                                          (out, profile, key))                                  \
+    AMS_SF_METHOD_INFO(C, H, 5,  Result, GetAnyValue,         (sf::Out<u64> out, sprofile::HashKey profile, sprofile::HashKey key),                                         (out, profile, key),             hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 6,  Result, GetInt8ValueArray,   (sf::Out<u32> out, const sf::OutBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key),        (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 7,  Result, GetInt64ValueArray,  (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 8,  Result, GetUInt64ValueArray, (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 9,  Result, GetInt32ValueArray,  (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 10, Result, GetUInt32ValueArray, (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 11, Result, GetUInt8ValueArray,  (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 12, Result, GetAnyValueArray,    (sf::Out<u32> out, const sf::OutPointerBuffer &out_buffer, sprofile::HashKey profile, sprofile::HashKey key), (out, out_buffer, profile, key), hos::Version_23_0_0) 
 
 AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileReader, AMS_SPROFILE_I_PROFILE_READER_INTERFACE_INFO, 0x97090D4D)

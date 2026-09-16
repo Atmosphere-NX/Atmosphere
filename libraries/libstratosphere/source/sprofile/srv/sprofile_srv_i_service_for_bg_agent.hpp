@@ -17,10 +17,10 @@
 #include <stratosphere.hpp>
 #include "sprofile_srv_i_profile_importer.hpp"
 
-#define AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO(C, H)                                                                                                                                                             \
-    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileImporter,      (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileImporter>> out),                                                                 (out))                 \
-    AMS_SF_METHOD_INFO(C, H, 200,  Result, GetImportableProfileUrls, (sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg), (out_count, out, arg)) \
-    AMS_SF_METHOD_INFO(C, H, 201,  Result, IsUpdateNeeded,           (sf::Out<bool> out, sprofile::Identifier revision_key),                                                                                   (out, revision_key))   \
-    AMS_SF_METHOD_INFO(C, H, 2000, Result, Reset,                    (),                                                                                                                                       ())
+#define AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO(C, H)                                                                                                                                                                                       \
+    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileImporter,       (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileImporter>> out),                                                (out))                                                           \
+    AMS_SF_METHOD_INFO(C, H, 200,  Result, GetProfileDownloadUrlList, (sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::MetadataPayload &arg), (out_count, out, arg), hos::Version_13_0_0, hos::Version_22_5_0) \
+    AMS_SF_METHOD_INFO(C, H, 201,  Result, GetMetadataNewness,        (sf::Out<bool> out, sprofile::HashKey revision_key),                                                                     (out, revision_key),   hos::Version_13_0_0, hos::Version_22_5_0) \
+    AMS_SF_METHOD_INFO(C, H, 2000, Result, ClearSaveDataForTest,      (),                                                                                                                      ())
 
 AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForBgAgent, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO, 0xCCD828EC)
