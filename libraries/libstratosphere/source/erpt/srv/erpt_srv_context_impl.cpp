@@ -90,7 +90,7 @@ namespace ams::erpt::srv {
             util::Strlcpy(name_safe, name, sizeof(name_safe));
             
             /* NOTE: This is tested, but goes unused and is never passed to JournalForAttachments. */
-            (void)unk;
+            AMS_UNUSED(unk);
             
             R_RETURN(JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size, lz4_compression));
         }
