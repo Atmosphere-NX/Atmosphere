@@ -279,11 +279,11 @@ namespace ams::scs {
         void EventHandlerThread(void *) {
             /* Get event observer. */
             pgl::EventObserver observer;
-            R_ABORT_UNLESS(pgl::GetEventObserver(std::addressof(observer)));
+            R_ABORT_UNLESS(pgl::CreateShellEvent(std::addressof(observer)));
 
             /* Get the observer's event. */
             os::SystemEventType shell_event;
-            R_ABORT_UNLESS(observer.GetSystemEvent(std::addressof(shell_event)));
+            R_ABORT_UNLESS(observer.GetShellEvent(std::addressof(shell_event)));
 
             /* Loop handling events. */
             while (true) {
@@ -294,7 +294,7 @@ namespace ams::scs {
                 while (true) {
                     /* Get the next event info. */
                     pm::ProcessEventInfo event_info;
-                    if (R_FAILED(observer.GetProcessEventInfo(std::addressof(event_info)))) {
+                    if (R_FAILED(observer.GetShellEventInfo(std::addressof(event_info)))) {
                         break;
                     }
 

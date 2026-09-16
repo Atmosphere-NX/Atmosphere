@@ -137,7 +137,7 @@ namespace ams::pgl {
     }
     
     Result EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled) {
-        R_RETURN(::pglEnableApplicationCrashReport2(process_id, enabled));
+        R_RETURN(::pglEnableApplicationCrashReport2(static_cast<u64>(process_id), enabled));
     }
     #else
     Result Initialize() {

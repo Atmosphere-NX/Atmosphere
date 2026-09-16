@@ -499,7 +499,7 @@ namespace ams::pgl::srv {
     void EnableApplicationCrashReport2(os::ProcessId process_id, bool enabled) {
         /* Find the data for the process. */
         std::scoped_lock lk(g_process_data_mutex);
-        ProcessData *data = FindProcessData(*process_id);
+        ProcessData *data = FindProcessData(process_id);
 
         /* It's okay if we aren't tracking the process. */
         if (data != nullptr) {
