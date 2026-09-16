@@ -341,6 +341,7 @@ namespace ams::kern {
             bool                                                m_debug_attached;
             s8                                                  m_priority_inheritance_count;
             bool                                                m_resource_limit_release_hint;
+            bool                                                m_debug_unknown5;
         public:
             constexpr explicit KThread(util::ConstantInitializeTag)
                 : KAutoObjectWithSlabHeapAndContainer<KThread, KWorkerTask>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
@@ -352,7 +353,7 @@ namespace ams::kern {
                   m_wait_result{svc::ResultNoSynchronizationObject()}, m_debug_exception_result{ResultSuccess()}, m_base_priority{}, m_base_priority_on_unpin{},
                   m_physical_ideal_core_id{}, m_virtual_ideal_core_id{}, m_num_kernel_waiters{}, m_current_core_id{}, m_core_id{}, m_original_physical_affinity_mask{},
                   m_original_physical_ideal_core_id{}, m_num_core_migration_disables{}, m_thread_state{}, m_termination_requested{false}, m_wait_cancelled{},
-                  m_cancellable{}, m_signaled{}, m_initialized{}, m_debug_attached{}, m_priority_inheritance_count{}, m_resource_limit_release_hint{}
+                  m_cancellable{}, m_signaled{}, m_initialized{}, m_debug_attached{}, m_priority_inheritance_count{}, m_resource_limit_release_hint{}, m_debug_unknown5{}
             {
                 /* ... */
             }
@@ -682,6 +683,9 @@ namespace ams::kern {
 
             constexpr void SetDebugAttached() { m_debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
+
+            constexpr void SetDebugUnknown5(bool value) { m_debug_unknown5 = value; }
+            constexpr bool IsDebugUnknown5() const { return m_debug_unknown5; }
 
             void AddCpuTime(s32 core_id, s64 amount) {
                 m_cpu_time += amount;

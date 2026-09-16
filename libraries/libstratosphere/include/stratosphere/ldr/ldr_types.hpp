@@ -235,11 +235,16 @@ namespace ams::ldr {
             MetaFlag_PreventCodeReads               = (1 << 7),
         };
 
+        enum MetaFlag2 {
+            MetaFlag2_EnableShadowStack = (1 << 0),
+        };
+
         enum AddressSpaceType {
             AddressSpaceType_32Bit              = 0,
             AddressSpaceType_64BitDeprecated    = 1,
             AddressSpaceType_32BitWithoutAlias  = 2,
             AddressSpaceType_64Bit              = 3,
+            AddressSpaceType_64Bit64KPage       = 4,
         };
 
         #if defined(ATMOSPHERE_OS_HORIZON)
@@ -247,13 +252,14 @@ namespace ams::ldr {
             static_assert(AddressSpaceType_64BitDeprecated    == (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift));
             static_assert(AddressSpaceType_32BitWithoutAlias  == (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift));
             static_assert(AddressSpaceType_64Bit              == (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift));
+            static_assert(AddressSpaceType_64Bit64KPage       == (svc::CreateProcessFlag_AddressSpace64Bit64KPage      >> svc::CreateProcessFlag_AddressSpaceShift));
         #endif
 
         u32 magic;
         u32 signature_key_generation;
         u8  reserved_08[4];
         u8  flags;
-        u8  reserved_0D;
+        u8  flags2;
         u8 main_thread_priority;
         u8 default_cpu_id;
         u8  reserved_10[4];

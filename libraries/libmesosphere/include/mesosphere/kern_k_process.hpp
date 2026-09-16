@@ -215,6 +215,7 @@ namespace ams::kern {
             }
 
             u32 GetAllocateOption() const { return m_page_table.GetAllocateOption(); }
+            size_t GetAddressSpaceSize() const { return m_page_table.GetAddressSpaceSize(); }
 
             ThreadList &GetThreadList() { return m_thread_list; }
             const ThreadList &GetThreadList() const { return m_thread_list; }

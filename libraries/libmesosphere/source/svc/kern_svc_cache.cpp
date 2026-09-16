@@ -83,7 +83,7 @@ namespace ams::kern::svc {
             R_SUCCEED_IF(size == 0);
 
             /* Validate that the region is within range. */
-            R_UNLESS(GetCurrentProcess().GetPageTable().Contains(address, size), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(address, size), svc::ResultInvalidCurrentMemory()); /* did N intend ResultInvalidPointer like everywhere else? */
 
             /* Flush the cache. */
             R_TRY(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));

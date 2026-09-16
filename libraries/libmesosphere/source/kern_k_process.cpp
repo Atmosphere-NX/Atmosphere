@@ -970,6 +970,9 @@ namespace ams::kern {
         /* Initialize the thread. */
         R_TRY(KThread::InitializeUserThread(main_thread, reinterpret_cast<KThreadFunction>(GetVoidPointer(this->GetEntryPoint())), 0, stack_top, priority, m_ideal_core_id, this));
 
+        /* TODO: what is this? */
+        main_thread->SetDebugUnknown5(true);
+
         /* Register the thread, and commit our reservation. */
         KThread::Register(main_thread);
         thread_reservation.Commit();

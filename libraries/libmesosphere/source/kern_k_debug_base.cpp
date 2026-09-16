@@ -100,8 +100,8 @@ namespace ams::kern {
         KProcessPageTable &target_pt   = process->GetPageTable();
 
         /* Verify that the regions are in range. */
-        R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
-        R_UNLESS(debugger_pt.Contains(buffer, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(target_pt.Contains(address, size),           svc::ResultInvalidCurrentMemory());
+        R_UNLESS(debugger_pt.IsSafeUserPointer(buffer, size), svc::ResultInvalidCurrentMemory());
 
         /* Iterate over the target process's memory blocks. */
         KProcessAddress cur_address = address;
@@ -166,8 +166,8 @@ namespace ams::kern {
         KProcessPageTable &target_pt   = process->GetPageTable();
 
         /* Verify that the regions are in range. */
-        R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
-        R_UNLESS(debugger_pt.Contains(buffer, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(target_pt.Contains(address, size),           svc::ResultInvalidCurrentMemory());
+        R_UNLESS(debugger_pt.IsSafeUserPointer(buffer, size), svc::ResultInvalidCurrentMemory());
 
         /* Iterate over the target process's memory blocks. */
         KProcessAddress cur_address = address;

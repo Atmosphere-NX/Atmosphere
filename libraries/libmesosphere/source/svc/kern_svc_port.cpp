@@ -21,11 +21,22 @@ namespace ams::kern::svc {
 
     namespace {
 
+        static Result GetPortName(char (&name)[KObjectName::NameLengthMax], KUserPointer<const char *> user_name) {
+            /* Copy the provided name from user memory to kernel memory. */
+            R_TRY(user_name.CopyStringTo(name, sizeof(name)));
+
+            /* Oddly enough N here first copies then validates if it's not in forbidden range. */
+            const auto name_len = util::Strnlen(name, sizeof(name));
+            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_name.GetUnsafePointer()), name_len + 1), svc::ResultInvalidPointer());
+
+            R_SUCCEED();
+        }
+
         Result ManageNamedPort(ams::svc::Handle *out_server_handle, KUserPointer<const char *> user_name, s32 max_sessions) {
             /* Copy the provided name from user memory to kernel memory. */
             char name[KObjectName::NameLengthMax] = {};
-            R_TRY(user_name.CopyStringTo(name, sizeof(name)));
-
+            R_TRY(GetPortName(name, user_name));
+            
             /* Validate that sessions and name are valid. */
             R_UNLESS(max_sessions >= 0,                svc::ResultOutOfRange());
             R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());
@@ -106,7 +117,7 @@ namespace ams::kern::svc {
         Result ConnectToNamedPort(ams::svc::Handle *out, KUserPointer<const char *> user_name) {
             /* Copy the provided name from user memory to kernel memory. */
             char name[KObjectName::NameLengthMax] = {};
-            R_TRY(user_name.CopyStringTo(name, sizeof(name)));
+            R_TRY(GetPortName(name, user_name));
 
             /* Validate that name is valid. */
             R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());

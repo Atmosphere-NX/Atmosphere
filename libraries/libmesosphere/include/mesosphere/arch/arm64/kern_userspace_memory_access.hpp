@@ -77,7 +77,7 @@ namespace ams::kern::arch::arm64 {
 
             static bool CopyMemoryFromUserSize32BitWithSupervisorAccess(void *dst, const void *src) {
                 /* Check that the address is within the valid userspace range. */
-                if (const uintptr_t src_uptr = reinterpret_cast<uintptr_t>(src); src_uptr < ams::svc::AddressNullGuard32Size || (src_uptr + sizeof(u32) - 1) >= ams::svc::AddressMemoryRegion39Size) {
+                if (const uintptr_t src_uptr = reinterpret_cast<uintptr_t>(src); src_uptr < ams::svc::AddressNullGuard32Size || (src_uptr + sizeof(u32) - 1) >= ams::svc::AddressMemoryRegion42Size) {
                     return false;
                 }
 

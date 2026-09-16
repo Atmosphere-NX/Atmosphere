@@ -21,13 +21,15 @@ namespace ams::kern::svc {
 
     namespace {
 
-        constexpr bool IsKernelAddress(uintptr_t address) {
-            return KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd;
+        constexpr bool IsValidAddress(uintptr_t address) {
+            if (KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd) return false;
+            if (GetCurrentProcess().GetPageTable().IsInShadowStackRegion(address))                  return false;
+            return true;
         }
 
         Result WaitProcessWideKeyAtomic(uintptr_t address, uintptr_t cv_key, uint32_t tag, int64_t timeout_ns) {
             /* Validate input. */
-            R_UNLESS(AMS_LIKELY(!IsKernelAddress(address)),     svc::ResultInvalidCurrentMemory());
+            R_UNLESS(AMS_LIKELY(IsValidAddress(address)),       svc::ResultInvalidPointer());
             R_UNLESS(util::IsAligned(address, sizeof(int32_t)), svc::ResultInvalidAddress());
 
             /* Convert timeout from nanoseconds to ticks. */

@@ -170,6 +170,13 @@ namespace ams::kern {
                 KAddressSpaceInfo::SetAddressSpaceSize(39, KAddressSpaceInfo::Type_Alias, alias_size);
             }
 
+            /* Update 42-bit address space infos. */
+            {
+                /* Heap should be equal to the total memory size, maximum 128 GB. */
+                /* Alias/Stack/MapSmall are left at their static defaults. */
+                KAddressSpaceInfo::SetAddressSpaceSize(42, KAddressSpaceInfo::Type_Heap, std::min(util::AlignUp(total_memory_size, 1_GB), 128_GB));
+            }
+
             const auto &slab_counts = init::GetSlabResourceCounts();
             MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_PhysicalMemoryMax,      total_memory_size));
             MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_ThreadCountMax,         slab_counts.num_KThread));

@@ -153,6 +153,8 @@ namespace ams::cfg {
         impl::OverrideStatusFlag ParseOverrideAddressSpace(const char *value) {
             if (strcasecmp(value, "39_bit") == 0 || strcasecmp(value, "39") == 0) {
                 return impl::OverrideStatusFlag_AddressSpace64Bit;
+            } else if (strcasecmp(value, "42_bit") == 0 || strcasecmp(value, "42") == 0) {
+                return impl::OverrideStatusFlag_AddressSpace64Bit64KPage;
             } else if (strcasecmp(value, "36_bit") == 0 || strcasecmp(value, "36") == 0) {
                 return impl::OverrideStatusFlag_AddressSpace64BitDeprecated;
             } else if (strcasecmp(value, "32_bit") == 0 || strcasecmp(value, "32") == 0) {

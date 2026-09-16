@@ -35,6 +35,7 @@ namespace ams::cfg {
             OverrideStatusFlag_AddressSpace64BitDeprecated   = (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             OverrideStatusFlag_AddressSpace32BitWithoutAlias = (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             OverrideStatusFlag_AddressSpace64Bit             = (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64Bit64KPage      = (svc::CreateProcessFlag_AddressSpace64Bit64KPage   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             #endif
         };
 

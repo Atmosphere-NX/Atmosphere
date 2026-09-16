@@ -96,6 +96,9 @@ namespace ams::svc {
         MemoryState_CodeOut          = 0x15,
         MemoryState_Coverage         = 0x16,
         MemoryState_Insecure         = 0x17,
+        MemoryState_Remote           = 0x18,
+        MemoryState_Protected        = 0x19,
+        MemoryState_ShadowStack      = 0x1A,
     };
 
     enum MemoryPermission : u32 {
@@ -191,8 +194,16 @@ namespace ams::svc {
         InfoType_IsSvcPermitted                 = 26,
         InfoType_IoRegionHint                   = 27,
         InfoType_AliasRegionExtraSize           = 28,
-        /* ... */
+        InfoType_RemoteRegionAddress            = 29,
+        InfoType_RemoteRegionSize               = 30,
+        InfoType_RemoteMemorySize               = 31,
+        InfoType_RemoteMemoryUsageMax           = 32,
+        InfoType_AllocateAlignment              = 33,
         InfoType_TransferMemoryHint             = 34,
+        /* ... */
+        InfoType_AddressSpaceSize               = 36,
+        InfoType_ShadowStackRegionAddress       = 37,
+        InfoType_ShadowStackRegionSize          = 38,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,
@@ -408,11 +419,12 @@ namespace ams::svc {
 
         /* What kind of address space? */
         CreateProcessFlag_AddressSpaceShift             = 1,
-        CreateProcessFlag_AddressSpaceMask              = (7 << CreateProcessFlag_AddressSpaceShift),
+        CreateProcessFlag_AddressSpaceMask              = (7 << CreateProcessFlag_AddressSpaceShift), /* Should be 15 but Nintendo didn't make 64K isn't usable yet */
         CreateProcessFlag_AddressSpace32Bit             = (0 << CreateProcessFlag_AddressSpaceShift),
         CreateProcessFlag_AddressSpace64BitDeprecated   = (1 << CreateProcessFlag_AddressSpaceShift),
         CreateProcessFlag_AddressSpace32BitWithoutAlias = (2 << CreateProcessFlag_AddressSpaceShift),
         CreateProcessFlag_AddressSpace64Bit             = (3 << CreateProcessFlag_AddressSpaceShift),
+        CreateProcessFlag_AddressSpace64Bit64KPage      = (4 << CreateProcessFlag_AddressSpaceShift),
 
         /* Should JIT debug be done on crash? */
         CreateProcessFlag_EnableDebug   = (1 << 4),
@@ -443,6 +455,9 @@ namespace ams::svc {
         /* 18.x EnableAliasRegionExtraSize. */
         CreateProcessFlag_EnableAliasRegionExtraSize = (1 << 13),
 
+        /* 23.x EnableShadowStack. */
+        CreateProcessFlag_EnableShadowStack = (1 << 17),
+
         /* Mask of all flags. */
         CreateProcessFlag_All = CreateProcessFlag_Is64Bit                        |
                                 CreateProcessFlag_AddressSpaceMask               |
@@ -452,7 +467,8 @@ namespace ams::svc {
                                 CreateProcessFlag_PoolPartitionMask              |
                                 CreateProcessFlag_OptimizeMemoryAllocation       |
                                 CreateProcessFlag_DisableDeviceAddressSpaceMerge |
-                                CreateProcessFlag_EnableAliasRegionExtraSize,
+                                CreateProcessFlag_EnableAliasRegionExtraSize     |
+                                CreateProcessFlag_EnableShadowStack,
     };
 
     /* Debug types. */
@@ -470,6 +486,7 @@ namespace ams::svc {
         DebugThreadParam_IdealCore    = 2,
         DebugThreadParam_CurrentCore  = 3,
         DebugThreadParam_AffinityMask = 4,
+        DebugThreadParam_Unknown5     = 5,
     };
 
     enum DebugException : u32 {

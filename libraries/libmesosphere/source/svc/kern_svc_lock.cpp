@@ -21,13 +21,15 @@ namespace ams::kern::svc {
 
     namespace {
 
-        constexpr bool IsKernelAddress(uintptr_t address) {
-            return KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd;
+        constexpr bool IsValidAddress(uintptr_t address) {
+            if (KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd) return false;
+            if (GetCurrentProcess().GetPageTable().IsInShadowStackRegion(address))                  return false;
+            return true;
         }
 
         Result ArbitrateLock(ams::svc::Handle thread_handle, uintptr_t address, uint32_t tag) {
             /* Validate the input address. */
-            R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
+            R_UNLESS(IsValidAddress(address),               svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
             R_RETURN(KConditionVariable::WaitForAddress(thread_handle, address, tag));
@@ -35,7 +37,7 @@ namespace ams::kern::svc {
 
         Result ArbitrateUnlock(uintptr_t address) {
             /* Validate the input address. */
-            R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
+            R_UNLESS(IsValidAddress(address),               svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
             R_RETURN(KConditionVariable::SignalToAddress(address));
