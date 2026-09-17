@@ -499,6 +499,11 @@ namespace ams::ldr {
                 flags |= svc::CreateProcessParameterFlag_EnableShadowStack;
             }
 
+            /* 23.0.0+/meso Set EnableShadowStack. */
+            if (meta->npdm->flags2 & Npdm::MetaFlag2_EnableShadowStack) {
+                flags |= svc::CreateProcessFlag_EnableShadowStack;
+            }
+
             *out = flags;
             R_SUCCEED();
         }
