@@ -133,7 +133,7 @@ namespace ams::kern {
         MESOSPHERE_R_ABORT_UNLESS(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, void *table, KProcessAddress start, KProcessAddress end, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessParameterFlag flags, bool from_back, void *table, KProcessAddress start, KProcessAddress end, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -179,8 +179,8 @@ namespace ams::kern {
             after_process_code_start              = process_code_end;
             after_process_code_size               = m_code_region_end - process_code_end;
 
-            /* If we have a 39-bit address space and should, enable extra size to the alias region. */
-            if (flags & ams::svc::CreateProcessFlag_EnableAliasRegionExtraSize) {
+            /* If we have a 39-bit address space and should, enable extra size for the address sanitizer. */
+            if (flags & ams::svc::CreateProcessParameterFlag_EnableAddressSanitizer) {
                 /* Extra size is 1/8th of the address space. */
                 m_alias_region_extra_size = (static_cast<size_t>(1) << address_space_width) / 8;
 
@@ -212,8 +212,8 @@ namespace ams::kern {
         m_region_ends[RegionType_ShadowStack]   = Null<KProcessAddress>;
         
         /* Set other basic fields. */
-        m_enable_aslr                       = (flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
-        m_enable_device_address_space_merge = (flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+        m_enable_aslr                       = (flags & ams::svc::CreateProcessParameterFlag_EnableAslr) != 0;
+        m_enable_device_address_space_merge = (flags & ams::svc::CreateProcessParameterFlag_DisableDeviceAddressSpaceMerge) == 0;
         m_allowed_exec_device_mapping       = false;
         m_address_space_start               = start;
         m_address_space_end                 = end;
@@ -240,7 +240,7 @@ namespace ams::kern {
 
             region_layouts[num_regions++] = { .size = alias_region_size, .type = RegionType_Alias, .alloc_index = 0, };
             region_layouts[num_regions++] = { .size = heap_region_size,  .type = RegionType_Heap,  .alloc_index = 0, };
-            if (flags & ams::svc::CreateProcessFlag_EnableShadowStack) {
+            if (flags & ams::svc::CreateProcessParameterFlag_EnableShadowStack) {
                 region_layouts[num_regions++] = { .size = ams::svc::AddressShadowStackRegionSize, .type = RegionType_ShadowStack, .alloc_index = 0, };
             }
 

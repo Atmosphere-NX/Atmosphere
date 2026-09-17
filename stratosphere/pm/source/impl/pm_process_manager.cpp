@@ -86,14 +86,14 @@ namespace ams::pm::impl {
             R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(g_hook_to_create_application_process_event), os::EventClearMode_AutoClear, true));
         }
 
-        inline u32 GetLoaderCreateProcessFlags(u32 launch_flags) {
+        inline u32 GetLoaderCreateProcessParameterFlags(u32 launch_flags) {
             u32 ldr_flags = 0;
 
             if (ShouldSignalOnException(launch_flags) || (hos::GetVersion() >= hos::Version_2_0_0 && !ShouldStartSuspended(launch_flags))) {
-                ldr_flags |= ldr::CreateProcessFlag_EnableDebug;
+                ldr_flags |= ldr::CreateProcessParameterFlag_EnableJitDebug;
             }
             if (ShouldDisableAslr(launch_flags)) {
-                ldr_flags |= ldr::CreateProcessFlag_DisableAslr;
+                ldr_flags |= ldr::CreateProcessParameterFlag_DisableAslr;
             }
 
             return ldr_flags;
@@ -166,7 +166,7 @@ namespace ams::pm::impl {
                 WaitResourceAvailable(std::addressof(program_info));
 
                 /* Actually create the process. */
-                R_TRY(ldr::pm::CreateProcess(std::addressof(process_handle), pin_id, GetLoaderCreateProcessFlags(flags), GetResourceLimitHandle(std::addressof(program_info)), attrs.program_attrs));
+                R_TRY(ldr::pm::CreateProcess(std::addressof(process_handle), pin_id, GetLoaderCreateProcessParameterFlags(flags), GetResourceLimitHandle(std::addressof(program_info)), attrs.program_attrs));
             }
 
             /* Get the process id. */

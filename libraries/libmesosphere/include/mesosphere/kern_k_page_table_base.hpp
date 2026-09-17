@@ -151,14 +151,14 @@ namespace ams::kern {
 
             static constexpr u32 DefaultMemoryIgnoreAttr = KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
 
-            static constexpr size_t GetAddressSpaceWidth(ams::svc::CreateProcessFlag as_type) {
-                switch (static_cast<ams::svc::CreateProcessFlag>(as_type & ams::svc::CreateProcessFlag_AddressSpaceMask)) {
-                    case ams::svc::CreateProcessFlag_AddressSpace64Bit:
+            static constexpr size_t GetAddressSpaceWidth(ams::svc::CreateProcessParameterFlag as_type) {
+                switch (static_cast<ams::svc::CreateProcessParameterFlag>(as_type & ams::svc::CreateProcessParameterFlag_AddressSpaceMask)) {
+                    case ams::svc::CreateProcessParameterFlag_AddressSpace64Bit39:
                         return 39;
-                    case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                    case ams::svc::CreateProcessParameterFlag_AddressSpace64Bit36:
                         return 36;
-                    case ams::svc::CreateProcessFlag_AddressSpace32Bit:
-                    case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+                    case ams::svc::CreateProcessParameterFlag_AddressSpace32Bit:
+                    case ams::svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved:
                         return 32;
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
@@ -229,7 +229,7 @@ namespace ams::kern {
             explicit KPageTableBase() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, void *table, KProcessAddress start, KProcessAddress end, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessParameterFlag flags, bool from_back, void *table, KProcessAddress start, KProcessAddress end, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit);
 
             void Finalize();
 

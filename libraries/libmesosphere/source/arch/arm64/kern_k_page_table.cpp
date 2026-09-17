@@ -128,7 +128,7 @@ namespace ams::kern::arch::arm64 {
         KPageTableBase::InitializeForKernel(table, start, end);
     }
 
-    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index) {
+    Result KPageTable::InitializeForProcess(ams::svc::CreateProcessParameterFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index) {
         /* Determine our ASID */
         m_asid = process_index + 1;
         MESOSPHERE_ABORT_UNLESS(0 < m_asid && m_asid < util::size(s_ttbr0_entries));

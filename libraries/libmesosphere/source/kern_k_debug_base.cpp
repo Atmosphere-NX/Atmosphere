@@ -884,7 +884,7 @@ namespace ams::kern {
                 {
                     out->info.create_process.program_id                     = process->GetProgramId();
                     out->info.create_process.process_id                     = process->GetId();
-                    out->info.create_process.flags                          = process->GetCreateProcessFlags();
+                    out->info.create_process.flags                          = process->GetCreateProcessParameterFlags();
                     out->info.create_process.user_exception_context_address = GetInteger(process->GetProcessLocalRegionAddress());
 
                     std::memcpy(out->info.create_process.name, process->GetName(), sizeof(out->info.create_process.name));

@@ -67,11 +67,11 @@ namespace ams::creport {
             }
 
             bool IsApplication() const {
-                return (m_process_info.flags & svc::CreateProcessFlag_IsApplication) != 0;
+                return (m_process_info.flags & svc::CreateProcessParameterFlag_IsApplication) != 0;
             }
 
             bool Is64Bit() const {
-                return (m_process_info.flags & svc::CreateProcessFlag_Is64Bit) != 0;
+                return (m_process_info.flags & svc::CreateProcessParameterFlag_64Bit) != 0;
             }
 
             bool IsUserBreak() const {

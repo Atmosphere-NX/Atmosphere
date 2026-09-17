@@ -27,14 +27,14 @@ namespace ams::osdbg::impl {
     using ThreadInfoImpl = ThreadInfoHorizonImpl;
 
     constexpr inline bool IsLp64(const ThreadInfo *info) {
-        const auto as = info->_debug_info_create_process.flags & svc::CreateProcessFlag_AddressSpaceMask;
-        return as == svc::CreateProcessFlag_AddressSpace64Bit 
-            || as == svc::CreateProcessFlag_AddressSpace64BitDeprecated 
-            || as == svc::CreateProcessFlag_AddressSpace64Bit64KPage;
+        const auto as = info->_debug_info_create_process.flags & svc::CreateProcessParameterFlag_AddressSpaceMask;
+        return as == svc::CreateProcessParameterFlag_AddressSpace64Bit39 
+            || as == svc::CreateProcessParameterFlag_AddressSpace64Bit36 
+            || as == svc::CreateProcessParameterFlag_AddressSpace64Bit42;
     }
 
     constexpr inline bool Is64BitArch(const ThreadInfo *info) {
-        return (info->_debug_info_create_process.flags & svc::CreateProcessFlag_Is64Bit);
+        return (info->_debug_info_create_process.flags & svc::CreateProcessParameterFlag_64Bit);
     }
 
 }

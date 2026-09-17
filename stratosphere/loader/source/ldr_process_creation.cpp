@@ -175,8 +175,8 @@ namespace ams::ldr {
             return (MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Application;
         }
 
-        Npdm::AddressSpaceType GetAddressSpaceType(const Meta *meta) {
-            return static_cast<Npdm::AddressSpaceType>((meta->npdm->flags & Npdm::MetaFlag_AddressSpaceTypeMask) >> Npdm::MetaFlag_AddressSpaceTypeShift);
+        Npdm::ProcessAddressSpace GetProcessAddressSpace(const Meta *meta) {
+            return static_cast<Npdm::ProcessAddressSpace>((meta->npdm->flags0 & Npdm::MetaFlag0_ProcessAddressSpaceMask) >> Npdm::MetaFlag0_ProcessAddressSpaceShift);
         }
 
         Acid::PoolPartition GetPoolPartition(const Meta *meta) {
@@ -399,55 +399,55 @@ namespace ams::ldr {
             R_SUCCEED();
         }
 
-        Result GetCreateProcessFlags(u32 *out, const Meta *meta, const u32 ldr_flags) {
-            const u8 meta_flags = meta->npdm->flags;
+        Result GetCreateProcessParameterFlags(u32 *out, const Meta *meta, const u32 ldr_flags) {
+            const u8 meta_flags = meta->npdm->flags0;
 
             u32 flags = 0;
 
             /* Set Is64Bit. */
-            if (meta_flags & Npdm::MetaFlag_Is64Bit) {
-                flags |= svc::CreateProcessFlag_Is64Bit;
+            if (meta_flags & Npdm::MetaFlag0_Is64BitInstruction) {
+                flags |= svc::CreateProcessParameterFlag_64Bit;
             }
 
-            /* Set AddressSpaceType. */
-            switch (GetAddressSpaceType(meta)) {
-                case Npdm::AddressSpaceType_32Bit:
-                    flags |= svc::CreateProcessFlag_AddressSpace32Bit;
+            /* Set ProcessAddressSpace. */
+            switch (GetProcessAddressSpace(meta)) {
+                case Npdm::ProcessAddressSpace_32Bit:
+                    flags |= svc::CreateProcessParameterFlag_AddressSpace32Bit;
                     break;
-                case Npdm::AddressSpaceType_64BitDeprecated:
-                    flags |= svc::CreateProcessFlag_AddressSpace64BitDeprecated;
+                case Npdm::ProcessAddressSpace_64Bit36:
+                    flags |= svc::CreateProcessParameterFlag_AddressSpace64Bit36;
                     break;
-                case Npdm::AddressSpaceType_32BitWithoutAlias:
-                    flags |= svc::CreateProcessFlag_AddressSpace32BitWithoutAlias;
+                case Npdm::ProcessAddressSpace_32BitNoReserved:
+                    flags |= svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved;
                     break;
-                case Npdm::AddressSpaceType_64Bit:
-                    flags |= svc::CreateProcessFlag_AddressSpace64Bit;
+                case Npdm::ProcessAddressSpace_64Bit39:
+                    flags |= svc::CreateProcessParameterFlag_AddressSpace64Bit39;
                     break;
-                case Npdm::AddressSpaceType_64Bit64KPage:
-                    flags |= svc::CreateProcessFlag_AddressSpace64Bit64KPage;
+                case Npdm::ProcessAddressSpace_64Bit42:
+                    flags |= svc::CreateProcessParameterFlag_AddressSpace64Bit42;
                     break;
                 default:
                     R_THROW(ldr::ResultInvalidMeta());
             }
 
             /* Set Enable Debug. */
-            if (ldr_flags & CreateProcessFlag_EnableDebug) {
-                flags |= svc::CreateProcessFlag_EnableDebug;
+            if (ldr_flags & CreateProcessParameterFlag_EnableJitDebug) {
+                flags |= svc::CreateProcessParameterFlag_EnableJitDebug;
             }
 
             /* Set Enable ASLR. */
-            if (!(ldr_flags & CreateProcessFlag_DisableAslr)) {
-                flags |= svc::CreateProcessFlag_EnableAslr;
+            if (!(ldr_flags & CreateProcessParameterFlag_DisableAslr)) {
+                flags |= svc::CreateProcessParameterFlag_EnableAslr;
             }
 
             /* Set Is Application. */
             if (IsApplication(meta)) {
-                flags |= svc::CreateProcessFlag_IsApplication;
+                flags |= svc::CreateProcessParameterFlag_IsApplication;
 
                 /* 7.0.0+: Set OptimizeMemoryAllocation if relevant. */
                 if (hos::GetVersion() >= hos::Version_7_0_0) {
-                    if (meta_flags & Npdm::MetaFlag_OptimizeMemoryAllocation) {
-                        flags |= svc::CreateProcessFlag_OptimizeMemoryAllocation;
+                    if (meta_flags & Npdm::MetaFlag0_OptimizeMemoryAllocation) {
+                        flags |= svc::CreateProcessParameterFlag_OptimizeMemoryAllocation;
                     }
                 }
             }
@@ -459,19 +459,19 @@ namespace ams::ldr {
                 switch (GetPoolPartition(meta)) {
                     case Acid::PoolPartition_Application:
                         if (IsApplet(meta)) {
-                            flags |= svc::CreateProcessFlag_PoolPartitionApplet;
+                            flags |= svc::CreateProcessParameterFlag_PoolPartitionApplet;
                         } else {
-                            flags |= svc::CreateProcessFlag_PoolPartitionApplication;
+                            flags |= svc::CreateProcessParameterFlag_PoolPartitionApplication;
                         }
                         break;
                     case Acid::PoolPartition_Applet:
-                        flags |= svc::CreateProcessFlag_PoolPartitionApplet;
+                        flags |= svc::CreateProcessParameterFlag_PoolPartitionApplet;
                         break;
                     case Acid::PoolPartition_System:
-                        flags |= svc::CreateProcessFlag_PoolPartitionSystem;
+                        flags |= svc::CreateProcessParameterFlag_PoolPartitionSystem;
                         break;
                     case Acid::PoolPartition_SystemNonSecure:
-                        flags |= svc::CreateProcessFlag_PoolPartitionSystemNonSecure;
+                        flags |= svc::CreateProcessParameterFlag_PoolPartitionSystemNonSecure;
                         break;
                     default:
                         R_THROW(ldr::ResultInvalidMeta());
@@ -479,18 +479,18 @@ namespace ams::ldr {
             } else if (hos::GetVersion() >= hos::Version_4_0_0) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
                 if (meta->acid->flags & Acid::AcidFlag_DeprecatedUseSecureMemory) {
-                    flags |= svc::CreateProcessFlag_DeprecatedUseSecureMemory;
+                    flags |= svc::CreateProcessParameterFlag_DeprecatedUseSecureMemory;
                 }
             }
 
             /* 11.0.0+/meso Set Disable DAS merge. */
-            if (meta_flags & Npdm::MetaFlag_DisableDeviceAddressSpaceMerge) {
-                flags |= svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+            if (meta_flags & Npdm::MetaFlag0_DisableDeviceAddressSpaceMerge) {
+                flags |= svc::CreateProcessParameterFlag_DisableDeviceAddressSpaceMerge;
             }
 
             /* 18.0.0+/meso Set Alias region extra size. */
-            if (meta_flags & Npdm::MetaFlag_EnableAliasRegionExtraSize) {
-                flags |= svc::CreateProcessFlag_EnableAliasRegionExtraSize;
+            if (meta_flags & Npdm::MetaFlag0_EnableAddressSanitizer) {
+                flags |= svc::CreateProcessParameterFlag_EnableAddressSanitizer;
             }
 
             *out = flags;
@@ -508,7 +508,7 @@ namespace ams::ldr {
             out->reslimit   = resource_limit;
 
             /* Set flags. */
-            R_TRY(GetCreateProcessFlags(std::addressof(out->flags), meta, flags));
+            R_TRY(GetCreateProcessParameterFlags(std::addressof(out->flags), meta, flags));
 
             /* 3.0.0+ System Resource Size. */
             if (hos::GetVersion() >= hos::Version_3_0_0) {
@@ -518,7 +518,7 @@ namespace ams::ldr {
                 /* Validate system resource usage. */
                 if (meta->npdm->system_resource_size) {
                     /* Process must be 64-bit. */
-                    R_UNLESS((out->flags & svc::CreateProcessFlag_AddressSpace64Bit), ldr::ResultInvalidMeta());
+                    R_UNLESS((out->flags & svc::CreateProcessParameterFlag_AddressSpace64Bit39), ldr::ResultInvalidMeta());
 
                     /* Process must be application or applet. */
                     R_UNLESS(IsApplication(meta) || IsApplet(meta), ldr::ResultInvalidMeta());
@@ -586,21 +586,21 @@ namespace ams::ldr {
             uintptr_t aslr_start = 0;
             size_t aslr_size     = 0;
             if (hos::GetVersion() >= hos::Version_2_0_0) {
-                switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
-                    case svc::CreateProcessFlag_AddressSpace32Bit:
-                    case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+                switch (out_param->flags & svc::CreateProcessParameterFlag_AddressSpaceMask) {
+                    case svc::CreateProcessParameterFlag_AddressSpace32Bit:
+                    case svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved:
                         aslr_start = svc::AddressSmallMap32Start;
                         aslr_size  = svc::AddressSmallMap32Size;
                         break;
-                    case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                    case svc::CreateProcessParameterFlag_AddressSpace64Bit36:
                         aslr_start = svc::AddressSmallMap36Start;
                         aslr_size  = svc::AddressSmallMap36Size;
                         break;
-                    case svc::CreateProcessFlag_AddressSpace64Bit:
+                    case svc::CreateProcessParameterFlag_AddressSpace64Bit39:
                         aslr_start = svc::AddressMap39Start;
                         aslr_size  = svc::AddressMap39Size;
                         break;
-                    case svc::CreateProcessFlag_AddressSpace64Bit64KPage:
+                    case svc::CreateProcessParameterFlag_AddressSpace64Bit42:
                         aslr_start = svc::AddressMap42Start;
                         aslr_size  = svc::AddressMap42Size;
                         break;
@@ -608,7 +608,7 @@ namespace ams::ldr {
                 }
             } else {
                 /* On 1.0.0, only 2 address space types existed. */
-                if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
+                if (out_param->flags & svc::CreateProcessParameterFlag_AddressSpace64Bit36) {
                     aslr_start = svc::AddressSmallMap36Start;
                     aslr_size  = svc::AddressSmallMap36Size;
                 } else {
@@ -621,7 +621,7 @@ namespace ams::ldr {
             /* Set Create Process output. */
             uintptr_t aslr_slide = 0;
             size_t free_size     = (aslr_size - total_size);
-            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
+            if (out_param->flags & svc::CreateProcessParameterFlag_EnableAslr) {
                 aslr_slide = GenerateSecureRandom(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
 
@@ -864,8 +864,8 @@ namespace ams::ldr {
             os::ProcessId process_id = os::GetProcessId(info.process_handle);
 
             /* Register new process. */
-            const auto as_type = GetAddressSpaceType(std::addressof(meta));
-            RoManager::GetInstance().RegisterProcess(pin_id, process_id, meta.aci->program_id, as_type == Npdm::AddressSpaceType_64Bit || as_type == Npdm::AddressSpaceType_64BitDeprecated);
+            const auto as_type = GetProcessAddressSpace(std::addressof(meta));
+            RoManager::GetInstance().RegisterProcess(pin_id, process_id, meta.aci->program_id, as_type == Npdm::ProcessAddressSpace_64Bit39 || as_type == Npdm::ProcessAddressSpace_64Bit36);
 
             /* Register all NSOs. */
             for (int i = 0; i < ctx.nso_count; i++) {

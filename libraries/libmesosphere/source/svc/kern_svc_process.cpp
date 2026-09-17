@@ -86,15 +86,15 @@ namespace ams::kern::svc {
             R_RETURN(KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count));
         }
 
-        constexpr size_t GetProcessSlotT0Sz(ams::svc::CreateProcessFlag flags) {
-            if ((flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage) {
+        constexpr size_t GetProcessSlotT0Sz(ams::svc::CreateProcessParameterFlag flags) {
+            if ((flags & ams::svc::CreateProcessParameterFlag_AddressSpaceMask) == ams::svc::CreateProcessParameterFlag_AddressSpace64Bit42) {
                 return (64 - 42);
             } else {
                 return (64 - 39);
             }
         }
 
-        KProcess *CreateProcessForAddressSpace(ams::svc::CreateProcessFlag flags) {
+        KProcess *CreateProcessForAddressSpace(ams::svc::CreateProcessParameterFlag flags) {
             /* Find a process slab slot whose root page table is meant for the requested address space. */
             const size_t desired_t0sz = GetProcessSlotT0Sz(flags);
 
@@ -132,13 +132,13 @@ namespace ams::kern::svc {
             }
 
             /* Validate that the parameter flags are valid. */
-            R_UNLESS((params.flags & ~ams::svc::CreateProcessFlag_All) == 0, svc::ResultInvalidEnumValue());
+            R_UNLESS((params.flags & ~ams::svc::CreateProcessParameterFlag_All) == 0, svc::ResultInvalidEnumValue());
 
             /* The 64KB page size is not yet allowed. */
-            R_UNLESS((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) != ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage, svc::ResultInvalidCombination());
+            R_UNLESS((params.flags & ams::svc::CreateProcessParameterFlag_AddressSpaceMask) != ams::svc::CreateProcessParameterFlag_AddressSpace64Bit42, svc::ResultInvalidCombination());
 
             /* Validate that 64-bit process is okay. */
-            const bool is_64_bit = (params.flags & ams::svc::CreateProcessFlag_Is64Bit) != 0;
+            const bool is_64_bit = (params.flags & ams::svc::CreateProcessParameterFlag_64Bit) != 0;
             if constexpr (sizeof(void *) < sizeof(u64)) {
                 R_UNLESS(!is_64_bit, svc::ResultInvalidCombination());
             }
@@ -147,35 +147,35 @@ namespace ams::kern::svc {
             uintptr_t map_start, map_end;
             size_t map_size;
             const size_t code_size = params.code_num_pages * PageSize;
-            switch (params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) {
-                case ams::svc::CreateProcessFlag_AddressSpace32Bit:
-                case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+            switch (params.flags & ams::svc::CreateProcessParameterFlag_AddressSpaceMask) {
+                case ams::svc::CreateProcessParameterFlag_AddressSpace32Bit:
+                case ams::svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved:
                     {
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
-                case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                case ams::svc::CreateProcessParameterFlag_AddressSpace64Bit36:
                     {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall, code_size);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapSmall);
                         map_end   = map_start + map_size;
                     }
                     break;
-                case ams::svc::CreateProcessFlag_AddressSpace64Bit:
-                case ams::svc::CreateProcessFlag_AddressSpace64Bit64KPage:
+                case ams::svc::CreateProcessParameterFlag_AddressSpace64Bit39:
+                case ams::svc::CreateProcessParameterFlag_AddressSpace64Bit42:
                     {
                         /* 64-bit address space requires 64-bit process. */
                         R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
 
-                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge, code_size);
-                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge);
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge, code_size);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_MapHuge);
 
-                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), KAddressSpaceInfo::Type_Heap);
                     }
                     break;
                 default:
@@ -184,11 +184,11 @@ namespace ams::kern::svc {
 
             /* Validate the pool partition. */
             if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
-                switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
-                    case ams::svc::CreateProcessFlag_PoolPartitionApplication:
-                    case ams::svc::CreateProcessFlag_PoolPartitionApplet:
-                    case ams::svc::CreateProcessFlag_PoolPartitionSystem:
-                    case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                switch (params.flags & ams::svc::CreateProcessParameterFlag_PoolPartitionMask) {
+                    case ams::svc::CreateProcessParameterFlag_PoolPartitionApplication:
+                    case ams::svc::CreateProcessParameterFlag_PoolPartitionApplet:
+                    case ams::svc::CreateProcessParameterFlag_PoolPartitionSystem:
+                    case ams::svc::CreateProcessParameterFlag_PoolPartitionSystemNonSecure:
                         break;
                     default:
                         R_THROW(svc::ResultInvalidEnumValue());
@@ -204,10 +204,10 @@ namespace ams::kern::svc {
             /* Check that the number of extra resource pages is >= 0. */
             R_UNLESS(params.system_resource_num_pages >= 0, svc::ResultInvalidSize());
 
-            /* Validate that the alias region extra size is allowed, if enabled. */
-            if (params.flags & ams::svc::CreateProcessFlag_EnableAliasRegionExtraSize) {
+            /* Validate that the address sanitizer is allowed, if enabled. */
+            if (params.flags & ams::svc::CreateProcessParameterFlag_EnableAddressSanitizer) {
                 /* Check that we have a 64-bit address space. */
-                R_UNLESS((params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) == ams::svc::CreateProcessFlag_AddressSpace64Bit, svc::ResultInvalidState());
+                R_UNLESS((params.flags & ams::svc::CreateProcessParameterFlag_AddressSpaceMask) == ams::svc::CreateProcessParameterFlag_AddressSpace64Bit39, svc::ResultInvalidState());
 
                 /* Check that the system resource page count is non-zero. */
                 R_UNLESS(params.system_resource_num_pages > 0, svc::ResultInvalidState());
@@ -243,8 +243,8 @@ namespace ams::kern::svc {
             R_UNLESS(total_pages               < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
 
             /* Check that optimized memory allocation is used only for applications. */
-            const bool optimize_allocs = (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0;
-            const bool is_application  = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
+            const bool optimize_allocs = (params.flags & ams::svc::CreateProcessParameterFlag_OptimizeMemoryAllocation) != 0;
+            const bool is_application  = (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication) != 0;
             R_UNLESS(!optimize_allocs || is_application, svc::ResultBusy());
 
             /* Check that the user-provided capabilities are accessible and refer to valid regions. */
@@ -254,7 +254,7 @@ namespace ams::kern::svc {
             auto &handle_table = GetCurrentProcess().GetHandleTable();
 
             /* Create the new process, ensuring its page table slot matches the requested address space. */
-            KProcess *process = CreateProcessForAddressSpace(static_cast<ams::svc::CreateProcessFlag>(params.flags));
+            KProcess *process = CreateProcessForAddressSpace(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags));
             R_UNLESS(process != nullptr, svc::ResultOutOfResource());
 
             /* Ensure that the only reference to the process is in the handle table when we're done. */
@@ -270,19 +270,19 @@ namespace ams::kern::svc {
             /* Get the pool for the process. */
             const auto pool = [](u32 flags) ALWAYS_INLINE_LAMBDA -> KMemoryManager::Pool {
                 if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
-                    switch (flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
-                        case ams::svc::CreateProcessFlag_PoolPartitionApplication:
+                    switch (flags & ams::svc::CreateProcessParameterFlag_PoolPartitionMask) {
+                        case ams::svc::CreateProcessParameterFlag_PoolPartitionApplication:
                             return KMemoryManager::Pool_Application;
-                        case ams::svc::CreateProcessFlag_PoolPartitionApplet:
+                        case ams::svc::CreateProcessParameterFlag_PoolPartitionApplet:
                             return KMemoryManager::Pool_Applet;
-                        case ams::svc::CreateProcessFlag_PoolPartitionSystem:
+                        case ams::svc::CreateProcessParameterFlag_PoolPartitionSystem:
                             return KMemoryManager::Pool_System;
-                        case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                        case ams::svc::CreateProcessParameterFlag_PoolPartitionSystemNonSecure:
                         default:
                             return KMemoryManager::Pool_SystemNonSecure;
                     }
                 } else if (GetTargetFirmware() >= TargetFirmware_4_0_0) {
-                    if ((flags & ams::svc::CreateProcessFlag_DeprecatedUseSecureMemory) != 0) {
+                    if ((flags & ams::svc::CreateProcessParameterFlag_DeprecatedUseSecureMemory) != 0) {
                         return KMemoryManager::Pool_Secure;
                     } else {
                         return static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());

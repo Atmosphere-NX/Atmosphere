@@ -214,19 +214,19 @@ namespace ams::kern {
 
         /* Apply other flags. */
         if (this->Is64Bit()) {
-            out->flags |= ams::svc::CreateProcessFlag_Is64Bit;
+            out->flags |= ams::svc::CreateProcessParameterFlag_64Bit;
         }
         if (this->Is64BitAddressSpace()) {
-            out->flags |= (GetTargetFirmware() >= TargetFirmware_2_0_0) ? ams::svc::CreateProcessFlag_AddressSpace64Bit : ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated;
+            out->flags |= (GetTargetFirmware() >= TargetFirmware_2_0_0) ? ams::svc::CreateProcessParameterFlag_AddressSpace64Bit39 : ams::svc::CreateProcessParameterFlag_AddressSpace64Bit36;
         } else {
-            out->flags |= ams::svc::CreateProcessFlag_AddressSpace32Bit;
+            out->flags |= ams::svc::CreateProcessParameterFlag_AddressSpace32Bit;
         }
         if (enable_aslr) {
-            out->flags |= ams::svc::CreateProcessFlag_EnableAslr;
+            out->flags |= ams::svc::CreateProcessParameterFlag_EnableAslr;
         }
 
         /* All initial processes should disable device address space merge. */
-        out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+        out->flags |= ams::svc::CreateProcessParameterFlag_DisableDeviceAddressSpaceMerge;
 
         /* Set and check code address. */
         /* NOTE: Even though Nintendo passes a size to GetAddressSpaceStart at other call sites, they pass */
@@ -234,8 +234,8 @@ namespace ams::kern {
         /* almost certainly a bug. */
         using ASType = KAddressSpaceInfo::Type;
         const ASType    as_type       = this->Is64BitAddressSpace() ? ((GetTargetFirmware() >= TargetFirmware_2_0_0) ? KAddressSpaceInfo::Type_MapHuge : KAddressSpaceInfo::Type_MapSmall) : KAddressSpaceInfo::Type_MapSmall;
-        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type, out->code_num_pages);
-        const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(out->flags), as_type);
+        const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(static_cast<ams::svc::CreateProcessParameterFlag>(out->flags), as_type, out->code_num_pages);
+        const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(out->flags), as_type);
         const uintptr_t map_end       = map_start + map_size;
         out->code_address             = map_start + start_address;
         MESOSPHERE_ABORT_UNLESS((out->code_address / PageSize) + out->code_num_pages <= (map_end / PageSize));

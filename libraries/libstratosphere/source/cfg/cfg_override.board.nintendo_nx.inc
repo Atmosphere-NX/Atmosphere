@@ -79,20 +79,20 @@ namespace ams::cfg {
                 InvalidProgramOverrideKey,
             },
             .program_as_flags = {
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
-                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
+                impl::OverrideStatusFlag_AddressSpace64Bit39,
             },
             .override_any_app_key = {
                 .key_combination = HidNpadButton_R,
                 .override_by_default = false,
             },
-            .override_any_app_as_flag = impl::OverrideStatusFlag_AddressSpace64Bit,
+            .override_any_app_as_flag = impl::OverrideStatusFlag_AddressSpace64Bit39,
             .override_any_app = true,
         };
 
@@ -152,11 +152,11 @@ namespace ams::cfg {
 
         impl::OverrideStatusFlag ParseOverrideAddressSpace(const char *value) {
             if (strcasecmp(value, "39_bit") == 0 || strcasecmp(value, "39") == 0) {
-                return impl::OverrideStatusFlag_AddressSpace64Bit;
+                return impl::OverrideStatusFlag_AddressSpace64Bit39;
             } else if (strcasecmp(value, "42_bit") == 0 || strcasecmp(value, "42") == 0) {
-                return impl::OverrideStatusFlag_AddressSpace64Bit64KPage;
+                return impl::OverrideStatusFlag_AddressSpace64Bit42;
             } else if (strcasecmp(value, "36_bit") == 0 || strcasecmp(value, "36") == 0) {
-                return impl::OverrideStatusFlag_AddressSpace64BitDeprecated;
+                return impl::OverrideStatusFlag_AddressSpace64Bit36;
             } else if (strcasecmp(value, "32_bit") == 0 || strcasecmp(value, "32") == 0) {
                 return impl::OverrideStatusFlag_AddressSpace32Bit;
             } else if (strcasecmp(value, "32_bit_without_alias") == 0 ||
@@ -168,10 +168,10 @@ namespace ams::cfg {
                        strcasecmp(value, "32_without_map") == 0 ||
                        strcasecmp(value, "32_no_map") == 0)
             {
-                return impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias;
+                return impl::OverrideStatusFlag_AddressSpace32BitNoReserved;
             } else {
                 /* Default to 39-bit. */
-                return impl::OverrideStatusFlag_AddressSpace64Bit;
+                return impl::OverrideStatusFlag_AddressSpace64Bit39;
             }
         }
 

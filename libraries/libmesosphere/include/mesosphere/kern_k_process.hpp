@@ -165,9 +165,9 @@ namespace ams::kern {
 
             constexpr bool CheckThreadPriority(s32 prio) const { return ((1ul << prio) & this->GetPriorityMask()) != 0; }
 
-            constexpr u32 GetCreateProcessFlags() const { return m_flags; }
+            constexpr u32 GetCreateProcessParameterFlags() const { return m_flags; }
 
-            constexpr bool Is64Bit() const { return m_flags & ams::svc::CreateProcessFlag_Is64Bit; }
+            constexpr bool Is64Bit() const { return m_flags & ams::svc::CreateProcessParameterFlag_64Bit; }
 
             constexpr KProcessAddress GetEntryPoint() const { return m_code_address; }
 

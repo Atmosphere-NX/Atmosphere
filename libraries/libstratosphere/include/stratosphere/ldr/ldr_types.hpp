@@ -50,9 +50,9 @@ namespace ams::ldr {
         ProgramInfoFlag_AllowDebug = (1 << 2),
     };
 
-    enum CreateProcessFlag {
-        CreateProcessFlag_EnableDebug = (1 << 0),
-        CreateProcessFlag_DisableAslr = (1 << 1),
+    enum CreateProcessParameterFlag {
+        CreateProcessParameterFlag_EnableJitDebug = (1 << 0),
+        CreateProcessParameterFlag_DisableAslr    = (1 << 1),
     };
 
     struct ProgramArguments {
@@ -194,10 +194,10 @@ namespace ams::ldr {
         };
 
         #if defined(ATMOSPHERE_OS_HORIZON)
-            static_assert(PoolPartition_Application     == (svc::CreateProcessFlag_PoolPartitionApplication     >> svc::CreateProcessFlag_PoolPartitionShift));
-            static_assert(PoolPartition_Applet          == (svc::CreateProcessFlag_PoolPartitionApplet          >> svc::CreateProcessFlag_PoolPartitionShift));
-            static_assert(PoolPartition_System          == (svc::CreateProcessFlag_PoolPartitionSystem          >> svc::CreateProcessFlag_PoolPartitionShift));
-            static_assert(PoolPartition_SystemNonSecure == (svc::CreateProcessFlag_PoolPartitionSystemNonSecure >> svc::CreateProcessFlag_PoolPartitionShift));
+            static_assert(PoolPartition_Application     == (svc::CreateProcessParameterFlag_PoolPartitionApplication     >> svc::CreateProcessParameterFlag_PoolPartitionShift));
+            static_assert(PoolPartition_Applet          == (svc::CreateProcessParameterFlag_PoolPartitionApplet          >> svc::CreateProcessParameterFlag_PoolPartitionShift));
+            static_assert(PoolPartition_System          == (svc::CreateProcessParameterFlag_PoolPartitionSystem          >> svc::CreateProcessParameterFlag_PoolPartitionShift));
+            static_assert(PoolPartition_SystemNonSecure == (svc::CreateProcessParameterFlag_PoolPartitionSystemNonSecure >> svc::CreateProcessParameterFlag_PoolPartitionShift));
         #endif
 
         u8 signature[0x100];
@@ -223,43 +223,43 @@ namespace ams::ldr {
     struct Npdm {
         static constexpr u32 Magic = util::FourCC<'M','E','T','A'>::Code;
 
-        enum MetaFlag {
-            MetaFlag_Is64Bit = (1 << 0),
+        enum MetaFlag0 {
+            MetaFlag0_Is64BitInstruction             = (1 << 0),
 
-            MetaFlag_AddressSpaceTypeShift = 1,
-            MetaFlag_AddressSpaceTypeMask = (7 << MetaFlag_AddressSpaceTypeShift),
+            MetaFlag0_ProcessAddressSpaceShift       = 1,
+            MetaFlag0_ProcessAddressSpaceMask        = (7 << MetaFlag0_ProcessAddressSpaceShift),
 
-            MetaFlag_OptimizeMemoryAllocation       = (1 << 4),
-            MetaFlag_DisableDeviceAddressSpaceMerge = (1 << 5),
-            MetaFlag_EnableAliasRegionExtraSize     = (1 << 6),
-            MetaFlag_PreventCodeReads               = (1 << 7),
+            MetaFlag0_OptimizeMemoryAllocation       = (1 << 4),
+            MetaFlag0_DisableDeviceAddressSpaceMerge = (1 << 5),
+            MetaFlag0_EnableAddressSanitizer         = (1 << 6),
+            MetaFlag0_PreventCodeReads               = (1 << 7),
         };
 
-        enum MetaFlag2 {
-            MetaFlag2_EnableShadowStack = (1 << 0),
+        enum MetaFlag1 {
+            MetaFlag1_EnableShadowStack = (1 << 0),
         };
 
-        enum AddressSpaceType {
-            AddressSpaceType_32Bit              = 0,
-            AddressSpaceType_64BitDeprecated    = 1,
-            AddressSpaceType_32BitWithoutAlias  = 2,
-            AddressSpaceType_64Bit              = 3,
-            AddressSpaceType_64Bit64KPage       = 4,
+        enum ProcessAddressSpace {
+            ProcessAddressSpace_32Bit           = 0,
+            ProcessAddressSpace_64Bit36         = 1,
+            ProcessAddressSpace_32BitNoReserved = 2,
+            ProcessAddressSpace_64Bit39         = 3,
+            ProcessAddressSpace_64Bit42         = 4,
         };
 
         #if defined(ATMOSPHERE_OS_HORIZON)
-            static_assert(AddressSpaceType_32Bit              == (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift));
-            static_assert(AddressSpaceType_64BitDeprecated    == (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift));
-            static_assert(AddressSpaceType_32BitWithoutAlias  == (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift));
-            static_assert(AddressSpaceType_64Bit              == (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift));
-            static_assert(AddressSpaceType_64Bit64KPage       == (svc::CreateProcessFlag_AddressSpace64Bit64KPage      >> svc::CreateProcessFlag_AddressSpaceShift));
+            static_assert(ProcessAddressSpace_32Bit           == (svc::CreateProcessParameterFlag_AddressSpace32Bit           >> svc::CreateProcessParameterFlag_AddressSpaceShift));
+            static_assert(ProcessAddressSpace_64Bit36         == (svc::CreateProcessParameterFlag_AddressSpace64Bit36         >> svc::CreateProcessParameterFlag_AddressSpaceShift));
+            static_assert(ProcessAddressSpace_32BitNoReserved == (svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved >> svc::CreateProcessParameterFlag_AddressSpaceShift));
+            static_assert(ProcessAddressSpace_64Bit39         == (svc::CreateProcessParameterFlag_AddressSpace64Bit39         >> svc::CreateProcessParameterFlag_AddressSpaceShift));
+            static_assert(ProcessAddressSpace_64Bit42         == (svc::CreateProcessParameterFlag_AddressSpace64Bit42         >> svc::CreateProcessParameterFlag_AddressSpaceShift));
         #endif
 
         u32 magic;
         u32 signature_key_generation;
         u8  reserved_08[4];
-        u8  flags;
-        u8  flags2;
+        u8  flags0;
+        u8  flags1;
         u8 main_thread_priority;
         u8 default_cpu_id;
         u8  reserved_10[4];

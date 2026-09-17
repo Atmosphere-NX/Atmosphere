@@ -210,7 +210,7 @@ namespace ams::kern {
         m_program_id                = params.program_id;
         m_code_address              = params.code_address;
         m_code_size                 = params.code_num_pages * PageSize;
-        m_is_application            = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
+        m_is_application            = (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication);
         m_is_jit_debug              = false;
 
         #if defined(MESOSPHERE_ENABLE_PROCESS_CREATION_TIME)
@@ -226,7 +226,7 @@ namespace ams::kern {
         }
 
         /* Set max memory. */
-        m_max_process_memory = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessFlag>(m_flags), KAddressSpaceInfo::Type_Heap);
+        m_max_process_memory = KAddressSpaceInfo::GetAddressSpaceSize(static_cast<ams::svc::CreateProcessParameterFlag>(m_flags), KAddressSpaceInfo::Type_Heap);
 
         /* Generate random entropy. */
         KSystemControl::GenerateRandom(m_entropy, util::size(m_entropy));
@@ -279,7 +279,7 @@ namespace ams::kern {
             m_system_resource = secure_resource;
         } else {
             /* Use the system-wide system resource. */
-            const bool is_app = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
+            const bool is_app = (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication);
             m_system_resource = std::addressof(is_app ? Kernel::GetApplicationSystemResource() : Kernel::GetSystemSystemResource());
 
             m_is_default_application_system_resource = is_app;
@@ -293,8 +293,8 @@ namespace ams::kern {
 
         /* Setup page table. */
         {
-            const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit, this->GetSlabIndex()));
+            const bool from_back = (params.flags & ams::svc::CreateProcessParameterFlag_EnableAslr) == 0;
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), from_back, pool, params.code_address, params.code_num_pages * PageSize, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
@@ -358,7 +358,7 @@ namespace ams::kern {
 
         } else {
             /* Use the system-wide system resource. */
-            const bool is_app = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
+            const bool is_app = (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication);
             m_system_resource = std::addressof(is_app ? Kernel::GetApplicationSystemResource() : Kernel::GetSystemSystemResource());
 
             m_is_default_application_system_resource = is_app;
@@ -372,8 +372,8 @@ namespace ams::kern {
 
         /* Setup page table. */
         {
-            const bool from_back = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) == 0;
-            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit, this->GetSlabIndex()));
+            const bool from_back = (params.flags & ams::svc::CreateProcessParameterFlag_EnableAslr) == 0;
+            R_TRY(m_page_table.Initialize(static_cast<ams::svc::CreateProcessParameterFlag>(params.flags), from_back, pool, params.code_address, code_size, m_system_resource, res_limit, this->GetSlabIndex()));
         }
         ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
@@ -392,7 +392,7 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(m_process_id <= ProcessIdMax);
 
         /* If we should optimize memory allocations, do so. */
-        if (m_system_resource->IsSecureResource() && (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0) {
+        if (m_system_resource->IsSecureResource() && (params.flags & ams::svc::CreateProcessParameterFlag_OptimizeMemoryAllocation) != 0) {
             R_TRY(Kernel::GetMemoryManager().InitializeOptimizedMemory(m_process_id, pool));
         }
 
@@ -1192,7 +1192,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this == GetCurrentProcessPointer());
 
         /* If we aren't allowed to enter jit debug, don't. */
-        if ((m_flags & ams::svc::CreateProcessFlag_EnableDebug) == 0) {
+        if ((m_flags & ams::svc::CreateProcessParameterFlag_EnableJitDebug) == 0) {
             return false;
         }
 

@@ -205,7 +205,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             NOINLINE void InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessParameterFlag flags, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KSystemResource *system_resource, KResourceLimit *resource_limit, size_t process_index);
             void Finalize();
 
             static void NoteUpdatedCallback(const void *pt) {

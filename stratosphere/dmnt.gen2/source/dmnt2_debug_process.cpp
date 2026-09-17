@@ -88,8 +88,8 @@ namespace ams::dmnt {
                         m_create_process_info = d.info.create_process;
 
                         /* Cache our bools. */
-                        m_is_64_bit               = (m_create_process_info.flags & svc::CreateProcessFlag_Is64Bit);
-                        m_is_64_bit_address_space = (m_create_process_info.flags & svc::CreateProcessFlag_AddressSpaceMask) == svc::CreateProcessFlag_AddressSpace64Bit;
+                        m_is_64_bit               = (m_create_process_info.flags & svc::CreateProcessParameterFlag_64Bit);
+                        m_is_64_bit_address_space = (m_create_process_info.flags & svc::CreateProcessParameterFlag_AddressSpaceMask) == svc::CreateProcessParameterFlag_AddressSpace64Bit39;
                     }
                     break;
                 case svc::DebugEvent_CreateThread:
@@ -522,8 +522,8 @@ namespace ams::dmnt {
                     m_create_process_info = out->info.create_process;
 
                     /* Cache our bools. */
-                    m_is_64_bit               = (m_create_process_info.flags & svc::CreateProcessFlag_Is64Bit);
-                    m_is_64_bit_address_space = (m_create_process_info.flags & svc::CreateProcessFlag_AddressSpaceMask) == svc::CreateProcessFlag_AddressSpace64Bit;
+                    m_is_64_bit               = (m_create_process_info.flags & svc::CreateProcessParameterFlag_64Bit);
+                    m_is_64_bit_address_space = (m_create_process_info.flags & svc::CreateProcessParameterFlag_AddressSpaceMask) == svc::CreateProcessParameterFlag_AddressSpace64Bit39;
                 }
                 break;
             case svc::DebugEvent_CreateThread:

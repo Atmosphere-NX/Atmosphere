@@ -31,11 +31,11 @@ namespace ams::cfg {
             OverrideStatusFlag_AddressSpaceMask  = ((1u << 2) - 1) << OverrideStatusFlag_AddressSpaceShift,
 
             #if defined(ATMOSPHERE_OS_HORIZON)
-            OverrideStatusFlag_AddressSpace32Bit             = (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
-            OverrideStatusFlag_AddressSpace64BitDeprecated   = (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
-            OverrideStatusFlag_AddressSpace32BitWithoutAlias = (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
-            OverrideStatusFlag_AddressSpace64Bit             = (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
-            OverrideStatusFlag_AddressSpace64Bit64KPage      = (svc::CreateProcessFlag_AddressSpace64Bit64KPage   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace32Bit           = (svc::CreateProcessParameterFlag_AddressSpace32Bit           >> svc::CreateProcessParameterFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64Bit36         = (svc::CreateProcessParameterFlag_AddressSpace64Bit36         >> svc::CreateProcessParameterFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace32BitNoReserved = (svc::CreateProcessParameterFlag_AddressSpace32BitNoReserved >> svc::CreateProcessParameterFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64Bit39         = (svc::CreateProcessParameterFlag_AddressSpace64Bit39         >> svc::CreateProcessParameterFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64Bit42         = (svc::CreateProcessParameterFlag_AddressSpace64Bit42         >> svc::CreateProcessParameterFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             #endif
         };
 
