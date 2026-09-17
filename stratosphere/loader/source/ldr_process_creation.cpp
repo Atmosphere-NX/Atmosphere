@@ -400,12 +400,13 @@ namespace ams::ldr {
         }
 
         Result GetCreateProcessParameterFlags(u32 *out, const Meta *meta, const u32 ldr_flags) {
-            const u8 meta_flags = meta->npdm->flags0;
+            const u8 meta_flags0 = meta->npdm->flags0;
+            const u8 meta_flags1 = meta->npdm->flags1;
 
             u32 flags = 0;
 
             /* Set Is64Bit. */
-            if (meta_flags & Npdm::MetaFlag0_Is64BitInstruction) {
+            if (meta_flags0 & Npdm::MetaFlag0_Is64BitInstruction) {
                 flags |= svc::CreateProcessParameterFlag_64Bit;
             }
 
@@ -446,7 +447,7 @@ namespace ams::ldr {
 
                 /* 7.0.0+: Set OptimizeMemoryAllocation if relevant. */
                 if (hos::GetVersion() >= hos::Version_7_0_0) {
-                    if (meta_flags & Npdm::MetaFlag0_OptimizeMemoryAllocation) {
+                    if (meta_flags0 & Npdm::MetaFlag0_OptimizeMemoryAllocation) {
                         flags |= svc::CreateProcessParameterFlag_OptimizeMemoryAllocation;
                     }
                 }
@@ -483,14 +484,19 @@ namespace ams::ldr {
                 }
             }
 
-            /* 11.0.0+/meso Set Disable DAS merge. */
-            if (meta_flags & Npdm::MetaFlag0_DisableDeviceAddressSpaceMerge) {
+            /* 11.0.0+/meso Set Disable DAS Merge. */
+            if (meta_flags0 & Npdm::MetaFlag0_DisableDeviceAddressSpaceMerge) {
                 flags |= svc::CreateProcessParameterFlag_DisableDeviceAddressSpaceMerge;
             }
 
-            /* 18.0.0+/meso Set Alias region extra size. */
-            if (meta_flags & Npdm::MetaFlag0_EnableAddressSanitizer) {
+            /* 18.0.0+/meso Set Enable Address Sanitizer . */
+            if (meta_flags0 & Npdm::MetaFlag0_EnableAddressSanitizer) {
                 flags |= svc::CreateProcessParameterFlag_EnableAddressSanitizer;
+            }
+            
+            /* 23.0.0+/meso Set Enable Shadow Stack. */
+            if (meta_flags1 & Npdm::MetaFlag1_EnableShadowStack) {
+                flags |= svc::CreateProcessParameterFlag_EnableShadowStack;
             }
 
             *out = flags;
