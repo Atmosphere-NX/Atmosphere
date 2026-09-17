@@ -44,7 +44,7 @@ namespace ams::gpio::server {
             }
         public:
             /* Actual commands. */
-            Result SetDirection(gpio::Direction direction) {
+            Result SetDirectionDeprecated(gpio::Direction direction) {
                 /* Validate our state. */
                 AMS_ASSERT(m_has_session);
 
@@ -205,7 +205,42 @@ namespace ams::gpio::server {
                 AMS_ABORT();
             }
 
-            Result GetValueForSleepState(ams::sf::Out<gpio::GpioValue> out) {
+            Result GetMaxDebounceTime(ams::sf::Out<gpio::GpioValue> out) {
+                /* Validate our state. */
+                AMS_ASSERT(m_has_session);
+
+                /* TODO */
+                AMS_UNUSED(out);
+                AMS_ABORT();
+            }
+            
+            Result SetDirectionInput() {
+                /* Validate our state. */
+                AMS_ASSERT(m_has_session);
+
+                /* TODO */
+                AMS_ABORT();
+            }
+            
+            Result SetDirectionOutput(gpio::GpioValue value) {
+                /* Validate our state. */
+                AMS_ASSERT(m_has_session);
+
+                /* TODO */
+                AMS_UNUSED(value);
+                AMS_ABORT();
+            }
+            
+            Result SetUnknownEnabled(bool enable) {
+                /* Validate our state. */
+                AMS_ASSERT(m_has_session);
+
+                /* TODO */
+                AMS_UNUSED(enable);
+                AMS_ABORT();
+            }
+
+            Result GetUnknownEnabled(ams::sf::Out<bool> out) {
                 /* Validate our state. */
                 AMS_ASSERT(m_has_session);
 

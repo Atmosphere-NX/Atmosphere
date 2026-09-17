@@ -81,9 +81,9 @@ namespace ams::gpio {
         ams::sf::SharedPointer<gpio::sf::IPadSession> session;
         {
             if (hos::GetVersion() >= hos::Version_7_0_0) {
-                R_TRY(g_manager->OpenSession2(std::addressof(session), device_code, ddsf::AccessMode_ReadWrite));
+                R_TRY(g_manager->OpenSession(std::addressof(session), device_code, ddsf::AccessMode_ReadWrite));
             } else {
-                R_TRY(g_manager->OpenSession(std::addressof(session), ConvertToGpioPadName(device_code)));
+                R_TRY(g_manager->OpenSessionDeprecated(std::addressof(session), ConvertToGpioPadName(device_code)));
             }
         }
 
@@ -110,9 +110,9 @@ namespace ams::gpio {
 
     Result IsWakeEventActive(bool *out_is_active, ams::DeviceCode device_code) {
         if (hos::GetVersion() >= hos::Version_7_0_0) {
-            R_TRY(g_manager->IsWakeEventActive2(out_is_active, device_code));
+            R_TRY(g_manager->IsWakeEventActive(out_is_active, device_code));
         } else {
-            R_TRY(g_manager->IsWakeEventActive(out_is_active, ConvertToGpioPadName(device_code)));
+            R_TRY(g_manager->IsWakeEventActiveDeprecated(out_is_active, ConvertToGpioPadName(device_code)));
         }
 
         R_SUCCEED();
@@ -125,7 +125,7 @@ namespace ams::gpio {
     }
 
     void SetDirection(GpioPadSession *session, Direction direction) {
-        R_ABORT_UNLESS(GetInterface(session)->SetDirection(direction));
+        R_ABORT_UNLESS(GetInterface(session)->SetDirectionDeprecated(direction));
     }
 
     GpioValue GetValue(GpioPadSession *session) {

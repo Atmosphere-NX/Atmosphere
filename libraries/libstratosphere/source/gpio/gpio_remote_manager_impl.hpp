@@ -27,31 +27,31 @@ namespace ams::gpio {
             ~RemoteManagerImpl() { /* ... */ }
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
+            Result OpenSessionForDevDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(out, pad_descriptor);
                 AMS_ABORT();
             }
 
-            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
+            Result OpenSessionDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
 
-            Result OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+            Result OpenSessionForTestDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(out, pad_name);
                 AMS_ABORT();
             }
 
-            Result IsWakeEventActive(ams::sf::Out<bool> out, gpio::GpioPadName pad_name) {
+            Result IsWakeEventActiveDeprecated(ams::sf::Out<bool> out, gpio::GpioPadName pad_name) {
                 R_RETURN(::gpioIsWakeEventActive2(out.GetPointer(), static_cast<::GpioPadName>(static_cast<u32>(pad_name))));
             }
 
-            Result GetWakeEventActiveFlagSet(ams::sf::Out<gpio::WakeBitFlag> out) {
+            Result GetWakeEventActiveFlagSetDeprecated(ams::sf::Out<gpio::WakeBitFlag> out) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
-            Result SetWakeEventActiveFlagSetForDebug(gpio::GpioPadName pad_name, bool is_enabled) {
+            Result SetWakeEventActiveFlagSetForDebugDeprecated(gpio::GpioPadName pad_name, bool is_enabled) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(pad_name, is_enabled);
                 AMS_ABORT();
@@ -63,19 +63,19 @@ namespace ams::gpio {
                 AMS_ABORT();
             }
 
-            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
 
-            Result IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code) {
+            Result IsWakeEventActive(ams::sf::Out<bool> out, DeviceCode device_code) {
                 R_RETURN(::gpioIsWakeEventActive2(out.GetPointer(), device_code.GetInternalValue()));
             }
 
-            Result SetWakeEventActiveFlagSetForDebug2(DeviceCode device_code, bool is_enabled) {
+            Result SetWakeEventActiveFlagSetForDebug(DeviceCode device_code, bool is_enabled) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(device_code, is_enabled);
                 AMS_ABORT();
             }
 
-            Result SetRetryValues(u32 arg0, u32 arg1) {
+            Result DumpStateForDebug(u32 arg0, u32 arg1) {
                 /* TODO: libnx bindings */
                 AMS_UNUSED(arg0, arg1);
                 AMS_ABORT();

@@ -27,35 +27,35 @@ namespace ams::gpio::server {
         lmem::DestroyExpHeap(m_heap_handle);
     }
 
-    Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
+    Result ManagerImpl::OpenSessionForDevDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
         /* TODO */
         AMS_UNUSED(out, pad_descriptor);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
-        R_RETURN(this->OpenSession2(out, ConvertToDeviceCode(pad_name), ddsf::AccessMode_ReadWrite));
+    Result ManagerImpl::OpenSessionDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+        R_RETURN(this->OpenSession(out, ConvertToDeviceCode(pad_name), ddsf::AccessMode_ReadWrite));
     }
 
-    Result ManagerImpl::OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+    Result ManagerImpl::OpenSessionForTestDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
         /* TODO */
         AMS_UNUSED(out, pad_name);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::IsWakeEventActive(ams::sf::Out<bool> out, gpio::GpioPadName pad_name) {
+    Result ManagerImpl::IsWakeEventActiveDeprecated(ams::sf::Out<bool> out, gpio::GpioPadName pad_name) {
         /* TODO */
         AMS_UNUSED(out, pad_name);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::GetWakeEventActiveFlagSet(ams::sf::Out<gpio::WakeBitFlag> out) {
+    Result ManagerImpl::GetWakeEventActiveFlagSetDeprecated(ams::sf::Out<gpio::WakeBitFlag> out) {
         /* TODO */
         AMS_UNUSED(out);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::SetWakeEventActiveFlagSetForDebug(gpio::GpioPadName pad_name, bool is_enabled) {
+    Result ManagerImpl::SetWakeEventActiveFlagSetForDebugDeprecated(gpio::GpioPadName pad_name, bool is_enabled) {
         /* TODO */
         AMS_UNUSED(pad_name, is_enabled);
         AMS_ABORT();
@@ -67,7 +67,7 @@ namespace ams::gpio::server {
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
+    Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
         /* Allocate a session. */
         auto session = Factory::CreateSharedEmplaced<gpio::sf::IPadSession, PadSessionImpl>(std::addressof(m_pad_allocator), this);
 
@@ -79,19 +79,19 @@ namespace ams::gpio::server {
         R_SUCCEED();
     }
 
-    Result ManagerImpl::IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code) {
+    Result ManagerImpl::IsWakeEventActive(ams::sf::Out<bool> out, DeviceCode device_code) {
         /* TODO */
         AMS_UNUSED(out, device_code);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::SetWakeEventActiveFlagSetForDebug2(DeviceCode device_code, bool is_enabled) {
+    Result ManagerImpl::SetWakeEventActiveFlagSetForDebug(DeviceCode device_code, bool is_enabled) {
         /* TODO */
         AMS_UNUSED(device_code, is_enabled);
         AMS_ABORT();
     }
 
-    Result ManagerImpl::SetRetryValues(u32 arg0, u32 arg1) {
+    Result ManagerImpl::DumpStateForDebug(u32 arg0, u32 arg1) {
         /* TODO */
         AMS_UNUSED(arg0, arg1);
         AMS_ABORT();

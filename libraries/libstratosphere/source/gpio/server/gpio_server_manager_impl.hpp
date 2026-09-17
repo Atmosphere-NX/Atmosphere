@@ -33,17 +33,17 @@ namespace ams::gpio::server {
             ~ManagerImpl();
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor);
-            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
-            Result OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
-            Result IsWakeEventActive(ams::sf::Out<bool> out, gpio::GpioPadName pad_name);
-            Result GetWakeEventActiveFlagSet(ams::sf::Out<gpio::WakeBitFlag> out);
-            Result SetWakeEventActiveFlagSetForDebug(gpio::GpioPadName pad_name, bool is_enabled);
+            Result OpenSessionForDevDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor);
+            Result OpenSessionDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
+            Result OpenSessionForTestDeprecated(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
+            Result IsWakeEventActiveDeprecated(ams::sf::Out<bool> out, gpio::GpioPadName pad_name);
+            Result GetWakeEventActiveFlagSetDeprecated(ams::sf::Out<gpio::WakeBitFlag> out);
+            Result SetWakeEventActiveFlagSetForDebugDeprecated(gpio::GpioPadName pad_name, bool is_enabled);
             Result SetWakePinDebugMode(s32 mode);
-            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
-            Result IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code);
-            Result SetWakeEventActiveFlagSetForDebug2(DeviceCode device_code, bool is_enabled);
-            Result SetRetryValues(u32 arg0, u32 arg1);
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
+            Result IsWakeEventActive(ams::sf::Out<bool> out, DeviceCode device_code);
+            Result SetWakeEventActiveFlagSetForDebug(DeviceCode device_code, bool is_enabled);
+            Result DumpStateForDebug(u32 arg0, u32 arg1);
 
     };
     static_assert(gpio::sf::IsIManager<ManagerImpl>);

@@ -28,7 +28,7 @@ namespace ams::gpio {
             ~RemotePadSessionImpl() { ::gpioPadClose(std::addressof(m_srv)); }
         public:
             /* Actual commands. */
-            Result SetDirection(gpio::Direction direction) {
+            Result SetDirectionDeprecated(gpio::Direction direction) {
                 R_RETURN(::gpioPadSetDirection(std::addressof(m_srv), static_cast<::GpioDirection>(static_cast<u32>(direction))));
             }
 
@@ -105,7 +105,30 @@ namespace ams::gpio {
                 AMS_ABORT();
             }
 
-            Result GetValueForSleepState(ams::sf::Out<gpio::GpioValue> out) {
+            Result GetMaxDebounceTime(ams::sf::Out<gpio::GpioValue> out) {
+                /* TODO: libnx bindings. */
+                AMS_UNUSED(out);
+                AMS_ABORT();
+            }
+            
+            Result SetDirectionInput() {
+                /* TODO: libnx bindings. */
+                AMS_ABORT();
+            }
+            
+            Result SetDirectionOutput(gpio::GpioValue value) {
+                /* TODO: libnx bindings. */
+                AMS_UNUSED(value);
+                AMS_ABORT();
+            }
+            
+            Result SetUnknownEnabled(bool enable) {
+                /* TODO: libnx bindings. */
+                AMS_UNUSED(enable);
+                AMS_ABORT();
+            }
+
+            Result GetUnknownEnabled(ams::sf::Out<bool> out) {
                 /* TODO: libnx bindings. */
                 AMS_UNUSED(out);
                 AMS_ABORT();
