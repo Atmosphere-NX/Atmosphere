@@ -33,24 +33,10 @@ namespace ams::kern {
 
     class KResourceLimit;
 
-    struct CtrDrbgContext {
-        u8  v[16];
-        u8  key[16];
-        u8  seed[32];
-        u8  temp[32];
-        u32 reseed_counter;
-        u8  output[128];
-        u32 remaining;
-    };
-
     class KSystemControlBase {
         public:
             /* This can be overridden as needed. */
             static constexpr size_t SecureAppletMemorySize = 0;
-        protected:
-            static constinit inline bool            s_uninitialized_random_generator{true};
-            static constinit inline CtrDrbgContext  s_random_generator{};
-            static constinit inline KSpinLock       s_random_lock;
         private:
             /* Randomness helpers. */
             static void InitializeRandomGenerator(const void *seed, size_t size);

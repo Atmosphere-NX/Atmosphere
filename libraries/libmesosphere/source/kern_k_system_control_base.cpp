@@ -14,7 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere.hpp>
-#include <vapours/crypto/impl/crypto_aes_impl.hpp>
+#include <vapours/crypto/crypto_aes_encryptor.hpp>
+#include <vapours/crypto/impl/crypto_ctr_drbg.hpp>
 #if defined(ATMOSPHERE_ARCH_ARM64)
 #include <mesosphere/arch/arm64/kern_secure_monitor_base.hpp>
 #endif
@@ -46,33 +47,19 @@ namespace ams::kern {
                 }
         };
 
-        ALWAYS_INLINE void CtrDrbgIncrementCounter(u8 *v) {
-            for (size_t i = 16; i > 0; --i) {
-                if ((++v[i - 1]) != 0) {
-                    break;
-                }
-            }
-        }
+        using RandomGenerator = ::ams::crypto::impl::CtrDrbg<::ams::crypto::AesEncryptor128, 16, false>;
 
-        void CtrDrbgUpdate(CtrDrbgContext &ctx, const u8 *data) {
-            /* Initialize the block cipher with the current key. */
-            ams::crypto::impl::AesImpl<16> aes;
-            aes.Initialize(ctx.key, sizeof(ctx.key), true);
+        constexpr size_t RandomGeneratorOutputSize  = 8 * RandomGenerator::OutSize;
+        constexpr u32    RandomGeneratorOutputCount = RandomGeneratorOutputSize / sizeof(u32);
 
-            /* Generate two blocks of new key/counter material. */
-            CtrDrbgIncrementCounter(ctx.v);
-            aes.EncryptBlock(ctx.temp + 0,  16, ctx.v, 16);
-            CtrDrbgIncrementCounter(ctx.v);
-            aes.EncryptBlock(ctx.temp + 16, 16, ctx.v, 16);
+        constinit util::TypedStorage<RandomGenerator> s_random_generator               = {};
+        constinit bool                                s_uninitialized_random_generator = true;
+        constinit u8                                  s_random_output[RandomGeneratorOutputSize] = {};
+        constinit u32                                 s_random_remaining               = 0;
+        constinit KSpinLock                           s_random_lock;
 
-            /* Mix in the provided data. */
-            for (size_t i = 0; i < sizeof(ctx.temp); ++i) {
-                ctx.temp[i] ^= data[i];
-            }
-
-            /* Update the key and counter. */
-            std::memcpy(ctx.key, ctx.temp,                   sizeof(ctx.key));
-            std::memcpy(ctx.v,   ctx.temp + sizeof(ctx.key), sizeof(ctx.v));
+        void GenerateRandomSeed(void *dst, size_t size) {
+            KSystemControl::GenerateRandomBytesForUninitialized(dst, size);
         }
 
     }
@@ -255,72 +242,52 @@ namespace ams::kern {
 
     /* Randomness helpers. Assume the caller holds the random lock. */
     void KSystemControlBase::InitializeRandomGenerator(const void *seed, size_t size) {
-        MESOSPHERE_ASSERT(size == sizeof(s_random_generator.seed));
+        MESOSPHERE_ASSERT(size == RandomGenerator::SeedSize);
 
         KScopedFpuEnable fp_enabled;
-        auto &ctx = s_random_generator;
 
-        /* Zero the counter and key, then derive the initial state from the seed. */
-        std::memset(ctx.v,   0, sizeof(ctx.v));
-        std::memset(ctx.key, 0, sizeof(ctx.key));
-        std::memcpy(ctx.seed, seed, sizeof(ctx.seed));
+        /* Construct the generator, and derive the initial state from the seed. */
+        util::ConstructAt(s_random_generator);
+        util::GetReference(s_random_generator).Initialize(seed, size, nullptr, 0, nullptr, 0);
 
-        CtrDrbgUpdate(ctx, ctx.seed);
-
-        ctx.reseed_counter = 1;
-        ctx.remaining      = 0;
+        s_random_remaining = 0;
     }
 
     void KSystemControlBase::ReseedRandomGeneratorInternal() {
         KScopedFpuEnable fp_enabled;
-        auto &ctx = s_random_generator;
 
         /* Pull fresh entropy, then derive a new state from it. */
-        KSystemControl::GenerateRandomBytesForUninitialized(ctx.seed, sizeof(ctx.seed));
-        CtrDrbgUpdate(ctx, ctx.seed);
+        u8 seed[RandomGenerator::SeedSize];
+        GenerateRandomSeed(seed, sizeof(seed));
+        util::GetReference(s_random_generator).Reseed(seed, sizeof(seed), nullptr, 0);
 
-        ctx.remaining      = 0;
-        ctx.reseed_counter = 1;
+        s_random_remaining = 0;
     }
 
     u32 KSystemControlBase::GenerateRandomU32() {
-        auto &ctx = s_random_generator;
-
-        if (ctx.remaining == 0) {
+        if (s_random_remaining == 0) {
             KScopedFpuEnable fp_enabled;
 
-            /* Reseed if we've exhausted this generation's entropy, otherwise use zero additional input. */
-            if (ctx.reseed_counter <= 0x7FFFFFF0) {
-                std::memset(ctx.seed, 0, sizeof(ctx.seed));
-            } else {
-                KSystemControl::GenerateRandomBytesForUninitialized(ctx.seed, sizeof(ctx.seed));
-                CtrDrbgUpdate(ctx, ctx.seed);
-                ctx.remaining = 0;
-                std::memset(ctx.seed, 0, sizeof(ctx.seed));
-                ctx.reseed_counter = 1;
+            auto &drbg = util::GetReference(s_random_generator);
+
+            /* Derive the next state, or reseed if we've exhausted this generation's entropy. */
+            if (AMS_UNLIKELY(!drbg.Generate(s_random_output, sizeof(s_random_output), nullptr, 0))) {
+                u8 seed[RandomGenerator::SeedSize];
+                GenerateRandomSeed(seed, sizeof(seed));
+                drbg.Reseed(seed, sizeof(seed), nullptr, 0);
+
+                MESOSPHERE_ABORT_UNLESS(drbg.Generate(s_random_output, sizeof(s_random_output), nullptr, 0));
             }
 
-            /* Generate eight blocks of output. */
-            ams::crypto::impl::AesImpl<16> aes;
-            aes.Initialize(ctx.key, sizeof(ctx.key), true);
-            for (size_t i = 0; i < 8; ++i) {
-                CtrDrbgIncrementCounter(ctx.v);
-                aes.EncryptBlock(ctx.output + 16 * i, 16, ctx.v, 16);
-            }
-
-            /* Derive the next state. */
-            CtrDrbgUpdate(ctx, ctx.seed);
-
-            ++ctx.reseed_counter;
-            ctx.remaining = 32;
+            s_random_remaining = RandomGeneratorOutputCount;
         }
 
         /* Consume a word from the output buffer, zeroizing it in place for backtracking resistance. */
-        const size_t index = 32 - ctx.remaining;
+        const size_t index = RandomGeneratorOutputCount - s_random_remaining;
         u32 value;
-        std::memcpy(std::addressof(value), ctx.output + 4 * index, sizeof(value));
-        std::memset(ctx.output + 4 * index, 0, sizeof(value));
-        --ctx.remaining;
+        std::memcpy(std::addressof(value), s_random_output + sizeof(value) * index, sizeof(value));
+        std::memset(s_random_output + sizeof(value) * index, 0, sizeof(value));
+        --s_random_remaining;
         return value;
     }
 
