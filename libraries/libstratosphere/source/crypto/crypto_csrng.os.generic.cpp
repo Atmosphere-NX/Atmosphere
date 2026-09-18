@@ -14,14 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "../spl/impl/spl_ctr_drbg.hpp"
+#include <vapours/crypto/impl/crypto_ctr_drbg.hpp>
 #include <sys/random.h>
 
 namespace ams::crypto {
 
     namespace {
 
-        using Drbg = ::ams::spl::impl::CtrDrbg<crypto::AesEncryptor128, crypto::AesEncryptor128::KeySize, false>;
+        using Drbg = ::ams::crypto::impl::CtrDrbg<crypto::AesEncryptor128, crypto::AesEncryptor128::KeySize, false>;
 
         constinit util::TypedStorage<Drbg> g_drbg = {};
 

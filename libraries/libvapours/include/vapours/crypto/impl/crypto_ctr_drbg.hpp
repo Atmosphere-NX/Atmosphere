@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::spl::impl {
+namespace ams::crypto::impl {
 
     constexpr inline int BitsPerByte = BITSIZEOF(u8);
 
