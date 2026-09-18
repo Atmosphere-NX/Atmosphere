@@ -264,6 +264,11 @@ namespace ams::kern {
         m_is_default_application_system_resource = false;
         m_is_immortal                            = immortal;
 
+        /* Reseed the random generator on application launch. */
+        if (params.flags & ams::svc::CreateProcessFlag_IsApplication) {
+            KSystemControl::ReseedRandomGenerator();
+        }
+
         /* Setup our system resource. */
         if (const size_t system_resource_num_pages = params.system_resource_num_pages; system_resource_num_pages != 0) {
             /* Create a secure system resource. */
@@ -331,6 +336,11 @@ namespace ams::kern {
         m_resource_limit                         = res_limit;
         m_is_default_application_system_resource = false;
         m_is_immortal                            = false;
+
+        /* Reseed the random generator on application launch. */
+        if (params.flags & ams::svc::CreateProcessFlag_IsApplication) {
+            KSystemControl::ReseedRandomGenerator();
+        }
 
         /* Get the memory sizes. */
         const size_t code_num_pages            = params.code_num_pages;

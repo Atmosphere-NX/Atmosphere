@@ -14,13 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vapours.hpp>
-#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#if defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere/kern_panic.hpp>
+#endif
+#if defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
 #include <arm_neon.h>
 #endif
 
 namespace ams::crypto::impl {
 
-#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#if defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
 
 
     namespace {

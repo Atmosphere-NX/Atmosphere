@@ -108,6 +108,8 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 
 kern_libc_generic.o: CFLAGS += -fno-builtin
 
+crypto_aes_impl.arch.arm64.o: CXXFLAGS := $(filter-out -mgeneral-regs-only,$(CXXFLAGS))
+
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin
 #---------------------------------------------------------------------------------

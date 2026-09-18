@@ -33,17 +33,30 @@ namespace ams::kern {
 
     class KResourceLimit;
 
+    struct CtrDrbgContext {
+        u8  v[16];
+        u8  key[16];
+        u8  seed[32];
+        u8  temp[32];
+        u32 reseed_counter;
+        u8  output[128];
+        u32 remaining;
+    };
+
     class KSystemControlBase {
         public:
             /* This can be overridden as needed. */
             static constexpr size_t SecureAppletMemorySize = 0;
         protected:
-            /* Nintendo uses std::mt19937_t for randomness. */
-            /* To save space (and because mt19337_t isn't secure anyway), */
-            /* We will use TinyMT. */
-            static constinit inline bool         s_uninitialized_random_generator{true};
-            static constinit inline util::TinyMT s_random_generator{util::ConstantInitialize};
-            static constinit inline KSpinLock    s_random_lock;
+            static constinit inline bool            s_uninitialized_random_generator{true};
+            static constinit inline CtrDrbgContext  s_random_generator{};
+            static constinit inline KSpinLock       s_random_lock;
+        private:
+            /* Randomness helpers. */
+            static void InitializeRandomGenerator(const void *seed, size_t size);
+            static void ReseedRandomGeneratorInternal();
+            static u32  GenerateRandomU32();
+            static u64  GenerateRandomU64Internal();
         public:
             class Init {
                 private:
@@ -66,7 +79,7 @@ namespace ams::kern {
                     static u64  GenerateRandomRange(u64 min, u64 max);
             };
         protected:
-            static NOINLINE void InitializePhase1Base(u64 seed);
+            static NOINLINE void InitializePhase1Base(const void *seed, size_t size);
         public:
             /* Initialization. */
             static NOINLINE void ConfigureKTargetSystem();
@@ -78,6 +91,10 @@ namespace ams::kern {
             static void GenerateRandom(u64 *dst, size_t count);
             static u64  GenerateRandomRange(u64 min, u64 max);
             static u64  GenerateRandomU64();
+            static void ReseedRandomGenerator();
+
+            /* Obtains random bytes while the generator is not yet initialized. Board-provided. */
+            static void GenerateRandomBytesForUninitialized(void *dst, size_t size);
 
             /* Register access Access. */
             static Result ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
