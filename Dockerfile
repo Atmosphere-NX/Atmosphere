@@ -56,7 +56,7 @@ RUN dkp-pacman -S switch-tools hactool --noconfirm && dkp-pacman -Syu --noconfir
 #     rm -rf /tmp/switch-tools
 
 # Install libnx from Git (optional)
-# ENV LIBNX_REV=dbcc1beafc6b47b5ffbeb8ba82463a7d45da40bb
+# ENV LIBNX_REV=146c3d1446d35546943c7b6cfcd479bc1f5e9b67
 # RUN cd /tmp && \
 #     mkdir -p /tmp/libnx && \
 #     cd /tmp/libnx && \
@@ -65,9 +65,8 @@ RUN dkp-pacman -S switch-tools hactool --noconfirm && dkp-pacman -Syu --noconfir
 #     git fetch --depth 1 origin $LIBNX_REV && \
 #     git reset --hard FETCH_HEAD && \
 #     make -j$(nproc) && \
-#     mkdir -p /opt/devkitpro/libnx && \
 #     cd nx && \
-#     make DESTDIR=/opt/devkitpro/libnx install && \
+#     make install && \
 #     cd /tmp && \
 #     rm -rf /tmp/libnx
 

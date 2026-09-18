@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere.hpp>
+#include <vapours/crypto/crypto_aes_encryptor.hpp>
+#include <vapours/crypto/impl/crypto_ctr_drbg.hpp>
 #if defined(ATMOSPHERE_ARCH_ARM64)
 #include <mesosphere/arch/arm64/kern_secure_monitor_base.hpp>
 #endif
@@ -24,6 +26,41 @@ namespace ams::kern {
 
         /* TODO: Is this function name architecture specific? */
         void StartOtherCore(const ams::kern::init::KInitArguments *init_args);
+
+    }
+
+    namespace {
+
+        /* The kernel is otherwise FP/SIMD-free, but AES instructions require the NEON registers. */
+        class KScopedFpuEnable {
+            private:
+                u64 m_saved_cpacr_el1;
+            public:
+                ALWAYS_INLINE KScopedFpuEnable() : m_saved_cpacr_el1(cpu::GetCpacrEl1()) {
+                    cpu::SetCpacrEl1(m_saved_cpacr_el1 | 0x100000);
+                    cpu::InstructionMemoryBarrier();
+                }
+
+                ALWAYS_INLINE ~KScopedFpuEnable() {
+                    cpu::SetCpacrEl1(m_saved_cpacr_el1);
+                    cpu::InstructionMemoryBarrier();
+                }
+        };
+
+        using RandomGenerator = ::ams::crypto::impl::CtrDrbg<::ams::crypto::AesEncryptor128, 16, false>;
+
+        constexpr size_t RandomGeneratorOutputSize  = 8 * RandomGenerator::OutSize;
+        constexpr u32    RandomGeneratorOutputCount = RandomGeneratorOutputSize / sizeof(u32);
+
+        constinit util::TypedStorage<RandomGenerator> s_random_generator               = {};
+        constinit bool                                s_uninitialized_random_generator = true;
+        constinit u8                                  s_random_output[RandomGeneratorOutputSize] = {};
+        constinit u32                                 s_random_remaining               = 0;
+        constinit KSpinLock                           s_random_lock;
+
+        void GenerateRandomSeed(void *dst, size_t size) {
+            KSystemControl::GenerateRandomBytesForUninitialized(dst, size);
+        }
 
     }
 
@@ -102,25 +139,13 @@ namespace ams::kern {
 
     /* Randomness for Initialization. */
     void KSystemControlBase::Init::GenerateRandom(u64 *dst, size_t count) {
-        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
-            const u64 seed = KHardwareTimer::GetTick();
-            s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_uninitialized_random_generator = false;
-        }
-
         for (size_t i = 0; i < count; ++i) {
-            dst[i] = s_random_generator.GenerateRandomU64();
+            dst[i] = KSystemControlBase::GenerateRandomU64();
         }
     }
 
     u64 KSystemControlBase::Init::GenerateRandomRange(u64 min, u64 max) {
-        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
-            const u64 seed = KHardwareTimer::GetTick();
-            s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_uninitialized_random_generator = false;
-        }
-
-        return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
+        return KSystemControlBase::GenerateRandomRange(min, max);
     }
 
     /* System Initialization. */
@@ -135,15 +160,17 @@ namespace ams::kern {
         }
 
         /* Initialize random and resource limit. */
-        KSystemControlBase::InitializePhase1Base(KHardwareTimer::GetTick());
+        u64 seed[4];
+        for (size_t i = 0; i < util::size(seed); ++i) {
+            seed[i] = KHardwareTimer::GetTick();
+        }
+        KSystemControlBase::InitializePhase1Base(seed, sizeof(seed));
     }
 
-    void KSystemControlBase::InitializePhase1Base(u64 seed) {
-        /* Initialize the rng, if we somehow haven't already. */
-        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
-            s_random_generator.Initialize(reinterpret_cast<const u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
-            s_uninitialized_random_generator = false;
-        }
+    void KSystemControlBase::InitializePhase1Base(const void *seed, size_t size) {
+        /* Initialize the random generator. */
+        KSystemControlBase::InitializeRandomGenerator(seed, size);
+        s_uninitialized_random_generator = false;
 
         /* Initialize debug logging. */
         KDebugLog::Initialize();
@@ -213,13 +240,77 @@ namespace ams::kern {
         R_THROW(svc::ResultNotImplemented());
     }
 
+    /* Randomness helpers. Assume the caller holds the random lock. */
+    void KSystemControlBase::InitializeRandomGenerator(const void *seed, size_t size) {
+        MESOSPHERE_ASSERT(size == RandomGenerator::SeedSize);
+
+        KScopedFpuEnable fp_enabled;
+
+        /* Construct the generator, and derive the initial state from the seed. */
+        util::ConstructAt(s_random_generator);
+        util::GetReference(s_random_generator).Initialize(seed, size, nullptr, 0, nullptr, 0);
+
+        s_random_remaining = 0;
+    }
+
+    void KSystemControlBase::ReseedRandomGeneratorInternal() {
+        KScopedFpuEnable fp_enabled;
+
+        /* Pull fresh entropy, then derive a new state from it. */
+        u8 seed[RandomGenerator::SeedSize];
+        GenerateRandomSeed(seed, sizeof(seed));
+        util::GetReference(s_random_generator).Reseed(seed, sizeof(seed), nullptr, 0);
+
+        s_random_remaining = 0;
+    }
+
+    u32 KSystemControlBase::GenerateRandomU32() {
+        if (s_random_remaining == 0) {
+            KScopedFpuEnable fp_enabled;
+
+            auto &drbg = util::GetReference(s_random_generator);
+
+            /* Derive the next state, or reseed if we've exhausted this generation's entropy. */
+            if (AMS_UNLIKELY(!drbg.Generate(s_random_output, sizeof(s_random_output), nullptr, 0))) {
+                u8 seed[RandomGenerator::SeedSize];
+                GenerateRandomSeed(seed, sizeof(seed));
+                drbg.Reseed(seed, sizeof(seed), nullptr, 0);
+
+                MESOSPHERE_ABORT_UNLESS(drbg.Generate(s_random_output, sizeof(s_random_output), nullptr, 0));
+            }
+
+            s_random_remaining = RandomGeneratorOutputCount;
+        }
+
+        /* Consume a word from the output buffer, zeroizing it in place for backtracking resistance. */
+        const size_t index = RandomGeneratorOutputCount - s_random_remaining;
+        u32 value;
+        std::memcpy(std::addressof(value), s_random_output + sizeof(value) * index, sizeof(value));
+        std::memset(s_random_output + sizeof(value) * index, 0, sizeof(value));
+        --s_random_remaining;
+        return value;
+    }
+
+    u64 KSystemControlBase::GenerateRandomU64Internal() {
+        /* Fall back to the board's raw source while the generator is uninitialized. */
+        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
+            u64 value;
+            KSystemControl::GenerateRandomBytesForUninitialized(std::addressof(value), sizeof(value));
+            return value;
+        }
+
+        const u64 high = KSystemControlBase::GenerateRandomU32();
+        const u64 low  = KSystemControlBase::GenerateRandomU32();
+        return (high << 32) | low;
+    }
+
     /* Randomness. */
     void KSystemControlBase::GenerateRandom(u64 *dst, size_t count) {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(s_random_lock);
 
         for (size_t i = 0; i < count; ++i) {
-            dst[i] = s_random_generator.GenerateRandomU64();
+            dst[i] = KSystemControlBase::GenerateRandomU64Internal();
         }
     }
 
@@ -227,14 +318,46 @@ namespace ams::kern {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(s_random_lock);
 
-        return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
+        /* While uninitialized, fall back to a raw single-draw modulo. */
+        if (AMS_UNLIKELY(s_uninitialized_random_generator)) {
+            u64 value;
+            KSystemControl::GenerateRandomBytesForUninitialized(std::addressof(value), sizeof(value));
+
+            const u64 difference = max - min;
+            if (difference == std::numeric_limits<u64>::max()) {
+                return value;
+            }
+
+            return min + (value % (difference + 1));
+        }
+
+        return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return KSystemControlBase::GenerateRandomU64Internal(); });
     }
 
     u64 KSystemControlBase::GenerateRandomU64() {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(s_random_lock);
 
-        return s_random_generator.GenerateRandomU64();
+        return KSystemControlBase::GenerateRandomU64Internal();
+    }
+
+    void KSystemControlBase::ReseedRandomGenerator() {
+        /* This must be unreachable while the generator is uninitialized. */
+        MESOSPHERE_ABORT_UNLESS(!s_uninitialized_random_generator);
+
+        KScopedInterruptDisable intr_disable;
+        KScopedSpinLock lk(s_random_lock);
+
+        KSystemControlBase::ReseedRandomGeneratorInternal();
+    }
+
+    void KSystemControlBase::GenerateRandomBytesForUninitialized(void *dst, size_t size) {
+        /* The default board has no secure monitor; fall back to the hardware timer. */
+        u8 *dst_8 = static_cast<u8 *>(dst);
+        for (size_t offset = 0; offset < size; offset += sizeof(u64)) {
+            const u64 tick = KHardwareTimer::GetTick();
+            std::memcpy(dst_8 + offset, std::addressof(tick), std::min(sizeof(tick), size - offset));
+        }
     }
 
     void KSystemControlBase::SleepSystem() {

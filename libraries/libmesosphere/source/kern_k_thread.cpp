@@ -214,6 +214,10 @@ namespace ams::kern {
         m_tls_address                   = 0;
         m_tls_heap_address              = 0;
 
+        /* Set shadow stack address and page. */
+        m_shadow_stack_address          = Null<KProcessAddress>;
+        m_shadow_stack_page             = nullptr;
+
         /* Set parent and condvar tree. */
         m_parent                        = nullptr;
         m_condvar_tree                  = nullptr;
@@ -281,6 +285,29 @@ namespace ams::kern {
             R_TRY(owner->CreateThreadLocalRegion(std::addressof(m_tls_address)));
             m_tls_heap_address = owner->GetThreadLocalRegionPointer(m_tls_address);
             std::memset(m_tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
+
+            /* If the owning process has a shadow stack, allocate and map a page for this thread. */
+            if (owner->GetCreateProcessParameterFlags() & ams::svc::CreateProcessParameterFlag_EnableShadowStack) {
+                /* Allocate the backing page. */
+                KPageBuffer *page = KPageBuffer::AllocateChecked<PageSize>();
+                if (page == nullptr) {
+                    owner->DeleteThreadLocalRegion(m_tls_address);
+                    m_tls_address = Null<KProcessAddress>;
+                    R_THROW(svc::ResultOutOfMemory());
+                }
+
+                /* If we fail to map the page, free it and undo the TLS region we just created. */
+                ON_RESULT_FAILURE {
+                    KPageBuffer::Free(page);
+                    owner->DeleteThreadLocalRegion(m_tls_address);
+                    m_tls_address = Null<KProcessAddress>;
+                };
+
+                /* Map the page into the process's shadow stack region. */
+                R_TRY(owner->GetPageTable().MapPages(std::addressof(m_shadow_stack_address), 1, PageSize, page->GetPhysicalAddress(), KMemoryState_ShadowStack, KMemoryPermission_UserReadWrite));
+
+                m_shadow_stack_page = page;
+            }
         }
 
         /* Set parent, if relevant. */
@@ -388,6 +415,12 @@ namespace ams::kern {
         /* If the thread has an owner process, unregister it. */
         if (m_parent != nullptr) {
             m_parent->UnregisterThread(this);
+        }
+
+        /* If the thread has a shadow stack, unmap and free its page. */
+        if (m_shadow_stack_address != Null<KProcessAddress>) {
+            MESOSPHERE_R_ABORT_UNLESS(m_parent->GetPageTable().UnmapPages(m_shadow_stack_address, 1, KMemoryState_ShadowStack));
+            KPageBuffer::Free(m_shadow_stack_page);
         }
 
         /* If the thread has a local region, delete it. */

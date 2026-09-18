@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "spl_ctr_drbg.hpp"
+#include <vapours/crypto/impl/crypto_ctr_drbg.hpp>
 #include "spl_device_address_mapper.hpp"
 #include "spl_key_slot_cache.hpp"
 
@@ -29,7 +29,7 @@ namespace ams::spl::impl {
     namespace {
 
         /* Drbg type. */
-        using Drbg = CtrDrbg<crypto::AesEncryptor128, AesKeySize, false>;
+        using Drbg = crypto::impl::CtrDrbg<crypto::AesEncryptor128, AesKeySize, false>;
 
         /* Convenient defines. */
         #if defined(ATMOSPHERE_OS_HORIZON)

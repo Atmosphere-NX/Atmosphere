@@ -89,6 +89,12 @@ namespace ams::spl {
         return ::ams::spl::GetConfigBool(::ams::spl::ConfigItem::ExosphereForceEnableUsb30);
     }
 
+    inline std::pair<u8, u32> GetLogConfiguration() {
+        u64 v;
+        R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::ExosphereLogConfiguration));
+        return std::make_pair(static_cast<u8>(v >> 32), static_cast<u32>(v));
+    }
+
     Result SetBootReason(BootReasonValue boot_reason);
     Result GetBootReason(BootReasonValue *out);
 

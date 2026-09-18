@@ -196,6 +196,7 @@ namespace ams::kern::arch::arm64 {
                         case EsrEc_Cp14McrMrc:
                         case EsrEc_Cp14Mrrc:
                         case EsrEc_SystemInstruction64:
+                        case EsrEc_SveZen:
                         case EsrEc_BkptInstruction:
                         case EsrEc_BrkInstruction:
                             type = ams::svc::ExceptionType_InstructionAbort;
@@ -267,6 +268,7 @@ namespace ams::kern::arch::arm64 {
                 switch (ec) {
                      case EsrEc_Unknown:
                      case EsrEc_IllegalExecution:
+                     case EsrEc_SveZen:
                      case EsrEc_BkptInstruction:
                      case EsrEc_BrkInstruction:
                          {
@@ -474,6 +476,7 @@ namespace ams::kern::arch::arm64 {
                 switch (ec) {
                      case EsrEc_Unknown:
                      case EsrEc_IllegalExecution:
+                     case EsrEc_SveZen:
                      case EsrEc_BkptInstruction:
                      case EsrEc_BrkInstruction:
                          {
@@ -564,6 +567,7 @@ namespace ams::kern::arch::arm64 {
         switch ((esr >> 26) & 0x3F) {
             case EsrEc_Unknown:
             case EsrEc_IllegalExecution:
+            case EsrEc_SveZen:
             case EsrEc_BkptInstruction:
             case EsrEc_BrkInstruction:
                 far   = context->pc;

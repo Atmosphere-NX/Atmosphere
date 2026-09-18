@@ -17,7 +17,6 @@
 #include "pinmux_pad_index.hpp"
 #include "pinmux_board_driver_api.hpp"
 #include "pinmux_platform_pads.hpp"
-#include "pinmux_build_config.hpp"
 
 namespace ams::pinmux::driver::board::nintendo::nx {
 
@@ -101,30 +100,33 @@ namespace ams::pinmux::driver::board::nintendo::nx {
             UpdateSinglePinmuxPad({ PinmuxPadIndex_Sdmmc2Dat7, 0x2000, 0x2000 });
         }
 
-        #if defined(AMS_PINMUX_CONFIG_RIGHT_RAIL_AS_UART)
-        UpdateSinglePinmuxPad({ 
-            .index       = PinmuxPadIndex_Uart2Tx,
-            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
-            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
-        });
-        UpdateSinglePinmuxPad({ 
-            .index       = PinmuxPadIndex_Uart2Cts,
-            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
-            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
-        });
-        #endif
-        #if defined(AMS_PINMUX_CONFIG_LEFT_RAIL_AS_UART)
-        UpdateSinglePinmuxPad({ 
-            .index       = PinmuxPadIndex_Uart3Tx,
-            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
-            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
-        });
-        UpdateSinglePinmuxPad({ 
-            .index       = PinmuxPadIndex_Uart3Cts,
-            .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
-            .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
-        });
-        #endif
+        auto [log_port, log_baud_rate] = spl::GetLogConfiguration();
+        AMS_UNUSED(log_baud_rate);
+
+        if (log_port == 1) {
+            UpdateSinglePinmuxPad({ 
+                .index       = PinmuxPadIndex_Uart2Tx,
+                .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
+                .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
+            });
+            UpdateSinglePinmuxPad({ 
+                .index       = PinmuxPadIndex_Uart2Cts,
+                .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
+                .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
+            });
+        }
+        if (log_port == 2) {
+            UpdateSinglePinmuxPad({ 
+                .index       = PinmuxPadIndex_Uart3Tx,
+                .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Output,
+                .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
+            });
+            UpdateSinglePinmuxPad({ 
+                .index       = PinmuxPadIndex_Uart3Cts,
+                .option      = (u32)PinmuxPadPm_Pm0 | PinmuxOpt_NoPupd | PinmuxOpt_Input,
+                .option_mask = (u32)PinmuxOptBitMask_Pm | PinmuxOptBitMask_Pupd | PinmuxOptBitMask_Dir,
+            });
+        }
     }
 
     void SetInitialDrivePadConfig() {

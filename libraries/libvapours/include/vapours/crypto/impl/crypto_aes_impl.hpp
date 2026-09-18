@@ -33,7 +33,7 @@ namespace ams::crypto::impl {
         #ifdef ATMOSPHERE_IS_EXOSPHERE
             int m_slot;
         #endif
-        #ifdef ATMOSPHERE_IS_STRATOSPHERE
+        #if defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
             u32 m_round_keys[RoundKeySize / sizeof(u32)];
         #endif
         public:
@@ -43,7 +43,7 @@ namespace ams::crypto::impl {
             void EncryptBlock(void *dst, size_t dst_size, const void *src, size_t src_size) const;
             void DecryptBlock(void *dst, size_t dst_size, const void *src, size_t src_size) const;
 
-        #ifdef ATMOSPHERE_IS_STRATOSPHERE
+        #if defined(ATMOSPHERE_IS_STRATOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
             const u8 *GetRoundKey() const {
                 return reinterpret_cast<const u8 *>(m_round_keys);
             }

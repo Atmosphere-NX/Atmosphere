@@ -74,12 +74,6 @@ namespace ams::kern::board::nintendo::nx {
             return value;
         }
 
-        ALWAYS_INLINE u64 GenerateRandomU64FromSmc() {
-            u64 value;
-            smc::GenerateRandomBytes(std::addressof(value), sizeof(value));
-            return value;
-        }
-
         ALWAYS_INLINE u64 GetConfigU64(smc::ConfigItem which) {
             u64 value;
             smc::GetConfig(&value, 1, which);
@@ -477,9 +471,9 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Initialize random and resource limit. */
         {
-            u64 seed;
-            smc::GenerateRandomBytes(std::addressof(seed), sizeof(seed));
-            KSystemControlBase::InitializePhase1Base(seed);
+            u8 seed[32];
+            smc::GenerateRandomBytes(seed, sizeof(seed));
+            KSystemControlBase::InitializePhase1Base(seed, sizeof(seed));
         }
 
         /* Configure the Kernel Carveout region. */
@@ -524,32 +518,8 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     /* Randomness. */
-    void KSystemControl::GenerateRandom(u64 *dst, size_t count) {
-        MESOSPHERE_INIT_ABORT_UNLESS(count <= 7);
-        smc::GenerateRandomBytes(dst, count * sizeof(u64));
-    }
-
-    u64 KSystemControl::GenerateRandomRange(u64 min, u64 max) {
-        KScopedInterruptDisable intr_disable;
-        KScopedSpinLock lk(s_random_lock);
-
-
-        if (AMS_LIKELY(!s_uninitialized_random_generator)) {
-            return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
-        } else {
-            return KSystemControlBase::GenerateUniformRange(min, max, GenerateRandomU64FromSmc);
-        }
-    }
-
-    u64 KSystemControl::GenerateRandomU64() {
-        KScopedInterruptDisable intr_disable;
-        KScopedSpinLock lk(s_random_lock);
-
-        if (AMS_LIKELY(!s_uninitialized_random_generator)) {
-            return s_random_generator.GenerateRandomU64();
-        } else {
-            return GenerateRandomU64FromSmc();
-        }
+    void KSystemControl::GenerateRandomBytesForUninitialized(void *dst, size_t size) {
+        smc::GenerateRandomBytes(dst, size);
     }
 
     void KSystemControl::SleepSystem() {
