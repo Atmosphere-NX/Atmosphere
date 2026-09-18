@@ -265,7 +265,7 @@ namespace ams::kern {
         m_is_immortal                            = immortal;
 
         /* Reseed the random generator on application launch. */
-        if (params.flags & ams::svc::CreateProcessFlag_IsApplication) {
+        if (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication) {
             KSystemControl::ReseedRandomGenerator();
         }
 
@@ -338,7 +338,7 @@ namespace ams::kern {
         m_is_immortal                            = false;
 
         /* Reseed the random generator on application launch. */
-        if (params.flags & ams::svc::CreateProcessFlag_IsApplication) {
+        if (params.flags & ams::svc::CreateProcessParameterFlag_IsApplication) {
             KSystemControl::ReseedRandomGenerator();
         }
 

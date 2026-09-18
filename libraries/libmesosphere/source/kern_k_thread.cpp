@@ -287,7 +287,7 @@ namespace ams::kern {
             std::memset(m_tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
 
             /* If the owning process has a shadow stack, allocate and map a page for this thread. */
-            if (owner->GetCreateProcessFlags() & ams::svc::CreateProcessFlag_EnableShadowStack) {
+            if (owner->GetCreateProcessParameterFlags() & ams::svc::CreateProcessParameterFlag_EnableShadowStack) {
                 /* Allocate the backing page. */
                 KPageBuffer *page = KPageBuffer::AllocateChecked<PageSize>();
                 if (page == nullptr) {
