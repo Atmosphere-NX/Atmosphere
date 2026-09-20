@@ -532,8 +532,8 @@ namespace ams::htcfs {
         Header request, response;
 
         /* Create header for the request. */
-        const auto old_path_len = std::strlen(new_path);
-        const auto new_path_len = std::strlen(old_path);
+        const auto old_path_len = std::strlen(old_path);
+        const auto new_path_len = std::strlen(new_path);
         m_header_factory.MakeRenameFileHeader(std::addressof(request), old_path_len, new_path_len, case_sensitive);
 
         /* Send the request to the host. */
@@ -734,8 +734,8 @@ namespace ams::htcfs {
         Header request, response;
 
         /* Create header for the request. */
-        const auto old_path_len = std::strlen(new_path);
-        const auto new_path_len = std::strlen(old_path);
+        const auto old_path_len = std::strlen(old_path);
+        const auto new_path_len = std::strlen(new_path);
         m_header_factory.MakeRenameDirectoryHeader(std::addressof(request), old_path_len, new_path_len, case_sensitive);
 
         /* Send the request to the host. */
