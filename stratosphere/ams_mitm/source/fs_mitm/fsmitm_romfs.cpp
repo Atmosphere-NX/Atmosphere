@@ -290,9 +290,18 @@ namespace ams::mitm::fs {
                     ret = std::malloc(size);
                 }
 
+                /* A failed allocation used to be returned as-is, and the
+                 * unchecked dereference surfaced as a bare Data Abort with no
+                 * crash report at all - the console simply hung, and the cause
+                 * was indistinguishable from a corrupt payload. Aborting here
+                 * makes the failure legible instead. */
+                AMS_ABORT_UNLESS(ret != nullptr);
+
                 return ret;
             } else {
-                return std::malloc(size);
+                void * const ret = std::malloc(size);
+                AMS_ABORT_UNLESS(ret != nullptr);
+                return ret;
             }
         }
 
