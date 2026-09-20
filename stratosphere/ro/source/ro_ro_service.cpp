@@ -60,7 +60,7 @@ namespace ams::ro {
         R_RETURN(impl::RegisterProcess(std::addressof(m_context_id), std::move(process_h), client_pid.GetValue()));
     }
 
-    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h) {
+    Result RoService::RegisterModuleInfoWithUserProcessHandle(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h) {
         /* Validate the process. */
         R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
 

@@ -29,11 +29,18 @@ namespace ams::rocrt {
         u32 exception_info_start_offset;
         u32 exception_info_end_offset;
         u32 module_offset;
+        u32 relro_start_offset; /* 19.0.0+ */
+        u32 full_relro_end_offset; /* 19.0.0+ */
+        u32 nx_debug_link_start_offset; /* 19.0.0+ */
+        u32 nx_debug_link_end_offset; /* 19.0.0+ */
+        u32 note_gnu_build_id_start_offset; /* 19.0.0+ */
+        u32 note_gnu_build_id_end_offset; /* 19.0.0+ */
     };
 
     struct ModuleHeaderLocation {
-        u32 pad;
+        u32 version;
         u32 header_offset;
+        u32 version_offset;
     };
 
     constexpr inline u32 CheckModuleHeaderSignature(const ModuleHeader *header) {

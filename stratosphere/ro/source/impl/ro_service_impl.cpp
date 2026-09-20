@@ -47,7 +47,7 @@ namespace ams::ro::impl {
             }
         };
         static_assert(sizeof(Sha256Hash) == sizeof(Sha256Hash::hash));
-
+        
         struct NroInfo {
             u64 base_address;
             u64 nro_heap_address;
@@ -55,8 +55,10 @@ namespace ams::ro::impl {
             u64 bss_heap_address;
             u64 bss_heap_size;
             u64 code_size;
+            u64 ro_size;        /* 23.0.0+ */
             u64 rw_size;
             ModuleId module_id;
+            bool is_compress;   /* 23.0.0+ */
         };
 
         struct NrrInfo {
@@ -72,7 +74,17 @@ namespace ams::ro::impl {
             u8  cached_signed_area[sizeof(NrrHeader) - NrrHeader::GetSignedAreaOffset()];
             Sha256Hash signed_area_hash;
         };
-
+        
+        struct AdditionalNroHeaderInfo {
+            u32 signature;
+            u8  reserved_04[0xC];
+            u32 compressed_size;
+            u32 reserved_14;
+            u32 hash_size;
+            u32 hash_offset;
+            u8  reserved_20[0x40];
+        };
+        
         struct ProcessContext {
             private:
                 bool m_nro_in_use[MaxNroInfos]{};
@@ -246,21 +258,12 @@ namespace ams::ro::impl {
 
                     R_THROW(ro::ResultNotAuthorized());
                 }
-
-                Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, bool *out_aligned_header, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
-                    /* Map the NRO. */
-                    void *mapped_memory = nullptr;
-                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
-                        R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
-                    } R_END_TRY_CATCH;
-
-                    /* When we're done, unmap the memory. */
-                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, expected_nro_size); };
-
+                
+                Result ValidateNro(NroHeader **out_header, AdditionalNroHeaderInfo **out_additional_header_info, void *out_additional_header_hash, u8 *mapped_memory, u64 expected_nro_size, u64 expected_bss_size) {
                     /* Validate header. */
-                    const NroHeader *header = static_cast<const NroHeader *>(mapped_memory);
+                    NroHeader *header = reinterpret_cast<NroHeader *>(mapped_memory);
                     R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
-
+                    
                     /* Read sizes from header. */
                     const u64 nro_size = header->GetSize();
                     const u64 text_ofs = header->GetTextOffset();
@@ -270,16 +273,27 @@ namespace ams::ro::impl {
                     const u64 rw_ofs = header->GetRwOffset();
                     const u64 rw_size = header->GetRwSize();
                     const u64 bss_size = header->GetBssSize();
-
-                    /* Validate sizes meet expected. */
-                    R_UNLESS(nro_size == expected_nro_size, ro::ResultInvalidNro());
-                    R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidNro());
-
+                    
                     /* Validate all sizes are aligned. */
                     R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ro::ResultInvalidNro());
                     R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ro::ResultInvalidNro());
                     R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ro::ResultInvalidNro());
                     R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ro::ResultInvalidNro());
+
+                    /* Validate sizes meet expected. */
+                    R_UNLESS(nro_size == expected_nro_size, ro::ResultInvalidNro());
+                    
+                    /* Account for compression when checking bss size. */
+                    if (header->IsCompress()) {
+                        R_UNLESS((bss_size - expected_nro_size + (rw_ofs + rw_size)) == expected_bss_size, ro::ResultInvalidBssSize());
+                    } else {
+                        /* 23.0.0+ uses the new error code here too. */
+                        if (hos::GetVersion() >= hos::Version_23_0_0) {
+                            R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidBssSize());
+                        } else {
+                            R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidNro());
+                        }
+                    }
 
                     /* Validate sections are in order. */
                     R_UNLESS(text_ofs <= ro_ofs, ro::ResultInvalidNro());
@@ -289,24 +303,119 @@ namespace ams::ro::impl {
                     R_UNLESS(text_ofs == 0,                    ro::ResultInvalidNro());
                     R_UNLESS(text_ofs + text_size == ro_ofs,   ro::ResultInvalidNro());
                     R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ro::ResultInvalidNro());
-                    R_UNLESS(rw_ofs + rw_size     == nro_size, ro::ResultInvalidNro());
-
+                    
+                    /* Only check data section if not using compression. */
+                    if (!header->IsCompress()) {
+                        R_UNLESS(rw_ofs + rw_size == nro_size, ro::ResultInvalidNro());
+                    }
+                    
                     /* Verify NRO hash. */
                     R_TRY(this->ValidateHasNroHash(header));
 
                     /* Check if NRO has already been loaded. */
                     const ModuleId *module_id = header->GetModuleId();
                     R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ro::ResultAlreadyLoaded());
+                    
+                    /* Validate compression related fields. */
+                    if (header->IsCompress()) {
+                        const u64 additional_header_offset = header->GetAdditionalHeaderOffset();
+                        
+                        /* Compression must have aligned header as well. */
+                        R_UNLESS(header->IsAlignedHeader(), ro::ResultInvalidNro());
+                        
+                        /* Validate additional header offset. */
+                        R_UNLESS(additional_header_offset == 0x80, ro::ResultInvalidNro());
+                        
+                        /* Validate additional header. */
+                        AdditionalNroHeader *additional_header = reinterpret_cast<AdditionalNroHeader *>(mapped_memory + additional_header_offset);
+                        R_UNLESS(additional_header->IsMagicValid(), ro::ResultInvalidNro());
+                        
+                        /* Read sizes from header. */
+                        const u64 hash_size = additional_header->GetHashSize();
+                        const u64 hash_offset = additional_header->GetHashOffset();
+                        const u64 compressed_size = additional_header->GetCompressedSize();
+                        
+                        /* Validate additional header hash size and offset. */
+                        R_UNLESS(hash_size == 0x20, ro::ResultInvalidNro());
+                        R_UNLESS(hash_offset == 0xE0, ro::ResultInvalidNro());
+                        
+                        /* Copy the additional header hash to output. */
+                        std::memcpy(out_additional_header_hash, additional_header->GetHash(), hash_size);
+                        
+                        /* Validate compressed size. */
+                        R_UNLESS(rw_ofs + rw_size > nro_size, ro::ResultInvalidNro());
+                        R_UNLESS(compressed_size >= 0x1000, ro::ResultInvalidNro());
+                        R_UNLESS(util::AlignUp(compressed_size, os::MemoryPageSize) == expected_nro_size, ro::ResultInvalidNro());
+                        
+                        /* Copy the additional header info to output. This is AdditionalNroHeader minus the hash. */
+                        std::memcpy(out_additional_header_info, additional_header, sizeof(*additional_header) - hash_size);
+                    } else {
+                        /* Explicitly clear additional header hash and info. */
+                        std::memset(out_additional_header_hash, 0, crypto::Sha256Generator::HashSize);
+                        std::memset(out_additional_header_info, 0, sizeof(AdditionalNroHeaderInfo));
+                    }
+                    
+                    /* Copy the header to output. */
+                    *out_header = header;
+                    R_SUCCEED();
+                }
+                
+                Result DecompressNro(u8 *mapped_nro, u64 expected_nro_size, const NroHeader *nro_header, u32 compressed_size) {
+                    /* TODO */
+                    AMS_UNUSED(mapped_nro, expected_nro_size, nro_header, compressed_size);
+                    R_SUCCEED();
+                }
+                
+                Result CheckAdditionalHeaderHash(const u8 *mapped_nro, const void *additional_nro_header_hash, size_t additional_nro_header_hash_size, u64 rw_ofs, u64 rw_size) {
+                    /* Calculate hash. */
+                    Sha256Hash nro_rw_hash;
+                    crypto::GenerateSha256(std::addressof(nro_rw_hash), additional_nro_header_hash_size, mapped_nro + 0x1000, (rw_ofs + rw_size) - 0x1000);
+                    
+                    /* Compare the hashes. */
+                    const Sha256Hash *expected_hash = reinterpret_cast<const Sha256Hash *>(additional_nro_header_hash);
+                    if (*expected_hash != nro_rw_hash) {
+                        R_THROW(ro::ResultInvalidNro());
+                    }
+                    R_SUCCEED();
+                }
 
+                Result ParseNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, bool *out_aligned_header, bool *out_is_compress, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
+                    /* Map the NRO. */
+                    void *mapped_memory = nullptr;
+                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
+                        R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
+                    } R_END_TRY_CATCH;
+
+                    /* When we're done, unmap the memory. */
+                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, expected_nro_size); };
+                    
+                    /* ValidateNro */
+                    NroHeader *nro_header = nullptr;
+                    AdditionalNroHeaderInfo *additional_nro_header_info = nullptr;
+                    u8 additional_nro_header_hash[crypto::Sha256Generator::HashSize];
+                    R_TRY(this->ValidateNro(std::addressof(nro_header), std::addressof(additional_nro_header_info), std::addressof(additional_nro_header_hash), static_cast<u8 *>(mapped_memory), expected_nro_size, expected_bss_size));
+                    
+                    /* DecompressNro */
+                    if (nro_header->IsCompress()) {
+                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), expected_nro_size, nro_header, additional_nro_header_info->compressed_size));
+                        
+                        /* CheckAdditionalHeaderHash */
+                        if (nro_header->GetAdditionalHeaderOffset() != 0) {
+                            R_TRY(this->CheckAdditionalHeaderHash(static_cast<u8 *>(mapped_memory), std::addressof(additional_nro_header_hash), sizeof(additional_nro_header_hash), nro_header->GetRwOffset(), nro_header->GetRwSize()));
+                        }
+                    }
+                    
                     /* Apply patches to NRO. */
-                    LocateAndApplyIpsPatchesToModule(module_id, static_cast<u8 *>(mapped_memory), nro_size);
+                    const ModuleId *module_id = nro_header->GetModuleId();
+                    LocateAndApplyIpsPatchesToModule(module_id, static_cast<u8 *>(mapped_memory), nro_header->GetSize());
 
                     /* Copy to output. */
                     *out_module_id = *module_id;
-                    *out_rx_size = text_size;
-                    *out_ro_size = ro_size;
-                    *out_rw_size = rw_size;
-                    *out_aligned_header = header->IsAlignedHeader();
+                    *out_rx_size = nro_header->GetTextSize();
+                    *out_ro_size = nro_header->GetRoSize();
+                    *out_rw_size = nro_header->GetRwSize();
+                    *out_aligned_header = nro_header->IsAlignedHeader();
+                    *out_is_compress = nro_header->IsCompress();
                     R_SUCCEED();
                 }
 
@@ -547,26 +656,34 @@ namespace ams::ro::impl {
         /* Check we have space for a new NRO. */
         NroInfo *nro_info = nullptr;
         R_TRY(context->GetFreeNroInfo(std::addressof(nro_info)));
-        nro_info->nro_heap_address = nro_address;
-        nro_info->nro_heap_size = nro_size;
-        nro_info->bss_heap_address = bss_address;
-        nro_info->bss_heap_size = bss_size;
-
+        
         /* Map the NRO. */
         R_TRY(MapNro(std::addressof(nro_info->base_address), context->GetProcessHandle(), nro_address, nro_size, bss_address, bss_size));
         ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size); };
 
-        /* Validate the NRO (parsing region extents). */
+        /* Parse the NRO. */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
         bool aligned_header = false;
-        R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), std::addressof(aligned_header), nro_info->base_address, nro_size, bss_size));
+        bool is_compress = false;
+        R_TRY(context->ParseNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), std::addressof(aligned_header), std::addressof(is_compress), nro_info->base_address, nro_size, bss_size));
 
         /* Set NRO perms. */
         R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size, aligned_header));
 
         context->SetNroInfoInUse(nro_info, true);
-        nro_info->code_size = rx_size + ro_size;
+        nro_info->nro_heap_address = nro_address;
+        nro_info->nro_heap_size = nro_size;
+        nro_info->bss_heap_address = bss_address;
+        nro_info->bss_heap_size = bss_size;
+        if (hos::GetVersion() >= hos::Version_23_0_0) {
+            nro_info->code_size = rx_size;
+            nro_info->ro_size = ro_size;
+        } else {
+            nro_info->code_size = rx_size + ro_size;
+            nro_info->ro_size = 0;
+        }
         nro_info->rw_size = rw_size;
+        nro_info->is_compress = is_compress;
         *out_address = nro_info->base_address;
         R_SUCCEED();
     }
@@ -582,6 +699,25 @@ namespace ams::ro::impl {
         /* Check the NRO is loaded. */
         NroInfo *nro_info = nullptr;
         R_TRY(context->GetNroInfoByAddress(std::addressof(nro_info), nro_address));
+        
+        /* Handle compression related mappings. */
+        if (nro_info->is_compress) {
+            const u64 code_address = nro_info->base_address + 0x1000;
+            const u64 code_size = nro_info->code_size - 0x1000;
+            
+            /* Remove code region permissions. */
+            R_TRY(os::SetProcessMemoryPermission(context->GetProcessHandle(), code_address, code_size, os::MemoryPermission_None));
+            
+            /* Map the code region. */
+            void *mapped_memory = nullptr;
+            R_TRY(os::MapProcessMemory(std::addressof(mapped_memory), context->GetProcessHandle(), code_address, code_size, ro::impl::GenerateSecureRandom));
+            
+            /* Clear the memory. */
+            std::memset(mapped_memory, 0, code_size);
+            
+            /* Unmap the code region. */
+            os::UnmapProcessMemory(mapped_memory, context->GetProcessHandle(), code_address, code_size);
+        }
 
         /* Unmap. */
         const NroInfo nro_backup = *nro_info;

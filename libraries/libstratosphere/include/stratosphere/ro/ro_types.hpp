@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/rocrt/rocrt.hpp>
 
 namespace ams::ro {
 
@@ -40,30 +41,30 @@ namespace ams::ro {
         u64 program_id_mask;
         u64 program_id_pattern;
         u8  reserved_10[0x10];
-        u8  modulus[RsaKeySize];
-        u8  signature[RsaKeySize];
+        u8  public_key[RsaKeySize];
+        u8  sign[RsaKeySize];
     };
     static_assert(sizeof(NrrCertification) == NrrCertification::RsaKeySize + NrrCertification::SignedSize);
 
     class NrrHeader {
         public:
-            static constexpr u32 Magic = util::FourCC<'N','R','R','0'>::Code;
+            static constexpr u32 Signature = util::FourCC<'N','R','R','0'>::Code;
         private:
-            u32 m_magic;
+            u32 m_signature;
             u32 m_key_generation;
             u8  m_reserved_08[0x08];
             NrrCertification m_certification;
-            u8  m_signature[0x100];
+            u8  m_sign[0x100];
             ncm::ProgramId m_program_id;
             u32 m_size;
             u8  m_nrr_kind; /* 7.0.0+ */
             u8  m_reserved_33D[3];
-            u32 m_hashes_offset;
-            u32 m_num_hashes;
+            u32 m_hash_list_offset_address;
+            u32 m_num_hash;
             u8  m_reserved_348[8];
         public:
             bool IsMagicValid() const {
-                return m_magic == Magic;
+                return m_signature == Signature;
             }
 
             bool IsProgramIdValid() const {
@@ -85,11 +86,11 @@ namespace ams::ro {
             }
 
             u32 GetNumHashes() const {
-                return m_num_hashes;
+                return m_num_hash;
             }
 
             size_t GetHashesOffset() const {
-                return m_hashes_offset;
+                return m_hash_list_offset_address;
             }
 
             uintptr_t GetHashes() const {
@@ -101,7 +102,7 @@ namespace ams::ro {
             }
 
             const u8 *GetCertificationSignature() const {
-                return m_certification.signature;
+                return m_certification.sign;
             }
 
             const u8 *GetCertificationSignedArea() const {
@@ -109,11 +110,11 @@ namespace ams::ro {
             }
 
             const u8 *GetCertificationModulus() const {
-                return m_certification.modulus;
+                return m_certification.public_key;
             }
 
             const u8 *GetSignature() const {
-                return m_signature;
+                return m_sign;
             }
 
             const u8 *GetSignedArea() const {
@@ -131,32 +132,45 @@ namespace ams::ro {
     constexpr size_t NrrHeader::GetSignedAreaOffset() {
         return AMS_OFFSETOF(NrrHeader, m_program_id);
     }
+    
+    static constexpr size_t RocrtHeaderSize = 0x10;
+    struct RocrtHeader {
+        rocrt::ModuleHeaderLocation module_header_location;
+        u32 reserved;
+    };
+    static_assert(sizeof(RocrtHeader) == RocrtHeaderSize);
 
     class NroHeader {
         public:
-            static constexpr u32 Magic = util::FourCC<'N','R','O','0'>::Code;
+            static constexpr u32 Signature = util::FourCC<'N','R','O','0'>::Code;
             static constexpr u32 FlagAlignedHeader = 1;
+            static constexpr u32 FlagCompress = 2;
         private:
-            u32 m_entrypoint_insn;
-            u32 m_mod_offset;
-            u8  m_reserved_08[0x8];
-            u32 m_magic;
-            u8  m_version;
+            RocrtHeader m_rocrt;
+            u32 m_signature;
+            u32 m_version;
             u32 m_size;
             u32 m_flags;
-            u32 m_text_offset;
+            u32 m_text_memory_offset;
             u32 m_text_size;
-            u32 m_ro_offset;
+            u32 m_ro_memory_offset;
             u32 m_ro_size;
-            u32 m_rw_offset;
-            u32 m_rw_size;
+            u32 m_data_memory_offset;
+            u32 m_data_size;
             u32 m_bss_size;
-            u8  m_reserved_3C[0x4];
+            u32 m_additional_header_offset; /* 23.0.0+ */
             ModuleId m_module_id;
-            u8  m_reserved_60[0x20];
+            u32 m_dso_handle_offset;
+            u32 m_reserved_64;
+            u32 m_embedded_offset;
+            u32 m_embedded_size;
+            u32 m_dyn_str_offset;
+            u32 m_dyn_str_size;
+            u32 m_dyn_sym_offset;
+            u32 m_dyn_sym_size;
         public:
             bool IsMagicValid() const {
-                return m_magic == Magic;
+                return m_signature == Signature;
             }
 
             u32 GetVersion() const {
@@ -174,9 +188,13 @@ namespace ams::ro {
             bool IsAlignedHeader() const {
                 return m_flags & FlagAlignedHeader;
             }
+            
+            bool IsCompress() const {
+                return m_flags & FlagCompress;
+            }
 
             u32 GetTextOffset() const {
-                return m_text_offset;
+                return m_text_memory_offset;
             }
 
             u32 GetTextSize() const {
@@ -184,7 +202,7 @@ namespace ams::ro {
             }
 
             u32 GetRoOffset() const {
-                return m_ro_offset;
+                return m_ro_memory_offset;
             }
 
             u32 GetRoSize() const {
@@ -192,15 +210,19 @@ namespace ams::ro {
             }
 
             u32 GetRwOffset() const {
-                return m_rw_offset;
+                return m_data_memory_offset;
             }
 
             u32 GetRwSize() const {
-                return m_rw_size;
+                return m_data_size;
             }
 
             u32 GetBssSize() const {
                 return m_bss_size;
+            }
+            
+            u32 GetAdditionalHeaderOffset() const {
+                return m_additional_header_offset;
             }
 
             const ModuleId *GetModuleId() const {
@@ -208,5 +230,40 @@ namespace ams::ro {
             }
     };
     static_assert(sizeof(NroHeader) == 0x80, "NroHeader definition!");
+    
+    class AdditionalNroHeader {
+        public:
+            static constexpr u32 Signature = util::FourCC<'N','R','A','0'>::Code;
+        private:
+            u32 m_signature;
+            u8  m_reserved_04[0xC];
+            u32 m_compressed_size;
+            u32 m_reserved_14;
+            u32 m_hash_size;
+            u32 m_hash_offset;
+            u8  m_reserved_20[0x40];
+            u8  m_hash[0x20];
+        public:
+            bool IsMagicValid() const {
+                return m_signature == Signature;
+            }
+
+            u32 GetCompressedSize() const {
+                return m_compressed_size;
+            }
+
+            u32 GetHashSize() const {
+                return m_hash_size;
+            }
+            
+            u32 GetHashOffset() const {
+                return m_hash_offset;
+            }
+
+            const u8 *GetHash() const {
+                return m_hash;
+            }
+    };
+    static_assert(sizeof(AdditionalNroHeader) == 0x80, "AdditionalNroHeader definition!");
 
 }

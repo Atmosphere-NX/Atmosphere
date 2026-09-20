@@ -25,18 +25,20 @@ namespace ams::ro {
         R_DEFINE_ERROR_RESULT(OutOfAddressSpace,        2);
         R_DEFINE_ERROR_RESULT(AlreadyLoaded,            3);
         R_DEFINE_ERROR_RESULT(InvalidNro,               4);
-
+        R_DEFINE_ERROR_RESULT(NotFound,                 5);
         R_DEFINE_ERROR_RESULT(InvalidNrr,               6);
         R_DEFINE_ERROR_RESULT(TooManyNro,               7);
         R_DEFINE_ERROR_RESULT(TooManyNrr,               8);
         R_DEFINE_ERROR_RESULT(NotAuthorized,            9);
         R_DEFINE_ERROR_RESULT(InvalidNrrKind,           10);
-
+        R_DEFINE_ERROR_RESULT(InvalidBssSize,           11);
+        
+        R_DEFINE_ERROR_RESULT(NotImplemented,           1022);
         R_DEFINE_ERROR_RESULT(InternalError,            1023);
 
     R_DEFINE_ERROR_RESULT(InvalidAddress,           1025);
     R_DEFINE_ERROR_RESULT(InvalidSize,              1026);
-
+    R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,     1027);
     R_DEFINE_ERROR_RESULT(NotLoaded,                1028);
     R_DEFINE_ERROR_RESULT(NotRegistered,            1029);
     R_DEFINE_ERROR_RESULT(InvalidSession,           1030);
