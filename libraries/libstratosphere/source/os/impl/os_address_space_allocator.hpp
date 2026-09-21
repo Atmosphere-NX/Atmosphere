@@ -33,7 +33,7 @@ namespace ams::os::impl {
             using AddressType = AddressType_;
             using SizeType    = SizeType_;
         private:
-            static constexpr size_t MaxForbiddenRegions = 2;
+            static constexpr size_t MaxForbiddenRegions = 3;
         private:
             InternalCriticalSection m_critical_section;
             AddressType m_start_page;

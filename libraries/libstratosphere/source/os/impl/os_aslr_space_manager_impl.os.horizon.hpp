@@ -30,7 +30,7 @@ namespace ams::os::impl {
             static constexpr u64 AslrBase64Bit           = 0x0008000000ul;
             static constexpr u64 AslrSize64Bit           = 0x7FF8000000ul;
 
-            static constexpr size_t ForbiddenRegionCount = 2;
+            static constexpr size_t ForbiddenRegionCount = 3;
         private:
             static u64 GetAslrInfo(os::NativeHandle process_handle, svc::InfoType type) {
                 u64 value;
@@ -75,6 +75,14 @@ namespace ams::os::impl {
             static u64 GetAliasSpaceSize(os::NativeHandle process_handle = svc::PseudoHandle::CurrentProcess) {
                 return GetAslrInfo(process_handle, svc::InfoType_AliasRegionSize);
             }
+            
+            static u64 GetShadowStackSpaceBeginAddress(os::NativeHandle process_handle = svc::PseudoHandle::CurrentProcess) {
+                return GetAslrInfo(process_handle, svc::InfoType_ShadowStackRegionAddress);
+            }
+
+            static u64 GetShadowStackSpaceSize(os::NativeHandle process_handle = svc::PseudoHandle::CurrentProcess) {
+                return GetAslrInfo(process_handle, svc::InfoType_ShadowStackRegionSize);
+            }
 
             static u64 GetAslrSpaceBeginAddress(os::NativeHandle process_handle = svc::PseudoHandle::CurrentProcess) {
                 return GetAslrInfo(process_handle, svc::InfoType_AslrRegionAddress);
@@ -87,6 +95,14 @@ namespace ams::os::impl {
             void InitializeForbiddenRegions(os::NativeHandle process_handle) {
                 m_forbidden_regions[0] = { .address = GetHeapSpaceBeginAddress(process_handle),  .size = GetHeapSpaceSize(process_handle)  };
                 m_forbidden_regions[1] = { .address = GetAliasSpaceBeginAddress(process_handle), .size = GetAliasSpaceSize(process_handle) };
+                /* 23.0.0+ added ShadowStack to the forbidden region list. */
+                /* Unconditionally create the region, but set it's size to 0 on < 23.0.0. */
+                /* This should be fine because the address space allocator discards 0 sized regions without changing the final forbidden region count. */
+                if (hos::GetVersion() >= hos::Version_23_0_0) {
+                    m_forbidden_regions[2] = { .address = GetShadowStackSpaceBeginAddress(process_handle), .size = GetShadowStackSpaceSize(process_handle) };
+                } else {
+                    m_forbidden_regions[2] = { .address = 0, .size = 0 };
+                }
             }
     };
 
