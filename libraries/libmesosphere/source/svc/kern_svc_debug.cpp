@@ -141,11 +141,10 @@ namespace ams::kern::svc {
             /* Verify that the number of thread ids is valid. */
             R_UNLESS((0 <= num_thread_ids && num_thread_ids <= MaximumDebuggableThreadCount), svc::ResultOutOfRange());
 
-            R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_thread_ids.GetUnsafePointer()), num_thread_ids * sizeof(uint64_t)), svc::ResultInvalidPointer());
-
             /* Copy the threads from userspace. */
             uint64_t thread_ids[MaximumDebuggableThreadCount];
             if (num_thread_ids > 0) {
+                R_UNLESS(GetCurrentProcess().GetPageTable().IsSafeUserPointer(KProcessAddress(user_thread_ids.GetUnsafePointer()), num_thread_ids * sizeof(uint64_t)), svc::ResultInvalidPointer());
                 R_TRY(user_thread_ids.CopyArrayTo(thread_ids, num_thread_ids));
             }
 
