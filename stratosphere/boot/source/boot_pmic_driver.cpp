@@ -74,11 +74,14 @@ namespace ams::boot {
         u8 on_off_1_val = 0;
         R_ABORT_UNLESS(ReadI2cRegister(m_i2c_session, std::addressof(on_off_1_val), sizeof(on_off_1_val), std::addressof(on_off_1_addr), sizeof(on_off_1_addr)));
         on_off_1_val |= 0x80;
-
-        /* Finalize the battery on non-Calcio. */
-        if (spl::GetHardwareType() != spl::HardwareType::Calcio) {
-            BatteryDriver battery_driver;
-            this->FinalizeBattery(battery_driver);
+        
+        /* 23.0.0+ no longer finalizes the battery on any hardware type. */
+        if (hos::GetVersion() < hos::Version_23_0_0) {
+            /* Finalize the battery on non-Calcio. */
+            if (spl::GetHardwareType() != spl::HardwareType::Calcio) {
+                BatteryDriver battery_driver;
+                this->FinalizeBattery(battery_driver);
+            }
         }
 
         /* Actually write the value to trigger shutdown/reset. */
