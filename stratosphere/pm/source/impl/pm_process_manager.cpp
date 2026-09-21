@@ -480,13 +480,16 @@ namespace ams::pm::impl {
     Result NotifyBootFinished() {
         AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_has_boot_finished, false);
         if (!s_has_boot_finished) {
-            /* Set program verification disabled, if we should. */
-            /* NOTE: Nintendo does not check the result of this. */
-            if (spl::IsDisabledProgramVerification()) {
-                if (hos::GetVersion() >= hos::Version_10_0_0) {
-                    ldr::pm::SetEnabledProgramVerification(false);
-                } else {
-                    fsprSetEnabledProgramVerification(false);
+            /* 23.0.0+ removed this and all usage of spl from the pm sysmodule, both in normal and safe mode FIRM. */
+            if (hos::GetVersion() < hos::Version_23_0_0) {
+                /* Set program verification disabled, if we should. */
+                /* NOTE: Nintendo does not check the result of this. */
+                if (spl::IsDisabledProgramVerification()) {
+                    if (hos::GetVersion() >= hos::Version_10_0_0) {
+                        ldr::pm::SetEnabledProgramVerification(false);
+                    } else {
+                        fsprSetEnabledProgramVerification(false);
+                    }
                 }
             }
 
