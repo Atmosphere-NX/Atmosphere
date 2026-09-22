@@ -223,6 +223,8 @@ namespace ams::kern::board::nintendo::nx::smc {
         KScopedInterruptDisable di;
 
         /* Ensure we successfully show the error. */
+        /* NOTE: On 23.0.0+ the SMC result is discarded. */
+        /* The function now ends with an unconditional infinite loop and interrupts are never restored. */
         MESOSPHERE_ABORT_UNLESS(ShowErrorImpl(color));
     }
 

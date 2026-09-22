@@ -411,7 +411,10 @@ namespace ams::kern::board::nintendo::nx {
         {
             /* Set whether we're in debug mode. */
             {
-                ts->is_not_debug_mode    = !GetConfigBool(smc::ConfigItem::IsDebugMode);
+                ts->is_not_debug_mode     = !GetConfigBool(smc::ConfigItem::IsDebugMode);
+                
+                /* TODO: 23.0.0+ split debug mode into 2 fields. Implement this properly for better accuracy. */
+                ts->is_not_debug_mode2    = ts->is_not_debug_mode;
 
                 /* If we're not in debug mode, we don't want to initialize uart logging. */
                 ts->disable_debug_logging = ts->is_not_debug_mode;

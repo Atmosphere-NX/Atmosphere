@@ -388,6 +388,7 @@ namespace ams::svc {
     /* Process types. */
     enum ProcessInfoType : u32 {
         ProcessInfoType_ProcessState = 0,
+        ProcessInfoType_Unknown1     = 1,
     };
 
     enum ProcessState : u32 {

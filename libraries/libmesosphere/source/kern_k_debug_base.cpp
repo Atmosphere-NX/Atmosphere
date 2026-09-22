@@ -417,7 +417,7 @@ namespace ams::kern {
 
         /* Terminate the process. */
         /* NOTE: This result is seemingly-intentionally not checked by Nintendo. */
-        static_cast<void>(target->Terminate());
+        static_cast<void>(target->Terminate(-1ll));
 
         R_SUCCEED();
     }

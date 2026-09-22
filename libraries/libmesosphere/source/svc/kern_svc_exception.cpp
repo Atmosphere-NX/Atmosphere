@@ -70,7 +70,7 @@ namespace ams::kern::svc {
             }
 
             /* Exit the current process. */
-            GetCurrentProcess().Exit();
+            GetCurrentProcess().Exit(-1ll);
         }
 
     }

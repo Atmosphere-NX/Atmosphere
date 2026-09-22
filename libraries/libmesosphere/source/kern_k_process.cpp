@@ -465,7 +465,7 @@ namespace ams::kern {
         }
     }
 
-    void KProcess::Exit() {
+    void KProcess::Exit(s64 exit_tag) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Determine whether we need to start terminating. */
@@ -480,6 +480,7 @@ namespace ams::kern {
             MESOSPHERE_ASSERT(m_state != State_Terminated);
             if (m_state == State_Running || m_state == State_RunningAttached || m_state == State_DebugBreak) {
                 this->ChangeState(State_Terminating);
+                this->SetExitTag(exit_tag);
                 needs_terminate = true;
             }
         }
@@ -500,7 +501,7 @@ namespace ams::kern {
         MESOSPHERE_PANIC("Thread survived call to exit");
     }
 
-    Result KProcess::Terminate() {
+    Result KProcess::Terminate(s64 exit_tag) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Determine whether we need to start terminating */
@@ -516,6 +517,7 @@ namespace ams::kern {
 
             if (m_state == State_Running || m_state == State_RunningAttached || m_state == State_Crashed || m_state == State_DebugBreak) {
                 this->ChangeState(State_Terminating);
+                this->SetExitTag(exit_tag);
                 needs_terminate = true;
             }
         }
@@ -783,7 +785,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_num_running_threads.Load() > 0);
 
         if (const auto prev = m_num_running_threads--; prev == 1) {
-            static_cast<void>(this->Terminate());
+            static_cast<void>(this->Terminate(-1ll));
         }
     }
 

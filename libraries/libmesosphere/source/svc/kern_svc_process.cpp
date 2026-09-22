@@ -25,8 +25,9 @@ namespace ams::kern::svc {
             return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumVirtualCores));
         }
 
-        void ExitProcess() {
-            GetCurrentProcess().Exit();
+        void ExitProcess(int64_t exit_tag) {
+            const uint32_t intended_kernel_major_version = GetCurrentProcess().GetIntendedKernelMajorVersion();
+            GetCurrentProcess().Exit(intended_kernel_major_version <= 26 ? -1ll : exit_tag);
             MESOSPHERE_PANIC("Process survived call to exit");
         }
 
@@ -357,7 +358,7 @@ namespace ams::kern::svc {
             R_RETURN(process->Run(priority, static_cast<size_t>(aligned_stack_size)));
         }
 
-        Result TerminateProcess(ams::svc::Handle process_handle) {
+        Result TerminateProcess(ams::svc::Handle process_handle, int64_t exit_tag) {
             /* Get the target process. */
             KProcess *process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle).ReleasePointerUnsafe();
             R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
@@ -367,13 +368,13 @@ namespace ams::kern::svc {
                 ON_SCOPE_EXIT { process->Close(); };
 
                 /* Terminate the process. */
-                R_TRY(process->Terminate());
+                R_TRY(process->Terminate(exit_tag));
             } else {
                 /* We're terminating ourselves. Close our reference immediately. */
                 process->Close();
 
                 /* Exit. */
-                ExitProcess();
+                ExitProcess(exit_tag);
             }
 
             R_SUCCEED();
@@ -411,6 +412,20 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::ProcessInfoType_Unknown1:
+                    {
+                        /* TODO: 23.0.0+ added a new process info type. Figure out what this is. */ 
+                        /* For now just call it an exit tag since it's only set during Exit or Terminate. */
+                        int64_t exit_tag;
+                        {
+                            KScopedLightLock proc_lk(process->GetStateLock());
+
+                            exit_tag = process->GetExitTag();
+                        }
+                        
+                        *out = exit_tag;
+                    }
+                    break;
                 default:
                     R_THROW(svc::ResultInvalidEnumValue());
             }
@@ -423,7 +438,9 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void ExitProcess64() {
-        return ExitProcess();
+        /* TODO: 23.0.0+ changed the actual SVC handler. */
+        /* For now just pass the default value for the exit tag. */
+        return ExitProcess(-1ll);
     }
 
     Result GetProcessId64(uint64_t *out_process_id, ams::svc::Handle process_handle) {
@@ -443,7 +460,9 @@ namespace ams::kern::svc {
     }
 
     Result TerminateProcess64(ams::svc::Handle process_handle) {
-        R_RETURN(TerminateProcess(process_handle));
+        /* TODO: 23.0.0+ changed the actual SVC handler. */
+        /* For now just pass the default value for the exit tag. */
+        R_RETURN(TerminateProcess(process_handle, -1ll));
     }
 
     Result GetProcessInfo64(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
@@ -453,7 +472,9 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     void ExitProcess64From32() {
-        return ExitProcess();
+        /* TODO: 23.0.0+ changed the actual SVC handler. */
+        /* For now just pass the default value for the exit tag. */
+        return ExitProcess(-1ll);
     }
 
     Result GetProcessId64From32(uint64_t *out_process_id, ams::svc::Handle process_handle) {
@@ -473,7 +494,9 @@ namespace ams::kern::svc {
     }
 
     Result TerminateProcess64From32(ams::svc::Handle process_handle) {
-        R_RETURN(TerminateProcess(process_handle));
+        /* TODO: 23.0.0+ changed the actual SVC handler. */
+        /* For now just pass the default value for the exit tag. */
+        R_RETURN(TerminateProcess(process_handle, -1ll));
     }
 
     Result GetProcessInfo64From32(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {

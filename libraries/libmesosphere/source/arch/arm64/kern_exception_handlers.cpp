@@ -381,7 +381,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Exit the current process. */
-            cur_process.Exit();
+            cur_process.Exit(-1ll);
         }
 
     }
@@ -548,7 +548,7 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
         /* Exit the current process. */
-        GetCurrentProcess().Exit();
+        GetCurrentProcess().Exit(-1ll);
     }
 
     /* NOTE: This function is called from ASM. */

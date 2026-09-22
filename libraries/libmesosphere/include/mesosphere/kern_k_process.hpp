@@ -113,6 +113,7 @@ namespace ams::kern {
             u64                         m_running_thread_idle_counts[cpu::NumCores];
             u64                         m_running_thread_switch_counts[cpu::NumCores];
             KThread                    *m_pinned_threads[cpu::NumCores];
+            s64                         m_exit_tag;
             util::Atomic<s64>           m_cpu_time;
             util::Atomic<s64>           m_num_process_switches;
             util::Atomic<s64>           m_num_thread_switches;
@@ -142,11 +143,11 @@ namespace ams::kern {
                 m_pinned_threads[core_id] = nullptr;
             }
         public:
-            explicit KProcess() : m_is_initialized(false) { /* ... */ }
+            explicit KProcess() : m_is_initialized(false), m_exit_tag(-1ll) { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal);
             Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
-            void Exit();
+            void Exit(s64 exit_tag);
 
             constexpr const char *GetName() const { return m_name; }
 
@@ -155,10 +156,13 @@ namespace ams::kern {
             constexpr u64 GetProcessId() const { return m_process_id; }
 
             constexpr State GetState() const { return m_state; }
+            
+            constexpr s64 GetExitTag() const { return m_exit_tag; }
 
             constexpr u64 GetCoreMask() const { return m_capabilities.GetCoreMask(); }
             constexpr u64 GetPhysicalCoreMask() const { return m_capabilities.GetPhysicalCoreMask(); }
             constexpr u64 GetPriorityMask() const { return m_capabilities.GetPriorityMask(); }
+            constexpr u32 GetIntendedKernelMajorVersion() const { return m_capabilities.GetIntendedKernelMajorVersion(); }
 
             constexpr s32 GetIdealCoreId() const { return m_ideal_core_id; }
             constexpr void SetIdealCoreId(s32 core_id) { m_ideal_core_id = core_id; }
@@ -184,7 +188,7 @@ namespace ams::kern {
             constexpr bool IsSuspended() const { return m_is_suspended; }
             constexpr void SetSuspended(bool suspended) { m_is_suspended = suspended; }
 
-            Result Terminate();
+            Result Terminate(s64 exit_tag);
 
             constexpr bool IsTerminated() const {
                 return m_state == State_Terminated;
@@ -409,6 +413,10 @@ namespace ams::kern {
                     m_is_signaled = true;
                     this->NotifyAvailable();
                 }
+            }
+            
+            void SetExitTag(s64 exit_tag) {
+                m_exit_tag = exit_tag;
             }
 
             ALWAYS_INLINE Result InitializeHandleTable(s32 size) {

@@ -28,6 +28,8 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void CallSecureMonitor64(ams::svc::lp64::SecureMonitorArguments *args) {
+        /* TODO: 23.0.0+ added a second argument to CallSecureMonitorFromUser. */
+        /* On NX, CallSecureMonitor64 always passes 0 for this argument. */
         KSystemControl::CallSecureMonitorFromUser(args);
     }
 

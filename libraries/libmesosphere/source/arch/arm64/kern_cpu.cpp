@@ -220,6 +220,8 @@ namespace ams::kern::arch::arm64::cpu {
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
                     MESOSPHERE_UNUSED(interrupt_id);
+                    /* TODO: 23.0.0+ now yields here while m_target_cores doesn't have the current core id bit set. */
+                    /* Evaluate if we should do the same. */
                     this->ProcessOperation();
                     m_target_cores &= ~(1ul << GetCurrentCoreId());
                     return nullptr;

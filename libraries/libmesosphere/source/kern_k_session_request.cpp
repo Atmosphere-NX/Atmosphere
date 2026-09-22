@@ -28,6 +28,8 @@ namespace ams::kern {
         } else {
             /* Allocate dynamic mappings as necessary. */
             if (m_dynamic_mappings == nullptr) {
+                /* 23.0.0+ now checks for IsDynamicResourceLimitsEnabled before allocating from slab heap. */
+                R_UNLESS(KTargetSystem::IsDynamicResourceLimitsEnabled(), svc::ResultOutOfMemory());
                 m_dynamic_mappings = DynamicMappings::Allocate();
                 R_UNLESS(m_dynamic_mappings != nullptr, svc::ResultOutOfMemory());
             }
