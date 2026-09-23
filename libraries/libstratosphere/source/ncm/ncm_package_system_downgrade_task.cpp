@@ -53,7 +53,7 @@ namespace ams::ncm {
 
                 /* Remove matching keys. */
                 for (auto i = 0; i < count.total; i++) {
-                    meta_db.Remove(keys[i]);
+                    R_DISCARD(meta_db.Remove(keys[i]));
                 }
             }
         }

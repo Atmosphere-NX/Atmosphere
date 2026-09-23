@@ -89,7 +89,7 @@ namespace ams::mitm {
 
         void CreateAutomaticBackups() {
             /* Create a backup directory, if one doesn't exist. */
-            mitm::fs::CreateAtmosphereSdDirectory("/automatic_backups");
+            R_DISCARD(mitm::fs::CreateAtmosphereSdDirectory("/automatic_backups"));
 
             /* Initialize PRODINFO and get a reference for the device. */
             char device_reference[0x40] = {};
@@ -127,7 +127,7 @@ namespace ams::mitm {
                 char bis_keys_backup_name[ams::fs::EntryNameLengthMax + 1];
                 GetBackupFileName(bis_keys_backup_name, sizeof(bis_keys_backup_name), device_reference, "BISKEYS.bin");
 
-                mitm::fs::CreateAtmosphereSdFile(bis_keys_backup_name, sizeof(bis_keys), ams::fs::CreateOption_None);
+                R_DISCARD(mitm::fs::CreateAtmosphereSdFile(bis_keys_backup_name, sizeof(bis_keys), ams::fs::CreateOption_None));
                 R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(g_bis_key_file), bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));
                 R_ABORT_UNLESS(fsFileSetSize(std::addressof(g_bis_key_file), sizeof(bis_keys)));
                 R_ABORT_UNLESS(fsFileWrite(std::addressof(g_bis_key_file), 0, bis_keys, sizeof(bis_keys), FsWriteOption_Flush));
@@ -153,11 +153,11 @@ namespace ams::mitm {
             mitm::fs::OpenGlobalSdCardFileSystem();
 
             /* Mount the sd card at a convenient mountpoint. */
-            ams::fs::MountSdCard(ams::fs::impl::SdCardFileSystemMountName);
+            R_DISCARD(ams::fs::MountSdCard(ams::fs::impl::SdCardFileSystemMountName));
 
             /* Initialize the reboot manager (load a payload off the SD). */
             /* Discard result, since it doesn't need to succeed. */
-            mitm::bpc::LoadRebootPayload();
+            R_DISCARD(mitm::bpc::LoadRebootPayload());
 
             /* Backup Calibration Binary and BIS keys. */
             CreateAutomaticBackups();
@@ -167,7 +167,7 @@ namespace ams::mitm {
                 if (const char *emummc_file_path = emummc::GetFilePath(); emummc_file_path != nullptr) {
                     char emummc_path[ams::fs::EntryNameLengthMax + 1];
                     util::SNPrintf(emummc_path, sizeof(emummc_path), "%s/eMMC", emummc_file_path);
-                    mitm::fs::OpenSdFile(std::addressof(g_emummc_file), emummc_path, ams::fs::OpenMode_Read);
+                    R_DISCARD(mitm::fs::OpenSdFile(std::addressof(g_emummc_file), emummc_path, ams::fs::OpenMode_Read));
                 }
 
                 /* NOTE: due to an Atmosphere bug, NS accesses to the Nintendo dir accessed /Nintendo/Nintendo */
@@ -185,7 +185,7 @@ namespace ams::mitm {
                         /* Ensure Contents directory exists for normal emummc. */
                         /* NOTE: Allowed to fail on already-exists. */
                         util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s/Contents", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());
-                        ams::fs::CreateDirectory(emummc_path);
+                        R_DISCARD(ams::fs::CreateDirectory(emummc_path));
 
                         /* Fix Contents/private */
                         util::SNPrintf(emummc_path, sizeof(emummc_path), "%s:/%s/Contents/private", ams::fs::impl::SdCardFileSystemMountName, emummc::GetNintendoDirPath());

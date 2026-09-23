@@ -116,7 +116,7 @@ namespace ams::ro::impl {
                     if (m_process_handle != os::InvalidNativeHandle) {
                         for (size_t i = 0; i < MaxNrrInfos; i++) {
                             if (m_nrr_in_use[i]) {
-                                UnmapNrr(m_process_handle, m_nrr_infos[i].mapped_header, m_nrr_infos[i].nrr_heap_address, m_nrr_infos[i].nrr_heap_size, m_nrr_infos[i].mapped_code_address);
+                                R_DISCARD(UnmapNrr(m_process_handle, m_nrr_infos[i].mapped_header, m_nrr_infos[i].nrr_heap_address, m_nrr_infos[i].nrr_heap_size, m_nrr_infos[i].mapped_code_address));
                             }
                         }
                         os::CloseNativeHandle(m_process_handle);
@@ -659,7 +659,7 @@ namespace ams::ro::impl {
         
         /* Map the NRO. */
         R_TRY(MapNro(std::addressof(nro_info->base_address), context->GetProcessHandle(), nro_address, nro_size, bss_address, bss_size));
-        ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size); };
+        ON_RESULT_FAILURE { R_DISCARD(UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size)); };
 
         /* Parse the NRO. */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;

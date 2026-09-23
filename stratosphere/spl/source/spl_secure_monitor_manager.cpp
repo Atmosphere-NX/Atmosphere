@@ -164,7 +164,7 @@ namespace ams::spl {
         for (auto i = 0; i < impl::AesKeySlotCount; ++i) {
             if (m_aes_keyslot_owners[i] == owner) {
                 m_aes_keyslot_owners[i] = nullptr;
-                impl::DeallocateAesKeySlot(impl::AesKeySlotMin + i);
+                R_DISCARD(impl::DeallocateAesKeySlot(impl::AesKeySlotMin + i));
             }
         }
     }

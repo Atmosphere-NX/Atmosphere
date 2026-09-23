@@ -131,7 +131,7 @@ namespace ams::mitm::socket::resolver {
         }
 
         /* Initialize the socket allocator. */
-        ams::socket::InitializeAllocatorForInternal(g_resolver_allocator_buffer, sizeof(g_resolver_allocator_buffer));
+        R_DISCARD(ams::socket::InitializeAllocatorForInternal(g_resolver_allocator_buffer, sizeof(g_resolver_allocator_buffer)));
 
         /* Initialize debug. */
         resolver::InitializeDebug(ShouldEnableDebugLog());

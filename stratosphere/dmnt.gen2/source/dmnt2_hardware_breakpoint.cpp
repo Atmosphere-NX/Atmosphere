@@ -197,7 +197,7 @@ namespace ams::dmnt {
             g_last_bp_ctx_register = g_last_bp_register;
             for (int i = g_last_bp_ctx_register; i >= static_cast<int>(svc::HardwareBreakPointRegisterName_I0); --i) {
                 const Result result = svc::SetHardwareBreakPoint(static_cast<svc::HardwareBreakPointRegisterName>(i), dbgbcr, svc::PseudoHandle::CurrentProcess);
-                svc::SetHardwareBreakPoint(static_cast<svc::HardwareBreakPointRegisterName>(i), 0, 0);
+                R_DISCARD(svc::SetHardwareBreakPoint(static_cast<svc::HardwareBreakPointRegisterName>(i), 0, 0));
 
                 if (R_FAILED(result)) {
                     if (!svc::ResultInvalidHandle::Includes(result)) {

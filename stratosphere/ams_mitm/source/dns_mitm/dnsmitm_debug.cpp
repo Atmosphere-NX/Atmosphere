@@ -40,10 +40,10 @@ namespace ams::mitm::socket::resolver {
 
             if (g_log_enabled) {
                 /* Create the logs directory. */
-                mitm::fs::CreateAtmosphereSdDirectory("/logs");
+                R_DISCARD(mitm::fs::CreateAtmosphereSdDirectory("/logs"));
 
                 /* Create the log file. */
-                mitm::fs::CreateAtmosphereSdFile("/logs/dns_mitm_debug.log", 0, ams::fs::CreateOption_None);
+                R_DISCARD(mitm::fs::CreateAtmosphereSdFile("/logs/dns_mitm_debug.log", 0, ams::fs::CreateOption_None));
 
                 /* Open the log file. */
                 R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(g_log_file), "/logs/dns_mitm_debug.log", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));

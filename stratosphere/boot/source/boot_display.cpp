@@ -262,10 +262,10 @@ namespace ams::boot {
             R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(i2c_session), i2c::DeviceCode_Max77620Pmic));
 
             if (g_soc_type == spl::SocType_Mariko) {
-                WriteI2cRegister(i2c_session, 0x18, 0x3A);
-                WriteI2cRegister(i2c_session, 0x1F, 0x71);
+                R_DISCARD(WriteI2cRegister(i2c_session, 0x18, 0x3A));
+                R_DISCARD(WriteI2cRegister(i2c_session, 0x1F, 0x71));
             }
-            WriteI2cRegister(i2c_session, 0x23, 0xD0);
+            R_DISCARD(WriteI2cRegister(i2c_session, 0x23, 0xD0));
 
             i2c::driver::CloseSession(i2c_session);
         }

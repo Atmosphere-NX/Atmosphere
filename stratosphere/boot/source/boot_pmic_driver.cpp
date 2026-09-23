@@ -119,7 +119,7 @@ namespace ams::boot {
         desired_shutdown_enabled &= use_desired_shutdown;
 
         if (shutdown_enabled != desired_shutdown_enabled) {
-            battery_driver.SetI2cShutdownEnabled(desired_shutdown_enabled);
+            R_DISCARD(battery_driver.SetI2cShutdownEnabled(desired_shutdown_enabled));
         }
     }
 

@@ -490,7 +490,7 @@ namespace ams::boot {
             }
 
             if (input_current_limit_ma <= 150) {
-                charger_driver.SetChargerConfiguration(powctl::ChargerConfiguration_ChargeDisable);
+                R_DISCARD(charger_driver.SetChargerConfiguration(powctl::ChargerConfiguration_ChargeDisable));
                 boot::ShutdownSystem();
             }
         }

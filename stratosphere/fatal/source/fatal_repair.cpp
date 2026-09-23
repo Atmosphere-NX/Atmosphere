@@ -105,11 +105,11 @@ namespace ams::fatal::srv {
 
     void CheckRepairStatus() {
         if (IsInRepairWithoutVolHeld()) {
-            ThrowFatalForSelf(ResultInRepairWithoutVolHeld());
+            R_DISCARD(ThrowFatalForSelf(ResultInRepairWithoutVolHeld()));
         }
 
         if (IsInRepairWithoutTimeReviserCartridge()) {
-            ThrowFatalForSelf(ResultInRepairWithoutTimeReviserCartridge());
+            R_DISCARD(ThrowFatalForSelf(ResultInRepairWithoutTimeReviserCartridge()));
         }
     }
 

@@ -489,7 +489,7 @@ namespace ams::kvdb {
         private:
             Result SaveArchiveToFile(const char *path, const void *buf, size_t size) {
                 /* Try to delete the archive, but allow deletion failure. */
-                fs::DeleteFile(path);
+                R_DISCARD(fs::DeleteFile(path));
 
                 /* Create new archive. */
                 R_TRY(fs::CreateFile(path, size));
@@ -514,7 +514,7 @@ namespace ams::kvdb {
                     R_TRY(SaveArchiveToFile(m_temp_path.Get(), buffer.Get(), buffer.GetSize()));
 
                     /* Try to delete the saved archive, but allow deletion failure. */
-                    fs::DeleteFile(m_path.Get());
+                    R_DISCARD(fs::DeleteFile(m_path.Get()));
 
                     /* Rename the path. */
                     R_TRY(fs::RenameFile(m_temp_path.Get(), m_path.Get()));

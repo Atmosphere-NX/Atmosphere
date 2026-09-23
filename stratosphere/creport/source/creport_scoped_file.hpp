@@ -38,9 +38,9 @@ namespace ams::creport {
             ~ScopedFile() {
                 if (m_opened) {
                     if (m_cache != nullptr) {
-                        this->TryWriteCache();
+                        R_DISCARD(this->TryWriteCache());
                     }
-                    fs::FlushFile(m_file);
+                    R_DISCARD(fs::FlushFile(m_file));
                     fs::CloseFile(m_file);
                 }
             }

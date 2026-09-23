@@ -89,8 +89,8 @@ namespace ams::pm::impl {
         if (m_handle != os::InvalidNativeHandle) {
             /* Unregister the process. */
             fsprUnregisterProgram(m_process_id.value);
-            sm::manager::UnregisterProcess(m_process_id);
-            ldr::pm::UnpinProgram(m_pin_id);
+            R_DISCARD(sm::manager::UnregisterProcess(m_process_id));
+            R_DISCARD(ldr::pm::UnpinProgram(m_pin_id));
 
             /* Close the process's handle. */
             os::CloseNativeHandle(m_handle);

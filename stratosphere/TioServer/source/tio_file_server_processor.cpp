@@ -679,7 +679,7 @@ namespace ams::tio {
 
                                 /* NOTE: Nintendo does not check the output of this call. */
                                 s64 read_count = 0;
-                                fs::ReadDirectory(std::addressof(read_count), reinterpret_cast<fs::DirectoryEntry *>(body), handle, cur);
+                                R_DISCARD(fs::ReadDirectory(std::addressof(read_count), reinterpret_cast<fs::DirectoryEntry *>(body), handle, cur));
 
                                 /* Send the current entries. */
                                 const ssize_t cur_size = read_count * sizeof(fs::DirectoryEntry);

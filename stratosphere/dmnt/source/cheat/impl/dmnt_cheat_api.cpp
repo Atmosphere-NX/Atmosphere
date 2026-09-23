@@ -346,7 +346,7 @@ namespace ams::dmnt::cheat::impl {
                 Result ResumeCheatProcessUnsafe() {
                     m_broken_unsafe = false;
                     m_unsafe_break_event.Signal();
-                    dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle());
+                    R_DISCARD(dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle()));
                     R_SUCCEED();
                 }
 
@@ -682,7 +682,7 @@ namespace ams::dmnt::cheat::impl {
             while (true) {
                 eventLoadRemote(std::addressof(hook), manager->HookToCreateApplicationProcess(), true);
                 if (R_SUCCEEDED(eventWait(std::addressof(hook), std::numeric_limits<u64>::max()))) {
-                    manager->AttachToApplicationProcess(true);
+                    R_DISCARD(manager->AttachToApplicationProcess(true));
                 }
                 eventClose(std::addressof(hook));
             }
@@ -760,7 +760,7 @@ namespace ams::dmnt::cheat::impl {
                             const auto &value  = entry.GetValue();
 
                             /* Use Write SVC directly, to avoid the usual frozen address update logic. */
-                            svc::WriteDebugProcessMemory(manager->GetCheatProcessHandle(), reinterpret_cast<uintptr_t>(std::addressof(value.value)), address, value.width);
+                            R_DISCARD(svc::WriteDebugProcessMemory(manager->GetCheatProcessHandle(), reinterpret_cast<uintptr_t>(std::addressof(value.value)), address, value.width));
                         }
                     }
                 }
@@ -1146,8 +1146,8 @@ namespace ams::dmnt::cheat::impl {
             {
                 char path[fs::EntryNameLengthMax + 1];
                 util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
-                fs::DeleteFile(path);
-                fs::CreateFile(path, 0);
+                R_DISCARD(fs::DeleteFile(path));
+                R_DISCARD(fs::CreateFile(path, 0));
                 if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend))) {
                     return;
                 }

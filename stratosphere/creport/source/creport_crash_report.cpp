@@ -53,8 +53,8 @@ namespace ams::creport {
         }
 
         void TryCreateReportDirectories() {
-            fs::EnsureDirectory("sdmc:/atmosphere/crash_reports/dumps");
-            fs::EnsureDirectory("sdmc:/atmosphere/fatal_reports/dumps");
+            R_DISCARD(fs::EnsureDirectory("sdmc:/atmosphere/crash_reports/dumps"));
+            R_DISCARD(fs::EnsureDirectory("sdmc:/atmosphere/fatal_reports/dumps"));
         }
 
         constexpr const char *GetDebugExceptionString(const svc::DebugException type) {
@@ -244,7 +244,7 @@ namespace ams::creport {
                 m_result = creport::ResultUserBreak();
                 /* Try to parse out the user break result. */
                 if (hos::GetVersion() >= hos::Version_5_0_0) {
-                    svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(m_result)), m_debug_handle, d.info.exception.specific.user_break.address, sizeof(m_result));
+                    R_DISCARD(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(m_result)), m_debug_handle, d.info.exception.specific.user_break.address, sizeof(m_result)));
                 }
                 break;
             case svc::DebugException_UndefinedSystemCall:
@@ -289,7 +289,7 @@ namespace ams::creport {
         }
 
         /* Read the dying message. */
-        svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(m_dying_message), m_debug_handle, m_dying_message_address, m_dying_message_size);
+        R_DISCARD(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(m_dying_message), m_debug_handle, m_dying_message_address, m_dying_message_size));
     }
 
     void CrashReport::SaveReport(bool enable_screenshot) {

@@ -142,7 +142,7 @@ namespace ams::pm::impl {
                 R_TRY(ldr::pm::AtmospherePinProgram(std::addressof(pin_id), fixed_location, override_status));
 
                 /* If we fail after now, unpin. */
-                ON_RESULT_FAILURE { ldr::pm::UnpinProgram(pin_id); };
+                ON_RESULT_FAILURE { R_DISCARD(ldr::pm::UnpinProgram(pin_id)); };
 
                 /* Ensure we can talk to mitm services. */
                 {
@@ -486,7 +486,7 @@ namespace ams::pm::impl {
                 /* NOTE: Nintendo does not check the result of this. */
                 if (spl::IsDisabledProgramVerification()) {
                     if (hos::GetVersion() >= hos::Version_10_0_0) {
-                        ldr::pm::SetEnabledProgramVerification(false);
+                        R_DISCARD(ldr::pm::SetEnabledProgramVerification(false));
                     } else {
                         fsprSetEnabledProgramVerification(false);
                     }

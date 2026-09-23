@@ -262,7 +262,7 @@ namespace ams::mitm::fs {
             constexpr const fs::Path root_path = fs::MakeConstantPath("/");
 
             u8 savedata_copy_buffer[2_KB];
-            fssystem::CopyDirectoryRecursively(dirsave_ifs.get(), save_ifs.get(), root_path, root_path, std::addressof(work_entry), savedata_copy_buffer, sizeof(savedata_copy_buffer));
+            R_DISCARD(fssystem::CopyDirectoryRecursively(dirsave_ifs.get(), save_ifs.get(), root_path, root_path, std::addressof(work_entry), savedata_copy_buffer, sizeof(savedata_copy_buffer)));
         }
 
         /* Set output. */

@@ -47,7 +47,7 @@ namespace ams::ncm {
             void Finalize() {
                 /* If we're unused and mapped, we should unmap. */
                 if (!m_is_using && m_is_mapped) {
-                    this->Unmap();
+                    R_DISCARD(this->Unmap());
                 }
             }
         private:

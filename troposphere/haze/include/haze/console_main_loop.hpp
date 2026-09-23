@@ -214,8 +214,8 @@ namespace haze {
                         event_reactor.SetResult(ResultSuccess());
 
                         /* Configure the PTP responder and console main loop. */
-                        ptp_responder.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap));
-                        console_main_loop.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap));
+                        R_DISCARD(ptp_responder.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap)));
+                        R_DISCARD(console_main_loop.Initialize(std::addressof(event_reactor), std::addressof(ptp_object_heap)));
 
                         /* Ensure we maintain a clean state on exit. */
                         ON_SCOPE_EXIT {

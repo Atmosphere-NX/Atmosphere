@@ -499,26 +499,26 @@ namespace ams::erpt::srv {
     }
 
     void ClearFsInfo() {
-        Context::ClearContext(CategoryId_NANDTypeInfo);
-        Context::ClearContext(CategoryId_NANDSpeedModeInfo);
-        Context::ClearContext(CategoryId_NANDExtendedCsd);
-        Context::ClearContext(CategoryId_NANDPatrolInfo);
-        Context::ClearContext(CategoryId_NANDErrorInfo);
-        Context::ClearContext(CategoryId_NANDDriverLog);
-        Context::ClearContext(CategoryId_MicroSDTypeInfo);
-        Context::ClearContext(CategoryId_MicroSDSpeedModeInfo);
-        Context::ClearContext(CategoryId_SdCardSizeSpec);
-        Context::ClearContext(CategoryId_SdCardActivationInfo);
-        Context::ClearContext(CategoryId_SdCardErrorInfo);
-        Context::ClearContext(CategoryId_SdCardDriverLog);
-        Context::ClearContext(CategoryId_GameCardCIDInfo);
-        Context::ClearContext(CategoryId_GameCardErrorInfo);
-        Context::ClearContext(CategoryId_GameCardDetailedErrorInfo);
-        Context::ClearContext(CategoryId_GameCardLogInfo);
-        Context::ClearContext(CategoryId_FsProxyErrorInfo);
-        Context::ClearContext(CategoryId_FsProxyErrorInfo2);
-        Context::ClearContext(CategoryId_FsProxyErrorInfo3);
-        Context::ClearContext(CategoryId_FsMemoryInfo);
+        R_DISCARD(Context::ClearContext(CategoryId_NANDTypeInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_NANDSpeedModeInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_NANDExtendedCsd));
+        R_DISCARD(Context::ClearContext(CategoryId_NANDPatrolInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_NANDErrorInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_NANDDriverLog));
+        R_DISCARD(Context::ClearContext(CategoryId_MicroSDTypeInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_MicroSDSpeedModeInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_SdCardSizeSpec));
+        R_DISCARD(Context::ClearContext(CategoryId_SdCardActivationInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_SdCardErrorInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_SdCardDriverLog));
+        R_DISCARD(Context::ClearContext(CategoryId_GameCardCIDInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_GameCardErrorInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_GameCardDetailedErrorInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_GameCardLogInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_FsProxyErrorInfo));
+        R_DISCARD(Context::ClearContext(CategoryId_FsProxyErrorInfo2));
+        R_DISCARD(Context::ClearContext(CategoryId_FsProxyErrorInfo3));
+        R_DISCARD(Context::ClearContext(CategoryId_FsMemoryInfo));
     }
 
 }

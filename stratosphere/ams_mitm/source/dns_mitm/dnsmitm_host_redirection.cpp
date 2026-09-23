@@ -313,8 +313,8 @@ namespace ams::mitm::socket::resolver {
 
         /* Open log file. */
         ::FsFile log_file;
-        mitm::fs::DeleteAtmosphereSdFile("/logs/dns_mitm_startup.log");
-        mitm::fs::CreateAtmosphereSdDirectory("/logs");
+        R_DISCARD(mitm::fs::DeleteAtmosphereSdFile("/logs/dns_mitm_startup.log"));
+        R_DISCARD(mitm::fs::CreateAtmosphereSdDirectory("/logs"));
         R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/logs/dns_mitm_startup.log", 0, ams::fs::CreateOption_None));
         R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(log_file), "/logs/dns_mitm_startup.log", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));
         ON_SCOPE_EXIT { ::fsFileClose(std::addressof(log_file)); };
@@ -325,7 +325,7 @@ namespace ams::mitm::socket::resolver {
         if (!mitm::fs::HasAtmosphereSdFile("/hosts/default.txt")) {
             Log(log_file, "Creating /hosts/default.txt because it does not exist.\n");
 
-            mitm::fs::CreateAtmosphereSdDirectory("/hosts");
+            R_DISCARD(mitm::fs::CreateAtmosphereSdDirectory("/hosts"));
             R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/hosts/default.txt", sizeof(DefaultHostsFile) - 1, ams::fs::CreateOption_None));
 
             ::FsFile default_file;

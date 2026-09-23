@@ -357,7 +357,7 @@ namespace ams::ncm {
             }
 
             /* NOTE: Nintendo doesn't check that this operation succeeds. */
-            install_task_data.Push(content_meta.data.get(), content_meta.size);
+            R_DISCARD(install_task_data.Push(content_meta.data.get(), content_meta.size));
         }
 
         /* Change from our current data to the new data. */

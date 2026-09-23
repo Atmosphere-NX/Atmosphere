@@ -44,7 +44,7 @@ namespace ams::dmnt {
 
         /* Get our process id. */
         u64 pid_value = 0;
-        svc::GetProcessId(std::addressof(pid_value), m_debug_handle);
+        R_DISCARD(svc::GetProcessId(std::addressof(pid_value), m_debug_handle));
 
         m_process_id = { pid_value };
 
@@ -413,7 +413,7 @@ namespace ams::dmnt {
 
         /* Get the instruction where we were. */
         u32 insn = 0;
-        this->ReadMemory(std::addressof(insn), pc, sizeof(insn));
+        R_DISCARD(this->ReadMemory(std::addressof(insn), pc, sizeof(insn)));
 
         /* Handle by architecture. */
         bool is_call = false;
@@ -471,7 +471,7 @@ namespace ams::dmnt {
     }
 
     Result DebugProcess::ClearBreakPoint(uintptr_t address, size_t size) {
-        m_software_breakpoints.ClearBreakPoint(address, size);
+        R_DISCARD(m_software_breakpoints.ClearBreakPoint(address, size));
         R_SUCCEED();
     }
 
@@ -480,7 +480,7 @@ namespace ams::dmnt {
     }
 
     Result DebugProcess::ClearHardwareBreakPoint(uintptr_t address, size_t size) {
-        m_hardware_breakpoints.ClearBreakPoint(address, size);
+        R_DISCARD(m_hardware_breakpoints.ClearBreakPoint(address, size));
         R_SUCCEED();
     }
 

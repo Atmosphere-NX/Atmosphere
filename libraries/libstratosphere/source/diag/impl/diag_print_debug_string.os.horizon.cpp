@@ -22,7 +22,7 @@ namespace ams::diag::impl {
         AMS_AUDIT(msg != nullptr || size == 0);
 
         if (size != 0) {
-            svc::OutputDebugString(msg, size);
+            R_DISCARD(svc::OutputDebugString(msg, size));
         }
     }
 

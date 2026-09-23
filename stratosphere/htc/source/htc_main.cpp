@@ -177,7 +177,7 @@ namespace ams {
 
         /* Create the htc misc ipc thread. */
         os::ThreadType htc_ipc_thread;
-        os::CreateThread(std::addressof(htc_ipc_thread), htc::HtcIpcThreadFunction, nullptr, htc::g_htc_ipc_thread_stack, sizeof(htc::g_htc_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcIpc));
+        R_DISCARD(os::CreateThread(std::addressof(htc_ipc_thread), htc::HtcIpcThreadFunction, nullptr, htc::g_htc_ipc_thread_stack, sizeof(htc::g_htc_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcIpc)));
         os::SetThreadNamePointer(std::addressof(htc_ipc_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcIpc));
 
         /* Initialize the htcfs server. */
@@ -186,7 +186,7 @@ namespace ams {
 
         /* Create the htcfs ipc thread. */
         os::ThreadType htcfs_ipc_thread;
-        os::CreateThread(std::addressof(htcfs_ipc_thread), htc::HtcfsIpcThreadFunction, nullptr, htc::g_htcfs_ipc_thread_stack, sizeof(htc::g_htcfs_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcfsIpc));
+        R_DISCARD(os::CreateThread(std::addressof(htcfs_ipc_thread), htc::HtcfsIpcThreadFunction, nullptr, htc::g_htcfs_ipc_thread_stack, sizeof(htc::g_htcfs_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcfsIpc)));
         os::SetThreadNamePointer(std::addressof(htcfs_ipc_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcfsIpc));
 
         /* Initialize the htcs server. */
@@ -196,7 +196,7 @@ namespace ams {
         /* Create the htcs ipc threads. */
         os::ThreadType htcs_ipc_threads[htc::NumHtcsIpcThreads];
         for (size_t i = 0; i < htc::NumHtcsIpcThreads; ++i) {
-            os::CreateThread(std::addressof(htcs_ipc_threads[i]), htc::HtcsIpcThreadFunction, nullptr, htc::g_htcs_ipc_thread_stack[i], sizeof(htc::g_htcs_ipc_thread_stack[i]), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcsIpc));
+            R_DISCARD(os::CreateThread(std::addressof(htcs_ipc_threads[i]), htc::HtcsIpcThreadFunction, nullptr, htc::g_htcs_ipc_thread_stack[i], sizeof(htc::g_htcs_ipc_thread_stack[i]), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcsIpc)));
             os::SetThreadNamePointer(std::addressof(htcs_ipc_threads[i]), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcsIpc));
         }
 

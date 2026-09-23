@@ -29,7 +29,7 @@ namespace ams::dmnt {
         for (size_t i = 0; (bp = static_cast<BreakPoint *>(this->GetBreakPoint(i))) != nullptr; ++i) {
             if (bp->m_in_use && bp->m_is_step) {
                 AMS_DMNT2_GDB_LOG_DEBUG("BreakPointManager::ClearStep %p 0x%lx (idx=%zu)\n", bp, bp->m_address, i);
-                bp->Clear(m_debug_process);
+                R_DISCARD(bp->Clear(m_debug_process));
             }
         }
     }

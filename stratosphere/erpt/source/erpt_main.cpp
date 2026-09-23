@@ -62,9 +62,9 @@ namespace ams {
         {
             u8 disable_report_cleanup = 0;
             if (settings::fwdbg::GetSettingsItemValue(std::addressof(disable_report_cleanup), sizeof(disable_report_cleanup), "erpt", "disable_automatic_report_cleanup") == sizeof(disable_report_cleanup)) {
-                erpt::srv::SetEnabledAutomaticReportCleanup(disable_report_cleanup == 0);
+                R_DISCARD(erpt::srv::SetEnabledAutomaticReportCleanup(disable_report_cleanup == 0));
             } else {
-                erpt::srv::SetEnabledAutomaticReportCleanup(true);
+                R_DISCARD(erpt::srv::SetEnabledAutomaticReportCleanup(true));
             }
         }
 
@@ -72,7 +72,7 @@ namespace ams {
         R_ABORT_UNLESS(erpt::srv::Initialize(erpt::g_memory_heap, erpt::MemoryHeapSize));
 
         /* Atmosphere always wants to redirect new reports to the SD card, to prevent them from being logged. */
-        erpt::srv::SetRedirectNewReportsToSdCard(true);
+        R_DISCARD(erpt::srv::SetRedirectNewReportsToSdCard(true));
 
         /* Configure the serial number, OS version, product model, and region. */
         {

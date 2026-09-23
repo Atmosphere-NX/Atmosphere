@@ -436,7 +436,7 @@ namespace ams::mitm {
             GetBackupFileName(backup_fn, sizeof(backup_fn), info);
 
             /* Create the file, in case it does not exist. */
-            mitm::fs::CreateAtmosphereSdFile(backup_fn, sizeof(CalibrationInfo), ams::fs::CreateOption_None);
+            R_DISCARD(mitm::fs::CreateAtmosphereSdFile(backup_fn, sizeof(CalibrationInfo), ams::fs::CreateOption_None));
 
             /* Open the file. */
             FsFile libnx_file;

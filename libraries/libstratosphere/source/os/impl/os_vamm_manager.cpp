@@ -107,7 +107,7 @@ namespace ams::os::impl {
             public:
                 DynamicUnitHeap(uintptr_t address, size_t size, size_t unit_size) : m_start(address), m_end(address + size) {
                     /* Allocate the start of our buffer. */
-                    VammManagerImpl::AllocatePhysicalMemoryImpl(m_start, PhysicalMemoryUnitSize);
+                    R_DISCARD(VammManagerImpl::AllocatePhysicalMemoryImpl(m_start, PhysicalMemoryUnitSize));
 
                     /* Set our current limit. */
                     m_limit = m_start + PhysicalMemoryUnitSize;

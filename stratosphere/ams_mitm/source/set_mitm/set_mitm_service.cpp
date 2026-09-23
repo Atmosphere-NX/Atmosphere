@@ -90,7 +90,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetMitmService::GetLanguageCode(sf::Out<settings::LanguageCode> out) {
-        this->EnsureLocale();
+        R_DISCARD(this->EnsureLocale());
 
         /* If there's no override locale, just use the actual one. */
         if (AMS_UNLIKELY(!m_is_valid_language)) {
@@ -109,7 +109,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetMitmService::GetRegionCode(sf::Out<settings::RegionCode> out) {
-        this->EnsureLocale();
+        R_DISCARD(this->EnsureLocale());
 
         /* If there's no override locale, just use the actual one. */
         if (AMS_UNLIKELY(!m_is_valid_region)) {

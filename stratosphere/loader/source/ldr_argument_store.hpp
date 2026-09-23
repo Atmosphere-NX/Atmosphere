@@ -33,7 +33,7 @@ namespace ams::ldr {
             Entry m_argument_map[ArgumentMapCount];
         public:
             constexpr ArgumentStore() : m_argument_map{} {
-                this->Flush();
+                R_DISCARD(this->Flush());
             }
         public:
             const Entry *Get(ncm::ProgramId program_id);

@@ -812,7 +812,7 @@ namespace ams::ldr {
             /* Set the output handle, and ensure that if we fail after this point we clean it up. */
             out->process_handle = process_handle;
             out->code_address   = param.code_address;
-            ON_RESULT_FAILURE { svc::CloseHandle(process_handle); };
+            ON_RESULT_FAILURE { R_DISCARD(svc::CloseHandle(process_handle)); };
 
             /* Load all auto load modules. */
             R_RETURN(LoadAutoLoadModules(out, ctx, argument));
@@ -882,7 +882,7 @@ namespace ams::ldr {
         /* If we're overriding for HBL, perform HTML document redirection. */
         if (override_status.IsHbl()) {
             /* Don't validate result, failure is okay. */
-            RedirectHtmlDocumentPathForHbl(loc);
+            R_DISCARD(RedirectHtmlDocumentPathForHbl(loc));
         }
 
         /* Clear the external code for the program. */

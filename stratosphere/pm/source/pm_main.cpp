@@ -54,8 +54,8 @@ namespace ams {
             void RegisterPrivilegedProcess(os::ProcessId process_id, ncm::ProgramId program_id) {
                 fsprUnregisterProgram(process_id.value);
                 fsprRegisterProgram(process_id.value, process_id.value, NcmStorageId_BuiltInSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl), 0);
-                sm::manager::UnregisterProcess(process_id);
-                sm::manager::RegisterProcess(process_id, program_id, cfg::OverrideStatus{}, PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
+                R_DISCARD(sm::manager::UnregisterProcess(process_id));
+                R_DISCARD(sm::manager::RegisterProcess(process_id, program_id, cfg::OverrideStatus{}, PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl)));
             }
 
             void RegisterPrivilegedProcesses() {

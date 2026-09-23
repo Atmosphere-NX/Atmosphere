@@ -28,7 +28,7 @@ namespace ams::dmnt {
         BreakPointBase *bp = nullptr;
         for (size_t i = 0; (bp = static_cast<BreakPointBase *>(this->GetBreakPoint(i))) != nullptr; ++i) {
             if (bp->m_in_use) {
-                bp->Clear(m_debug_process);
+                R_DISCARD(bp->Clear(m_debug_process));
             }
         }
     }

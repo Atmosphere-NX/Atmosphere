@@ -147,7 +147,7 @@ namespace ams {
                     R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_Ssl,    SslServiceName,    SslMaxSessions));
                     R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_Es,     EsServiceName,     EsMaxSessions));
                     if (fw_ver >= hos::Version_5_0_0) {
-                        g_server_manager.RegisterServer(PortIndex_Manu, ManuServiceName, ManuMaxSessions);
+                        R_DISCARD(g_server_manager.RegisterServer(PortIndex_Manu, ManuServiceName, ManuMaxSessions));
                     }
                 }
 

@@ -273,7 +273,7 @@ namespace ams::kvdb {
 
         /* Delete the file, if it exists. Don't check result, since it's okay if it's already deleted. */
         auto key_path = this->GetPath(key, key_size);
-        fs::DeleteFile(key_path);
+        R_DISCARD(fs::DeleteFile(key_path));
 
         /* Create the new value file. */
         R_TRY(fs::CreateFile(key_path, value_size));

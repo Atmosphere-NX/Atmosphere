@@ -123,7 +123,7 @@ namespace ams {
                 if (R_SUCCEEDED(pgl::Initialize())) {
                     ON_SCOPE_EXIT { pgl::Finalize(); };
 
-                    pgl::TerminateProcess(crashed_pid);
+                    R_DISCARD(pgl::TerminateProcess(crashed_pid));
                 }
             } else {
                 /* Use ns to terminate. */

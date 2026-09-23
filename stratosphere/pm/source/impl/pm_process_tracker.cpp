@@ -94,7 +94,7 @@ namespace ams::pm::impl {
         auto list = GetProcessList();
 
         /* Reset the process's signal. */
-        svc::ResetSignal(process_info->GetHandle());
+        R_DISCARD(svc::ResetSignal(process_info->GetHandle()));
 
         /* Update the process's state. */
         const svc::ProcessState old_state = process_info->GetState();
