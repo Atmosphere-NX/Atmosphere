@@ -60,9 +60,9 @@ namespace ams::util {
         }
         
         const uint32_t magic = *reinterpret_cast<const uint32_t *>(src);
-        const uint8_t flg = *reinterpret_cast<const uint8_t *>(src) + 4;
-        const uint8_t bd = *reinterpret_cast<const uint8_t *>(src) + 5;
-        const uint8_t header_checksum = *reinterpret_cast<const uint8_t *>(src) + 6;
+        const uint8_t flg = reinterpret_cast<const uint8_t *>(src)[4];
+        const uint8_t bd = reinterpret_cast<const uint8_t *>(src)[5];
+        const uint8_t header_checksum = reinterpret_cast<const uint8_t *>(src)[6];
         
         /* Check for LZ4F_MAGICNUMBER, validate flags and block size. */
         if ((magic != 0x184D2204) || ((flg & 1) != 0) || (flg != 0x60) || (bd != 0x40)) {
@@ -96,6 +96,7 @@ namespace ams::util {
             
             /* We've reached the end. */
             if (!block_header) {
+                src_pos += sizeof(block_header);
                 break;
             }
             
@@ -127,10 +128,10 @@ namespace ams::util {
                 }
                 
                 dst_pos += block_size;
-                src_pos += block_size;
+                src_pos += sizeof(block_header) + block_size;
                 
                 /* Destination is overrunning source. */
-                if (dst_pos > src_pos) {
+                if (reinterpret_cast<char *>(dst) + dst_pos > reinterpret_cast<const char *>(src) + src_pos) {
                     std::memset(dst, 0, dst_size);
                     return -5;
                 }
@@ -139,7 +140,7 @@ namespace ams::util {
                 std::memmove(dst_data_block, src_data_block, block_size); 
             } else {
                 /* This is a compressed block, decompress it. */
-                int decompressed_size = LZ4_decompress_safe(reinterpret_cast<const char *>(src_work), reinterpret_cast<char *>(dst_work), static_cast<int>(src_work_size), static_cast<int>(dst_work_size));
+                int decompressed_size = LZ4_decompress_safe(reinterpret_cast<const char *>(src_work), reinterpret_cast<char *>(dst_work), static_cast<int>(block_size), static_cast<int>(dst_work_size));
                 
                 /* Decompressed size is invalid. */
                 if (decompressed_size < 1) {
@@ -154,10 +155,10 @@ namespace ams::util {
                 }
                 
                 dst_pos += decompressed_size;
-                src_pos += block_size;
+                src_pos += sizeof(block_header) + block_size;
                 
                 /* Destination is overrunning source. */
-                if (dst_pos > src_pos) {
+                if (reinterpret_cast<char *>(dst) + dst_pos > reinterpret_cast<const char *>(src) + src_pos) {
                     std::memset(dst, 0, dst_size);
                     return -5;
                 }
