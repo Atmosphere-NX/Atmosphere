@@ -94,6 +94,8 @@ namespace ams::ro::impl {
                 os::NativeHandle m_process_handle = os::InvalidNativeHandle;
                 os::ProcessId m_process_id = os::InvalidProcessId;
                 bool m_in_use{};
+                u8  m_decompression_src_work_buffer[0x10000]{};
+                u8  m_decompression_dst_work_buffer[0x10000]{};
             public:
                 constexpr ProcessContext() = default;
 
@@ -108,6 +110,9 @@ namespace ams::ro::impl {
                     m_process_handle = process_handle;
                     m_process_id     = process_id;
                     m_in_use         = true;
+                    
+                    std::memset(m_decompression_src_work_buffer, 0, sizeof(m_decompression_src_work_buffer));
+                    std::memset(m_decompression_dst_work_buffer, 0, sizeof(m_decompression_dst_work_buffer));
                 }
 
                 void Finalize() {
@@ -259,7 +264,7 @@ namespace ams::ro::impl {
                     R_THROW(ro::ResultNotAuthorized());
                 }
                 
-                Result ValidateNro(NroHeader **out_header, AdditionalNroHeaderInfo **out_additional_header_info, void *out_additional_header_hash, u8 *mapped_memory, u64 expected_nro_size, u64 expected_bss_size) {
+                Result ValidateNro(NroHeader **out_header, AdditionalNroHeaderInfo *out_additional_header_info, void *out_additional_header_hash, u8 *mapped_memory, u64 expected_nro_size, u64 expected_bss_size) {
                     /* Validate header. */
                     NroHeader *header = reinterpret_cast<NroHeader *>(mapped_memory);
                     R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
@@ -348,11 +353,11 @@ namespace ams::ro::impl {
                         R_UNLESS(util::AlignUp(compressed_size, os::MemoryPageSize) == expected_nro_size, ro::ResultInvalidNro());
                         
                         /* Copy the additional header info to output. This is AdditionalNroHeader minus the hash. */
-                        std::memcpy(out_additional_header_info, additional_header, sizeof(*additional_header) - hash_size);
+                        std::memcpy(reinterpret_cast<void*>(out_additional_header_info), additional_header, sizeof(AdditionalNroHeader) - hash_size);
                     } else {
                         /* Explicitly clear additional header hash and info. */
                         std::memset(out_additional_header_hash, 0, crypto::Sha256Generator::HashSize);
-                        std::memset(out_additional_header_info, 0, sizeof(AdditionalNroHeaderInfo));
+                        std::memset(reinterpret_cast<void*>(out_additional_header_info), 0, sizeof(AdditionalNroHeaderInfo));
                     }
                     
                     /* Copy the header to output. */
@@ -361,9 +366,48 @@ namespace ams::ro::impl {
                 }
                 
                 Result DecompressNro(u8 *mapped_nro, u64 expected_nro_size, const NroHeader *nro_header, u32 compressed_size) {
-                    /* TODO */
-                    AMS_UNUSED(mapped_nro, expected_nro_size, nro_header, compressed_size);
-                    R_SUCCEED();
+                    /* Read sizes from header. */
+                    const u64 rw_ofs = nro_header->GetRwOffset();
+                    const u64 rw_size = nro_header->GetRwSize();
+                    const u64 bss_size = nro_header->GetBssSize();
+                    
+                    /* Divide the mapped NRO into regions devised for the decompression. */
+                    u8 *nro_aligned_start = static_cast<u8 *>(mapped_nro + 0x1000);
+                    const u8 *nro_expected_end = static_cast<const u8 *>(mapped_nro + expected_nro_size);
+                    const u64 nro_src_buffer_size = compressed_size - 0x1000;
+                    u8 *nro_src_buffer = static_cast<u8 *>(mapped_nro + expected_nro_size - nro_src_buffer_size);
+                    const u64 nro_dst_buffer_size = expected_nro_size - 0xC00;
+                    u8 *nro_dst_buffer = static_cast<u8 *>(mapped_nro + 0xC00);
+                    
+                    /* Copy to source buffer. */
+                    std::memmove(nro_src_buffer, nro_aligned_start, nro_src_buffer_size);
+                    
+                    /* Decompress. */
+                    u64 decompressed_size = 0;
+                    R_UNLESS(util::DecompressLZ4Frame(std::addressof(decompressed_size), nro_dst_buffer, nro_dst_buffer_size, nro_src_buffer, nro_src_buffer_size, m_decompression_src_work_buffer, sizeof(m_decompression_src_work_buffer), m_decompression_dst_work_buffer, sizeof(m_decompression_dst_work_buffer)), ro::ResultInvalidNro());
+                    
+                    /* Find the BSS. */
+                    u8 *nro_expected_bss_start = static_cast<u8 *>(mapped_nro + rw_ofs + rw_size);
+                    const u8 *nro_expected_bss_end = static_cast<const u8 *>(nro_expected_bss_start + bss_size);
+                    const u8 *nro_bss_start = static_cast<const u8 *>(nro_expected_bss_start - 0x400);
+                    const u8 *nro_decompressed_end = static_cast<const u8 *>(nro_dst_buffer + decompressed_size);
+                    
+                    /* The decompressed data must end at the expected BSS start. */
+                    if (nro_decompressed_end == nro_bss_start) {
+                        /* Copy the decompressed data back to the mapped NRO memory. */
+                        std::memmove(nro_aligned_start, nro_dst_buffer, decompressed_size);
+                        std::memset(nro_dst_buffer, 0, 0x400);
+                        
+                        /* Check the BSS ends where it's supposed, initialize it and then succeed. */
+                        if (nro_expected_bss_end == nro_expected_end) {
+                            std::memset(nro_expected_bss_start, 0, bss_size);
+                            R_SUCCEED();
+                        }
+                    }
+                    
+                    /* Clear the decompressed data buffer in case of error. */
+                    std::memset(nro_dst_buffer, 0, nro_dst_buffer_size);
+                    R_THROW(ro::ResultInvalidNro());
                 }
                 
                 Result CheckAdditionalHeaderHash(const u8 *mapped_nro, const void *additional_nro_header_hash, size_t additional_nro_header_hash_size, u64 rw_ofs, u64 rw_size) {
@@ -391,13 +435,13 @@ namespace ams::ro::impl {
                     
                     /* ValidateNro */
                     NroHeader *nro_header = nullptr;
-                    AdditionalNroHeaderInfo *additional_nro_header_info = nullptr;
+                    AdditionalNroHeaderInfo additional_nro_header_info;
                     u8 additional_nro_header_hash[crypto::Sha256Generator::HashSize];
                     R_TRY(this->ValidateNro(std::addressof(nro_header), std::addressof(additional_nro_header_info), std::addressof(additional_nro_header_hash), static_cast<u8 *>(mapped_memory), expected_nro_size, expected_bss_size));
                     
                     /* DecompressNro */
                     if (nro_header->IsCompress()) {
-                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), expected_nro_size, nro_header, additional_nro_header_info->compressed_size));
+                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), expected_nro_size, nro_header, additional_nro_header_info.compressed_size));
                         
                         /* CheckAdditionalHeaderHash */
                         if (nro_header->GetAdditionalHeaderOffset() != 0) {

@@ -28,6 +28,7 @@ namespace ams::util {
 
     /* Decompression utilities. */
     int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
+    int DecompressLZ4Frame(size_t* out_size, void *dst, size_t dst_size, const void *src, size_t src_size, void *src_work, size_t src_work_size, void *dst_work, size_t dst_work_size);
     size_t DecompressZstd(void *dst, size_t dst_size, const void *src, size_t src_size);
     size_t DecompressZstdWithBic(void *dst, size_t dst_size, const void *src, size_t src_size);
     bool DecompressZstdWithBic(void* workspace, size_t workspace_size, void *dst, size_t dst_size, size_t expected_dec_size, const void *src, size_t src_size);
