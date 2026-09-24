@@ -770,7 +770,7 @@ namespace ams::ro::impl {
             context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
-        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.code_size + nro_backup.rw_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
+        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.nro_heap_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
     }
 
     /* Debug service implementations. */
