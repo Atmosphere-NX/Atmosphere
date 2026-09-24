@@ -365,7 +365,7 @@ namespace ams::ro::impl {
                     R_SUCCEED();
                 }
                 
-                Result DecompressNro(u8 *mapped_nro, u64 expected_nro_size, const NroHeader *nro_header, u32 compressed_size) {
+                Result DecompressNro(u8 *mapped_nro, u64 mapped_size, const NroHeader *nro_header, u32 compressed_size) {
                     /* Read sizes from header. */
                     const u64 rw_ofs = nro_header->GetRwOffset();
                     const u64 rw_size = nro_header->GetRwSize();
@@ -373,10 +373,10 @@ namespace ams::ro::impl {
                     
                     /* Divide the mapped NRO into regions devised for the decompression. */
                     u8 *nro_aligned_start = static_cast<u8 *>(mapped_nro + 0x1000);
-                    const u8 *nro_expected_end = static_cast<const u8 *>(mapped_nro + expected_nro_size);
+                    const u8 *nro_expected_end = static_cast<const u8 *>(mapped_nro + mapped_size);
                     const u64 nro_src_buffer_size = compressed_size - 0x1000;
-                    u8 *nro_src_buffer = static_cast<u8 *>(mapped_nro + expected_nro_size - nro_src_buffer_size);
-                    const u64 nro_dst_buffer_size = expected_nro_size - 0xC00;
+                    u8 *nro_src_buffer = static_cast<u8 *>(mapped_nro + mapped_size - nro_src_buffer_size);
+                    const u64 nro_dst_buffer_size = mapped_size - 0xC00;
                     u8 *nro_dst_buffer = static_cast<u8 *>(mapped_nro + 0xC00);
                     
                     /* Copy to source buffer. */
@@ -384,7 +384,7 @@ namespace ams::ro::impl {
                     
                     /* Decompress. */
                     u64 decompressed_size = 0;
-                    R_UNLESS(util::DecompressLZ4Frame(std::addressof(decompressed_size), nro_dst_buffer, nro_dst_buffer_size, nro_src_buffer, nro_src_buffer_size, m_decompression_src_work_buffer, sizeof(m_decompression_src_work_buffer), m_decompression_dst_work_buffer, sizeof(m_decompression_dst_work_buffer)), ro::ResultInvalidNro());
+                    R_UNLESS(util::DecompressLZ4Frame(std::addressof(decompressed_size), nro_dst_buffer, nro_dst_buffer_size, nro_src_buffer, nro_src_buffer_size, m_decompression_src_work_buffer, sizeof(m_decompression_src_work_buffer), m_decompression_dst_work_buffer, sizeof(m_decompression_dst_work_buffer)) == 0, ro::ResultInvalidNro());
                     
                     /* Find the BSS. */
                     u8 *nro_expected_bss_start = static_cast<u8 *>(mapped_nro + rw_ofs + rw_size);
@@ -424,14 +424,15 @@ namespace ams::ro::impl {
                 }
 
                 Result ParseNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, bool *out_aligned_header, bool *out_is_compress, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
-                    /* Map the NRO. */
+                    /* Map the NRO and its bss, compressed NROs decompress into the bss. */
+                    const u64 mapped_size = expected_nro_size + expected_bss_size;
                     void *mapped_memory = nullptr;
-                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
+                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, mapped_size, ro::impl::GenerateSecureRandom)) {
                         R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
                     } R_END_TRY_CATCH;
 
                     /* When we're done, unmap the memory. */
-                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, expected_nro_size); };
+                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, mapped_size); };
                     
                     /* ValidateNro */
                     NroHeader *nro_header = nullptr;
@@ -441,7 +442,7 @@ namespace ams::ro::impl {
                     
                     /* DecompressNro */
                     if (nro_header->IsCompress()) {
-                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), expected_nro_size, nro_header, additional_nro_header_info.compressed_size));
+                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), mapped_size, nro_header, additional_nro_header_info.compressed_size));
                         
                         /* CheckAdditionalHeaderHash */
                         if (nro_header->GetAdditionalHeaderOffset() != 0) {
