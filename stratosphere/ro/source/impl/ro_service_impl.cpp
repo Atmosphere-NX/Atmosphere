@@ -134,8 +134,11 @@ namespace ams::ro::impl {
 
                     m_process_handle = os::InvalidNativeHandle;
                     m_process_id     = os::InvalidProcessId;
-
+                    
                     m_in_use         = false;
+                    
+                    std::memset(m_decompression_src_work_buffer, 0, sizeof(m_decompression_src_work_buffer));
+                    std::memset(m_decompression_dst_work_buffer, 0, sizeof(m_decompression_dst_work_buffer));
                 }
 
                 os::NativeHandle GetProcessHandle() const {
@@ -365,7 +368,7 @@ namespace ams::ro::impl {
                     R_SUCCEED();
                 }
                 
-                Result DecompressNro(u8 *mapped_nro, u64 expected_nro_size, const NroHeader *nro_header, u32 compressed_size) {
+                Result DecompressNro(u8 *mapped_nro, u64 total_size, const NroHeader *nro_header, u32 compressed_size) {
                     /* Read sizes from header. */
                     const u64 rw_ofs = nro_header->GetRwOffset();
                     const u64 rw_size = nro_header->GetRwSize();
@@ -373,10 +376,10 @@ namespace ams::ro::impl {
                     
                     /* Divide the mapped NRO into regions devised for the decompression. */
                     u8 *nro_aligned_start = static_cast<u8 *>(mapped_nro + 0x1000);
-                    const u8 *nro_expected_end = static_cast<const u8 *>(mapped_nro + expected_nro_size);
+                    const u8 *nro_expected_end = static_cast<const u8 *>(mapped_nro + total_size);
                     const u64 nro_src_buffer_size = compressed_size - 0x1000;
-                    u8 *nro_src_buffer = static_cast<u8 *>(mapped_nro + expected_nro_size - nro_src_buffer_size);
-                    const u64 nro_dst_buffer_size = expected_nro_size - 0xC00;
+                    u8 *nro_src_buffer = static_cast<u8 *>(mapped_nro + total_size - nro_src_buffer_size);
+                    const u64 nro_dst_buffer_size = total_size - 0xC00;
                     u8 *nro_dst_buffer = static_cast<u8 *>(mapped_nro + 0xC00);
                     
                     /* Copy to source buffer. */
@@ -384,7 +387,7 @@ namespace ams::ro::impl {
                     
                     /* Decompress. */
                     u64 decompressed_size = 0;
-                    R_UNLESS(util::DecompressLZ4Frame(std::addressof(decompressed_size), nro_dst_buffer, nro_dst_buffer_size, nro_src_buffer, nro_src_buffer_size, m_decompression_src_work_buffer, sizeof(m_decompression_src_work_buffer), m_decompression_dst_work_buffer, sizeof(m_decompression_dst_work_buffer)), ro::ResultInvalidNro());
+                    R_UNLESS(util::DecompressLZ4Frame(std::addressof(decompressed_size), nro_dst_buffer, nro_dst_buffer_size, nro_src_buffer, nro_src_buffer_size, m_decompression_src_work_buffer, sizeof(m_decompression_src_work_buffer), m_decompression_dst_work_buffer, sizeof(m_decompression_dst_work_buffer)) == 0, ro::ResultInvalidNro());
                     
                     /* Find the BSS. */
                     u8 *nro_expected_bss_start = static_cast<u8 *>(mapped_nro + rw_ofs + rw_size);
@@ -423,15 +426,15 @@ namespace ams::ro::impl {
                     R_SUCCEED();
                 }
 
-                Result ParseNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, bool *out_aligned_header, bool *out_is_compress, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
+                Result ParseNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 *out_bss_size, bool *out_aligned_header, bool *out_is_compress, u64 base_address, u64 total_size, u64 expected_nro_size, u64 expected_bss_size) {
                     /* Map the NRO. */
                     void *mapped_memory = nullptr;
-                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, expected_nro_size, ro::impl::GenerateSecureRandom)) {
+                    R_TRY_CATCH(os::MapProcessMemory(std::addressof(mapped_memory), m_process_handle, base_address, total_size, ro::impl::GenerateSecureRandom)) {
                         R_CONVERT(os::ResultOutOfAddressSpace, ro::ResultOutOfAddressSpace())
                     } R_END_TRY_CATCH;
-
+                    
                     /* When we're done, unmap the memory. */
-                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, expected_nro_size); };
+                    ON_SCOPE_EXIT { os::UnmapProcessMemory(mapped_memory, m_process_handle, base_address, total_size); };
                     
                     /* ValidateNro */
                     NroHeader *nro_header = nullptr;
@@ -441,7 +444,7 @@ namespace ams::ro::impl {
                     
                     /* DecompressNro */
                     if (nro_header->IsCompress()) {
-                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), expected_nro_size, nro_header, additional_nro_header_info.compressed_size));
+                        R_TRY(this->DecompressNro(static_cast<u8 *>(mapped_memory), total_size, nro_header, additional_nro_header_info.compressed_size));
                         
                         /* CheckAdditionalHeaderHash */
                         if (nro_header->GetAdditionalHeaderOffset() != 0) {
@@ -458,6 +461,7 @@ namespace ams::ro::impl {
                     *out_rx_size = nro_header->GetTextSize();
                     *out_ro_size = nro_header->GetRoSize();
                     *out_rw_size = nro_header->GetRwSize();
+                    *out_bss_size = nro_header->GetBssSize();
                     *out_aligned_header = nro_header->IsAlignedHeader();
                     *out_is_compress = nro_header->IsCompress();
                     R_SUCCEED();
@@ -706,28 +710,28 @@ namespace ams::ro::impl {
         ON_RESULT_FAILURE { R_DISCARD(UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size)); };
 
         /* Parse the NRO. */
-        u64 rx_size = 0, ro_size = 0, rw_size = 0;
-        bool aligned_header = false;
-        bool is_compress = false;
-        R_TRY(context->ParseNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), std::addressof(aligned_header), std::addressof(is_compress), nro_info->base_address, nro_size, bss_size));
+        u64 nro_rx_size = 0, nro_ro_size = 0, nro_rw_size = 0, nro_bss_size = 0;
+        bool nro_aligned_header = false;
+        bool nro_is_compress = false;
+        R_TRY(context->ParseNro(std::addressof(nro_info->module_id), std::addressof(nro_rx_size), std::addressof(nro_ro_size), std::addressof(nro_rw_size), std::addressof(nro_bss_size), std::addressof(nro_aligned_header), std::addressof(nro_is_compress), nro_info->base_address, total_size, nro_size, bss_size));
 
         /* Set NRO perms. */
-        R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size, aligned_header));
-
+        R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, nro_rx_size, nro_ro_size, nro_rw_size + nro_bss_size, nro_aligned_header));
+        
         context->SetNroInfoInUse(nro_info, true);
         nro_info->nro_heap_address = nro_address;
         nro_info->nro_heap_size = nro_size;
         nro_info->bss_heap_address = bss_address;
         nro_info->bss_heap_size = bss_size;
         if (hos::GetVersion() >= hos::Version_23_0_0) {
-            nro_info->code_size = rx_size;
-            nro_info->ro_size = ro_size;
+            nro_info->code_size = nro_rx_size;
+            nro_info->ro_size = nro_ro_size;
         } else {
-            nro_info->code_size = rx_size + ro_size;
+            nro_info->code_size = nro_rx_size + nro_ro_size;
             nro_info->ro_size = 0;
         }
-        nro_info->rw_size = rw_size;
-        nro_info->is_compress = is_compress;
+        nro_info->rw_size = nro_rw_size;
+        nro_info->is_compress = nro_is_compress;
         *out_address = nro_info->base_address;
         R_SUCCEED();
     }
@@ -770,7 +774,11 @@ namespace ams::ro::impl {
             context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
-        R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.code_size + nro_backup.rw_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
+        if (hos::GetVersion() >= hos::Version_23_0_0) {
+            R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.nro_heap_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
+        } else {
+            R_RETURN(UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.code_size + nro_backup.rw_size, nro_backup.bss_heap_address, nro_backup.bss_heap_size));
+        }
     }
 
     /* Debug service implementations. */
