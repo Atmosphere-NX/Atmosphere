@@ -45,19 +45,24 @@ namespace ams::util {
         
         /* Destination buffer must be behind source buffer. */
         if (dst_buffer > src_buffer) {
-            std::memset(dst, 0, dst_size);
+            std::memset(dst_buffer, 0, dst_size);
             return -1;
         }
         
+        const u8 *src_buffer_start = src_buffer;
+        const u8 *src_buffer_end = src_buffer + src_size;
+        const u8 *dst_buffer_start = dst_buffer;
+        const u8 *dst_buffer_end = dst_buffer + dst_size;
+        
         /* Size checks. */
-        if (((src_buffer + src_size) != (dst_buffer + dst_size)) || (src_work_size != 0x10000) || (dst_work_size != 0x10000)) {
-            std::memset(dst, 0, dst_size);
+        if ((src_buffer_end != dst_buffer_end) || (src_work_size != 0x10000) || (dst_work_size != 0x10000)) {
+            std::memset(dst_buffer, 0, dst_size);
             return -1;
         }
         
         /* Source size must at least include one frame header. */
         if (src_size < 7) {
-            std::memset(dst, 0, dst_size);
+            std::memset(dst_buffer, 0, dst_size);
             return -2;
         }
         
@@ -68,33 +73,33 @@ namespace ams::util {
         
         /* Check for LZ4F_MAGICNUMBER, validate flags and block size. */
         if ((magic != 0x184D2204) || ((flg & 1) != 0) || (flg != 0x60) || (bd != 0x40)) {
-            std::memset(dst, 0, dst_size);
+            std::memset(dst_buffer, 0, dst_size);
             return -2;
         }
         
         /* TODO: Implement header checksum validation. This requires xxhash, do we want to have xxhash in util? */
         AMS_UNUSED(header_checksum);
         
-        u32 src_pos = 7; /* Skip the header. */
-        u32 dst_pos = 0;
+        /* Skip the frame header. */
+        src_buffer += 7;
         
-        /* Destination size is too small. */
-        if (dst_size < src_pos) {
-            std::memset(dst, 0, dst_size);
+        /* Destination is too small. */
+        if (src_buffer >= dst_buffer_end) {
+            std::memset(dst_buffer, 0, dst_size);
             return -2;
         }
         
         while (true) {
             /* Not enough space left. */
-            if ((dst_size - src_pos) < 4) {
-                std::memset(dst, 0, dst_size);
+            if ((dst_buffer_end - src_buffer) < 4) {
+                std::memset(dst_buffer, 0, dst_size);
                 return -4;
             }
             
-            src_buffer += src_pos;
-            dst_buffer += dst_pos;
-            
             const u32 block_header = *reinterpret_cast<const u32 *>(src_buffer);
+            
+            /* Advance the block. */
+            src_buffer += sizeof(block_header);
             
             /* We've reached the end. */
             if (!block_header) {
@@ -105,16 +110,13 @@ namespace ams::util {
             
             /* Block size is invalid. */
             if (block_size > 0x10000) {
-                std::memset(dst, 0, dst_size);
+                std::memset(dst_buffer, 0, dst_size);
                 return -3;
             }
             
-            /* Advance the data block. */
-            src_buffer += sizeof(block_header);
-            
             /* Block size is invalid. */
-            if (((dst_buffer + dst_size) - src_buffer) < block_size) {
-                std::memset(dst, 0, dst_size);
+            if ((dst_buffer_end - src_buffer) < block_size) {
+                std::memset(dst_buffer, 0, dst_size);
                 return -4;
             }
             
@@ -123,65 +125,67 @@ namespace ams::util {
             
             if ((block_header & 0x80000000) != 0) {
                 /* Block size is invalid. */
-                if (dst_size < block_size) {
-                    std::memset(dst, 0, dst_size);
+                if ((dst_buffer_end - dst_buffer) < block_size) {
+                    std::memset(dst_buffer, 0, dst_size);
                     return -4;
                 }
                 
-                dst_pos += block_size;
-                src_pos += block_size;
-                
                 /* Destination is overrunning source. */
-                if (dst_pos > src_pos) {
-                    std::memset(dst, 0, dst_size);
+                if ((dst_buffer + block_size) > (src_buffer + block_size)) {
+                    std::memset(dst_buffer, 0, dst_size);
                     return -5;
                 }
                 
                 /* This is a raw block, copy it. */
-                std::memmove(dst_buffer, src_buffer, block_size); 
+                std::memmove(dst_buffer, src_buffer, block_size);
+                
+                /* Advance buffers. */
+                dst_buffer += block_size;
+                src_buffer += block_size;
             } else {
                 /* This is a compressed block, decompress it. */
                 int decompressed_size = LZ4_decompress_safe(reinterpret_cast<const char *>(src_work), reinterpret_cast<char *>(dst_work), static_cast<int>(block_size), 0x10000);
                 
                 /* Decompressed size is invalid. */
                 if (decompressed_size < 1) {
-                    std::memset(dst, 0, dst_size);
+                    std::memset(dst_buffer, 0, dst_size);
                     return -3;
                 }
                 
                 /* Decompressed size is invalid. */
-                if (dst_size < static_cast<size_t>(decompressed_size)) {
-                    std::memset(dst, 0, dst_size);
+                if (static_cast<size_t>(dst_buffer_end - dst_buffer) < static_cast<size_t>(decompressed_size)) {
+                    std::memset(dst_buffer, 0, dst_size);
                     return -4;
                 }
                 
-                dst_pos += decompressed_size;
-                src_pos += block_size;
-                
                 /* Destination is overrunning source. */
-                if (dst_pos > src_pos) {
-                    std::memset(dst, 0, dst_size);
+                if ((dst_buffer + decompressed_size) > (src_buffer + block_size)) {
+                    std::memset(dst_buffer, 0, dst_size);
                     return -5;
                 }
                 
                 /* Copy the decompressed data back. */
                 std::memcpy(dst_buffer, static_cast<u8 *>(dst_work), decompressed_size);
+                
+                /* Advance buffers. */
+                dst_buffer += decompressed_size;
+                src_buffer += block_size;
             }
             
             /* We've exceeded the destination's size. */
-            if (src_pos >= dst_size) {
-                std::memset(dst, 0, dst_size);
+            if (src_buffer >= dst_buffer_end) {
+                std::memset(dst_buffer, 0, dst_size);
                 return -2;
             }   
         }
         
         /* We didn't consume all data. */
-        if (src_pos != src_size) {
-            std::memset(dst, 0, dst_size);
+        if (static_cast<size_t>(src_buffer - src_buffer_start) != src_size) {
+            std::memset(dst_buffer, 0, dst_size);
             return -2;
         }
         
-        *out_size = dst_pos;
+        *out_size = dst_buffer - dst_buffer_start;
         return 0;
     }
 }

@@ -449,6 +449,7 @@ namespace ams::ro::impl {
                         /* CheckAdditionalHeaderHash */
                         if (nro_header->GetAdditionalHeaderOffset() != 0) {
                             R_TRY(this->CheckAdditionalHeaderHash(static_cast<u8 *>(mapped_memory), std::addressof(additional_nro_header_hash), sizeof(additional_nro_header_hash), nro_header->GetRwOffset(), nro_header->GetRwSize()));
+                            ON_RESULT_FAILURE { std::memset(static_cast<u8 *>(mapped_memory) + 0x1000, 0, total_size - 0x1000); };
                         }
                     }
                     
@@ -707,16 +708,17 @@ namespace ams::ro::impl {
         
         /* Map the NRO. */
         R_TRY(MapNro(std::addressof(nro_info->base_address), context->GetProcessHandle(), nro_address, nro_size, bss_address, bss_size));
-        ON_RESULT_FAILURE { R_DISCARD(UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size)); };
-
+        
         /* Parse the NRO. */
         u64 nro_rx_size = 0, nro_ro_size = 0, nro_rw_size = 0, nro_bss_size = 0;
         bool nro_aligned_header = false;
         bool nro_is_compress = false;
         R_TRY(context->ParseNro(std::addressof(nro_info->module_id), std::addressof(nro_rx_size), std::addressof(nro_ro_size), std::addressof(nro_rw_size), std::addressof(nro_bss_size), std::addressof(nro_aligned_header), std::addressof(nro_is_compress), nro_info->base_address, total_size, nro_size, bss_size));
-
+        ON_RESULT_FAILURE { R_DISCARD(UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size)); };
+        
         /* Set NRO perms. */
         R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, nro_rx_size, nro_ro_size, nro_rw_size + nro_bss_size, nro_aligned_header));
+        ON_RESULT_FAILURE_2 { if (!nro_is_compress) { R_DISCARD(UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, nro_size, bss_address, bss_size)); } };
         
         context->SetNroInfoInUse(nro_info, true);
         nro_info->nro_heap_address = nro_address;
