@@ -1,4 +1,36 @@
 # Changelog
+## 1.12.0
++ Support was added for 23.0.0.
++ Special thanks to @alula for handling the implementation of several kernel changes.
+  + The console should boot and atmosphère should be fully functional.
+  + **Please note**: As a result of changes made to nintendo's software in 23.0.0, there is even less memory available for custom system modules.
+    + The amount of memory we can steal from the applet pool has been reduced beyond 7MB and we can no longer launch browser applets (e.g.: eshop) without crashing.
+    + To compensate for this, a set of patches for the browser applets has been introduced.
+      + Thanks to the redesign of the browser applets in 22.0.0 there are only 3 applets we need to worry about: systemWeb, openWeb and LibAppletOff.
+      + With the added burden of maintaining patches for these applets, we can reclaim around 9MB of reserved memory by patching out their allocations.
+      + This memory is provably unused and stealing it should not affect the browser applets in any way as the applets themselves tag it as reserved and never access it.
+      + As a result, the memory available for custom system modules has been experimentally increased to 16MB.
+      + Preliminary testing has seemingly shown no downsides to the overall functioning of the OS and the browser applets in particular.
+      + Nonetheless, please report any issues you may face to ensure no edge cases have been missed and to determine if the memory amount needs to be adjusted. 
+      + These patches may be deprecated at any point in the future if a better solution is devised.     
+  + `exosphère` was updated to reflect the latest official secure monitor behavior.
+    + A new ConfigItem was added to the secure monitor for the first time since firmware 5.0.0.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+    + The kernel now supports a 42bit wide address space.
+    + A new memory region dubbed ShadowStack has been introduced.
+    + Kernel RNG was changed to CTR-DRBG.
+  + `boot` was updated to reflect the latest official behavior and to implement a previously missing change.
+    + The way battery i2c shutdown was being enabled changed in firmware 18.0.0 and we missed it.
+    + It is possible this might have been related to a known battery draining issue reported to have started around firmware 18.0.0. Further testing will be needed to confirm.
+  + `loader` was updated to reflect the latest official behavior.
+  + `erpt` was updated to reflect the latest official behavior.
+  + `pgl` was updated to reflect the latest official behavior.
+  + `ro` was updated to reflect the latest official behavior.
+    + NROs can now be lz4 frame compressed.
++ ZBIC compresison/decompression has been properly implemented. Applications using it should now launch and work properly.
++ A dockerfile has been added to atmosphère (thanks @alula).
++ R_DISCARD macro has been adopted across the entire codebase where applicable. This finishes the work started in version 1.10.0 and eliminates the nodiscard warnings during compilation.
++ General system stability improvements to enhance the user's experience.
 ## 1.11.2
 + Basic support was added for 22.5.0.
 + Atmosphère was updated to use GCC 16/newlib (latest devkitA64/devkitARM releases).
