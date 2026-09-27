@@ -398,6 +398,9 @@ namespace ams::ncm {
 
         static const SystemAppletId Story;
 
+        static const SystemAppletId SystemWeb;
+        static const SystemAppletId OpenWeb;
+
         static const SystemAppletId End;
     };
 
@@ -432,6 +435,9 @@ namespace ams::ncm {
     inline constexpr const SystemAppletId SystemAppletId::Encounter       = { 0x010000000000101Dul };
 
     inline constexpr const SystemAppletId SystemAppletId::Story           = { 0x0100000000001020ul };
+
+    inline constexpr const SystemAppletId SystemAppletId::SystemWeb       = { 0x0100000000001042ul };
+    inline constexpr const SystemAppletId SystemAppletId::OpenWeb         = { 0x0100000000001043ul };
 
     inline constexpr const SystemAppletId SystemAppletId::End             = { 0x0100000000001FFFul };
 
@@ -500,6 +506,8 @@ namespace ams::ncm {
         static const LibraryAppletId LoginShare;
         static const LibraryAppletId WifiWebAuth;
         static const LibraryAppletId MyPage;
+        static const LibraryAppletId SystemWeb;
+        static const LibraryAppletId OpenWeb;
 
     };
 
@@ -515,6 +523,8 @@ namespace ams::ncm {
     inline constexpr const LibraryAppletId LibraryAppletId::LoginShare   = { SystemAppletId::LoginShare.value    };
     inline constexpr const LibraryAppletId LibraryAppletId::WifiWebAuth  = { SystemAppletId::WifiWebAuth.value   };
     inline constexpr const LibraryAppletId LibraryAppletId::MyPage       = { SystemAppletId::MyPage.value        };
+    inline constexpr const LibraryAppletId LibraryAppletId::SystemWeb    = { SystemAppletId::SystemWeb.value     };
+    inline constexpr const LibraryAppletId LibraryAppletId::OpenWeb      = { SystemAppletId::OpenWeb.value       };
 
     inline constexpr bool IsLibraryAppletId(const ProgramId &id) {
         return id == LibraryAppletId::Auth         ||
@@ -528,7 +538,9 @@ namespace ams::ncm {
                id == LibraryAppletId::OfflineWeb   ||
                id == LibraryAppletId::LoginShare   ||
                id == LibraryAppletId::WifiWebAuth  ||
-               id == LibraryAppletId::MyPage;
+               id == LibraryAppletId::MyPage       ||
+               id == LibraryAppletId::SystemWeb    ||
+               id == LibraryAppletId::OpenWeb;
     }
 
     inline constexpr bool IsLibraryAppletId(const LibraryAppletId &) {
@@ -558,6 +570,8 @@ namespace ams::ncm {
         static const WebAppletId OfflineWeb;
         static const WebAppletId LoginShare;
         static const WebAppletId WifiWebAuth;
+        static const WebAppletId SystemWeb;
+        static const WebAppletId OpenWeb;
     };
 
     inline constexpr const WebAppletId WebAppletId::Web          = { LibraryAppletId::Web.value           };
@@ -565,13 +579,17 @@ namespace ams::ncm {
     inline constexpr const WebAppletId WebAppletId::OfflineWeb   = { LibraryAppletId::OfflineWeb.value    };
     inline constexpr const WebAppletId WebAppletId::LoginShare   = { LibraryAppletId::LoginShare.value    };
     inline constexpr const WebAppletId WebAppletId::WifiWebAuth  = { LibraryAppletId::WifiWebAuth.value   };
+    inline constexpr const WebAppletId WebAppletId::SystemWeb    = { LibraryAppletId::SystemWeb.value     };
+    inline constexpr const WebAppletId WebAppletId::OpenWeb      = { LibraryAppletId::OpenWeb.value       };
 
     inline constexpr bool IsWebAppletId(const ProgramId &id) {
         return id == WebAppletId::Web          ||
                id == WebAppletId::Shop         ||
                id == WebAppletId::OfflineWeb   ||
                id == WebAppletId::LoginShare   ||
-               id == WebAppletId::WifiWebAuth;
+               id == WebAppletId::WifiWebAuth  ||
+               id == WebAppletId::SystemWeb    ||
+               id == WebAppletId::OpenWeb;
     }
 
     inline constexpr bool IsWebAppletId(const WebAppletId &) {
