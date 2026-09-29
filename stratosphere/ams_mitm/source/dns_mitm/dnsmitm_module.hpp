@@ -21,4 +21,7 @@ namespace ams::mitm::socket::resolver {
 
     DEFINE_MITM_MODULE_CLASS(0x2000, AMS_GET_SYSTEM_THREAD_PRIORITY(socket, ResolverIpcServer) - 1);
 
+    /* Installs the raw-command interceptor which handles the new (23.0.0+) async sfdnsres commands. */
+    void InitializeRawCommandInterceptor();
+
 }

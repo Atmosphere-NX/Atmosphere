@@ -174,4 +174,20 @@ namespace ams::sf::cmif {
         return std::addressof(ServiceDispatchTraits<T>::Meta);
     }
 
+    #if AMS_SF_MITM_SUPPORTED
+
+    namespace impl {
+
+        using MitmRawInterceptFunction = Result (*)(u32 cmd_id, ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data);
+
+        /* Allows a mitm service to inspect/intercept commands which it does not declare in its dispatch table. */
+        /* The interceptor should return ResultShouldForwardToSession() to preserve default (forward) behavior, */
+        /* or any other (failed) result to reply to the client with that result instead of forwarding. */
+        Result InvokeMitmRawInterceptFunction(u32 cmd_id, ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data);
+        void   SetMitmRawInterceptFunction(MitmRawInterceptFunction fn);
+
+    }
+
+    #endif
+
 }

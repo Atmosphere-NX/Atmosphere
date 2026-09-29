@@ -136,9 +136,9 @@ namespace ams::sf::cmif {
         /* Find a handler. */
         const auto cmd_handler = FindCommandHandler(entries, entry_count, cmd_id, hos_version);
 
-        /* If we didn't find a handler, forward the request. */
+        /* If we didn't find a handler, allow the mitm service to intercept the raw request. */
         if (cmd_handler == nullptr) {
-            R_RETURN(ctx.session->ForwardRequest(ctx));
+            R_RETURN(impl::InvokeMitmRawInterceptFunction(cmd_id, ctx, in_message_raw_data));
         }
 
         /* Invoke handler. */
@@ -166,6 +166,37 @@ namespace ams::sf::cmif {
 
         R_SUCCEED();
     }
+    #endif
+
+    #if AMS_SF_MITM_SUPPORTED
+
+    namespace impl {
+
+        namespace {
+
+            constinit MitmRawInterceptFunction g_mitm_raw_intercept_function = nullptr;
+
+        }
+
+        void SetMitmRawInterceptFunction(MitmRawInterceptFunction fn) {
+            g_mitm_raw_intercept_function = fn;
+        }
+
+        Result InvokeMitmRawInterceptFunction(u32 cmd_id, ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+            /* If a service has registered a raw interceptor, give it a chance to handle the command. */
+            if (g_mitm_raw_intercept_function != nullptr) {
+                const Result intercept_result = g_mitm_raw_intercept_function(cmd_id, ctx, in_raw_data);
+                if (!sm::mitm::ResultShouldForwardToSession::Includes(intercept_result)) {
+                    R_RETURN(intercept_result);
+                }
+            }
+
+            /* Otherwise, forward the request. */
+            R_RETURN(ctx.session->ForwardRequest(ctx));
+        }
+
+    }
+
     #endif
 
 }

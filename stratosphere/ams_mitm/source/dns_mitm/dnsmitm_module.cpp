@@ -139,6 +139,9 @@ namespace ams::mitm::socket::resolver {
         /* Initialize redirection map. */
         resolver::InitializeResolverRedirections();
 
+        /* Install the interceptor for the new (23.0.0+) async sfdnsres commands. */
+        InitializeRawCommandInterceptor();
+
         /* Create mitm servers. */
         R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<ResolverImpl>(PortIndex_Mitm, DnsMitmServiceName)));
 
