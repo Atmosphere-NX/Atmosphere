@@ -17,6 +17,8 @@
 #include <stratosphere.hpp>
 #include <stratosphere/fssrv/fssrv_interface_adapters.hpp>
 
+/* Path-based storage opens (206/213) are forwarded. Different content paths can
+ * share a program id, whereas the layered storage cache is keyed by program id. */
 #define AMS_FS_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                               \
     AMS_SF_METHOD_INFO(C, H,   7, Result, OpenFileSystemWithPatch,                     (sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type),                                              (out, program_id, _filesystem_type),       hos::Version_2_0_0)            \
     AMS_SF_METHOD_INFO(C, H,   8, Result, OpenFileSystemWithId,                        (sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type),                 (out, path, program_id, _filesystem_type), hos::Version_2_0_0)            \
@@ -27,6 +29,7 @@
     AMS_SF_METHOD_INFO(C, H, 202, Result, OpenDataStorageByDataId,                     (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id),                                                              (out, data_id, storage_id))                                               \
     AMS_SF_METHOD_INFO(C, H, 205, Result, OpenDataStorageWithProgramIndex,             (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index),                                                                                (out, program_index),                      hos::Version_7_0_0)            \
     AMS_SF_METHOD_INFO(C, H, 210, Result, OpenDataStorageByCurrentProcessForBatchRead, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out),                                                                                      (out),                                     hos::Version_23_0_0)           \
+    AMS_SF_METHOD_INFO(C, H, 211, Result, OpenDataStorageByProgramIdForBatchRead,      (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, ncm::ProgramId program_id),                                                           (out, program_id),                         hos::Version_23_0_0)           \
     AMS_SF_METHOD_INFO(C, H, 212, Result, OpenDataStorageWithProgramIndexForBatchRead, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, u8 program_index),                                                                    (out, program_index),                      hos::Version_23_0_0)           \
     AMS_SF_METHOD_INFO(C, H, 810, Result, RegisterProgramIndexMapInfo,                 (const sf::InBuffer &info_buffer, s32 info_count),                                                                                                           (info_buffer, info_count),                 hos::Version_7_0_0)
 
@@ -88,6 +91,7 @@ namespace ams::mitm::fs {
             Result OpenDataStorageByCurrentProcessForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out);
             Result OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id);
             Result OpenDataStorageWithProgramIndex(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index);
+            Result OpenDataStorageByProgramIdForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, ncm::ProgramId program_id);
             Result OpenDataStorageWithProgramIndexForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, u8 program_index);
             Result RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count);
     };

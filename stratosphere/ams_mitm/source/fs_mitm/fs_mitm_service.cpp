@@ -392,6 +392,24 @@ namespace ams::mitm::fs {
         R_SUCCEED();
     }
 
+    Result FsMitmService::OpenDataStorageByProgramIdForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, ncm::ProgramId program_id) {
+        /* Only mitm if the caller has enabled content overrides. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
+
+        /* Use the requested program's overrides, not the caller's. */
+        R_UNLESS(program_id != ncm::InvalidProgramId,    sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Let FS check the caller's access to the requested program. */
+        FsStorage data_storage;
+        R_TRY(fsOpenDataStorageByProgramIdForBatchReadFwd(m_forward_service.get(), std::addressof(data_storage), program_id.value));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
+
+        /* This storage may belong to a different process. */
+        out.SetValue(MakeSharedStorageForBatchRead(GetLayeredRomfsStorage(program_id, data_storage, false)), target_object_id);
+        R_SUCCEED();
+    }
+
     Result FsMitmService::OpenDataStorageWithProgramIndexForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, u8 program_index) {
         /* Only mitm if we should override contents for the current process. */
         R_UNLESS(m_client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());

@@ -18,6 +18,7 @@ Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out);
 Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id);
 Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 program_index);
 Result fsOpenDataStorageByCurrentProcessForBatchReadFwd(Service* s, FsStorage* out);
+Result fsOpenDataStorageByProgramIdForBatchReadFwd(Service* s, FsStorage* out, u64 program_id);
 Result fsOpenDataStorageWithProgramIndexForBatchReadFwd(Service* s, FsStorage* out, u8 program_index);
 
 Result fsRegisterProgramIndexMapInfoFwd(Service* s, const void *buf, size_t buf_size, s32 count);

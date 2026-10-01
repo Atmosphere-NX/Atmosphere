@@ -58,8 +58,17 @@ Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 progr
     );
 }
 
+/* IStorageForBatchRead retains IStorage commands 0-5. FsStorage can own the
+ * backing object; fs.mitm implements BatchRead through the layered adapter. */
 Result fsOpenDataStorageByCurrentProcessForBatchReadFwd(Service* s, FsStorage* out) {
     return _fsOpenSession(s, &out->s, 210);
+}
+
+Result fsOpenDataStorageByProgramIdForBatchReadFwd(Service* s, FsStorage* out, u64 program_id) {
+    return serviceDispatchIn(s, 211, program_id,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
 }
 
 Result fsOpenDataStorageWithProgramIndexForBatchReadFwd(Service* s, FsStorage* out, u8 program_index) {
