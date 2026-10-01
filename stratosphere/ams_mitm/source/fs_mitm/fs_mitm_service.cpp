@@ -397,7 +397,7 @@ namespace ams::mitm::fs {
         R_UNLESS(m_client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
 
         /* Use the requested program's overrides, not the caller's. */
-        R_UNLESS(program_id != ncm::InvalidProgramId,    sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(program_id != ncm::InvalidProgramId,     sm::mitm::ResultShouldForwardToSession());
         R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
 
         /* Let FS check the caller's access to the requested program. */

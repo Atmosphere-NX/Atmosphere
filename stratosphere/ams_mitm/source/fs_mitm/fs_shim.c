@@ -58,8 +58,8 @@ Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 progr
     );
 }
 
-/* IStorageForBatchRead retains IStorage commands 0-5. FsStorage can own the
- * backing object; fs.mitm implements BatchRead through the layered adapter. */
+/* Use the client's forward session, as with the non-batch opens above. */
+/* Commands 0-5 retain the IStorage ABI, allowing RemoteStorage to use libnx's fsStorage* bindings. */
 Result fsOpenDataStorageByCurrentProcessForBatchReadFwd(Service* s, FsStorage* out) {
     return _fsOpenSession(s, &out->s, 210);
 }
