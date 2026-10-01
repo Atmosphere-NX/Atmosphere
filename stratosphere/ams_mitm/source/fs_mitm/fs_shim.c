@@ -58,6 +58,17 @@ Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 progr
     );
 }
 
+Result fsOpenDataStorageByCurrentProcessForBatchReadFwd(Service* s, FsStorage* out) {
+    return _fsOpenSession(s, &out->s, 210);
+}
+
+Result fsOpenDataStorageWithProgramIndexForBatchReadFwd(Service* s, FsStorage* out, u8 program_index) {
+    return serviceDispatchIn(s, 212, program_index,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
+}
+
 Result fsRegisterProgramIndexMapInfoFwd(Service* s, const void *buf, size_t buf_size, s32 count) {
     return serviceDispatchIn(s, 810, count,
         .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_In },

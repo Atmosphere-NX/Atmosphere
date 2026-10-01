@@ -18,6 +18,7 @@
 #include <stratosphere/fs/fs_query_range.hpp>
 #include <stratosphere/fssystem/fssystem_utility.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_istorage.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_istorage_for_batch_read.hpp>
 
 namespace ams::fs {
 
@@ -42,8 +43,10 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::StorageQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
+            Result BatchRead(const ams::sf::OutNonSecureBuffer &buffer0, const ams::sf::OutNonSecureBuffer &buffer1, const ams::sf::OutNonSecureBuffer &buffer2, const ams::sf::OutNonSecureBuffer &buffer3, const ams::sf::OutNonSecureBuffer &buffer4, const ams::sf::OutNonSecureBuffer &buffer5, const ams::sf::OutNonSecureBuffer &buffer6, const ams::sf::InArray<s64> &offsets);
     };
     static_assert(fssrv::sf::IsIStorage<StorageInterfaceAdapter>);
+    static_assert(fssrv::sf::IsIStorageForBatchRead<StorageInterfaceAdapter>);
 
     #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteStorage {

@@ -19,6 +19,20 @@
 
 namespace ams::fssrv::impl {
 
+    Result StorageInterfaceAdapter::BatchRead(const ams::sf::OutNonSecureBuffer &buffer0, const ams::sf::OutNonSecureBuffer &buffer1, const ams::sf::OutNonSecureBuffer &buffer2, const ams::sf::OutNonSecureBuffer &buffer3, const ams::sf::OutNonSecureBuffer &buffer4, const ams::sf::OutNonSecureBuffer &buffer5, const ams::sf::OutNonSecureBuffer &buffer6, const ams::sf::InArray<s64> &offsets) {
+        const ams::sf::OutNonSecureBuffer * const buffers[] = { std::addressof(buffer0), std::addressof(buffer1), std::addressof(buffer2), std::addressof(buffer3), std::addressof(buffer4), std::addressof(buffer5), std::addressof(buffer6) };
+
+        /* Each offset corresponds to one output buffer; the remaining buffers are unused. */
+        R_UNLESS(offsets.GetSize() <= util::size(buffers), fs::ResultInvalidSize());
+
+        for (size_t i = 0; i < offsets.GetSize(); ++i) {
+            /* Use the same storage, validation and corruption retries as an ordinary read. */
+            R_TRY(this->Read(offsets[i], *buffers[i], static_cast<s64>(buffers[i]->GetSize())));
+        }
+
+        R_SUCCEED();
+    }
+
     Result StorageInterfaceAdapter::Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size) {
         /* Check pre-conditions. */
         R_UNLESS(0 <= offset,                                fs::ResultInvalidOffset());

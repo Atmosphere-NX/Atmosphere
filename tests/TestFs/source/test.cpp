@@ -856,10 +856,13 @@ namespace ams {
     }
 
 
+    void DoStorageInterfaceAdapterTests();
+
     void Main() {
         fs::SetEnabledAutoAbort(false);
 
         printf("Doing FS test!\n");
+        DoStorageInterfaceAdapterTests();
         DoFsTests();
         printf("All tests completed!\n");
     }
