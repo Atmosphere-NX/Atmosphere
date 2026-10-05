@@ -31,6 +31,9 @@ namespace ams::os {
             /* Set managed. */
             tmem->handle_managed = managed;
 
+            /* Set state to created. */
+            tmem->state = TransferMemoryType::State_Created;
+
             /* Create the critical section. */
             util::ConstructAt(tmem->cs_transfer_memory);
         }

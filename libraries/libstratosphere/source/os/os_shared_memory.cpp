@@ -31,6 +31,9 @@ namespace ams::os {
             /* Set managed. */
             shared_memory->handle_managed = managed;
 
+            /* Set state to initialized. */
+            shared_memory->state = SharedMemoryType::State_Initialized;
+
             /* Create the critical section. */
             util::ConstructAt(shared_memory->cs_shared_memory);
         }
