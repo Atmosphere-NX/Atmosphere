@@ -158,7 +158,40 @@ namespace ams::socket {
         char *ai_canonname;
         AddrInfo *ai_next;
     };
-
+    
+    /* NOTE: We are using the c-ares structs under ams::socket. */
+    /* Should we include c-ares instead somewhere? */
+    struct ares_addrinfo_node {
+        int ai_ttl;
+        int ai_flags;
+        int ai_family;
+        int ai_socktype;
+        int ai_protocol;
+        socklen_t ai_addrlen;
+        struct sockaddr *ai_addr;
+        struct ares_addrinfo_node *ai_next;
+    };
+    
+    struct ares_addrinfo_cname {
+        int ttl;
+        char *alias;
+        char *name;
+        struct ares_addrinfo_cname *next;
+    };
+    
+    struct ares_addrinfo {
+        struct ares_addrinfo_cname *cnames;
+        struct ares_addrinfo_node  *nodes;
+        char *name;
+    };
+    
+    struct ares_addrinfo_hints {
+        int ai_flags;
+        int ai_family;
+        int ai_socktype;
+        int ai_protocol;
+    };
+    
     struct TimeVal {
         long tv_sec;
         long tv_usec;

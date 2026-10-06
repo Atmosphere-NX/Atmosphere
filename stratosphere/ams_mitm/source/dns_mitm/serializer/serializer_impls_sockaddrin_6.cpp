@@ -31,7 +31,7 @@ namespace ams::mitm::socket::resolver::serializer {
             rc += sizeof(u16);
             rc += sizeof(u16);
             rc += sizeof(u32);
-            rc += DNSSerializer::SizeOf(in.sin6_addr);
+            rc += sizeof(in.sin6_addr); /* NOTE: There is no DNSSerializer::SizeOf for in6_addr. */
             rc += sizeof(u32);
             return rc;
         }
