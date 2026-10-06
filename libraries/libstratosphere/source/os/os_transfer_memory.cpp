@@ -33,6 +33,9 @@ namespace ams::os {
 
             /* Create the critical section. */
             util::ConstructAt(tmem->cs_transfer_memory);
+
+            /* Set state to created. */
+            tmem->state = TransferMemoryType::State_Created;
         }
 
     }
