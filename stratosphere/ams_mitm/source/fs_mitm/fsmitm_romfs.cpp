@@ -474,7 +474,7 @@ namespace ams::mitm::fs {
                         return entry;
                     }
             };
-
+            
             template<typename Entry>
             class TableWriter : public DynamicTableCache {
                 NON_COPYABLE(TableWriter);
@@ -727,12 +727,12 @@ namespace ams::mitm::fs {
             public:
                 DirectoryTableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : TableReader(s, ofs, sz) { /* ... */ }
         };
-
+        
         class FileTableReader : public TableReader<FileEntry> {
             public:
                 FileTableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : TableReader(s, ofs, sz) { /* ... */ }
         };
-
+        
         void Builder::VisitDirectory(BuildDirectoryContext *parent, u32 parent_offset, DirectoryTableReader &dir_table, FileTableReader &file_table) {
             const DirectoryEntry *parent_entry = dir_table.GetEntry(parent_offset);
             if (AMS_UNLIKELY(parent_entry == nullptr)) {
@@ -773,8 +773,7 @@ namespace ams::mitm::fs {
                 cur_child_offset = next_child_offset;
             }
         }
-
-
+        
         void Builder::AddSdFiles() {
             /* Open Sd Card filesystem. */
             FsFileSystem sd_filesystem;

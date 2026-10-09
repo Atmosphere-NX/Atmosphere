@@ -67,6 +67,11 @@ namespace ams::mitm::fs {
         constexpr ALWAYS_INLINE auto MakeSharedStorage(Arguments &&... args) {
             return sf::CreateSharedObjectEmplaced<ams::fssrv::sf::IStorage, ams::fssrv::impl::StorageInterfaceAdapter>(std::forward<Arguments>(args)...);
         }
+        
+        template<typename... Arguments>
+        constexpr ALWAYS_INLINE auto MakeSharedStorageForBatchRead(Arguments &&... args) {
+            return sf::CreateSharedObjectEmplaced<ams::fssrv::sf::IStorageForBatchRead, ams::fssrv::impl::StorageInterfaceAdapterForBatchRead>(std::forward<Arguments>(args)...);
+        }
 
         Result OpenHblWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id) {
             /* Verify eligibility. */
@@ -94,7 +99,7 @@ namespace ams::mitm::fs {
             R_SUCCEED();
         }
 
-        Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
+        Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool with_attributes) {
             /* Directory must exist. */
             R_UNLESS(HasSdManualHtmlContent(program_id), sm::mitm::ResultShouldForwardToSession());
 
@@ -121,8 +126,10 @@ namespace ams::mitm::fs {
                 /* Try to open the existing fs. */
                 FsFileSystem base_fs;
                 bool opened_base_fs = false;
-                if (with_id) {
-                    opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithIdFwd(fwd, std::addressof(base_fs), static_cast<u64>(program_id), filesystem_type, path->str));
+                if (with_attributes) {
+                    opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithIdFwd(fwd, std::addressof(base_fs), path->str, FsContentAttributes_None, static_cast<u64>(program_id), filesystem_type));
+                } else if (with_id) {
+                    opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithIdObsoleteFwd(fwd, std::addressof(base_fs), path->str, static_cast<u64>(program_id), filesystem_type));
                 } else {
                     opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithPatchFwd(fwd, std::addressof(base_fs), static_cast<u64>(program_id), filesystem_type));
                 }
@@ -141,7 +148,7 @@ namespace ams::mitm::fs {
             R_SUCCEED();
         }
 
-        Result OpenWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
+        Result OpenWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool with_attributes, bool try_program_specific) {
             /* Check first that we're a web applet opening web content. */
             R_UNLESS(ncm::IsWebAppletId(client_program_id),             sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
@@ -153,7 +160,7 @@ namespace ams::mitm::fs {
             R_UNLESS(try_program_specific, sm::mitm::ResultShouldForwardToSession());
 
             /* If we're not opening a HBL filesystem, just try to open a generic one. */
-            R_RETURN(OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id));
+            R_RETURN(OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id, with_attributes));
         }
 
     }
@@ -169,12 +176,17 @@ namespace ams::mitm::fs {
         }
     }
 
-    Result FsMitmService::OpenFileSystemWithPatch(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
-        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), nullptr, false, m_client_info.override_status.IsProgramSpecific()));
+    Result FsMitmService::OpenFileSystemWithPatch(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 file_system_proxy_type) {
+        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(file_system_proxy_type), m_forward_service.get(), nullptr, false, false, m_client_info.override_status.IsProgramSpecific()));
     }
 
-    Result FsMitmService::OpenFileSystemWithId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
-        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), m_forward_service.get(), std::addressof(path), true, m_client_info.override_status.IsProgramSpecific()));
+    Result FsMitmService::OpenFileSystemWithIdObsolete(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 file_system_proxy_type) {
+        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(file_system_proxy_type), m_forward_service.get(), std::addressof(path), true, false, m_client_info.override_status.IsProgramSpecific()));
+    }
+    
+    Result FsMitmService::OpenFileSystemWithId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, u8 content_attributes, ncm::ProgramId program_id, u32 file_system_proxy_type) {
+        AMS_UNUSED(content_attributes);
+        R_RETURN(OpenWebContentFileSystem(out, m_client_info.program_id, program_id, static_cast<FsFileSystemType>(file_system_proxy_type), m_forward_service.get(), std::addressof(path), true, true, m_client_info.override_status.IsProgramSpecific()));
     }
 
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out) {
@@ -195,7 +207,7 @@ namespace ams::mitm::fs {
         R_SUCCEED();
     }
 
-    Result FsMitmService::OpenSaveDataFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, u8 _space_id, const fs::SaveDataAttribute &attribute) {
+    Result FsMitmService::OpenSaveDataFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, u8 space_id, const fs::SaveDataAttribute &attribute) {
         /* We only want to intercept saves for games, right now. */
         const bool is_game_or_hbl = m_client_info.override_status.IsHbl() || ncm::IsApplicationId(m_client_info.program_id);
         R_UNLESS(is_game_or_hbl, sm::mitm::ResultShouldForwardToSession());
@@ -210,12 +222,12 @@ namespace ams::mitm::fs {
         R_UNLESS(attribute.type == fs::SaveDataType::Account, sm::mitm::ResultShouldForwardToSession());
 
         /* Get enum type for space id. */
-        auto space_id = static_cast<FsSaveDataSpaceId>(_space_id);
+        auto _space_id = static_cast<FsSaveDataSpaceId>(space_id);
 
         /* Verify we can open the save. */
         static_assert(sizeof(fs::SaveDataAttribute) == sizeof(::FsSaveDataAttribute));
         FsFileSystem save_fs;
-        R_UNLESS(R_SUCCEEDED(fsOpenSaveDataFileSystemFwd(m_forward_service.get(), std::addressof(save_fs), space_id, reinterpret_cast<const FsSaveDataAttribute *>(std::addressof(attribute)))), sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(R_SUCCEEDED(fsOpenSaveDataFileSystemFwd(m_forward_service.get(), std::addressof(save_fs), _space_id, reinterpret_cast<const FsSaveDataAttribute *>(std::addressof(attribute)))), sm::mitm::ResultShouldForwardToSession());
         std::unique_ptr<fs::fsa::IFileSystem> save_ifs = std::make_unique<fs::RemoteFileSystem>(save_fs);
 
         /* Mount the SD card using fs.mitm's session. */
@@ -228,7 +240,7 @@ namespace ams::mitm::fs {
         const ncm::ProgramId application_id = attribute.program_id == ncm::InvalidProgramId ? m_client_info.program_id : attribute.program_id;
 
         char save_dir_raw_path[0x100];
-        R_TRY(mitm::fs::SaveUtil::GetDirectorySaveDataPath(save_dir_raw_path, sizeof(save_dir_raw_path), application_id, space_id, attribute));
+        R_TRY(mitm::fs::SaveUtil::GetDirectorySaveDataPath(save_dir_raw_path, sizeof(save_dir_raw_path), application_id, _space_id, attribute));
 
         ams::fs::Path save_dir_path;
         R_TRY(save_dir_path.SetShallowBuffer(save_dir_raw_path));
@@ -270,12 +282,12 @@ namespace ams::mitm::fs {
         R_SUCCEED();
     }
 
-    Result FsMitmService::OpenBisStorage(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u32 _bis_partition_id) {
-        const ::FsBisPartitionId bis_partition_id = static_cast<::FsBisPartitionId>(_bis_partition_id);
+    Result FsMitmService::OpenBisStorage(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u32 bis_partition_id) {
+        const ::FsBisPartitionId _bis_partition_id = static_cast<::FsBisPartitionId>(bis_partition_id);
 
         /* Try to open a storage for the partition. */
         FsStorage bis_storage;
-        R_TRY(fsOpenBisStorageFwd(m_forward_service.get(), std::addressof(bis_storage), bis_partition_id));
+        R_TRY(fsOpenBisStorageFwd(m_forward_service.get(), std::addressof(bis_storage), _bis_partition_id));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(bis_storage.s))};
 
         const bool is_sysmodule = ncm::IsSystemProgramId(m_client_info.program_id);
@@ -285,18 +297,18 @@ namespace ams::mitm::fs {
         /* Allow HBL to write to boot1 (safe firm) + package2. */
         /* This is needed to not break compatibility with ChoiDujourNX, which does not check for write access before beginning an update. */
         /* TODO: get fixed so that this can be turned off without causing bricks :/ */
-        const bool is_package2 = (FsBisPartitionId_BootConfigAndPackage2Part1 <= bis_partition_id && bis_partition_id <= FsBisPartitionId_BootConfigAndPackage2Part6);
-        const bool is_boot1    = bis_partition_id == FsBisPartitionId_BootPartition2Root;
+        const bool is_package2 = (FsBisPartitionId_BootConfigAndPackage2Part1 <= _bis_partition_id && _bis_partition_id <= FsBisPartitionId_BootConfigAndPackage2Part6);
+        const bool is_boot1    = _bis_partition_id == FsBisPartitionId_BootPartition2Root;
         const bool can_write_bis_for_choi_support = is_hbl && (is_package2 || is_boot1);
 
         /* Set output storage. */
-        if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
+        if (_bis_partition_id == FsBisPartitionId_BootPartition1Root) {
             if (IsBoot0CustomPublicKey(bis_storage)) {
                 out.SetValue(MakeSharedStorage(std::make_shared<CustomPublicKeyBoot0Storage>(bis_storage, m_client_info, spl::GetSocType())), target_object_id);
             } else {
                 out.SetValue(MakeSharedStorage(std::make_shared<Boot0Storage>(bis_storage, m_client_info)), target_object_id);
             }
-        } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
+        } else if (_bis_partition_id == FsBisPartitionId_CalibrationBinary) {
             out.SetValue(MakeSharedStorage(std::make_shared<CalibrationBinaryStorage>(bis_storage, m_client_info)), target_object_id);
         } else {
             if (can_write_bis || can_write_bis_for_choi_support) {
@@ -328,24 +340,41 @@ namespace ams::mitm::fs {
         out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(m_client_info.program_id, data_storage, true)), target_object_id);
         R_SUCCEED();
     }
+    
+    Result FsMitmService::OpenDataStorageByProgramId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::ProgramId program_id) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
 
-    Result FsMitmService::OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId _data_id, u8 storage_id) {
+        /* Only mitm if there is actually an override romfs for the target program. */
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the program romfs. */
+        FsStorage data_storage;
+        R_TRY(fsOpenDataStorageByProgramIdFwd(m_forward_service.get(), std::addressof(data_storage), static_cast<u64>(program_id)));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
+
+        /* Get a layered storage for the program romfs. */
+        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(program_id, data_storage, true)), target_object_id);
+        R_SUCCEED();
+    }
+
+    Result FsMitmService::OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id) {
         /* Only mitm if we should override contents for the current process. */
         R_UNLESS(m_client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
 
         /* TODO: Decide how to handle DataId vs ProgramId for this API. */
-        const ncm::ProgramId data_id = {_data_id.value};
+        const ncm::ProgramId program_or_data_id = {data_id.value};
 
         /* Only mitm if there is actually an override romfs. */
-        R_UNLESS(mitm::fs::HasSdRomfsContent(data_id),                  sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_or_data_id),                  sm::mitm::ResultShouldForwardToSession());
 
         /* Try to open the data id. */
         FsStorage data_storage;
-        R_TRY(fsOpenDataStorageByDataIdFwd(m_forward_service.get(), std::addressof(data_storage), static_cast<u64>(data_id), static_cast<NcmStorageId>(storage_id)));
+        R_TRY(fsOpenDataStorageByDataIdFwd(m_forward_service.get(), std::addressof(data_storage), static_cast<u64>(program_or_data_id), static_cast<NcmStorageId>(storage_id)));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
 
         /* Get a layered storage for the data id. */
-        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(data_id, data_storage, false)), target_object_id);
+        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(program_or_data_id, data_storage, false)), target_object_id);
         R_SUCCEED();
     }
 
@@ -369,7 +398,80 @@ namespace ams::mitm::fs {
         out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(program_id, data_storage, true)), target_object_id);
         R_SUCCEED();
     }
+    
+    Result FsMitmService::OpenDataStorageByPath(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, const fssrv::sf::Path &path, u8 content_attributes, u32 file_system_proxy_type) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
+        
+        /* TODO */
+        AMS_UNUSED(out, path, content_attributes, file_system_proxy_type);
+        R_SUCCEED();
+    }
+    
+    Result FsMitmService::OpenDataStorageByCurrentProcessForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
 
+        /* Only mitm if there is actually an override romfs. */
+        R_UNLESS(mitm::fs::HasSdRomfsContent(m_client_info.program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the process romfs. */
+        FsStorageForBatchRead data_storage;
+        R_TRY(fsOpenDataStorageByCurrentProcessForBatchReadFwd(m_forward_service.get(), std::addressof(data_storage)));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
+
+        /* Get a layered storage for the program romfs (batch read variant). */
+        out.SetValue(MakeSharedStorageForBatchRead(GetLayeredRomfsStorageForBatchRead(m_client_info.program_id, data_storage, true)), target_object_id);
+        R_SUCCEED();
+    }
+    
+    Result FsMitmService::OpenDataStorageByProgramIdForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, ncm::ProgramId program_id) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
+
+        /* Only mitm if there is actually an override romfs for the target program. */
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the program romfs. */
+        FsStorageForBatchRead data_storage;
+        R_TRY(fsOpenDataStorageByProgramIdForBatchReadFwd(m_forward_service.get(), std::addressof(data_storage), static_cast<u64>(program_id)));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
+
+        /* Get a layered storage for the program romfs (batch read variant). */
+        out.SetValue(MakeSharedStorageForBatchRead(GetLayeredRomfsStorageForBatchRead(program_id, data_storage, true)), target_object_id);
+        R_SUCCEED();
+    }
+    
+    Result FsMitmService::OpenDataStorageWithProgramIndexForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, u8 program_index) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
+
+        /* Get the relevant program id. */
+        const ncm::ProgramId program_id = g_program_index_map_info_manager.GetProgramId(m_client_info.program_id, program_index);
+
+        /* If we don't know about the program or don't have content, forward. */
+        R_UNLESS(program_id != ncm::InvalidProgramId,     sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the process romfs. */
+        FsStorageForBatchRead data_storage;
+        R_TRY(fsOpenDataStorageWithProgramIndexForBatchReadFwd(m_forward_service.get(), std::addressof(data_storage), program_index));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
+
+        /* Get a layered storage for the program romfs (batch read variant). */
+        out.SetValue(MakeSharedStorageForBatchRead(GetLayeredRomfsStorageForBatchRead(program_id, data_storage, true)), target_object_id);
+        R_SUCCEED();
+    }
+    
+    Result FsMitmService::OpenDataStorageByPathForBatchRead(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorageForBatchRead>> out, const fssrv::sf::Path &path, u8 content_attributes, u32 file_system_proxy_type) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(m_client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
+        
+        /* TODO */
+        AMS_UNUSED(out, path, content_attributes, file_system_proxy_type);
+        R_SUCCEED();
+    }
+    
     Result FsMitmService::RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count) {
         /* Try to register with FS. */
         R_TRY(fsRegisterProgramIndexMapInfoFwd(m_forward_service.get(), info_buffer.GetPointer(), info_buffer.GetSize(), info_count));

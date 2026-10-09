@@ -58,16 +58,16 @@ namespace ams::fs {
     Result FileStorage::Flush() {
         R_RETURN(m_base_file->Flush());
     }
+    
+    Result FileStorage::SetSize(s64 size) {
+        m_size = InvalidSize;
+        R_RETURN(m_base_file->SetSize(size));
+    }
 
     Result FileStorage::GetSize(s64 *out_size) {
         R_TRY(this->UpdateSize());
         *out_size = m_size;
         R_SUCCEED();
-    }
-
-    Result FileStorage::SetSize(s64 size) {
-        m_size = InvalidSize;
-        R_RETURN(m_base_file->SetSize(size));
     }
 
     Result FileStorage::OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -102,7 +102,7 @@ namespace ams::fs {
 
         R_SUCCEED();
     }
-
+    
     Result FileHandleStorage::UpdateSize() {
         R_SUCCEED_IF(m_size != InvalidSize);
         R_RETURN(GetFileSize(std::addressof(m_size), m_handle));
@@ -149,16 +149,16 @@ namespace ams::fs {
     Result FileHandleStorage::Flush() {
         R_RETURN(FlushFile(m_handle));
     }
+    
+    Result FileHandleStorage::SetSize(s64 size) {
+        m_size = InvalidSize;
+        R_RETURN(SetFileSize(m_handle, size));
+    }
 
     Result FileHandleStorage::GetSize(s64 *out_size) {
         R_TRY(this->UpdateSize());
         *out_size = m_size;
         R_SUCCEED();
-    }
-
-    Result FileHandleStorage::SetSize(s64 size) {
-        m_size = InvalidSize;
-        R_RETURN(SetFileSize(m_handle, size));
     }
 
     Result FileHandleStorage::OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
