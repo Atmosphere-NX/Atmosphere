@@ -128,7 +128,7 @@ namespace ams::mitm::socket::resolver {
         }
         
         if (query == nullptr) {
-            return 0;
+            return -1;
         }
         
         struct ams::socket::ares_addrinfo_node node = {
@@ -182,13 +182,15 @@ namespace ams::mitm::socket::resolver {
         return result;
     }
     
-    void CancelAresAddrInfoQuery(u32 query_id) {
+    bool CancelAresAddrInfoQuery(u32 query_id) {
         for (auto it = g_ares_addr_info_queries.begin(); it != g_ares_addr_info_queries.end(); ++it) {
             if (it->first == static_cast<ssize_t>(query_id)) {
                 g_ares_addr_info_queries.erase(it);
-                break;
+                return true;
             }
         }
+        
+        return false;
     }
 
     Result ResolverImpl::GetHostByNameRequest(u32 cancel_handle, const sf::ClientProcessId &client_pid, bool use_nsd_resolve, const sf::InBuffer &name, sf::Out<u32> out_host_error, sf::Out<u32> out_errno, const sf::OutBuffer &out_hostent, sf::Out<u32> out_size) {
@@ -353,7 +355,7 @@ namespace ams::mitm::socket::resolver {
         
         LogDebug("[%016lx]: Queued query with id 0x%lx\n", m_client_info.program_id.value, query_id);
         
-        /* Forward the query. The provided socket EventFd must be signalled by having bsdsocket write 1 to the associated socket. */
+        /* Forward to session. The provided socket EventFd must be signalled by having bsdsocket write 1 to the associated socket. */
         /* This is fine though, we only care about replacing with our redirection during fetch. */        
         R_TRY(sfdnsresQueryAddrInfoRequestWithOptionsFwd(m_forward_service.get(), static_cast<u64>(client_pid.GetValue().value), node.GetPointer(), node.GetSize(), srv.GetPointer(), srv.GetSize(), serialized_hint.GetPointer(), serialized_hint.GetSize(), reinterpret_cast<u32 *>(out_query_id.GetPointer()), fd, options_version, options.GetPointer(), options.GetSize(), num_options, reinterpret_cast<s32 *>(out_retval.GetPointer()), reinterpret_cast<s32 *>(out_errno.GetPointer())));
         
@@ -371,6 +373,9 @@ namespace ams::mitm::socket::resolver {
         LogDebug("[%016lx]: FetchAddrInfoRequestWithOptions(%d)\n", m_client_info.program_id.value, query_id);
         
         const auto size = DequeueAresAddrInfoQuery(out_addrinfo.GetPointer(), out_addrinfo.GetSize(), query_id);
+
+        /* If we don't have this query queued, then the hostname is not in the hosts file. Forward to session. */
+        R_UNLESS(size >= 0, sm::mitm::ResultShouldForwardToSession());
         
         LogDebug("[%016lx]: Dequeued query with size 0x%lx\n", m_client_info.program_id.value, size);
         
@@ -386,7 +391,12 @@ namespace ams::mitm::socket::resolver {
 
         LogDebug("[%016lx]: CancelQuery(%d)\n", m_client_info.program_id.value, query_id);
         
-        CancelAresAddrInfoQuery(query_id);
+        const auto found = CancelAresAddrInfoQuery(query_id);
+        
+        /* If we don't have this query queued, then we never intercepted it. Forward to session. */
+        R_UNLESS(found, sm::mitm::ResultShouldForwardToSession());
+        
+        LogDebug("[%016lx]: Cancelled query\n", m_client_info.program_id.value);
 
         R_SUCCEED();
     }
