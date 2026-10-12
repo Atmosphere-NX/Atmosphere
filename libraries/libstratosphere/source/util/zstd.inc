@@ -47714,7 +47714,10 @@ typedef struct {
   unsigned d;
 } COVER_ctx_t;
 
-#if !defined(_GNU_SOURCE) && !defined(__APPLE__) && !defined(_MSC_VER)
+#if (defined(__linux__) && !defined(__ANDROID__)) || defined(__CYGWIN__) || defined(__MSYS__)
+# define COVER_QSORT_GNU 1
+#endif
+#if !defined(COVER_QSORT_GNU) && !defined(__APPLE__) && !defined(_MSC_VER)
 /* C90 only offers qsort() that needs a global context. */
 static COVER_ctx_t *g_coverCtx = NULL;
 #endif
@@ -47763,7 +47766,7 @@ static int COVER_cmp8(COVER_ctx_t *ctx, const void *lp, const void *rp) {
  */
 #if (defined(_WIN32) && defined(_MSC_VER)) || defined(__APPLE__)
 static int WIN_CDECL COVER_strict_cmp(void* g_coverCtx, const void* lp, const void* rp) {
-#elif defined(_GNU_SOURCE)
+#elif defined(COVER_QSORT_GNU)
 static int COVER_strict_cmp(const void *lp, const void *rp, void *g_coverCtx) {
 #else /* C90 fallback.*/
 static int COVER_strict_cmp(const void *lp, const void *rp) {
@@ -47779,7 +47782,7 @@ static int COVER_strict_cmp(const void *lp, const void *rp) {
  */
 #if (defined(_WIN32) && defined(_MSC_VER)) || defined(__APPLE__)
 static int WIN_CDECL COVER_strict_cmp8(void* g_coverCtx, const void* lp, const void* rp) {
-#elif defined(_GNU_SOURCE)
+#elif defined(COVER_QSORT_GNU)
 static int COVER_strict_cmp8(const void *lp, const void *rp, void *g_coverCtx) {
 #else /* C90 fallback.*/
 static int COVER_strict_cmp8(const void *lp, const void *rp) {
@@ -47801,7 +47804,7 @@ static void stableSort(COVER_ctx_t *ctx) {
     qsort_r(ctx->suffix, ctx->suffixSize, sizeof(U32),
             ctx,
             (ctx->d <= 8 ? &COVER_strict_cmp8 : &COVER_strict_cmp));
-#elif (defined(__linux__) && !defined(__ANDROID__)) || defined(__CYGWIN__) || defined(__MSYS__)
+#elif defined(COVER_QSORT_GNU)
     qsort_r(ctx->suffix, ctx->suffixSize, sizeof(U32),
             (ctx->d <= 8 ? &COVER_strict_cmp8 : &COVER_strict_cmp),
             ctx);
