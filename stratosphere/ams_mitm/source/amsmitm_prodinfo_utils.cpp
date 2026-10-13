@@ -256,7 +256,6 @@ namespace ams::mitm {
         bool IsValid(const CalibrationInfo &cal) {
             return IsValidHeader(cal)                                                                                                          &&
                    IsValid(cal.GetBlock<SerialNumberBlock>())                                                                                  &&
-                   IsValid(cal.GetBlock<EccB233DeviceCertificateBlock>())                                                                      &&
                    IsValid(cal.GetBlock<SslKeyBlock>())                                                                                        &&
                    IsValid(cal.GetBlock<SslCertificateSizeBlock>())                                                                            &&
                    cal.GetBlock<SslCertificateSizeBlock>().ssl_certificate_size <= sizeof(cal.GetBlock<SslCertificateBlock>().ssl_certificate) &&
@@ -281,7 +280,7 @@ namespace ams::mitm {
 
         bool ContainsCorrectDeviceId(const CalibrationInfo &cal) {
             const auto &ecc = cal.GetBlock<EccB233DeviceCertificateBlock>();
-            if (!IsBlank(ecc)) {
+            if (!IsBlank(ecc) && IsValid(ecc)) {
                 return ContainsCorrectDeviceId(ecc, exosphere::GetDeviceId());
             }
 
