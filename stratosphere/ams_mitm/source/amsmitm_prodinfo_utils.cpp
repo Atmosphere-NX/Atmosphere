@@ -280,8 +280,8 @@ namespace ams::mitm {
 
         bool ContainsCorrectDeviceId(const CalibrationInfo &cal) {
             const auto &ecc = cal.GetBlock<EccB233DeviceCertificateBlock>();
-            if (!IsBlank(ecc) && IsValid(ecc)) {
-                return ContainsCorrectDeviceId(ecc, exosphere::GetDeviceId());
+            if (!IsBlank(ecc)) {
+                return IsValid(ecc) && ContainsCorrectDeviceId(ecc, exosphere::GetDeviceId());
             }
 
             /* Newer consoles may leave the ECC certificate unprogrammed. */
