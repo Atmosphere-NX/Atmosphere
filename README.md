@@ -1,15 +1,19 @@
 ### Updated by XGC
-This repository is essentially an exact mirror of the official source Atmosphere repository. 
-> * Added Custom Workflow files to ``/.github/``
-======
-# The latest release can be found [here](https://github.com/Xieons-Gaming-Corner/Atmosphere1.9.2_SwitchFWSupport_20.2.0/releases/tag/Atmosphere1.9.2_SwitchFWS_20.2.0) 
-- This is a mirror of the official release that includes the latest ``fusee.bin`` as well as the atmosphere directory for the root you SD card. I've additionally included a ZIP of the TegraRCM GUI to inject Fusee.bin into Atmosphere
+This repository is essentially an exact mirror of the official source Atmosphere repository, with additional tools added to releases for ease of use -
+The XGC latest release may be bundled with: 
+> * TegraRCMGui 
+> * Sysbot-base 
+> * Added Custom Workflow files for XGC to ``/.github/``
+=====
+### Official Source Repository:
+The latest release can he found [here](https://github.com/Atmosphere-NX/Atmosphere/releases/tag/1.12.0)
 
-XGC Special Thanks to: 
-https://github.com/Manu098vm @Manu098VM or helpig resolve an issue with this version not being able to work. <img width="616" height="168" alt="image" src="https://github.com/user-attachments/assets/502b8dd4-9db6-4a26-b550-a5799e1b8174" />
-.
-=====
-=====
+This is a mirror of the official release that includes the latest ``fusee.bin`` as well as the atmosphere directory for the root you SD card. I've additionally included a ZIP of the TegraRCM GUI to inject Fusee.bin into Atmosphere
+
+> * Thanks to   [@Manu098VM](https://github.com/Manu098vm) for helping resolve an issue with this version not being able to work. 
+
+
+
 ![Banner](img/banner.png?raw=true)
 =====
 
