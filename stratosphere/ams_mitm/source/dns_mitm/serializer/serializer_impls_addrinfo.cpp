@@ -190,14 +190,20 @@ namespace ams::mitm::socket::resolver::serializer {
                         return rc;
                     }
                 } else {
-                    if (dst_size - (cur - dst) < addr_info.ai_addrlen) {
+                    if (hos::GetVersion() >= hos::Version_23_0_0) {
+                        /* 23.0.0 fixed this by returning an error instead. */
                         rc = -1;
                         return rc;
-                    }
+                    } else {
+                        if (dst_size - (cur - dst) < addr_info.ai_addrlen) {
+                            rc = -1;
+                            return rc;
+                        }
 
-                    /* NOTE: This is clearly a nintendo bug, see the accompanying note in FromBufferInternalImpl */
-                    std::memmove(cur, std::addressof(addr_info.ai_addr), addr_info.ai_addrlen);
-                    rc = addr_info.ai_addrlen;
+                        /* NOTE: This is clearly a nintendo bug, see the accompanying note in FromBufferInternalImpl */
+                        std::memmove(cur, std::addressof(addr_info.ai_addr), addr_info.ai_addrlen);
+                        rc = addr_info.ai_addrlen;
+                    }
                 }
                 cur += rc;
             }
@@ -317,6 +323,7 @@ namespace ams::mitm::socket::resolver::serializer {
                 } else if (IsAfInet<T>(out.ai_family)) {
                     out.ai_addr = static_cast<SockAddrType<T> *>(ams::socket::impl::Alloc(sizeof(SockAddrInType<T>)));
                     if (out.ai_addr == nullptr) {
+                        ams::socket::SetLastError(ams::socket::Errno::ENoMem);
                         rc = -1;
                         return rc;
                     }
@@ -328,6 +335,7 @@ namespace ams::mitm::socket::resolver::serializer {
                 } else if (IsAfInet6<T>(out.ai_family)) {
                     out.ai_addr = static_cast<SockAddrType<T> *>(ams::socket::impl::Alloc(sizeof(SockAddrIn6Type<T>)));
                     if (out.ai_addr == nullptr) {
+                        ams::socket::SetLastError(ams::socket::Errno::ENoMem);
                         rc = -1;
                         return rc;
                     }
@@ -337,17 +345,24 @@ namespace ams::mitm::socket::resolver::serializer {
                         return rc;
                     }
                 } else {
-                    out.ai_addr = static_cast<decltype(out.ai_addr)>(ams::socket::impl::Alloc(out.ai_addrlen));
-                    if (out.ai_addr == nullptr) {
+                    if (hos::GetVersion() >= hos::Version_23_0_0) {
+                        /* 23.0.0 fixed this by returning an error instead. */
+                        ams::socket::SetLastError(ams::socket::Errno::EInval);
                         rc = -1;
                         return rc;
-                    }
+                    } else {
+                        out.ai_addr = static_cast<decltype(out.ai_addr)>(ams::socket::impl::Alloc(out.ai_addrlen));
+                        if (out.ai_addr == nullptr) {
+                            rc = -1;
+                            return rc;
+                        }
 
-                    /* NOTE: This is *clearly* a nintendo bug. */
-                    /* They obviously intend to copy to the buffer they just allocated, but instead they copy to the addrinfo structure itself. */
-                    /* Probably &out.ai_addr instead of &out.ai_addr[0]? Either way, we'll implement what they do, but... */
-                    std::memcpy(std::addressof(out.ai_addr), cur, out.ai_addrlen);
-                    rc = out.ai_addrlen;
+                        /* NOTE: This is *clearly* a nintendo bug. */
+                        /* They obviously intend to copy to the buffer they just allocated, but instead they copy to the addrinfo structure itself. */
+                        /* Probably &out.ai_addr instead of &out.ai_addr[0]? Either way, we'll implement what they do, but... */
+                        std::memcpy(std::addressof(out.ai_addr), cur, out.ai_addrlen);
+                        rc = out.ai_addrlen;
+                    }
                 }
                 cur += rc;
             }
@@ -368,6 +383,7 @@ namespace ams::mitm::socket::resolver::serializer {
                 } else if (tmp_value == AddrInfoMagic) {
                     out.ai_next = static_cast<T *>(ams::socket::impl::Alloc(sizeof(T)));
                     if (out.ai_next == nullptr) {
+                        ams::socket::SetLastError(ams::socket::Errno::ENoMem);
                         rc = -1;
                         return rc;
                     }

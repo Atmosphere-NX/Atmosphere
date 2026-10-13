@@ -70,11 +70,11 @@ namespace ams::fs {
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
             virtual Result Flush() override;
-            virtual Result GetSize(s64 *out_size) override;
             virtual Result SetSize(s64 size) override;
+            virtual Result GetSize(s64 *out_size) override;
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
     };
-
+    
     /* ACCURATE_TO_VERSION: Unknown */
     class FileStorageBasedFileSystem : public FileStorage {
         NON_COPYABLE(FileStorageBasedFileSystem);
@@ -86,7 +86,7 @@ namespace ams::fs {
 
             Result Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const fs::Path &path, fs::OpenMode mode);
     };
-
+    
     class FileHandleStorage : public IStorage, public impl::Newable {
         private:
             static constexpr s64 InvalidSize = -1;
@@ -114,5 +114,5 @@ namespace ams::fs {
             virtual Result SetSize(s64 size) override;
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
     };
-
+    
 }

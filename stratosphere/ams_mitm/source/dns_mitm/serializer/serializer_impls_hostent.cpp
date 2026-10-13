@@ -55,8 +55,9 @@ namespace ams::mitm::socket::resolver::serializer {
             rc += DNSSerializer::SizeOf((const char **)(in.h_aliases), dummy);
             rc += sizeof(u32);
             rc += sizeof(u32);
-            rc += DNSSerializer::SizeOf((const InAddrType<T> **)(in.h_addr_list), dummy);
-
+            if (IsAfInet<T>(in.h_addrtype)) {
+                rc += DNSSerializer::SizeOf((const InAddrType<T> **)(in.h_addr_list), dummy);
+            }
             return rc;
         }
 
@@ -150,7 +151,16 @@ namespace ams::mitm::socket::resolver::serializer {
             cur += rc;
 
             InAddrType<T> **addrs = nullptr;
-            if ((rc = DNSSerializer::FromBuffer(addrs, cur, src_size - (cur - src))) == -1) {
+            if (IsAfInet<T>(out.h_addrtype)) {
+                if ((rc = DNSSerializer::FromBuffer(addrs, cur, src_size - (cur - src))) == -1) {
+                    return rc;
+                }
+            } else if (IsAfInet6<T>(out.h_addrtype)) {
+                if ((rc = DNSSerializer::FromBuffer(addrs, cur, src_size - (cur - src))) == -1) {
+                    return rc;
+                }
+            } else {
+                rc = -1;
                 return rc;
             }
             out.h_addr_list = (char **)addrs;

@@ -180,33 +180,79 @@ namespace ams::mitm::fs {
                     CloseReference(m_impl);
                 }
 
-
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
                     R_RETURN(m_impl->Read(offset, buffer, size));
                 }
-
+                
+                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                    /* TODO: Better result code? */
+                    AMS_UNUSED(offset, buffer, size);
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
+                }
+                
+                virtual Result Flush() override {
+                    R_RETURN(m_impl->Flush());
+                }
+                
+                virtual Result SetSize(s64 size) override {
+                    /* TODO: Better result code? */
+                    AMS_UNUSED(size);
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
+                }
+                
                 virtual Result GetSize(s64 *out_size) override {
                     R_RETURN(m_impl->GetSize(out_size));
                 }
 
+                virtual Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                    R_RETURN(m_impl->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                }
+        };
+        
+        class LayeredRomfsStorageForBatchRead : public ams::fs::IStorageForBatchRead {
+            private:
+                LayeredRomfsStorageImpl *m_impl;
+            public:
+                LayeredRomfsStorageForBatchRead(LayeredRomfsStorageImpl *impl) : m_impl(impl) {
+                    OpenReference(m_impl);
+                }
+
+                virtual ~LayeredRomfsStorageForBatchRead() {
+                    CloseReference(m_impl);
+                }
+                
+                virtual Result Read(s64 offset, void *buffer, size_t size) override {
+                    R_RETURN(m_impl->Read(offset, buffer, size));
+                }
+                
+                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                    /* TODO: Better result code? */
+                    AMS_UNUSED(offset, buffer, size);
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
+                }
+                
                 virtual Result Flush() override {
                     R_RETURN(m_impl->Flush());
+                }
+                
+                virtual Result SetSize(s64 size) override {
+                    /* TODO: Better result code? */
+                    AMS_UNUSED(size);
+                    R_THROW(ams::fs::ResultUnsupportedOperation())
+                }
+                
+                virtual Result GetSize(s64 *out_size) override {
+                    R_RETURN(m_impl->GetSize(out_size));
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     R_RETURN(m_impl->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                 }
 
-                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    /* TODO: Better result code? */
-                    AMS_UNUSED(offset, buffer, size);
-                    R_THROW(ams::fs::ResultUnsupportedOperation())
-                }
-
-                virtual Result SetSize(s64 size) override {
-                    /* TODO: Better result code? */
-                    AMS_UNUSED(size);
-                    R_THROW(ams::fs::ResultUnsupportedOperation())
+                virtual Result BatchRead(void *out0, void *out1, void *out2, void *out3, void *out4, void *out5, void *out6, const void *in) override {
+                    /* TODO */
+                    AMS_UNUSED(out0, out1, out2, out3, out4, out5, out6, in);
+                    R_THROW(ams::fs::ResultUnsupportedOperation());
                 }
         };
 
@@ -260,6 +306,54 @@ namespace ams::mitm::fs {
 
         /* Return a new shared storage for the impl. */
         return std::make_shared<LayeredRomfsStorage>(impl);
+    }
+    
+    std::shared_ptr<ams::fs::IStorageForBatchRead> GetLayeredRomfsStorageForBatchRead(ncm::ProgramId program_id, ::FsStorageForBatchRead &data_storage, bool is_process_romfs) {
+        /*Prepare to find or create a new storage. */
+        LayeredRomfsStorageImpl *impl = nullptr;
+        {
+            std::scoped_lock lk(g_storage_set_mutex);
+
+            /* Find an existing storage. */
+            if (auto it = g_storage_set.find_key(program_id.value); it != g_storage_set.end()) {
+                return std::make_shared<LayeredRomfsStorageForBatchRead>(it->GetImpl());
+            }
+
+            /* We don't have an existing storage. If we're creating process romfs, free any unreferenced process romfs. */
+            /* This should help prevent too much memory in use at any time. */
+            if (is_process_romfs) {
+                auto it = g_storage_set.begin();
+                while (it != g_storage_set.end()) {
+                    if (it->GetReferenceCount() > 0 || !it->IsProcessRomfs()) {
+                        ++it;
+                    } else {
+                        auto *holder = std::addressof(*it);
+                        it = g_storage_set.erase(it);
+                        delete holder;
+                    }
+                }
+            }
+
+            /* Create a new storage. */
+            {
+                ::FsFile data_file;
+                if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), program_id, "romfs.bin", OpenMode_Read))) {
+                    impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapterForBatchRead>(new RemoteStorageForBatchRead(data_storage)), std::make_unique<ReadOnlyStorageAdapterForBatchRead>(new FileStorage(new RemoteFile(data_file))), program_id);
+                } else {
+                    impl = new LayeredRomfsStorageImpl(std::make_unique<ReadOnlyStorageAdapterForBatchRead>(new RemoteStorageForBatchRead(data_storage)), nullptr, program_id);
+                }
+            }
+
+            /* Insert holder. Reference count will now be one. */
+            g_storage_set.insert(*(new LayeredRomfsStorageHolder(impl, is_process_romfs)));
+        }
+
+        /* Begin initialization. When this finishes, a decref will occur. */
+        AMS_ABORT_UNLESS(impl != nullptr);
+        impl->BeginInitialize();
+
+        /* Return a new shared storage for the impl. */
+        return std::make_shared<LayeredRomfsStorageForBatchRead>(impl);
     }
 
     void FinalizeLayeredRomfsStorage(ncm::ProgramId program_id) {
@@ -392,6 +486,10 @@ namespace ams::mitm::fs {
 
         R_SUCCEED();
     }
+    
+    Result LayeredRomfsStorageImpl::Flush() {
+        R_SUCCEED();
+    }
 
     Result LayeredRomfsStorageImpl::GetSize(s64 *out_size) {
         /* Ensure we're initialized. */
@@ -400,10 +498,6 @@ namespace ams::mitm::fs {
         }
 
         *out_size = this->GetSize();
-        R_SUCCEED();
-    }
-
-    Result LayeredRomfsStorageImpl::Flush() {
         R_SUCCEED();
     }
 

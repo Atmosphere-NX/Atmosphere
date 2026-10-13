@@ -30,7 +30,7 @@ namespace ams::fssrv::impl {
         }));
     }
 
-    Result StorageInterfaceAdapter::Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size)  {
+    Result StorageInterfaceAdapter::Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size) {
         /* Check pre-conditions. */
         R_UNLESS(0 <= offset,                                fs::ResultInvalidOffset());
         R_UNLESS(0 <= size,                                  fs::ResultInvalidSize());
@@ -42,16 +42,16 @@ namespace ams::fssrv::impl {
         R_RETURN(m_base_storage->Write(offset, buffer.GetPointer(), size));
     }
 
-    Result StorageInterfaceAdapter::Flush()  {
+    Result StorageInterfaceAdapter::Flush() {
         R_RETURN(m_base_storage->Flush());
     }
 
-    Result StorageInterfaceAdapter::SetSize(s64 size)  {
+    Result StorageInterfaceAdapter::SetSize(s64 size) {
         R_UNLESS(size >= 0, fs::ResultInvalidSize());
         R_RETURN(m_base_storage->SetSize(size));
     }
 
-    Result StorageInterfaceAdapter::GetSize(ams::sf::Out<s64> out)  {
+    Result StorageInterfaceAdapter::GetSize(ams::sf::Out<s64> out) {
         R_RETURN(m_base_storage->GetSize(out.GetPointer()));
     }
 
@@ -71,6 +71,12 @@ namespace ams::fssrv::impl {
         }
 
         R_SUCCEED();
+    }
+    
+    Result StorageInterfaceAdapterForBatchRead::BatchRead(const ams::sf::OutNonSecureBuffer &out0, const ams::sf::OutNonSecureBuffer &out1, const ams::sf::OutNonSecureBuffer &out2, const ams::sf::OutNonSecureBuffer &out3, const ams::sf::OutNonSecureBuffer &out4, const ams::sf::OutNonSecureBuffer &out5, const ams::sf::OutNonSecureBuffer &out6, const ams::sf::InBuffer &in)  {
+        /* TODO */
+        AMS_UNUSED(out0, out1, out2, out3, out4, out5, out6, in);
+        R_THROW(fs::ResultUnsupportedOperation());
     }
 
 }

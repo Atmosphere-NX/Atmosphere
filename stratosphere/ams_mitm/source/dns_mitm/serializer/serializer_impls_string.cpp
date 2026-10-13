@@ -76,6 +76,7 @@ namespace ams::mitm::socket::resolver::serializer {
 
         out = static_cast<char *>(ams::socket::impl::Alloc(len));
         if (out == nullptr) {
+            ams::socket::SetLastError(ams::socket::Errno::ENoMem);
             return -1;
         }
 
@@ -152,6 +153,7 @@ namespace ams::mitm::socket::resolver::serializer {
 
         out = static_cast<char **>(ams::socket::impl::Alloc((count + 1) * sizeof(char *)));
         if (out == nullptr) {
+            ams::socket::SetLastError(ams::socket::Errno::ENoMem);
             rc = -1;
             return rc;
         }
@@ -162,6 +164,7 @@ namespace ams::mitm::socket::resolver::serializer {
             const size_t len = std::strlen(reinterpret_cast<const char *>(cur));
             out[i] = static_cast<char *>(ams::socket::impl::Alloc(len + 1));
             if (out[i] == nullptr) {
+                ams::socket::SetLastError(ams::socket::Errno::ENoMem);
                 rc = -1;
                 return rc;
             }
