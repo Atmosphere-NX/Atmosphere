@@ -28,11 +28,11 @@ namespace ams::mitm::socket::resolver {
             std::string hostname;
             ams::socket::InAddrT redirect_addr;
             u16 redirect_port;
-            const struct ams::socket::ares_addrinfo_hints *hint;
+            bool use_hint;
+            struct ams::socket::ares_addrinfo_hints hint;
         };
         
         std::map<ssize_t, std::unique_ptr<AresAddrInfoQuery>> g_ares_addr_info_queries;
-        ssize_t g_current_ares_addr_info_query_id;
         
     }
 
@@ -100,21 +100,17 @@ namespace ams::mitm::socket::resolver {
         return result;
     }
     
-    ssize_t QueueAresAddrInfoQuery(const char *hostname, ams::socket::InAddrT redirect_addr, u16 redirect_port, const struct ams::socket::ares_addrinfo_hints *hint) {              
-        ssize_t query_id = g_current_ares_addr_info_query_id;
-        
+    void QueueAresAddrInfoQuery(ssize_t query_id, const char *hostname, ams::socket::InAddrT redirect_addr, u16 redirect_port, const struct ams::socket::ares_addrinfo_hints *hint) {
         AresAddrInfoQuery query;
         query.hostname = hostname;
         query.redirect_addr = redirect_addr;
         query.redirect_port = redirect_port;
-        query.hint = hint;
-
+        query.use_hint = hint != nullptr;
+        if (query.use_hint) {
+            query.hint = *hint;
+        }
+        
         g_ares_addr_info_queries.emplace(query_id, std::make_unique<AresAddrInfoQuery>(query));
-        
-        /* NOTE: This really just increases ad infinitum. Should we bother checking it? */
-        ++g_current_ares_addr_info_query_id;
-        
-        return query_id;
     }
     
     ssize_t DequeueAresAddrInfoQuery(u8 * const dst, size_t dst_size, u32 query_id) {
@@ -141,8 +137,8 @@ namespace ams::mitm::socket::resolver {
             .ai_next     = nullptr,
         };
         
-        if (query->hint != nullptr) {
-            std::memcpy(reinterpret_cast<void *>(std::addressof(node.ai_flags)), reinterpret_cast<const void *>(query->hint), sizeof(struct ams::socket::ares_addrinfo_hints));
+        if (query->use_hint) {
+            std::memcpy(std::addressof(node.ai_flags), std::addressof(query->hint), sizeof(query->hint));
         }
 
         switch (node.ai_family) {
@@ -178,7 +174,7 @@ namespace ams::mitm::socket::resolver {
 
         const auto result = serializer::DNSSerializer::ToBuffer(dst, dst_size, ai);
         AMS_ABORT_UNLESS(result >= 0);
-        g_ares_addr_info_queries.erase(query_id);
+        g_ares_addr_info_queries.erase(static_cast<ssize_t>(query_id));
         return result;
     }
     
@@ -343,7 +339,7 @@ namespace ams::mitm::socket::resolver {
             }
         }
 
-        LogDebug("[%016lx]: Queueing redirection %s:%u to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
+        LogDebug("[%016lx]: Queueing query for redirecting %s:%u to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
         
         const bool use_hint = serialized_hint.GetPointer() != nullptr;
         struct ams::socket::ares_addrinfo_hints hint = {};
@@ -351,18 +347,21 @@ namespace ams::mitm::socket::resolver {
             AMS_ABORT_UNLESS(serializer::DNSSerializer::FromBuffer(hint, serialized_hint.GetPointer(), serialized_hint.GetSize()) >= 0);
         }
         
-        const auto query_id = QueueAresAddrInfoQuery(hostname, redirect_addr, port, use_hint ? std::addressof(hint) : nullptr);
-        
-        LogDebug("[%016lx]: Queued query with id 0x%lx\n", m_client_info.program_id.value, query_id);
-        
         /* Forward to session. The provided socket EventFd must be signalled by having bsdsocket write 1 to the associated socket. */
-        /* This is fine though, we only care about replacing with our redirection during fetch. */        
+        /* This is fine though, we only care about replacing with our redirection during fetch. */
+        /* Additionally, a failure at this point can be safely handled by bsdsocket, it simply won't create a new query. */
         R_TRY(sfdnsresQueryAddrInfoRequestWithOptionsFwd(m_forward_service.get(), static_cast<u64>(client_pid.GetValue().value), node.GetPointer(), node.GetSize(), srv.GetPointer(), srv.GetSize(), serialized_hint.GetPointer(), serialized_hint.GetSize(), reinterpret_cast<u32 *>(out_query_id.GetPointer()), fd, options_version, options.GetPointer(), options.GetSize(), num_options, reinterpret_cast<s32 *>(out_retval.GetPointer()), reinterpret_cast<s32 *>(out_errno.GetPointer())));
         
-        /* Replace with our own query. */
-        *out_query_id    = query_id;
-        *out_retval      = 0;
-        *out_errno       = 0;
+        /* If no errors were returned, trust the id bsdsocket generated and queue the query. */
+        /* When bsdsocket's queue is full, retval and errno will reflect that and the returned query id will be -1. */
+        /* This is expected by the client. We must drop this query and let the client see the errors for it to schedule a new query. */
+        if ((*out_retval == 0) && (*out_errno == 0)) {
+            ssize_t query_id = static_cast<ssize_t>(*out_query_id);
+            QueueAresAddrInfoQuery(query_id, hostname, redirect_addr, port, use_hint ? std::addressof(hint) : nullptr);
+            LogDebug("[%016lx]: Queued query with id 0x%lx\n", m_client_info.program_id.value, query_id);
+        } else {
+            LogDebug("[%016lx]: Dropping last query, queue is full\n", m_client_info.program_id.value);
+        }
         
         R_SUCCEED();
     }
