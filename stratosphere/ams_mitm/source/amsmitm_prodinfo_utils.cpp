@@ -256,7 +256,6 @@ namespace ams::mitm {
         bool IsValid(const CalibrationInfo &cal) {
             return IsValidHeader(cal)                                                                                                          &&
                    IsValid(cal.GetBlock<SerialNumberBlock>())                                                                                  &&
-                   IsValid(cal.GetBlock<EccB233DeviceCertificateBlock>())                                                                      &&
                    IsValid(cal.GetBlock<SslKeyBlock>())                                                                                        &&
                    IsValid(cal.GetBlock<SslCertificateSizeBlock>())                                                                            &&
                    cal.GetBlock<SslCertificateSizeBlock>().ssl_certificate_size <= sizeof(cal.GetBlock<SslCertificateBlock>().ssl_certificate) &&
@@ -267,7 +266,8 @@ namespace ams::mitm {
                    IsValidSerialNumber(cal);
         }
 
-        bool ContainsCorrectDeviceId(const EccB233DeviceCertificateBlock &block, u64 device_id) {
+        template<typename Block>
+        bool ContainsCorrectDeviceId(const Block &block, u64 device_id) {
             static constexpr size_t DeviceIdOffset = 0xC6;
             char found_device_id_str[sizeof("0011223344556677")] = {};
             ON_SCOPE_EXIT { std::memset(found_device_id_str, 0, sizeof(found_device_id_str)); };
@@ -279,7 +279,14 @@ namespace ams::mitm {
         }
 
         bool ContainsCorrectDeviceId(const CalibrationInfo &cal) {
-            return ContainsCorrectDeviceId(cal.GetBlock<EccB233DeviceCertificateBlock>(), exosphere::GetDeviceId());
+            const auto &ecc = cal.GetBlock<EccB233DeviceCertificateBlock>();
+            if (!IsBlank(ecc)) {
+                return IsValid(ecc) && ContainsCorrectDeviceId(ecc, exosphere::GetDeviceId());
+            }
+
+            /* Newer consoles may leave the ECC certificate unprogrammed. */
+            const auto &rsa = cal.GetBlock<Rsa2048DeviceCertificateBlock>();
+            return !IsBlank(rsa) && IsValid(rsa) && ContainsCorrectDeviceId(rsa, exosphere::GetDeviceId());
         }
 
         bool IsValidForSecureBackup(const CalibrationInfo &cal) {
