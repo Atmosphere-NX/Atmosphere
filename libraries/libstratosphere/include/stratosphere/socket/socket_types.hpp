@@ -169,10 +169,11 @@ namespace ams::socket {
         int ai_protocol;
         #if defined(ATMOSPHERE_OS_WINDOWS)
         int ai_addrlen;
+        void *ai_addr;
         #else
         socklen_t ai_addrlen;
-        #endif
         struct sockaddr *ai_addr;
+        #endif
         struct ares_addrinfo_node *ai_next;
     };
     
