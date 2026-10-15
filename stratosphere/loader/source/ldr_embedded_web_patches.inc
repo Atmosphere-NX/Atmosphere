@@ -15,41 +15,37 @@
  */
 
 /* Breakdown of each patch in order: */ 
-/* #1 - Patch the 0xDEEF000 size check branch to NOP. */
+/* #1 - Set TotalAvailableMemorySize to 1GB. */
 /* #2 - Change the root heap "Reserved" region allocation size from 0x43E000 to 0. */
-/* #3 - Change the root heap "Scene" size from 0x4580000 to 0x4040000. */
-/* #4 - Change the scene heap "ReservedTbd" region allocation size from 0x540000 to 0. */
-/* #5 - Patch the linking of "ReservedTbd" to the parent heap with a NOP. */
-/* #6 - Patch the initial memory block allocation size from 0xB400000 to 0xAC00000. */
-/* #7 - Patch the initial memory block initialization size from 0xB400000 to 0xAC00000. */
+/* #3 - Patch the initial memory block allocation size from 0xB400000 to 0xB000000. */
+/* #4 - Patch the initial memory block heap size from 0xB400000 to 0xB000000. */
+/* #5 - Patch the browser engine memory capacity from 0xAA00000 to 0x9000000. */
+/* #6 - Patch the browser engine memory allocation size from 0xAA00000 to 0x9000000. */
 constexpr inline const EmbeddedPatchEntry SystemWebMemoryPatches_23_0_0[] = {
-    { 0x861DD4, "\x1F\x20\x03\xD5", 4 },
+    { 0x6113A8, "\x09\x00\xA8\xD2", 4 },
     { 0x861E80, "\x02\x00\x80\x52", 4 },
-    { 0x861E6C, "\x82\x80\xA0\x52", 4 },
-    { 0x8C1718, "\x02\x00\x80\x52", 4 },
-    { 0x8C172C, "\x1F\x20\x03\xD5", 4 },
-    { 0x861D44, "\x01\x58\xA1\x52", 4 },
-    { 0x861D5C, "\x03\x58\xA1\x52", 4 },
+    { 0x861D44, "\x01\x60\xA1\x52", 4 },
+    { 0x861D5C, "\x03\x60\xA1\x52", 4 },
+    { 0x8623D0, "\x01\x20\xA1\x52", 4 },
+    { 0x862498, "\x01\x20\xA1\x52", 4 },
 };
 
 constexpr inline const EmbeddedPatchEntry OpenWebMemoryPatches_23_0_0[] = {
-    { 0x828DBC, "\x1F\x20\x03\xD5", 4 },
+    { 0x611428, "\x09\x00\xA8\xD2", 4 },
     { 0x828E68, "\x02\x00\x80\x52", 4 },
-    { 0x828E54, "\x82\x80\xA0\x52", 4 },
-    { 0x74C564, "\x02\x00\x80\x52", 4 },
-    { 0x74C578, "\x1F\x20\x03\xD5", 4 },
-    { 0x828D2C, "\x01\x58\xA1\x52", 4 },
-    { 0x828D44, "\x03\x58\xA1\x52", 4 },
+    { 0x828D2C, "\x01\x60\xA1\x52", 4 },
+    { 0x828D44, "\x03\x60\xA1\x52", 4 },
+    { 0x8293B8, "\x01\x20\xA1\x52", 4 },
+    { 0x829480, "\x01\x20\xA1\x52", 4 },
 };
 
 constexpr inline const EmbeddedPatchEntry OfflineWebMemoryPatches_23_0_0[] = {
-    { 0x130698, "\x1F\x20\x03\xD5", 4 },
+    { 0x6DE0DC, "\x09\x00\xA8\xD2", 4 },
     { 0x130744, "\x02\x00\x80\x52", 4 },
-    { 0x130730, "\x82\x80\xA0\x52", 4 },
-    { 0x4D728,  "\x02\x00\x80\x52", 4 },
-    { 0x4D738,  "\x1F\x20\x03\xD5", 4 },
-    { 0x130614, "\x01\x58\xA1\x52", 4 },
-    { 0x130624, "\x02\x58\xA1\x52", 4 },
+    { 0x130614, "\x01\x60\xA1\x52", 4 },
+    { 0x130624, "\x02\x60\xA1\x52", 4 },
+    { 0x130C30, "\x01\x20\xA1\x52", 4 },
+    { 0x130CD0, "\x01\x20\xA1\x52", 4 },
 };
 
 constexpr inline const EmbeddedPatch WebMemoryPatches[] = {
