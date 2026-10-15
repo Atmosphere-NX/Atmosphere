@@ -25,8 +25,8 @@ namespace ams::rocrt {
         u32 dynamic_offset;
         u32 bss_start_offset;
         u32 bss_end_offset;
-        u32 exception_info_start_offset;
-        u32 exception_info_end_offset;
+        s32 exception_info_start_offset;
+        s32 exception_info_end_offset;
         u32 module_offset;
     };
 
