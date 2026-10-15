@@ -1,4 +1,26 @@
 # Changelog
+## 1.12.1
++ Support was added for the new c-ares resolver in `dns.mitm`.
+  + Firmware 23.0.0 introduced a new set of commands to the `sfdnsres` service. These commands provide c-ares async support for DNS resolution and are now used by most sysmodules.
+  + This resulted in host redirection not being applied at all and without warning since we simply were not intercepting the new commands.
+  + `dns.mitm` now fully reimplements the c-ares serialization code and intercepts the relevant commands. In tandem with the `bsdsocket` sysmodule, we now keep track of resolution queries and redirect their results. 
++ Support was added for the new "BatchRead" storage in `fs.mitm`.
+  + Firmware 23.0.0 introduced a new type of filesystem storage object abstracted by the interface "IStorageForBatchRead". This is a derived class from "IStorage" with the purpose of adding the new "BatchRead" command.
+  + Anything that uses the filesystem API now attempts to use this type of storage instead of the old one. This is of particular relevance for `qlaunch` and for supporting custom themes which were broken as a consequence of this change.
+  + `fs.mitm` was updated and extended to not only support the new storage type but also intercept a few newer commands that were previously missing.
++ The patches for the browser applets were redesigned.
+  + The introduction of these patches in the previous release led to several issues and crashes, notably during media playback in the eshop and within games that use LibAppletOff.
+  + After extensive analysis and testing it was concluded that the browser applets were running out of memory and still required reducing the memory we reserve for custom sysmodules.
+  + New patches have been devised and introduced in this release.
+    + Instead of patching size checks, we now trick the browser applets into thinking there is 1GB of free memory available to them.
+    + Unused memory is still being reclaimed and discounted from the root heap, but now more realistically.
+    + The browser engine's heap is now being shrunk with no noticeable downsides to media playback nor web page rendering.
+  + Thanks to these changes we can now provide 40MB for custom system modules once again.
++ A number of minor issues were fixed and improvements were made, such as:
+  + Automatic PRODINFO backup was fixed for recent console models that no longer use the ECC device certificate (thanks @chrisbraucker).
+  + State initialization for SharedMemory and TransferMemory was fixed (thanks @fl0be).
+  + Compatibility was fixed for Trails in the Sky 2nd Chapter (thanks @masagrator). 
++ General system stability improvements to enhance the user's experience.
 ## 1.12.0
 + Support was added for 23.0.0.
 + Special thanks to @alula for handling the implementation of several kernel changes.
