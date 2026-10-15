@@ -319,8 +319,6 @@ namespace ams::mitm::socket::resolver {
     }
     
     Result ResolverImpl::QueryAddrInfoRequestWithOptions(const sf::ClientProcessId &client_pid, const sf::InAutoSelectBuffer &node, const sf::InAutoSelectBuffer &srv, const sf::InAutoSelectBuffer &serialized_hint, sf::Out<u32> out_query_id, u32 fd, u32 options_version, const sf::InAutoSelectBuffer &options, u32 num_options, sf::Out<s32> out_retval, sf::Out<s32> out_errno) {
-        AMS_UNUSED(client_pid, fd, options_version, options, num_options);
-
         const char *hostname = reinterpret_cast<const char *>(node.GetPointer());
 
         LogDebug("[%016lx]: QueryAddrInfoRequestWithOptions(%s, %s)\n", m_client_info.program_id.value, hostname, reinterpret_cast<const char *>(srv.GetPointer()));
@@ -367,16 +365,19 @@ namespace ams::mitm::socket::resolver {
     }
     
     Result ResolverImpl::FetchAddrInfoRequestWithOptions(const sf::ClientProcessId &client_pid, u32 query_id, u32 version, const sf::OutAutoSelectBuffer &out_addrinfo, sf::Out<u32> out_size, sf::Out<s32> out_retval, sf::Out<s32> out_errno) {
-        AMS_UNUSED(client_pid, version);
-
-        LogDebug("[%016lx]: FetchAddrInfoRequestWithOptions(%d)\n", m_client_info.program_id.value, query_id);
+        LogDebug("[%016lx]: FetchAddrInfoRequestWithOptions(0x%x)\n", m_client_info.program_id.value, query_id);
         
         const auto size = DequeueAresAddrInfoQuery(out_addrinfo.GetPointer(), out_addrinfo.GetSize(), query_id);
 
         /* If we don't have this query queued, then the hostname is not in the hosts file. Forward to session. */
         R_UNLESS(size >= 0, sm::mitm::ResultShouldForwardToSession());
         
-        LogDebug("[%016lx]: Dequeued query with size 0x%lx\n", m_client_info.program_id.value, size);
+        LogDebug("[%016lx]: Dequeued query 0x%x with size 0x%lx\n", m_client_info.program_id.value, query_id, size);
+        
+        /* Forward to session. The socket EventFd associated with this query must be cleared by having bsdsocket write 0 to the socket. */
+        /* However, we want to keep our redirection, so we pass nullptr to bsdsocket forcing the command to end early with an error. */
+        /* We discard the error and replace the output, pretending the command was successful while returning our redirected addrinfo to the client instead. */ 
+        R_DISCARD(sfdnsresFetchAddrInfoRequestWithOptionsFwd(m_forward_service.get(), static_cast<u64>(client_pid.GetValue().value), query_id, version, nullptr, 0, reinterpret_cast<u32 *>(out_size.GetPointer()), reinterpret_cast<s32 *>(out_retval.GetPointer()), reinterpret_cast<s32 *>(out_errno.GetPointer())));
         
         *out_size        = size;
         *out_retval      = 0;
@@ -386,16 +387,18 @@ namespace ams::mitm::socket::resolver {
     }
     
     Result ResolverImpl::CancelQuery(const sf::ClientProcessId &client_pid, u32 query_id) {
-        AMS_UNUSED(client_pid);
-
-        LogDebug("[%016lx]: CancelQuery(%d)\n", m_client_info.program_id.value, query_id);
+        LogDebug("[%016lx]: CancelQuery(0x%x)\n", m_client_info.program_id.value, query_id);
         
         const auto found = CancelAresAddrInfoQuery(query_id);
         
         /* If we don't have this query queued, then we never intercepted it. Forward to session. */
         R_UNLESS(found, sm::mitm::ResultShouldForwardToSession());
         
-        LogDebug("[%016lx]: Cancelled query\n", m_client_info.program_id.value);
+        LogDebug("[%016lx]: Cancelled query 0x%x\n", m_client_info.program_id.value, query_id);
+        
+        /* Forward to session. Ensures that bsdsocket cleans up. */
+        /* We still want to discard any errors and return success in case this was a query we had queued. */
+        R_DISCARD(sfdnsresCancelQueryFwd(m_forward_service.get(), static_cast<u64>(client_pid.GetValue().value), query_id));
 
         R_SUCCEED();
     }
