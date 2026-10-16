@@ -58,26 +58,26 @@ namespace ams::creport {
         }
     }
 
-    void ModuleList::FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread, bool is_64_bit) {
+    void ModuleList::FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread) {
         /* Set the debug handle, for access in other member functions. */
         m_debug_handle = debug_handle;
 
         /* Try to add the thread's PC. */
-        this->TryAddModule(thread.GetPC(), is_64_bit);
+        this->TryAddModule(thread.GetPC());
 
         /* Try to add the thread's LR. */
-        this->TryAddModule(thread.GetLR(), is_64_bit);
+        this->TryAddModule(thread.GetLR());
 
         /* Try to add all the addresses in the thread's stacktrace. */
         for (size_t i = 0; i < thread.GetStackTraceSize(); i++) {
-            this->TryAddModule(thread.GetStackTrace(i), is_64_bit);
+            this->TryAddModule(thread.GetStackTrace(i));
         }
     }
 
-    void ModuleList::TryAddModule(uintptr_t guess, bool is_64_bit) {
+    void ModuleList::TryAddModule(uintptr_t guess) {
         /* Try to locate module from guess. */
         uintptr_t base_address = 0;
-        if (!this->TryFindModule(std::addressof(base_address), guess, is_64_bit)) {
+        if (!this->TryFindModule(std::addressof(base_address), guess)) {
             return;
         }
 
@@ -114,9 +114,7 @@ namespace ams::creport {
                     util::SNPrintf(module.name, sizeof(module.name), "[%02x%02x%02x%02x]", module.module_id[0], module.module_id[1], module.module_id[2], module.module_id[3]);
                 } else {
                     /* The module has a name, and so might have a symbol table. Try to add it, if it does. */
-                    if (is_64_bit) {
-                        DetectModuleSymbolTable(module);
-                    }
+                    DetectModuleSymbolTable(module);
                 }
             }
 
@@ -134,9 +132,7 @@ namespace ams::creport {
         }
     }
 
-    bool ModuleList::TryFindModule(uintptr_t *out_address, uintptr_t guess, bool is_64_bit) {
-        AMS_UNUSED(is_64_bit);
-
+    bool ModuleList::TryFindModule(uintptr_t *out_address, uintptr_t guess) {
         /* Query the memory region our guess falls in. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
@@ -265,7 +261,6 @@ namespace ams::creport {
         }
 
         /* Declare temporaries. */
-        u64 temp_64;
         u32 temp_32;
 
         /* Get module state. */
@@ -316,43 +311,54 @@ namespace ams::creport {
             dyn_address = module.start_address + mod_offset + temp_32;
         }
 
-
-        /* Locate tables inside .dyn. */
-        for (size_t ofs = 0; /* ... */; ofs += 0x10) {
-            /* Read the DynamicTag. */
-            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_64)), m_debug_handle, dyn_address + ofs, sizeof(u64)))) {
-                return;
-            }
-
-            if (temp_64 == 0) {
-                /* We're done parsing .dyn. */
-                break;
-            } else if (temp_64 == 4) {
-                /* We found DT_HASH */
-                if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_64)), m_debug_handle, dyn_address + ofs + sizeof(u64), sizeof(u64)))) {
+        {
+            struct Elf64_Dyn {
+                u64 d_tag;
+                u64 d_val;
+            } dyn;
+    
+            struct Elf32_Dyn {
+                u32 d_tag;
+                u32 d_val;
+            } dyn_32;
+    
+            size_t dyn_size = m_is_64_bit ? sizeof(Elf64_Dyn) : sizeof(Elf32_Dyn);
+            uintptr_t dyn_read_address = m_is_64_bit ? reinterpret_cast<uintptr_t>(std::addressof(dyn)) : reinterpret_cast<uintptr_t>(std::addressof(dyn_32));
+    
+            /* Locate tables inside .dyn. */
+            for (size_t ofs = 0; /* ... */; ofs += dyn_size) {
+                /* Read the dynamic entry. */
+                if (R_FAILED(svc::ReadDebugProcessMemory(dyn_read_address, m_debug_handle, dyn_address + ofs, dyn_size))) {
                     return;
                 }
 
-                /* Read nchain, to get the number of symbols. */
-                if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + temp_64 + sizeof(u32), sizeof(u32)))) {
-                    return;
+                /* Copy entry if necessary. */
+                if (!m_is_64_bit) {
+                    dyn.d_tag = dyn_32.d_tag;
+                    dyn.d_val = dyn_32.d_val;
                 }
+    
+                if (dyn.d_tag == 0) {
+                    /* We're done parsing .dyn. */
+                    break;
+                } else if (dyn.d_tag == 4) {
+                    /* We found DT_HASH */
+                        
+                    /* Read nchain, to get the number of symbols. */
+                    if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_32)), m_debug_handle, module.start_address + dyn.d_val + sizeof(u32), sizeof(u32)))) {
+                        return;
+                    }
+    
+                    num_sym = temp_32;
+                } else if (dyn.d_tag == 5) {
+                    /* We found DT_STRTAB */
+    
+                    str_tab = module.start_address + dyn.d_val;
+                } else if (dyn.d_tag == 6) {
+                    /* We found DT_SYMTAB */
 
-                num_sym = temp_32;
-            } else if (temp_64 == 5) {
-                /* We found DT_STRTAB */
-                if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_64)), m_debug_handle, dyn_address + ofs + sizeof(u64), sizeof(u64)))) {
-                    return;
+                    sym_tab = module.start_address + dyn.d_val;
                 }
-
-                str_tab = module.start_address + temp_64;
-            } else if (temp_64 == 6) {
-                /* We found DT_SYMTAB */
-                if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(temp_64)), m_debug_handle, dyn_address + ofs + sizeof(u64), sizeof(u64)))) {
-                    return;
-                }
-
-                sym_tab = module.start_address + temp_64;
             }
         }
 
@@ -379,7 +385,7 @@ namespace ams::creport {
                     /* Try to locate an appropriate symbol. */
                     for (size_t j = 0; j < module.num_sym; ++j) {
                         /* Read symbol from the module's symbol table. */
-                        struct {
+                        struct Elf64_Sym {
                             u32 st_name;
                             u8  st_info;
                             u8  st_other;
@@ -387,7 +393,33 @@ namespace ams::creport {
                             u64 st_value;
                             u64 st_size;
                         } sym;
-                        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(sym)), m_debug_handle, module.sym_tab + j * sizeof(sym), sizeof(sym)))) {
+
+                        /* Elf32_Sym is different from Elf64_Sym. */
+                        if (!m_is_64_bit)
+                        {
+                            struct Elf32_Sym {
+                                u32 st_name;
+                                u32 st_value;
+                                u32 st_size;
+                                u8  st_info;
+                                u8  st_other;
+                                u16 st_shndx;
+                            } sym_32;
+
+                            /* Read 32-bit symbol. */
+                            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(sym_32)), m_debug_handle, module.sym_tab + j * sizeof(sym_32), sizeof(sym_32)))) {
+                                break;
+                            }
+
+                            sym.st_name = sym_32.st_name;
+                            sym.st_info = sym_32.st_info;
+                            sym.st_other = sym_32.st_other;
+                            sym.st_shndx = sym_32.st_shndx;
+                            sym.st_value = sym_32.st_value;
+                            sym.st_size = sym_32.st_size;
+                        }
+                        /* Read 64-bit symbol. */
+                        else if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(sym)), m_debug_handle, module.sym_tab + j * sizeof(sym), sizeof(sym)))) {
                             break;
                         }
 
