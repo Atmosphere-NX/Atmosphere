@@ -152,7 +152,7 @@ namespace ams::tipc {
 
                         /* Close all copy handles. */
                         for (auto i = 0; i < special_header.GetCopyHandleCount(); ++i) {
-                            tipc::impl::CloseHandle(message_buffer.GetHandle(offset));
+                            R_DISCARD(tipc::impl::CloseHandle(message_buffer.GetHandle(offset)));
                             offset += sizeof(typename std::remove_reference<decltype(message_buffer.GetHandle(offset))>::type) / sizeof(u32);
                         }
                     };
