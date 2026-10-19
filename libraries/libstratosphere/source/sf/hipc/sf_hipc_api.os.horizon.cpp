@@ -55,7 +55,10 @@ namespace ams::sf::hipc {
                 *out_recv_result = ReceiveResult::Closed;
                 R_SUCCEED();
             }
-            R_CATCH(svc::ResultReceiveListBroken) {
+            /* A pending svcCancelSynchronization from os::MultiWait (another server thread re-registering a */
+            /* session while this one is leaving its wait) makes the next receive return ResultCancelled. */
+            /* The kernel clears the cancel flag when it reports it, so the receive can simply be retried. */
+            R_CATCH(svc::ResultReceiveListBroken, svc::ResultCancelled) {
                 *out_recv_result = ReceiveResult::NeedsRetry;
                 R_SUCCEED();
             }
