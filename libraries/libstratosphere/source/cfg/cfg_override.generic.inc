@@ -17,6 +17,11 @@
 
 namespace ams::cfg {
 
+    bool IsContentDisabled(ncm::ProgramId program_id) {
+        AMS_UNUSED(program_id);
+        return false;
+    }
+
     OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id) {
         AMS_UNUSED(program_id);
         AMS_ABORT("TODO: How should this work?");

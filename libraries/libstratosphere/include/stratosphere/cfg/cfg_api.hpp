@@ -29,6 +29,9 @@ namespace ams::cfg {
     /* Override key utilities. */
     OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id);
 
+    /* Content configuration. */
+    bool IsContentDisabled(ncm::ProgramId program_id);
+
     /* Locale utilities. */
     OverrideLocale GetOverrideLocale(ncm::ProgramId program_id);
 
