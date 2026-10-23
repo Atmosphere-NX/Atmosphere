@@ -110,6 +110,7 @@ namespace ams::fs {
         Result OpenSdCardCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, ncm::ProgramId program_id) {
             /* Ensure we don't access the SD card too early. */
             R_UNLESS(cfg::IsSdCardInitialized(), fs::ResultSdCardNotPresent());
+            R_UNLESS(!cfg::IsContentDisabled(program_id), fs::ResultPathNotFound());
 
             /* Print a path to the program's package. */
             fssrv::sf::Path sf_path;
@@ -267,7 +268,8 @@ namespace ams::fs {
                 bool m_is_redirect;
             public:
                 SdCardRedirectionCodeFileSystem(std::unique_ptr<fsa::IFileSystem> &&code, ncm::ProgramId program_id, bool redirect) : m_code_fs(std::move(code)), m_is_redirect(redirect) {
-                    if (!cfg::IsSdCardInitialized()) {
+                    if (!cfg::IsSdCardInitialized() || cfg::IsContentDisabled(program_id)) {
+                        m_is_redirect = false;
                         return;
                     }
 
