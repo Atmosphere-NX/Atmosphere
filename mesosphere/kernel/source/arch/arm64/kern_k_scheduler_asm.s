@@ -90,10 +90,10 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     /* We have a 64-bit fpu. */
 
     /* If we're in a usermode exception, we need to save the caller-save fpu registers. */
-    tbz    w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 2f
+    tbnz   w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 2f
 
     /* If we're in an SVC (and not a usermode exception), we only need to save the callee-save fpu registers. */
-    tbz    w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC), 3f
+    tbnz   w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC), 3f
 
 2:  /* Save the 64-bit caller-save fpu registers. */
     ldr    x6, [x2, #(THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS)]
@@ -120,10 +120,10 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 4:  /* We have a 32-bit fpu. */
 
     /* If we're in a usermode exception, we need to save the caller-save fpu registers. */
-    tbz    w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 5f
+    tbnz   w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 5f
 
     /* If we're in an SVC (and not a usermode exception), we only need to save the callee-save fpu registers. */
-    tbz    w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC), 6f
+    tbnz   w4, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_CALLING_SVC), 6f
 
 5:  /* Save the 32-bit caller-save fpu registers. */
     ldr    x6, [x2, #(THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS)]
