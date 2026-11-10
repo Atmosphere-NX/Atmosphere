@@ -30,6 +30,15 @@ constexpr inline const EmbeddedPatchEntry SystemWebMemoryPatches_23_0_0[] = {
     { 0x862498, "\x01\x20\xA1\x52", 4 },
 };
 
+constexpr inline const EmbeddedPatchEntry SystemWebMemoryPatches_23_5_0[] = {
+    { 0x611468, "\x09\x00\xA8\xD2", 4 },
+    { 0x729FE8, "\x02\x00\x80\x52", 4 },
+    { 0x729EA8, "\x01\x60\xA1\x52", 4 },
+    { 0x729EC0, "\x03\x60\xA1\x52", 4 },
+    { 0x72A53C, "\x01\x20\xA1\x52", 4 },
+    { 0x72A604, "\x01\x20\xA1\x52", 4 },
+};
+
 constexpr inline const EmbeddedPatchEntry OpenWebMemoryPatches_23_0_0[] = {
     { 0x611428, "\x09\x00\xA8\xD2", 4 },
     { 0x828E68, "\x02\x00\x80\x52", 4 },
@@ -37,6 +46,15 @@ constexpr inline const EmbeddedPatchEntry OpenWebMemoryPatches_23_0_0[] = {
     { 0x828D44, "\x03\x60\xA1\x52", 4 },
     { 0x8293B8, "\x01\x20\xA1\x52", 4 },
     { 0x829480, "\x01\x20\xA1\x52", 4 },
+};
+
+constexpr inline const EmbeddedPatchEntry OpenWebMemoryPatches_23_5_0[] = {
+    { 0x6114E8, "\x09\x00\xA8\xD2", 4 },
+    { 0x8E4C70, "\x02\x00\x80\x52", 4 },
+    { 0x8E4B30, "\x01\x60\xA1\x52", 4 },
+    { 0x8E4B48, "\x03\x60\xA1\x52", 4 },
+    { 0x8E51C4, "\x01\x20\xA1\x52", 4 },
+    { 0x8E528C, "\x01\x20\xA1\x52", 4 },
 };
 
 constexpr inline const EmbeddedPatchEntry OfflineWebMemoryPatches_23_0_0[] = {
@@ -48,10 +66,22 @@ constexpr inline const EmbeddedPatchEntry OfflineWebMemoryPatches_23_0_0[] = {
     { 0x130CD0, "\x01\x20\xA1\x52", 4 },
 };
 
+constexpr inline const EmbeddedPatchEntry OfflineWebMemoryPatches_23_5_0[] = {
+    { 0x6E28FC, "\x09\x00\xA8\xD2", 4 },
+    { 0x168144, "\x02\x00\x80\x52", 4 },
+    { 0x168014, "\x01\x60\xA1\x52", 4 },
+    { 0x168024, "\x02\x60\xA1\x52", 4 },
+    { 0x168630, "\x01\x20\xA1\x52", 4 },
+    { 0x1686D0, "\x01\x20\xA1\x52", 4 },
+};
+
 constexpr inline const EmbeddedPatch WebMemoryPatches[] = {
-    { ParseModuleId("97BF9C2D43EB002FB5B3578E7714F428104ED596"), util::size(SystemWebMemoryPatches_23_0_0),  SystemWebMemoryPatches_23_0_0  },      /* 23.0.0 */
+    { ParseModuleId("97BF9C2D43EB002FB5B3578E7714F428104ED596"), util::size(SystemWebMemoryPatches_23_0_0),  SystemWebMemoryPatches_23_0_0  },      /* 23.0.0 - 23.0.1 */
+    { ParseModuleId("BFC1836C97C456CA4E56DEABF7FBF275E5522363"), util::size(SystemWebMemoryPatches_23_5_0),  SystemWebMemoryPatches_23_5_0  },      /* 23.5.0 */
     
-    { ParseModuleId("1470453424A9CDE689BE6DA86457ED1C79F5F403"), util::size(OpenWebMemoryPatches_23_0_0),    OpenWebMemoryPatches_23_0_0    },      /* 23.0.0 */
+    { ParseModuleId("1470453424A9CDE689BE6DA86457ED1C79F5F403"), util::size(OpenWebMemoryPatches_23_0_0),    OpenWebMemoryPatches_23_0_0    },      /* 23.0.0 - 23.0.1 */
+    { ParseModuleId("C01A479EB77D4118D092EEF9F7E6AA0F8D1B0FE1"), util::size(OpenWebMemoryPatches_23_5_0),    OpenWebMemoryPatches_23_5_0    },      /* 23.5.0 */
     
-    { ParseModuleId("86DAFFA68DA38660317018ADC7AD415BCCDDC583"), util::size(OfflineWebMemoryPatches_23_0_0), OfflineWebMemoryPatches_23_0_0 },      /* 23.0.0 */
+    { ParseModuleId("86DAFFA68DA38660317018ADC7AD415BCCDDC583"), util::size(OfflineWebMemoryPatches_23_0_0), OfflineWebMemoryPatches_23_0_0 },      /* 23.0.0 - 23.0.1 */
+    { ParseModuleId("0F20276C46BAEFF61762EBB4765DFA08EB56385B"), util::size(OfflineWebMemoryPatches_23_5_0), OfflineWebMemoryPatches_23_5_0 },      /* 23.5.0 */
 };
