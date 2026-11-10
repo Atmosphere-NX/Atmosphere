@@ -80,6 +80,10 @@ namespace ams::cfg {
     }
 
     bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag) {
+        if (IsContentDisabled(program_id)) {
+            return false;
+        }
+
         char content_flag[fs::EntryNameLengthMax + 1];
         util::SNPrintf(content_flag, sizeof(content_flag) - 1, "/atmosphere/contents/%016" PRIx64 "/flags/%s.flag", program_id.value, flag);
         return HasFlagFile(content_flag);

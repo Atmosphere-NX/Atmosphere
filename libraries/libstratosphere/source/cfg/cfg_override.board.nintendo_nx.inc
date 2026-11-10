@@ -56,6 +56,13 @@ namespace ams::cfg {
             OverrideLocale locale;
         };
 
+        constexpr size_t MaxDisabledContents = 0x40;
+
+        struct DisabledContentList {
+            ncm::ProgramId program_ids[MaxDisabledContents];
+            size_t count;
+        };
+
         /* Override globals. */
         OverrideKey g_default_override_key = {
             .key_combination = HidNpadButton_L,
@@ -97,6 +104,10 @@ namespace ams::cfg {
         };
 
         char g_hbl_sd_path[0x100] = "/atmosphere/hbl.nsp";
+
+        constinit os::SdkMutex g_disabled_contents_lock;
+        constinit DisabledContentList g_disabled_contents[2] = {};
+        constinit bool g_disabled_contents_cached = false;
 
         /* Helpers. */
         OverrideKey ParseOverrideKey(const char *value) {
@@ -363,6 +374,66 @@ namespace ams::cfg {
             util::ini::ParseFile(file, user_ctx, handler);
         }
 
+        void ParseDisabledContentList(DisabledContentList *out, const char *value) {
+            out->count = 0;
+
+            if (strncasecmp(value, "str!", 4) == 0) {
+                value += 4;
+            } else if (strncasecmp(value, "string!", 7) == 0) {
+                value += 7;
+            } else {
+                return;
+            }
+
+            while (std::isspace(static_cast<unsigned char>(*value))) {
+                value++;
+            }
+
+            const char *value_end = value + std::strlen(value);
+            if (value_end - value >= 2 && value[0] == '"' && value_end[-1] == '"') {
+                value++;
+                value_end--;
+            }
+
+            while (value < value_end && out->count < MaxDisabledContents) {
+                const char *next = value;
+                while (next < value_end && *next != ',') {
+                    next++;
+                }
+
+                const char *end = next;
+                while (value < end && std::isspace(static_cast<unsigned char>(*value))) {
+                    value++;
+                }
+                while (end > value && std::isspace(static_cast<unsigned char>(end[-1]))) {
+                    end--;
+                }
+
+                const char *digits = value;
+                while (digits < end && std::isxdigit(static_cast<unsigned char>(*digits))) {
+                    digits++;
+                }
+                if (end - value == 16 && digits == end) {
+                    out->program_ids[out->count++] = ncm::ProgramId{std::strtoull(value, nullptr, 16)};
+                }
+
+                value = next < value_end ? next + 1 : value_end;
+            }
+        }
+
+        int DisabledContentsIniHandler(void *user, const char *section, const char *name, const char *value) {
+            if (std::strcmp(section, "atmosphere") == 0) {
+                const bool is_emummc = *static_cast<const bool *>(user);
+                if (std::strcmp(name, "disabled_contents") == 0) {
+                    ParseDisabledContentList(std::addressof(g_disabled_contents[0]), value);
+                } else if (std::strcmp(name, is_emummc ? "emummc_disabled_contents" : "syscfw_disabled_contents") == 0) {
+                    ParseDisabledContentList(std::addressof(g_disabled_contents[1]), value);
+                }
+            }
+
+            return 1;
+        }
+
         void RefreshOverrideConfiguration() {
             ParseIniFile(OverrideConfigIniHandler, "/atmosphere/config/override_config.ini", nullptr);
         }
@@ -377,17 +448,44 @@ namespace ams::cfg {
             };
             std::memset(std::addressof(config.locale), 0xCC, sizeof(config.locale));
 
-            ParseIniFile(ContentSpecificIniHandler, path, std::addressof(config));
+            if (!IsContentDisabled(program_id)) {
+                ParseIniFile(ContentSpecificIniHandler, path, std::addressof(config));
+            }
             return config;
         }
 
     }
 
+    bool IsContentDisabled(ncm::ProgramId program_id) {
+        /* Don't cache an empty configuration before the SD card is ready. */
+        if (!IsSdCardInitialized()) {
+            return false;
+        }
+
+        std::scoped_lock lk(g_disabled_contents_lock);
+
+        if (!g_disabled_contents_cached) {
+            bool is_emummc = emummc::IsActive();
+            ParseIniFile(DisabledContentsIniHandler, "/atmosphere/config/system_settings.ini", std::addressof(is_emummc));
+            g_disabled_contents_cached = true;
+        }
+
+        for (const auto &list : g_disabled_contents) {
+            for (size_t i = 0; i < list.count; i++) {
+                if (list.program_ids[i] == program_id) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id) {
         OverrideStatus status = {};
 
-        /* If the SD card isn't initialized, we can't override. */
-        if (!IsSdCardInitialized()) {
+        /* Only override enabled content on an initialized SD card. */
+        if (!IsSdCardInitialized() || IsContentDisabled(program_id)) {
             return status;
         }
 

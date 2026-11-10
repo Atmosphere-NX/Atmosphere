@@ -95,18 +95,24 @@ namespace ams::mitm::fs {
     }
 
     Result OpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(OpenSdFile(out, fixed_path, mode));
     }
 
     Result OpenAtmosphereSdRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(OpenSdFile(out, fixed_path, mode));
     }
 
     Result OpenAtmosphereRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(fsFsOpenFile(fs, fixed_path, mode, out));
@@ -135,18 +141,24 @@ namespace ams::mitm::fs {
     }
 
     Result OpenAtmosphereSdDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(OpenSdDirectory(out, fixed_path, mode));
     }
 
     Result OpenAtmosphereSdRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(OpenSdDirectory(out, fixed_path, mode));
     }
 
     Result OpenAtmosphereRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs) {
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
+
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         R_RETURN(fsFsOpenDirectory(fs, fixed_path, mode, out));
@@ -235,6 +247,7 @@ namespace ams::mitm::fs {
 
     Result CreateAndOpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, size_t size) {
         R_TRY(EnsureSdInitialized());
+        R_UNLESS(!cfg::IsContentDisabled(program_id), ams::fs::ResultPathNotFound());
 
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
