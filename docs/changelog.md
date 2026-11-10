@@ -1,4 +1,7 @@
 # Changelog
+## 1.12.2
++ Basic support was added for 23.5.0.
++ General system stability improvements to enhance the user's experience.
 ## 1.12.1
 + Support was added for the new c-ares resolver in `dns.mitm`.
   + Firmware 23.0.0 introduced a new set of commands to the `sfdnsres` service. These commands provide c-ares async support for DNS resolution and are now used by most sysmodules.
