@@ -756,7 +756,7 @@ namespace ams::nxboot {
                     AddPatch(fs_meta, 0x191540, NogcPatch1, sizeof(NogcPatch1));
                     break;
                 case FsVersion_23_5_0:
-                    AddPatch(fs_meta, 0x1BE8CD, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1B36CD, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x1B36E5, NogcPatch0, sizeof(NogcPatch0));
                     AddPatch(fs_meta, 0x186350, NogcPatch1, sizeof(NogcPatch1));
                     break;
